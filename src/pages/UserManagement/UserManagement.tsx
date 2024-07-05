@@ -16,39 +16,13 @@ interface CustomCard {
   titleColor: string;
 }
 const Columns = ["firstName", "lastName", "email", "role", "active", "premium", "corpName", "createdAt", "updatedAt"];
-const cardObject: CustomCard[] = [
-  {
-    color: "#ECF2FF",
-    title: "Users",
-    count: 20163,
-    icon: <LeaderboardIcon fontSize="large" style={{ color: "#5D87FF" }} />,
-    titleColor: "#5D87FF"
-  },
-  {
-    color: "#FDF4E5",
-    title: "Active",
-    count: 2245,
-    icon: <InterpreterModeIcon fontSize="large" style={{ color: "#FFAE1F" }} />,
-    titleColor: "#FFAE1F"
-  },
-  {
-    color: "#E8F7FF",
-    title: "Inactive",
-    count: 1315,
-    icon: <Face6Icon fontSize="large" style={{ color: "#49BEFF" }} />,
-    titleColor: "#49BEFF"
-  },
-  {
-    color: "#FCEDE8",
-    title: "Premium   ",
-    count: 90,
-    icon: <SummarizeIcon fontSize="large" style={{ color: "#FA896B" }} />,
-    titleColor: "#FA896B"
-  }
-];
+
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeUsers, setActiveUsers] = useState(0);
+  const [inactiveUsers, setInactiveUsers] = useState(0);
+
   useEffect(() => {
     getUsersList();
   }, []);
@@ -57,13 +31,54 @@ function UserManagement() {
     try {
       setLoading(true);
       const res = await usersList();
-      setUsers(res.data?.users);
-      setLoading(false);
+      if (res.data?.users.length) {
+        setUsers(res.data?.users);
+        const activeuserCount = res.data?.users.filter((user: any) => user.active);
+        const inactiveuserCount = res.data?.users.filter((user: any) => !user.active);
+        setActiveUsers(activeuserCount.length);
+        setInactiveUsers(inactiveuserCount.length);
+        setLoading(false);
+      } else {
+        setActiveUsers(0);
+        setInactiveUsers(0);
+        setLoading(false);
+      }
     } catch (error) {
       console.log(error);
       setLoading(false);
     }
   };
+
+  const cardObject: CustomCard[] = [
+    {
+      color: "#ECF2FF",
+      title: "Users",
+      count: users.length,
+      icon: <LeaderboardIcon fontSize="large" style={{ color: "#5D87FF" }} />,
+      titleColor: "#5D87FF"
+    },
+    {
+      color: "#FDF4E5",
+      title: "Active",
+      count: activeUsers,
+      icon: <InterpreterModeIcon fontSize="large" style={{ color: "#FFAE1F" }} />,
+      titleColor: "#FFAE1F"
+    },
+    {
+      color: "#E8F7FF",
+      title: "Inactive",
+      count: inactiveUsers,
+      icon: <Face6Icon fontSize="large" style={{ color: "#49BEFF" }} />,
+      titleColor: "#49BEFF"
+    },
+    {
+      color: "#FCEDE8",
+      title: "Premium   ",
+      count: 90,
+      icon: <SummarizeIcon fontSize="large" style={{ color: "#FA896B" }} />,
+      titleColor: "#FA896B"
+    }
+  ];
 
   const cardComponent = cardObject.map((card: any) => {
     return (
