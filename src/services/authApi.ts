@@ -38,3 +38,15 @@ export async function usersList() {
   return response;
 }
 
+export async function updateUser(id: any, payload: any) {
+  const token = await getJwtToken();
+  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
+  let headers: any = {
+    "Content-Type": "application/json",
+    Authorization: token
+  };
+  const response = await axios.patch(`${BASE_URL}/users/${id}`, payload, {
+    headers
+  });
+  return response;
+}

@@ -1,12 +1,16 @@
-import { Box, Grid } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useMemo, useState } from "react";
 import BasicCard from "../../components/card/Card";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import InterpreterModeIcon from "@mui/icons-material/InterpreterMode";
 import Face6Icon from "@mui/icons-material/Face6";
 import SummarizeIcon from "@mui/icons-material/Summarize";
 import { usersList } from "../../services/authApi";
+import ActiveUserSwitch from './ActiveUserSwitch';
+import PositionedSnackbar from '../../components/snackbar/Snackbar';
+import moment from "moment"
+import BasicSelect from './UserRoleSelect';
 
 interface CustomCard {
   color: string;
@@ -15,17 +19,53 @@ interface CustomCard {
   icon: ReactElement;
   titleColor: string;
 }
-const Columns = ["firstName", "lastName", "email", "role", "active", "premium", "corpName", "createdAt", "updatedAt"];
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeUsers, setActiveUsers] = useState(0);
   const [inactiveUsers, setInactiveUsers] = useState(0);
+  // const [pageSize, setPageSize] = useState(5)
+  const [open, setOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   useEffect(() => {
     getUsersList();
   }, []);
+
+  const Columns: any = useMemo(() => [
+    {field:"photoURL", headerName:"Avatar", width: 60},
+    {field:"firstName", headerName:"First Name", width: 100, editable: true},
+    {field:"lastName", headerName:"Last Name", width: 100, editable: true},
+    {field:"email", headerName:"Email", width: 200, editable: true},
+    {field:"role", headerName:"Role", width: 100, type: "actions",
+      renderCell:(params: any) => (
+        <BasicSelect 
+        setRole={params.row.role}
+        userId={params.row._id} 
+        setOpen={setOpen} 
+        setAlertMessage={setAlertMessage}
+        />
+      )
+    },
+    {field:"active", headerName:"Active", width: 100, type: "actions", 
+      renderCell:(params: any) => (
+      <ActiveUserSwitch 
+      active={params.row.active} 
+      userId={params.row._id} 
+      setOpen={setOpen} 
+      setAlertMessage={setAlertMessage}
+      />
+    )},
+    {field:"premium", headerName:"Premium", width: 100, type: "boolean", editable: true},
+    {field:"corpName", headerName:"Corp Name", width: 100},
+    {field:"createdAt", headerName:"Created At", width: 200, 
+      renderCell:(params: any) => 
+        moment(params.row.createdAt).format("YYYY-MM-DD HH:MM:SS")},
+    {field:"updatedAt", headerName:"Updated At", width: 200, 
+      renderCell:(params: any) => 
+        moment(params.row.updatedAt).format("YYYY-MM-DD HH:MM:SS")},
+  ], [])
 
   const getUsersList = async () => {
     try {
@@ -90,24 +130,22 @@ function UserManagement() {
 
   return (
     <>
+    <PositionedSnackbar open={open} message={alertMessage} setOpen={setOpen}/>
       <Grid container spacing={2} sx={{ width: "100%" }}>
         {cardComponent}
       </Grid>
-      <Box sx={{ marginRight: "25px" }}>
-        <div style={{ height: 400, width: "100%", margin: "25px 0 0 0" }}>
-          <DataGrid
-            rows={users}
-            getRowId={(row: any) => row._id}
-            loading={loading}
-            columns={Columns.map((field) => ({
-              field,
-              headerName: field.charAt(0).toUpperCase() + field.slice(1), // Capitalize first letter
-              width: 150 // Adjust width as needed
-            }))}
-            // disableColumnFilter
-            slots={{ toolbar: GridToolbar }}
-          />
-        </div>
+      <Box 
+      sx ={{
+        height:400,
+        width:"100%"
+      }}>
+        <Typography variant='h4' component="h4" sx={{textAlign:"center", mt:3, mb:3}}>Manage Users</Typography>
+        <DataGrid
+        columns={Columns}
+        rows={users}
+        getRowId={(row: any) => row._id}
+        slots={{ toolbar: GridToolbar }}
+        />
       </Box>
     </>
   );
