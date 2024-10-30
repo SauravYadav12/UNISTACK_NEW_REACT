@@ -3,7 +3,7 @@ import CustomDataGrid from "../../../components/datagrid/DataGrid";
 import moment from 'moment';
 import CustomDrawer from "../../../components/drawer/CustomDrawer";
 import { useState } from "react";
-import CustomForm from "../../../components/form/CustomForm";
+import RequirementsForm from "./RequirementsForm";
 
 
 export default function Requirements() {
@@ -95,6 +95,7 @@ export default function Requirements() {
           width: 100,
           renderCell: (params:any) => (
             <Button
+              size="small"
               variant="contained"
               color="primary"
               onClick={() => handleViewDetails(params.row)}
@@ -134,7 +135,7 @@ export default function Requirements() {
   return (
   <>
     <div>
-     <Button variant="contained" style={{ marginRight: 25, float: 'right'}} onClick={handleAddNew}>Add New</Button>
+     <Button variant="contained" style={{ marginRight: 25, float: 'right'}} onClick={handleAddNew} size="small">Add New</Button>
      <h3>Requirements</h3>
     </div>
     <CustomDataGrid rows={rows} columns={columns} onViewDetails={handleViewDetails} />
@@ -143,7 +144,7 @@ export default function Requirements() {
         onClose={handleDrawerClose}
         title="Add New Requirement"
         >
-          <CustomForm />
+          <RequirementsForm />
         </CustomDrawer>
   </>
   )

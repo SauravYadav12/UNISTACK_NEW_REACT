@@ -13,6 +13,7 @@ import SignUp from "./pages/Auth/Signup";
 import { AuthContextProvider, useAuth } from "./AuthGaurd/AuthContextProvider";
 import ProtectedRoute from "./AuthGaurd/ProtectedRoute";
 import UserManagement from "./pages/UserManagement/UserManagement";
+import TestAndVendorInterviews from "./pages/Marketing/TestAndVendorInterviews/TestAndVendorInterviews";
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -51,6 +52,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Interviews />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="testandvendorinterviews"
+              element={
+                <ProtectedRoute>
+                  <TestAndVendorInterviews />
                 </ProtectedRoute>
               }
             />
