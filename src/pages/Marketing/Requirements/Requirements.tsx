@@ -1,130 +1,86 @@
-import {Button} from "@mui/material";
-import CustomDataGrid from "../../../components/datagrid/DataGrid";
+import { Button } from '@mui/material';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
-import CustomDrawer from "../../../components/drawer/CustomDrawer";
-import { useState } from "react";
-import RequirementsForm from "./RequirementsForm";
-
+import CustomDrawer from '../../../components/drawer/CustomDrawer';
+import { useEffect, useState } from 'react';
+import RequirementsForm from './RequirementsForm';
+import { requirementsList } from '../../../services/requirementApi';
 
 export default function Requirements() {
-
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [rows, setRows] = useState([]);
+  const [viewData, setViewData] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [mode, setMode] = useState('view');
 
-  const rows = [
+  useEffect(() => {
+    getRequirements();
+  }, [drawerOpen]);
+
+  const getRequirements = async () => {
+    const res = await requirementsList();
+    // console.log(res);
+    setRows(res.data.data);
+  };
+
+  const columns = [
     {
-      id: 1,
-      reqId: '1234',
-      assignedTo: 'John Doe',
-      appliedFor: 'Software Engineer',
-      clientName: 'ABC Corp',
-      reqStatus: 'Open',
-      nextStep: 'Interview',
-      vendorCompany: 'Vendor X',
-      vendorPerson: 'Alice Smith',
-      vendorPhone: '555-1234',
-      requirementTitle: 'Backend Developer',
-      createdBy: 'Jane Doe',
-      createdAt: '2023-09-22T12:00:00Z',
+      field: 'view',
+      headerName: 'View',
+      width: 100,
+      renderCell: (params: any) => (
+        <Button
+          size="small"
+          variant="contained"
+          color="primary"
+          sx={{ borderRadius: '10px' }}
+          onClick={() => handleViewDetails(params.row)}
+        >
+          View
+        </Button>
+      ),
     },
+    { field: 'reqID', headerName: 'Req ID', width: 150 },
+    { field: 'assignedTo', headerName: 'Assigned to', width: 120 },
+    { field: 'appliedFor', headerName: 'Applied For', width: 150 },
+    { field: 'clientCompany', headerName: 'Client Name', width: 150 },
+    { field: 'reqStatus', headerName: 'Req Status', width: 120 },
+    { field: 'nextStep', headerName: 'Next Step', width: 120 },
+    { field: 'vendorCompany', headerName: 'Vendor Company', width: 150 },
+    { field: 'vendorPersonName', headerName: 'Vendor Person', width: 150 },
+    { field: 'vendorPhone', headerName: 'Vendor Phone', width: 130 },
+    { field: 'jobTitle', headerName: 'Requirement Title', width: 200 },
+    { field: 'reqEnteredBy', headerName: 'Created by', width: 130 },
     {
-      id: 2,
-      reqId: '2134',
-      assignedTo: 'John Doe',
-      appliedFor: 'Software Engineer',
-      clientName: 'ABC Corp',
-      reqStatus: 'Open',
-      nextStep: 'Interview',
-      vendorCompany: 'Vendor X',
-      vendorPerson: 'Alice Smith',
-      vendorPhone: '555-1234',
-      requirementTitle: 'Backend Developer',
-      createdBy: 'Jane Doe',
-      createdAt: '2023-09-22T12:00:00Z',
-    },
-    {
-      id: 3,
-      reqId: '2234',
-      assignedTo: 'John Doe',
-      appliedFor: 'Software Engineer',
-      clientName: 'ABC Corp',
-      reqStatus: 'Open',
-      nextStep: 'Interview',
-      vendorCompany: 'Vendor X',
-      vendorPerson: 'Alice Smith',
-      vendorPhone: '555-1234',
-      requirementTitle: 'Backend Developer',
-      createdBy: 'Jane Doe',
-      createdAt: '2023-09-22T12:00:00Z',
-    },
-    {
-      id: 4,
-      reqId: '2334',
-      assignedTo: 'John Doe',
-      appliedFor: 'Software Engineer',
-      clientName: 'ABC Corp',
-      reqStatus: 'Open',
-      nextStep: 'Interview',
-      vendorCompany: 'Vendor X',
-      vendorPerson: 'Alice Smith',
-      vendorPhone: '555-1234',
-      requirementTitle: 'Backend Developer',
-      createdBy: 'Jane Doe',
-      createdAt: '2023-09-22T12:00:00Z',
-    },
-    {
-      id: 5,
-      reqId: '12244334',
-      assignedTo: 'John Doe',
-      appliedFor: 'Software Engineer',
-      clientName: 'ABC Corp',
-      reqStatus: 'Open',
-      nextStep: 'Interview',
-      vendorCompany: 'Vendor X',
-      vendorPerson: 'Alice Smith',
-      vendorPhone: '555-1234',
-      requirementTitle: 'Backend Developer',
-      createdBy: 'Jane Doe',
-      createdAt: '2023-09-22T12:00:00Z',
+      field: 'createdAt',
+      headerName: 'Created At',
+      width: 180,
+      valueFormatter: (params: any) =>
+        moment(params.value).format('YYYY-MM-DD HH:mm'),
     },
   ];
 
-  const columns = [
-        {
-          field: 'view',
-          headerName: 'View',
-          width: 100,
-          renderCell: (params:any) => (
-            <Button
-              size="small"
-              variant="contained"
-              color="primary"
-              onClick={() => handleViewDetails(params.row)}
-            >
-              View
-            </Button>
-          ),
-        },
-        { field: 'reqId', headerName: 'Req ID', width: 100 },
-        { field: 'assignedTo', headerName: 'Assigned to', width: 150 },
-        { field: 'appliedFor', headerName: 'Applied For', width: 150 },
-        { field: 'clientName', headerName: 'Client Name', width: 150 },
-        { field: 'reqStatus', headerName: 'Req Status', width: 120 },
-        { field: 'nextStep', headerName: 'Next Step', width: 120 },
-        { field: 'vendorCompany', headerName: 'Vendor Company', width: 150 },
-        { field: 'vendorPerson', headerName: 'Vendor Person', width: 150 },
-        { field: 'vendorPhone', headerName: 'Vendor Phone', width: 130 },
-        { field: 'requirementTitle', headerName: 'Requirement Title', width: 200 },
-        { field: 'createdBy', headerName: 'Created by', width: 130 },
-        {field: 'createdAt',headerName: 'Created At',width: 180,
-          valueFormatter: (params:any) => moment(params.value).format('YYYY-MM-DD HH:mm'),
-        },
-      ];
+  const handleViewDetails = (row: any) => {
+    const data = rows.filter((r: any) => r.reqID === row.reqID);
+    // console.log('Data', data[0]);
+    setViewData(data[0]);
+    setFormTitle(`Requirement ID ${row.reqID}`);
+    setMode('view');
+    setIsEditing(false);
+    setDrawerOpen(true);
+  };
 
-  const handleViewDetails = (row:any) => {
-    alert(`View details for Req ID: ${row.reqId}`);
+  const handleEdit = (editMode: any) => {
+    setIsEditing(editMode);
+    setMode(editMode ? 'edit' : 'view');
   };
 
   const handleAddNew = () => {
+    setFormTitle('Add New Requirement');
+    setViewData({});
+    setMode('add');
+    setIsEditing(true);
     setDrawerOpen(true);
   };
 
@@ -133,19 +89,36 @@ export default function Requirements() {
   };
 
   return (
-  <>
-    <div>
-     <Button variant="contained" style={{ marginRight: 25, float: 'right'}} onClick={handleAddNew} size="small">Add New</Button>
-     <h3>Requirements</h3>
-    </div>
-    <CustomDataGrid rows={rows} columns={columns} onViewDetails={handleViewDetails} />
-    <CustomDrawer 
+    <>
+      <div>
+        <Button
+          variant="contained"
+          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
+          onClick={handleAddNew}
+          size="small"
+        >
+          Add New
+        </Button>
+        <h3>Requirements</h3>
+      </div>
+      <CustomDataGrid
+        rows={rows}
+        columns={columns}
+        onViewDetails={handleViewDetails}
+      />
+      <CustomDrawer
         open={drawerOpen}
         onClose={handleDrawerClose}
-        title="Add New Requirement"
-        >
-          <RequirementsForm />
-        </CustomDrawer>
-  </>
-  )
+        title={formTitle}
+      >
+        <RequirementsForm
+          viewData={viewData}
+          mode={mode}
+          setDrawerOpen={setDrawerOpen}
+          isEditing={isEditing}
+          onEdit={handleEdit}
+        />
+      </CustomDrawer>
+    </>
+  );
 }

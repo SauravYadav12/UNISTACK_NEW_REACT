@@ -26,8 +26,8 @@ export const taxTypeOptions = [
 
 export const gotRequirementForm = [
     "Got from online Resume",
-    "Received on consulyant's Email",
-    "Gor through Job Portal"
+    "Received on consultant's Email",
+    "Got through Job Portal"
 ]
 
 export const techStack = [

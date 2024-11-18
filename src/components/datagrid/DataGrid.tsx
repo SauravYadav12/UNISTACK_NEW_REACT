@@ -20,6 +20,7 @@ export default function CustomDataGrid(props: any) {
         disableColumnSelector
         disableDensitySelector
         columns={columns}
+        getRowId={(row:any) => row._id}
         slots={{ toolbar: GridToolbar }}
         slotProps={{
           toolbar: {

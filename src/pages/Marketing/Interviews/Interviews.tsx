@@ -11,7 +11,7 @@ export default function Interviews() {
 
   const rows = [
     {
-      id: 1,
+      _id: 1,
       intID: 'INT123',
       consultant: 'John Doe',
       intDate: '2024-10-15',
@@ -27,7 +27,7 @@ export default function Interviews() {
       createdAt: '2024-10-01T14:30:00',
     },
     {
-      id: 2,
+      _id: 2,
       intID: 'INT124',
       consultant: 'Emily Davis',
       intDate: '2024-10-16',
@@ -43,7 +43,7 @@ export default function Interviews() {
       createdAt: '2024-10-02T09:45:00',
     },
     {
-      id: 3,
+      _id: 3,
       intID: 'INT125',
       consultant: 'Sophia Brown',
       intDate: '2024-10-17',
