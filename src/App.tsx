@@ -1,19 +1,25 @@
-import "./App.css";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Auth/Login";
-import Dashboard from "./pages/Dashboard/Dashboard";
-import Layout from "./components/layout/Layout";
-import Requirements from "./pages/Marketing/Requirements/Requirements";
-import Interviews from "./pages/Marketing/Interviews/Interviews";
-import Consultants from "./pages/Marketing/Consultants/Consultants";
-import Teams from "./pages/Marketing/Teams/Teams";
-import Profile from "./pages/Marketing/Profile/Profile";
-import Reports from "./pages/Marketing/Reports/Reports";
-import SignUp from "./pages/Auth/Signup";
-import { AuthContextProvider, useAuth } from "./AuthGaurd/AuthContextProvider";
-import ProtectedRoute from "./AuthGaurd/ProtectedRoute";
-import UserManagement from "./pages/UserManagement/UserManagement";
-import TestAndVendorInterviews from "./pages/Marketing/TestAndVendorInterviews/TestAndVendorInterviews";
+import './App.css';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
+import Login from './pages/Auth/Login';
+import Dashboard from './pages/Dashboard/Dashboard';
+import Layout from './components/layout/Layout';
+import Requirements from './pages/Marketing/Requirements/Requirements';
+import Interviews from './pages/Marketing/Interviews/Interviews';
+import Consultants from './pages/Marketing/Consultants/Consultants';
+import Teams from './pages/Marketing/Teams/Teams';
+import Profile from './pages/Marketing/Profile/Profile';
+import Reports from './pages/Marketing/Reports/Reports';
+import SignUp from './pages/Auth/Signup';
+import { AuthContextProvider, useAuth } from './AuthGaurd/AuthContextProvider';
+import ProtectedRoute from './AuthGaurd/ProtectedRoute';
+import UserManagement from './pages/UserManagement/UserManagement';
+import TestAndVendorInterviews from './pages/Marketing/TestAndVendorInterviews/TestAndVendorInterviews';
+import ListTabs from './components/tabs/CustomTabs';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -51,7 +57,7 @@ function App() {
               path="interviews"
               element={
                 <ProtectedRoute>
-                  <Interviews />
+                  <ListTabs />
                 </ProtectedRoute>
               }
             />
@@ -104,7 +110,12 @@ function App() {
               }
             />
           </Route>
-          {isAuthenticated ? <Route path="dashboard" element={<Navigate to="/dashboard" replace />} /> : null}
+          {isAuthenticated ? (
+            <Route
+              path="dashboard"
+              element={<Navigate to="/dashboard" replace />}
+            />
+          ) : null}
         </Routes>
       </Router>
     </AuthContextProvider>

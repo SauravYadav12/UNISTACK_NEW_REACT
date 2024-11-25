@@ -1,17 +1,16 @@
-import { Button } from "@mui/material";
-import CustomDataGrid from "../../../components/datagrid/DataGrid";
-import CustomDrawer from "../../../components/drawer/CustomDrawer";
-import { useState } from "react";
-import moment from "moment";
-import TestAndVendorForm from "./TestAndVendorForm";
+import { Button } from '@mui/material';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDrawer from '../../../components/drawer/CustomDrawer';
+import { useState } from 'react';
+import moment from 'moment';
+import TestAndVendorForm from './TestAndVendorForm';
 
 export default function TestAndVendorInterviews() {
-
   const [openForm, setOpenForm] = useState(false);
 
   const rows = [
     {
-      id: 1,
+      _id: 1,
       testID: 'TEST123',
       testStatus: 'Completed',
       testEnteredDate: '2024-10-10',
@@ -24,7 +23,7 @@ export default function TestAndVendorInterviews() {
       createdAt: '2024-10-01T14:30:00',
     },
     {
-      id: 2,
+      _id: 2,
       testID: 'TEST124',
       testStatus: 'In Progress',
       testEnteredDate: '2024-10-12',
@@ -37,7 +36,7 @@ export default function TestAndVendorInterviews() {
       createdAt: '2024-10-02T09:45:00',
     },
     {
-      id: 3,
+      _id: 3,
       testID: 'TEST125',
       testStatus: 'Scheduled',
       testEnteredDate: '2024-10-13',
@@ -50,14 +49,13 @@ export default function TestAndVendorInterviews() {
       createdAt: '2024-10-03T12:00:00',
     },
   ];
-  
 
   const columns = [
     {
       field: 'view',
       headerName: 'View',
       width: 100,
-      renderCell: (params:any) => (
+      renderCell: (params: any) => (
         <Button
           size="small"
           variant="contained"
@@ -68,7 +66,7 @@ export default function TestAndVendorInterviews() {
         </Button>
       ),
     },
-    { field: 'testID', headerName: 'Test ID', width: 100 },
+    { field: '_id', headerName: 'Test ID', width: 100 },
     { field: 'testStatus', headerName: 'Test Status', width: 120 },
     { field: 'testEnteredDate', headerName: 'Test Entered Date', width: 120 },
     { field: 'testDuration', headerName: 'Test Duration', width: 100 },
@@ -77,12 +75,16 @@ export default function TestAndVendorInterviews() {
     { field: 'primeCompany', headerName: 'Prime Company', width: 120 },
     { field: 'vendorCompany', headerName: 'Vendor Company', width: 120 },
     { field: 'createdBy', headerName: 'Created by', width: 130 },
-    {field: 'createdAt',headerName: 'Created At',width: 180,
-      valueFormatter: (params:any) => moment(params.value).format('YYYY-MM-DD hh:mm A'),
+    {
+      field: 'createdAt',
+      headerName: 'Created At',
+      width: 180,
+      valueFormatter: (params: any) =>
+        moment(params.value).format('YYYY-MM-DD hh:mm A'),
     },
   ];
 
-  const handleViewDetails = (row:any) => {
+  const handleViewDetails = (row: any) => {
     alert(`View details for Req ID: ${row.testID}`);
   };
 
@@ -96,23 +98,29 @@ export default function TestAndVendorInterviews() {
 
   return (
     <>
-    <div>
-      <Button variant="contained" style={{ marginRight: 25, float: 'right'}} size="small"
-      onClick={handleOpenForm}
-      >Add New</Button>
-      <h3>Test And Vendor Interviews</h3>
-    </div>
-      <CustomDataGrid columns={columns} rows={rows}
-      onViewDetails={handleViewDetails}
+      <div>
+        <Button
+          variant="contained"
+          style={{ marginRight: 25, float: 'right' }}
+          size="small"
+          onClick={handleOpenForm}
+        >
+          Add New
+        </Button>
+        <h3>Test And Vendor Interviews</h3>
+      </div>
+      <CustomDataGrid
+        columns={columns}
+        rows={rows}
+        onViewDetails={handleViewDetails}
       />
       <CustomDrawer
-      open={openForm}
-      onClose={handleCloseForm}
-      title="Add New Test And Vendor Interviews"
+        open={openForm}
+        onClose={handleCloseForm}
+        title="Add New Test And Vendor Interviews"
       >
-        <TestAndVendorForm handleCloseForm={handleCloseForm}/>
+        <TestAndVendorForm handleCloseForm={handleCloseForm} />
       </CustomDrawer>
     </>
-  )
-  
+  );
 }

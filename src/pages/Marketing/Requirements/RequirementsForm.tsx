@@ -61,7 +61,7 @@ const initialValues = {
   vendorPersonName: '',
   vendorPhone: '',
   vendorEmail: '',
-  reqEnteredDate: dayjs().format('YYYY-MM-DD'),
+  // reqEnteredDate: dayjs().format('YYYY-MM-DD'),
   gotReqFrom: '',
   primaryTech: '',
   jobTitle: '',
@@ -663,24 +663,27 @@ export default function RequirementsForm(props: any) {
           <Grid item xs={12}>
             <h4>5. Job Requirement Info</h4>
           </Grid>
-          <Grid sx={{ mt: 1, ml: 1, mr: 1 }}>
+          <Grid
+            sx={{
+              mt: 1,
+              ml: 1,
+              mr: 1,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '10px',
+                width: 315,
+                height: 40, // Adjust to fit your design
+              },
+            }}
+          >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Requirement Entered Date"
                 value={requirementEnteredDate}
                 disabled
-                // onChange={(newValue) => addValue("requirementEnteredDate",newValue)} // Handle date change
-                slotProps={{
-                  textField: {
-                    size: 'small',
-                    sx: {
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '10px',
-                        width: 315, // same border-radius
-                      },
-                    },
-                  },
-                }}
+                onChange={(newValue) =>
+                  addValue('requirementEnteredDate', newValue)
+                } // Handle date change
+                renderInput={(params) => <TextField size="small" {...params} />}
               />
             </LocalizationProvider>
           </Grid>

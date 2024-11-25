@@ -1,18 +1,16 @@
-import { Button } from "@mui/material";
-import moment from "moment";
-import { useState } from "react";
-import CustomDataGrid from "../../../components/datagrid/DataGrid";
-import CustomDrawer from "../../../components/drawer/CustomDrawer";
-import ConsultantForm from "./ConsultantForm";
+import { Button } from '@mui/material';
+import moment from 'moment';
+import { useState } from 'react';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDrawer from '../../../components/drawer/CustomDrawer';
+import ConsultantForm from './ConsultantForm';
 
 export default function Consultants() {
-
   const [openForm, setOpenForm] = useState(false);
-
 
   const rows = [
     {
-      id: 'ID001',
+      _id: 'ID001',
       status: 'Active',
       name: 'John Doe',
       psuedoName: 'J.D.',
@@ -24,7 +22,7 @@ export default function Consultants() {
       createdAt: '2024-10-01T14:30:00',
     },
     {
-      id: 'ID002',
+      _id: 'ID002',
       status: 'Inactive',
       name: 'Emily Smith',
       psuedoName: 'E.S.',
@@ -36,7 +34,7 @@ export default function Consultants() {
       createdAt: '2024-10-02T09:45:00',
     },
     {
-      id: 'ID003',
+      _id: 'ID003',
       status: 'Active',
       name: 'Michael Johnson',
       psuedoName: 'M.J.',
@@ -48,14 +46,13 @@ export default function Consultants() {
       createdAt: '2024-10-03T12:00:00',
     },
   ];
-  
 
   const columns = [
     {
       field: 'view',
       headerName: 'View',
       width: 100,
-      renderCell: (params:any) => (
+      renderCell: (params: any) => (
         <Button
           size="small"
           variant="contained"
@@ -66,7 +63,7 @@ export default function Consultants() {
         </Button>
       ),
     },
-    { field: 'id', headerName: 'ID', width: 100 },
+    { field: '_id', headerName: 'ID', width: 100 },
     { field: 'status', headerName: 'Status', width: 120 },
     { field: 'name', headerName: 'Name', width: 120 },
     { field: 'psuedoName', headerName: 'Psuedo Name', width: 120 },
@@ -75,12 +72,16 @@ export default function Consultants() {
     { field: 'passingYear', headerName: 'Passing year', width: 150 },
     { field: 'university', headerName: 'University', width: 120 },
     { field: 'createdBy', headerName: 'Created by', width: 130 },
-    {field: 'createdAt',headerName: 'Created At',width: 180,
-      valueFormatter: (params:any) => moment(params.value).format('YYYY-MM-DD hh:mm A'),
+    {
+      field: 'createdAt',
+      headerName: 'Created At',
+      width: 180,
+      valueFormatter: (params: any) =>
+        moment(params.value).format('YYYY-MM-DD hh:mm A'),
     },
   ];
 
-  const handleViewDetails = (row:any) => {
+  const handleViewDetails = (row: any) => {
     alert(`View details for Req ID: ${row.id}`);
   };
 
@@ -94,20 +95,29 @@ export default function Consultants() {
 
   return (
     <>
-    <div>
-      <Button variant="contained" style={{ marginRight: 25, float: 'right'}} size="small"
-      onClick={handleOpenForm}
-      >Add New</Button>
-      <h3>Consultants</h3>
-    </div>
-      <CustomDataGrid rows={rows} columns={columns} onViewDetails={handleViewDetails}/>
+      <div>
+        <Button
+          variant="contained"
+          style={{ marginRight: 25, float: 'right' }}
+          size="small"
+          onClick={handleOpenForm}
+        >
+          Add New
+        </Button>
+        <h3>Consultants</h3>
+      </div>
+      <CustomDataGrid
+        rows={rows}
+        columns={columns}
+        onViewDetails={handleViewDetails}
+      />
       <CustomDrawer
-      open={openForm}
-      onClose={handleCloseForm}
-      title="Add New Consultant"
+        open={openForm}
+        onClose={handleCloseForm}
+        title="Add New Consultant"
       >
-        <ConsultantForm handleCloseForm={handleCloseForm}/>
+        <ConsultantForm handleCloseForm={handleCloseForm} />
       </CustomDrawer>
     </>
-  )
+  );
 }
