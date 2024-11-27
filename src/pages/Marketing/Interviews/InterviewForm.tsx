@@ -7,7 +7,7 @@ import {
   LocalizationProvider,
   TimePicker,
 } from '@mui/x-date-pickers';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {
   intDurationOptions,
@@ -61,8 +61,6 @@ const initialValues = {
 
 export default function InterviewForm({ handleCloseForm }: any) {
   const [values, setValues] = useState(initialValues);
-  const [interviewDate, setInterviewDate] = useState();
-  const [interviewTime, setInterviewTime] = useState();
 
   const addValue = (key: any, newValue: any) => {
     if (key === 'interviewDate') {
@@ -71,7 +69,7 @@ export default function InterviewForm({ handleCloseForm }: any) {
         : null;
       setValues((prevValues) => ({
         ...prevValues,
-        [key]: formattedDate, // Save the formatted date
+        [key]: formattedDate,
       }));
     } else if (key === 'interviewTime') {
       const formattedTime = newValue
@@ -79,7 +77,7 @@ export default function InterviewForm({ handleCloseForm }: any) {
         : null;
       setValues((prevValues) => ({
         ...prevValues,
-        [key]: formattedTime, // Save the formatted time
+        [key]: formattedTime,
       }));
     } else {
       setValues((prevValues) => ({
@@ -126,7 +124,7 @@ export default function InterviewForm({ handleCloseForm }: any) {
             <DatePicker
               label="Interview Date"
               value={values.interviewDate ? dayjs(values.interviewDate) : null}
-              onChange={(newValue) => addValue('interviewDate', newValue)} // Handle date change
+              onChange={(newValue) => addValue('interviewDate', newValue)}
               renderInput={(params) => <TextField size="small" {...params} />}
             />
           </LocalizationProvider>
@@ -149,7 +147,7 @@ export default function InterviewForm({ handleCloseForm }: any) {
                   ? dayjs(values.interviewTime, 'hh:mm:ss A')
                   : null
               }
-              onChange={(newValue) => addValue('interviewTime', newValue)} // Handle date change
+              onChange={(newValue) => addValue('interviewTime', newValue)}
               renderInput={(params) => <TextField size="small" {...params} />}
             />
           </LocalizationProvider>

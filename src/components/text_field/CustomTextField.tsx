@@ -8,8 +8,8 @@ export default function CustomTextField({
   selectedValue,
   type,
   required,
-  error,
-  helperText,
+  error = false,
+  helperText = '',
 }: any) {
   return (
     <div>
@@ -21,7 +21,7 @@ export default function CustomTextField({
           onChange={onChange}
           disabled={disabled}
           fullWidth
-          error={error}
+          error={Boolean(error)}
           helperText={helperText}
           required={required}
           size="small"

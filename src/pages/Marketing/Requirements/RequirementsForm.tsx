@@ -61,7 +61,7 @@ const initialValues = {
   vendorPersonName: '',
   vendorPhone: '',
   vendorEmail: '',
-  // reqEnteredDate: dayjs().format('YYYY-MM-DD'),
+  reqEnteredDate: dayjs().format('YYYY-MM-DD'),
   gotReqFrom: '',
   primaryTech: '',
   jobTitle: '',
@@ -74,7 +74,6 @@ const initialValues = {
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
-  const [requirementEnteredDate, setRequirementEnteredDate] = useState(dayjs());
   const [file, setFile]: any = useState(null);
   const [errors, setErrors] = useState(initialValues);
   const [comments, setComments] = useState<any>('');
@@ -678,11 +677,9 @@ export default function RequirementsForm(props: any) {
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Requirement Entered Date"
-                value={requirementEnteredDate}
+                value={values.reqEnteredDate}
                 disabled
-                onChange={(newValue) =>
-                  addValue('requirementEnteredDate', newValue)
-                } // Handle date change
+                onChange={(newValue) => addValue('reqEnteredDate', newValue)} // Handle date change
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             </LocalizationProvider>
