@@ -19,9 +19,13 @@ export default function Requirements() {
   }, [drawerOpen]);
 
   const getRequirements = async () => {
-    const res = await requirementsList();
-    // console.log(res);
-    setRows(res.data.data);
+    try {
+      const res = await requirementsList();
+      console.log('API Response:', res.data);
+      setRows(res.data.data);
+    } catch (error) {
+      console.error('Error fetching requirements:', error);
+    }
   };
 
   const columns = [
@@ -41,7 +45,7 @@ export default function Requirements() {
         </Button>
       ),
     },
-    { field: 'reqID', headerName: 'Req ID', width: 150 },
+    { field: 'reqID', headerName: 'Req ID', width: 180 },
     { field: 'assignedTo', headerName: 'Assigned to', width: 120 },
     { field: 'appliedFor', headerName: 'Applied For', width: 150 },
     { field: 'clientCompany', headerName: 'Client Name', width: 150 },

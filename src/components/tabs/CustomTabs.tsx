@@ -56,19 +56,35 @@ export default function ListTabs() {
         </Tabs>
       </Box>
       <CustomTabPanel value={value} index={0}>
-        Confirmed Interviews
+        {/* Confirmed Interviews */}
+        <Interviews
+          query={'Interview Confirm'}
+          label={'Confirmed Interviews'}
+        />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={1}>
-        Tentative Interviews
+        {/* Tentative Interviews */}
+        <Interviews
+          query={'Interview Tentative'}
+          label={'Tentative Interviews'}
+        />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={2}>
-        Completed Interviews
+        {/* Completed Interviews */}
+        <Interviews
+          query={'Interview Completed'}
+          label={'Completed Interviews'}
+        />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={3}>
-        Cancelled Interviews
+        {/* Cancelled Interviews */}
+        <Interviews
+          query={'Interview Cancelled'}
+          label={'Cancelled Interviews'}
+        />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={4}>
-        <Interviews />
+        <Interviews query={''} label={'All Interviews'} />
       </CustomTabPanel>
     </Box>
   );
