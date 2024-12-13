@@ -89,13 +89,27 @@ export default function Login() {
           <Box
             sx={{
               marginTop: 8,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "#EC4599", width: 56, height: 56 }}>
-              <StorageIcon />
+            <Avatar
+              sx={{
+                m: 1,
+                bgcolor: 'white',
+                width: 80,
+                height: 80,
+                border: '1px solid #eeee',
+              }}
+            >
+              {/* <StorageIcon /> */}
+              <img
+                src="src/assets/unistack_icon.png"
+                alt=""
+                width={'100%'}
+                style={{ paddingTop: '8px' }}
+              />
             </Avatar>
             <Typography component="h1" variant="h5">
               Sign in

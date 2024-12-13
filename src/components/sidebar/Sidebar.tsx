@@ -73,9 +73,9 @@ function Sidebar({ toggleSideBar }: any) {
       sx={{
         width: toggleSideBar ? smallDrawerWidth : drawerWidth,
         flexShrink: 0,
-        "& .MuiDrawer-paper": {
+        '& .MuiDrawer-paper': {
           width: toggleSideBar ? smallDrawerWidth : drawerWidth,
-          boxSizing: "border-box",
+          boxSizing: 'border-box',
         },
       }}
       variant="permanent"
@@ -86,12 +86,12 @@ function Sidebar({ toggleSideBar }: any) {
           <img
             src={
               toggleSideBar
-                ? "src/assets/unistack_small.png"
-                : "src/assets/unistack.png"
+                ? 'src/assets/unistack_icon.png'
+                : 'src/assets/unistack_new.png'
             }
             alt="unistack logo"
-            width={toggleSideBar ? "50%" : "80%"}
-            className={toggleSideBar ? "small-logo" : "big-logo"}
+            width={toggleSideBar ? '60%' : '80%'}
+            className={toggleSideBar ? 'small-logo' : 'big-logo'}
           />
         </Typography>
       </div>
@@ -104,7 +104,7 @@ function Sidebar({ toggleSideBar }: any) {
               key={item.text}
               onClick={() => navigate(item.path)}
               className={`ListItemButton ${
-                location.pathname === item.path ? "active" : ""
+                location.pathname === item.path ? 'active' : ''
               }`}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
@@ -124,7 +124,7 @@ function Sidebar({ toggleSideBar }: any) {
               key={item.text}
               onClick={() => navigate(item.path)}
               className={`ListItemButton ${
-                location.pathname === item.path ? "active" : ""
+                location.pathname === item.path ? 'active' : ''
               }`}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>

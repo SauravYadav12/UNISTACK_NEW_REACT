@@ -104,13 +104,27 @@ export default function SignUp() {
           <Box
             sx={{
               marginTop: 8,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "#EC4599", width: 56, height: 56 }}>
-              <StorageIcon />
+            <Avatar
+              sx={{
+                m: 1,
+                bgcolor: 'white',
+                width: 80,
+                height: 80,
+                border: '1px solid #eeee',
+              }}
+            >
+              {/* <StorageIcon /> */}
+              <img
+                src="src/assets/unistack_icon.png"
+                alt=""
+                width={'100%'}
+                style={{ paddingTop: '8px' }}
+              />
             </Avatar>
             <Typography component="h1" variant="h5">
               Sign up
@@ -131,7 +145,7 @@ export default function SignUp() {
                     id="firstName"
                     label="First Name"
                     autoFocus
-                    onChange={(e) => addValue("firstName", e.target.value)}
+                    onChange={(e) => addValue('firstName', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -142,22 +156,22 @@ export default function SignUp() {
                     label="Last Name"
                     name="lastName"
                     autoComplete="family-name"
-                    onChange={(e) => addValue("lastName", e.target.value)}
+                    onChange={(e) => addValue('lastName', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel required>Gender</InputLabel>
-                  <Select
-                    required
-                    value={values.gender}
-                    label="Gender"
-                    onChange={(e) => addValue("gender", e.target.value)}
-                  >
-                    <MenuItem value={"M"}>Male</MenuItem>
-                    <MenuItem value={"F"}>Female</MenuItem>
-                  </Select>
-                </FormControl>
+                  <FormControl fullWidth>
+                    <InputLabel required>Gender</InputLabel>
+                    <Select
+                      required
+                      value={values.gender}
+                      label="Gender"
+                      onChange={(e) => addValue('gender', e.target.value)}
+                    >
+                      <MenuItem value={'M'}>Male</MenuItem>
+                      <MenuItem value={'F'}>Female</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
@@ -167,7 +181,7 @@ export default function SignUp() {
                     label="Email Address"
                     name="email"
                     autoComplete="email"
-                    onChange={(e) => addValue("email", e.target.value)}
+                    onChange={(e) => addValue('email', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -179,7 +193,7 @@ export default function SignUp() {
                     type="password"
                     id="password"
                     autoComplete="new-password"
-                    onChange={(e) => addValue("password", e.target.value)}
+                    onChange={(e) => addValue('password', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12}>
