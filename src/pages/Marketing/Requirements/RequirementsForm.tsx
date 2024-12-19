@@ -140,6 +140,9 @@ export default function RequirementsForm(props: any) {
 
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
+    if (!comments.trim()) {
+      return;
+    }
     const commentsPayload = {
       username: user.firstName,
       date: new Date(),
@@ -150,7 +153,7 @@ export default function RequirementsForm(props: any) {
       : [commentsPayload];
 
     try {
-      const payload = { mComment: updatedComments };
+      const payload = { ...values, mComment: updatedComments };
 
       const response: any = await updateRequirement(values._id, payload);
       if (response.status === 200) {
@@ -194,7 +197,7 @@ export default function RequirementsForm(props: any) {
 
   const addValue = (key: any, newValue: any) => {
     console.log('AddValues', newValue);
-    if (key === 'requirementEnteredDate') {
+    if (key === 'reqEnteredDate') {
       const formattedDate = newValue
         ? dayjs(newValue).format('YYYY-MM-DD')
         : null;
@@ -662,25 +665,33 @@ export default function RequirementsForm(props: any) {
           <Grid item xs={12}>
             <h4>5. Job Requirement Info</h4>
           </Grid>
-          <Grid
-            sx={{
-              mt: 1,
-              ml: 1,
-              mr: 1,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '10px',
-                width: 315,
-                height: 40, // Adjust to fit your design
-              },
-            }}
-          >
+          <Grid>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Requirement Entered Date"
                 value={values.reqEnteredDate}
                 disabled
                 onChange={(newValue) => addValue('reqEnteredDate', newValue)} // Handle date change
-                renderInput={(params) => <TextField size="small" {...params} />}
+                renderInput={(params) => (
+                  <TextField
+                    size="small"
+                    {...params}
+                    sx={{
+                      width: 315,
+                      mt: 1,
+                      ml: 1,
+                      mr: 1,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                      },
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        WebkitTextFillColor: 'black',
+                        backgroundColor: '#f0f0f0',
+                        borderRadius: '10px',
+                      },
+                    }}
+                  />
+                )}
               />
             </LocalizationProvider>
           </Grid>
