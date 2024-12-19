@@ -60,8 +60,9 @@ export default function Requirements() {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) =>
-        moment(params.value).format('YYYY-MM-DD HH:mm'),
+      valueFormatter: (params: any) => {
+        return moment(params).format('YYYY-MM-DD HH:mm');
+      },
     },
   ];
 

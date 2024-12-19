@@ -96,12 +96,13 @@ export default function InterviewForm(props: any) {
         marketingPerson: user.firstName,
       }));
     }
-    if (!selectedRecord) {
-      setValues(viewData);
-    }
   }, [selectedRecord]);
 
-  console.log('UserData', user);
+  useEffect(() => {
+    if (mode === 'view') {
+      setValues(viewData);
+    }
+  }, []);
 
   const addValue = (key: any, newValue: any) => {
     setErrors(initialValues);
@@ -305,16 +306,7 @@ export default function InterviewForm(props: any) {
         <Grid item xs={12}>
           <h4>1. Interview Details</h4>
         </Grid>
-        <Grid
-          item
-          sx={{
-            width: 190,
-            mr: 1,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '10px',
-            },
-          }}
-        >
+        <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Interview Date"
@@ -327,21 +319,26 @@ export default function InterviewForm(props: any) {
                   error={!!errors.interviewDate}
                   helperText={errors.interviewDate}
                   disabled={!isEditing}
+                  sx={{
+                    width: 230,
+                    mr: 1,
+                    mt: 1,
+                    ml: 1,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                    },
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'black',
+                      backgroundColor: '#f0f0f0',
+                      borderRadius: '10px',
+                    },
+                  }}
                 />
               )}
             />
           </LocalizationProvider>
         </Grid>
-        <Grid
-          item
-          sx={{
-            width: 190,
-            mr: 1,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '10px',
-            },
-          }}
-        >
+        <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <TimePicker
               label="Interview Time"
@@ -358,6 +355,20 @@ export default function InterviewForm(props: any) {
                   error={!!errors.interviewTime}
                   helperText={errors.interviewTime}
                   disabled={!isEditing}
+                  sx={{
+                    width: 230,
+                    mr: 1,
+                    mt: 1,
+                    ml: 1,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                    },
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'black',
+                      backgroundColor: '#f0f0f0',
+                      borderRadius: '10px',
+                    },
+                  }}
                 />
               )}
             />
@@ -370,7 +381,7 @@ export default function InterviewForm(props: any) {
           onChange={(value: any) =>
             handleChange({ target: { value } }, 'timeZone')
           }
-          width={180}
+          width={230}
           disabled={!isEditing}
         />
         <CustomSelectField
@@ -383,7 +394,7 @@ export default function InterviewForm(props: any) {
           onChange={(value: any) =>
             handleChange({ target: { value } }, 'interviewType')
           }
-          width={180}
+          width={230}
         />
         <CustomSelectField
           label="Interview Status"
@@ -392,7 +403,7 @@ export default function InterviewForm(props: any) {
           onChange={(value: any) =>
             handleChange({ target: { value } }, 'interviewStatus')
           }
-          width={180}
+          width={230}
           disabled={!isEditing}
         />
         <CustomTextField
@@ -515,7 +526,7 @@ export default function InterviewForm(props: any) {
           label="Remarks/Comments (if negative / if on hold / If anything else? Why?)"
           multiline
           rows={2}
-          width={970}
+          width={720}
           selectedValue={values.remarks}
           disabled={!isEditing}
           onChange={(event: any) => addValue('remarks', event.target.value)}

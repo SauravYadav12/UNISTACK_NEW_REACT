@@ -1,11 +1,9 @@
 import {
-  Box,
   Button,
   Dialog,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  FormControl,
 } from '@mui/material';
 import moment from 'moment';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
@@ -70,13 +68,15 @@ export default function Interviews(props: any) {
     { field: 'clientName', headerName: 'Client Name', width: 120 },
     { field: 'jobTitle', headerName: 'Job Title', width: 180 },
     { field: 'interviewee', headerName: 'Interviewee', width: 150 },
-    { field: 'createdBy', headerName: 'Created by', width: 130 },
+    { field: 'marketingPerson', headerName: 'Created by', width: 130 },
     {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) =>
-        moment(params.value).format('YYYY-MM-DD hh:mm A'),
+      valueFormatter: (params: any) => {
+        // console.log('createdAt', params);
+        return moment(params).format('YYYY-MM-DD hh:mm A');
+      },
     },
   ];
 
@@ -85,9 +85,9 @@ export default function Interviews(props: any) {
     console.log('data--', data[0]);
     setViewData(data[0]);
     setFormTitle(`Interview ID ${row.intId}`);
-    setDrawerOpen(true);
     setMode('view');
     setIsEditing(false);
+    setDrawerOpen(true);
     // alert(`View details for Req ID: ${row.intId}`);
   };
 
@@ -132,7 +132,7 @@ export default function Interviews(props: any) {
           onClose={handleClose}
           sx={{
             '& .MuiDialog-paper': {
-              width: '800px',
+              width: '850px',
               maxWidth: '80%',
             },
           }}
@@ -142,23 +142,10 @@ export default function Interviews(props: any) {
             <DialogContentText>
               Select the Record ID for creating an interview
             </DialogContentText>
-            <Box
-              noValidate
-              component="form"
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                m: 'auto',
-                width: 'fit-content',
-              }}
-            >
-              <FormControl sx={{ mt: 2, minWidth: 300 }}>
-                <CustomSearch
-                  onClick={handleOpenForm}
-                  setDrawerOpen={setDrawerOpen}
-                />
-              </FormControl>
-            </Box>
+            <CustomSearch
+              onClick={handleOpenForm}
+              setDrawerOpen={setDrawerOpen}
+            />
           </DialogContent>
         </Dialog>
         <h3>{props.label}</h3>

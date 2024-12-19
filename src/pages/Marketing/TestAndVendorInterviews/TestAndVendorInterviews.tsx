@@ -1,54 +1,45 @@
-import { Button } from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import moment from 'moment';
 import TestAndVendorForm from './TestAndVendorForm';
+import { interviewsList } from '../../../services/vendorInterviewApi';
+import CustomSearch from './CustomSearch';
+
+type Record = {
+  id: number;
+  name: string;
+  company: string;
+  title: string;
+};
 
 export default function TestAndVendorInterviews() {
-  const [openForm, setOpenForm] = useState(false);
+  // const [openForm, setOpenForm] = useState(false);
+  const [rows, setRows] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
+  const [viewData, setViewData] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [mode, setMode] = useState('view');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
 
-  const rows = [
-    {
-      _id: 1,
-      testID: 'TEST123',
-      testStatus: 'Completed',
-      testEnteredDate: '2024-10-10',
-      testDuration: '2 hours',
-      subjectLine: 'Technical Test',
-      clientName: 'ABC Corp',
-      primeCompany: 'Prime Solutions',
-      vendorCompany: 'XYZ Vendors',
-      createdBy: 'HR Team',
-      createdAt: '2024-10-01T14:30:00',
-    },
-    {
-      _id: 2,
-      testID: 'TEST124',
-      testStatus: 'In Progress',
-      testEnteredDate: '2024-10-12',
-      testDuration: '1.5 hours',
-      subjectLine: 'Aptitude Test',
-      clientName: 'Tech Innovators',
-      primeCompany: 'Prime Innovators',
-      vendorCompany: 'Beta Solutions',
-      createdBy: 'HR Team',
-      createdAt: '2024-10-02T09:45:00',
-    },
-    {
-      _id: 3,
-      testID: 'TEST125',
-      testStatus: 'Scheduled',
-      testEnteredDate: '2024-10-13',
-      testDuration: '3 hours',
-      subjectLine: 'Coding Test',
-      clientName: 'Global Solutions',
-      primeCompany: 'Prime Global',
-      vendorCompany: 'Innovatech Vendors',
-      createdBy: 'HR Team',
-      createdAt: '2024-10-03T12:00:00',
-    },
-  ];
+  useEffect(() => {
+    getInterviews();
+  }, [drawerOpen]);
+
+  const getInterviews = async () => {
+    const res = await interviewsList();
+    // console.log(res);
+    setRows(res.data.data);
+  };
 
   const columns = [
     {
@@ -60,40 +51,65 @@ export default function TestAndVendorInterviews() {
           size="small"
           variant="contained"
           color="primary"
+          sx={{ borderRadius: '10px' }}
           onClick={() => handleViewDetails(params.row)}
         >
           View
         </Button>
       ),
     },
-    { field: '_id', headerName: 'Test ID', width: 100 },
-    { field: 'testStatus', headerName: 'Test Status', width: 120 },
-    { field: 'testEnteredDate', headerName: 'Test Entered Date', width: 120 },
-    { field: 'testDuration', headerName: 'Test Duration', width: 100 },
+    { field: 'testID', headerName: 'Test ID', width: 100 },
+    { field: 'interviewStatus', headerName: 'Test Status', width: 120 },
+    { field: 'interviewDate', headerName: 'Test Entered Date', width: 120 },
+    { field: 'interviewDuration', headerName: 'Test Duration', width: 100 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
     { field: 'clientName', headerName: 'Client Name', width: 120 },
-    { field: 'primeCompany', headerName: 'Prime Company', width: 120 },
+    { field: 'primeVendorCompany', headerName: 'Prime Company', width: 120 },
     { field: 'vendorCompany', headerName: 'Vendor Company', width: 120 },
     { field: 'createdBy', headerName: 'Created by', width: 130 },
     {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) =>
-        moment(params.value).format('YYYY-MM-DD hh:mm A'),
+      valueFormatter: (params: any) => {
+        return moment(params).format('YYYY-MM-DD hh:mm A');
+      },
     },
   ];
 
   const handleViewDetails = (row: any) => {
-    alert(`View details for Req ID: ${row.testID}`);
+    const data = rows.filter((r: any) => r.testID === row.testID);
+    console.log('data--', data[0]);
+    setViewData(data[0]);
+    setFormTitle(`Vendor Interview ID ${row.testID}`);
+    setMode('view');
+    setIsEditing(false);
+    setDrawerOpen(true);
+    // alert(`View details for Req ID: ${row.testID}`);
   };
 
-  const handleOpenForm = () => {
-    setOpenForm(true);
+  const handleOpenForm = (record: Record) => {
+    console.log('record--', record);
+    setSelectedRecord(record);
+    setFormTitle('Add New Vendor Interview');
+    setDrawerOpen(true);
+    setOpenDialog(false);
+    setMode('add');
+    setIsEditing(true);
   };
 
   const handleCloseForm = () => {
-    setOpenForm(false);
+    setDrawerOpen(false);
+  };
+  const handleClickOpen = () => {
+    setOpenDialog(true);
+  };
+  const handleClose = () => {
+    setOpenDialog(false);
+  };
+  const handleEdit = (editMode: any) => {
+    setIsEditing(editMode);
+    setMode(editMode ? 'edit' : 'view');
   };
 
   return (
@@ -101,25 +117,55 @@ export default function TestAndVendorInterviews() {
       <div>
         <Button
           variant="contained"
-          style={{ marginRight: 25, float: 'right' }}
+          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
           size="small"
-          onClick={handleOpenForm}
+          onClick={handleClickOpen}
         >
           Add New
         </Button>
-        <h3>Test And Vendor Interviews</h3>
+        <Dialog
+          open={openDialog}
+          onClose={handleClose}
+          sx={{
+            '& .MuiDialog-paper': {
+              width: '850px',
+              maxWidth: '80%',
+            },
+          }}
+        >
+          <DialogTitle>Get Interview Details</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Select the Record ID for creating an Vendor interview
+            </DialogContentText>
+            <CustomSearch
+              onClick={handleOpenForm}
+              setDrawerOpen={setDrawerOpen}
+            />
+          </DialogContent>
+        </Dialog>
+        <h3>Test and Vendor Interviews</h3>
       </div>
       <CustomDataGrid
-        columns={columns}
         rows={rows}
+        columns={columns}
         onViewDetails={handleViewDetails}
       />
       <CustomDrawer
-        open={openForm}
+        open={drawerOpen}
         onClose={handleCloseForm}
-        title="Add New Test And Vendor Interviews"
+        // title="Add New Interview"
+        title={formTitle}
       >
-        <TestAndVendorForm handleCloseForm={handleCloseForm} />
+        <TestAndVendorForm
+          handleCloseForm={handleCloseForm}
+          selectedRecord={selectedRecord}
+          viewData={viewData}
+          setDrawerOpen={setDrawerOpen}
+          mode={mode}
+          isEditing={isEditing}
+          onEdit={handleEdit}
+        />
       </CustomDrawer>
     </>
   );
