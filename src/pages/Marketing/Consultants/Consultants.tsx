@@ -1,51 +1,32 @@
 import { Button } from '@mui/material';
 import moment from 'moment';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
+import { consultantsList } from '../../../services/consultantApi';
 
 export default function Consultants() {
-  const [openForm, setOpenForm] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [rows, setRows] = useState([]);
+  const [viewData, setViewData] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [mode, setMode] = useState('view');
 
-  const rows = [
-    {
-      _id: 'ID001',
-      status: 'Active',
-      name: 'John Doe',
-      psuedoName: 'J.D.',
-      visaStatus: 'H1B',
-      degree: 'Master of Science',
-      passingYear: '2020',
-      university: 'MIT',
-      createdBy: 'Admin',
-      createdAt: '2024-10-01T14:30:00',
-    },
-    {
-      _id: 'ID002',
-      status: 'Inactive',
-      name: 'Emily Smith',
-      psuedoName: 'E.S.',
-      visaStatus: 'Green Card',
-      degree: 'Bachelor of Technology',
-      passingYear: '2019',
-      university: 'Stanford University',
-      createdBy: 'HR Manager',
-      createdAt: '2024-10-02T09:45:00',
-    },
-    {
-      _id: 'ID003',
-      status: 'Active',
-      name: 'Michael Johnson',
-      psuedoName: 'M.J.',
-      visaStatus: 'OPT',
-      degree: 'Doctor of Philosophy',
-      passingYear: '2021',
-      university: 'Harvard University',
-      createdBy: 'Admin',
-      createdAt: '2024-10-03T12:00:00',
-    },
-  ];
+  useEffect(() => {
+    getConsultants();
+  }, [drawerOpen]);
+
+  const getConsultants = async () => {
+    try {
+      const res = await consultantsList();
+      console.log('Response', res.data.data);
+      setRows(res.data.data);
+    } catch (error) {
+      console.error('Error while fetching API response', error);
+    }
+  };
 
   const columns = [
     {
@@ -57,19 +38,20 @@ export default function Consultants() {
           size="small"
           variant="contained"
           color="primary"
+          sx={{ borderRadius: '10px' }}
           onClick={() => handleViewDetails(params.row)}
         >
           View
         </Button>
       ),
     },
-    { field: '_id', headerName: 'ID', width: 100 },
-    { field: 'status', headerName: 'Status', width: 120 },
-    { field: 'name', headerName: 'Name', width: 120 },
+    { field: 'consultantId', headerName: 'ID', width: 100 },
+    { field: 'consultantStatus', headerName: 'Status', width: 120 },
+    { field: 'consultantName', headerName: 'Name', width: 120 },
     { field: 'psuedoName', headerName: 'Psuedo Name', width: 120 },
     { field: 'visaStatus', headerName: 'Visa Status', width: 150 },
     { field: 'degree', headerName: 'Degree', width: 150 },
-    { field: 'passingYear', headerName: 'Passing year', width: 150 },
+    { field: 'yearPassing', headerName: 'Passing year', width: 150 },
     { field: 'university', headerName: 'University', width: 120 },
     { field: 'createdBy', headerName: 'Created by', width: 130 },
     {
@@ -77,20 +59,35 @@ export default function Consultants() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params.value).format('YYYY-MM-DD hh:mm A'),
+        moment(params).format('YYYY-MM-DD hh:mm A'),
     },
   ];
 
   const handleViewDetails = (row: any) => {
-    alert(`View details for Req ID: ${row.id}`);
+    const data = rows.filter((r: any) => r.consultantId === row.consultantId);
+    // console.log('viewRecord', data[0]);
+    setViewData(data[0]);
+    setFormTitle(`Consultant ID :- ${row.consultantId}`);
+    setMode('view');
+    setIsEditing(false);
+    setDrawerOpen(true);
   };
 
-  const handleOpenForm = () => {
-    setOpenForm(true);
+  const handleAddNew = () => {
+    setFormTitle('Add New Consultant');
+    setViewData({});
+    setMode('add');
+    setIsEditing(true);
+    setDrawerOpen(true);
   };
 
   const handleCloseForm = () => {
-    setOpenForm(false);
+    setDrawerOpen(false);
+  };
+
+  const handleEdit = (editMode: any) => {
+    setIsEditing(editMode);
+    setMode(editMode ? 'edit' : 'view');
   };
 
   return (
@@ -98,9 +95,9 @@ export default function Consultants() {
       <div>
         <Button
           variant="contained"
-          style={{ marginRight: 25, float: 'right' }}
+          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
           size="small"
-          onClick={handleOpenForm}
+          onClick={handleAddNew}
         >
           Add New
         </Button>
@@ -112,11 +109,17 @@ export default function Consultants() {
         onViewDetails={handleViewDetails}
       />
       <CustomDrawer
-        open={openForm}
+        open={drawerOpen}
         onClose={handleCloseForm}
-        title="Add New Consultant"
+        title={formTitle}
       >
-        <ConsultantForm handleCloseForm={handleCloseForm} />
+        <ConsultantForm
+          viewData={viewData}
+          mode={mode}
+          setDrawerOpen={setDrawerOpen}
+          isEditing={isEditing}
+          onEdit={handleEdit}
+        />
       </CustomDrawer>
     </>
   );
