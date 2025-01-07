@@ -452,28 +452,23 @@ export default function RequirementsForm(props: any) {
           />
 
           <Stack>
-            {values?.mComment?.length ? (
-              values?.mComment?.map((comment: any) => {
-                return (
-                  <CustomTextField
-                    label={"Marketing Person's Comment"}
-                    width={970}
-                    disabled={true}
-                    selectedValue={comment.comment}
-                  />
-                );
-              })
-            ) : (
-              <CustomTextField
-                label={"Marketing Person's Comment"}
-                width={970}
-                disabled={!isEditing}
-                selectedValue={comments}
-                onChange={(event: any) => setComments(event.target.value)}
-              />
-            )}
+            {values?.mComment?.filter((comment: any) => comment.comment?.trim())
+              .length
+              ? values?.mComment
+                  ?.filter((comment: any) => comment.comment.trim())
+                  .map((comment: any) => {
+                    return (
+                      <CustomTextField
+                        label={"Marketing Person's Comment"}
+                        width={970}
+                        disabled={true}
+                        selectedValue={comment.comment}
+                      />
+                    );
+                  })
+              : null}
 
-            {isEditing && values?.mComment?.length && (
+            {isEditing && (
               <CustomTextField
                 label={"Marketing Person's Comment"}
                 width={970}
