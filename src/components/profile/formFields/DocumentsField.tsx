@@ -16,9 +16,9 @@ import '../profile.css';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { AttachFile } from '@mui/icons-material';
 import { UserProfile } from '../../../Interfaces/profile';
-import { getBlobFileByUrl } from '../../../utils/utils';
+import { getBlobFileByUrl, isImage } from '../../../utils/utils';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
-
+import './formFields.css'
 export default function DocumentsField({
   field,
   formErrors,
@@ -253,7 +253,8 @@ const SelectedFile = ({
     <>
       <Card
         variant="outlined"
-        sx={{ borderRadius: '3px', width: '38px', height: '45px', p: 0.2 }}
+        className='selected-file-card'
+        sx={{ p: 0.2 }}
       >
         {selectedFile.type === 'application/pdf' ? (
           <Document file={selectedFile} onLoadSuccess={() => {}}>
@@ -261,30 +262,29 @@ const SelectedFile = ({
           </Document>
         ) : (
           <>
-            <embed
-              width={38}
-              height={40}
-              style={{
-                pointerEvents: 'none',
-                scrollbarWidth: 'none',
-                border: 'none',
-                width: '100%',
-                height: '100%',
-              }}
-              src={typeof file === 'string' ? file : URL.createObjectURL(file)}
-            ></embed>
+            {isImage(selectedFile) ? (
+              <>
+                <img
+                  className='img-preview'
+                  src={URL.createObjectURL(selectedFile)}
+                  alt="preview"
+                />
+              </>
+            ) : (
+              <embed
+                width={38}
+                height={40}
+                className='embed-other-files'
+                src={
+                  typeof file === 'string' ? file : URL.createObjectURL(file)
+                }
+              ></embed>
+            )}
           </>
         )}
       </Card>
       <div
-        style={{
-          width: '60%',
-          height: '60px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-        }}
+        className='file-details'
       >
         <p
           className="myDetail-label"
@@ -309,14 +309,7 @@ const SelectedFile = ({
         </p>
       </div>
       <div
-        style={{
-          width: '20%',
-          height: '60px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
+      className='action-buttons'
       >
         <Button size="small" onClick={() => onClickDelete()}>
           <DeleteOutlineIcon style={{ color: 'red', width: '18px' }} />

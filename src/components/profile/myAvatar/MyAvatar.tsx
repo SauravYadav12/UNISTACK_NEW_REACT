@@ -1,5 +1,4 @@
 import { Box } from '@mui/material';
-import { DoNotDisturbAlt } from '@mui/icons-material/';
 import './myAvatar.css';
 import { FaUserCircle } from "react-icons/fa";
 

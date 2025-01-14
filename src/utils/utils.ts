@@ -10,7 +10,7 @@ export const getIUser = () => {
   return JSON.parse(json) as iUser;
 };
 
-export   const getBlobFileByUrl = async (url?: string) => {
+export const getBlobFileByUrl = async (url?: string) => {
   if (!url) return null;
   try {
     const response = await fetch(url);
@@ -24,3 +24,30 @@ export   const getBlobFileByUrl = async (url?: string) => {
     return null;
   }
 };
+
+export function isImage(input: any): boolean {
+  const imageExtensions = /\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff|ico)$/i;
+  const imageMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/webp',
+    'image/svg+xml',
+    'image/tiff',
+    'image/x-icon',
+  ];
+
+  if (input instanceof Blob) {
+    return imageMimeTypes.includes(input.type);
+  } else if (typeof input === 'string') {
+    try {
+      const parsedUrl = new URL(input);
+      const pathname = parsedUrl.pathname;
+      return imageExtensions.test(pathname);
+    } catch (error) {
+      console.error('Invalid URL:', error);
+    }
+  }
+  return false;
+}

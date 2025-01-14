@@ -9,7 +9,8 @@ import Address from '../../../components/profile/Address';
 import Documents from '../../../components/profile/Documents';
 import BankDetailsComponent from '../../../components/profile/BankDetails';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
-import { FaRegIdBadge } from "react-icons/fa";
+import { FaRegIdBadge } from 'react-icons/fa';
+import './profile.css';
 function Profile() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [value, setValue] = React.useState(0);
@@ -27,10 +28,8 @@ function Profile() {
     <>
       <div style={{ marginRight: 25 }}>
         <Box
+          className="top-container"
           sx={{
-            width: '100%',
-            height: 300,
-            borderRadius: 1,
             bgcolor: 'primary.main',
             '&:hover': {
               bgcolor: 'primary.dark',
@@ -39,72 +38,28 @@ function Profile() {
         />
       </div>
       <div style={{ marginRight: 25 }}>
-        <Box
-          sx={{
-            width: '100%',
-            borderRadius: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            columnGap: '10px',
-          }}
-        >
+        <Box className="middle-container">
           <Box
             sx={{
               width: `33%`,
               height: 100,
             }}
           >
-            <Box
-              sx={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                columnGap: '5px',
-                color: 'gray',
-              }}
-            >
-              <FaRegIdBadge fontSize={20} />
-              <Typography variant="h6">{myProfile?.employeeId||'G17275HH1'}</Typography>
+            <Box className="left-box">
+              <FaRegIdBadge color='#032840' fontSize={17} />
+              <Typography variant="h6">
+                {myProfile?.employeeId || 'G17275HH1'}
+              </Typography>
             </Box>
           </Box>
-          <Box
-            sx={{
-              width: `33%`,
-              height: '110px',
-              marginTop: '-100px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              flexDirection: 'column',
-              rowGap: '5px',
-            }}
-          >
+          <Box className="middle-box">
             <MyAvatar avatar={myProfile?.photo} />
-            <Box
-              sx={{
-                height: '50%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                flexDirection: 'column',
-              }}
-            >
+            <Box className="profile-name">
               <span>{myProfile?.name}</span>
             </Box>
           </Box>
 
-          <Box
-            sx={{
-              width: `33%`,
-              height: 100,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
+          <Box className="right-box">
             <Button
               variant="contained"
               style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
