@@ -17,7 +17,6 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { drawerWidth, smallDrawerWidth } from "../constants";
 import "./sidebar.css";
-import { PostAdd } from "@mui/icons-material";
 
 function Sidebar({ toggleSideBar }: any) {
   const navigate = useNavigate();
@@ -45,11 +44,6 @@ function Sidebar({ toggleSideBar }: any) {
       text: "Interviews",
       icon: <InterpreterModeIcon className="icon-style" />,
       path: "/interviews",
-    },
-    {
-      text: "Test And VI",
-      icon: <PostAdd className="icon-style" />,
-      path: "/testandvendorinterviews",
     },
     {
       text: "Consultants",
