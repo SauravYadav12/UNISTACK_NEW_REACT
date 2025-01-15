@@ -32,6 +32,15 @@ function Navbar({ sidebar, toggleSideBar }: any) {
   }, [toggleSideBar]);
 
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const [anchorElAdmin, setAnchorElAdmin] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorElAdmin);
+
+  const handleClickAdmin = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorElAdmin(event.currentTarget);
+  };
+  const handleCloseAdmin = () => {
+    setAnchorElAdmin(null);
+  };
 
   const handleSidebar = () => {
     sidebar();
@@ -54,6 +63,12 @@ function Navbar({ sidebar, toggleSideBar }: any) {
     setAnchorElUser(null);
   };
 
+  const handleUserManagement = () => {
+    navigate('/user-management')
+    handleCloseAdmin();
+  }
+
+
   return (
     <div>
       <AppBar
@@ -71,24 +86,31 @@ function Navbar({ sidebar, toggleSideBar }: any) {
               <ListItemButton>
                 <MenuIcon />
               </ListItemButton>
-            </Typography>
-
-            <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
-              {pages.map((page) => (
-                <MenuItem key={page} onClick={() => {}}>
-                  <Typography textAlign="center">{page}</Typography>
-                </MenuItem>
-              ))}
-            </Box>
-
+            </Typography>  
             <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
               {pages.map((page) => (
                 <Button key={page} onClick={() => {}} sx={{ my: 2, color: "black", display: "block" }} className="nav-heading">
                   {page}
                 </Button>
               ))}
+             {user.role === "super-admin" && ( <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
+                <Button sx={{ my: 2, color: "black", display: "block" }} className="nav-heading" onClick={handleClickAdmin}>Super-Admin</Button>
+                  <Menu
+                  id="basic-menu"
+                  anchorEl={anchorElAdmin}
+                  open={open}
+                  onClose={handleCloseAdmin}
+                  MenuListProps={{
+                    'aria-labelledby': 'basic-button',
+                  }}
+                >
+                  <MenuItem onClick={handleUserManagement}>User Management</MenuItem>
+                  <MenuItem onClick={handleCloseAdmin}>Access Control</MenuItem>
+                  <MenuItem onClick={handleCloseAdmin}>Leaves Management</MenuItem>
+                </Menu>
+              </Box>)}
             </Box>
-
+           
             <Box sx={{ flexGrow: 0, marginRight: "10px" }}>
               <Typography textAlign="center">Welcome, {user.firstName} </Typography>
             </Box>

@@ -1,0 +1,33 @@
+.myDetails-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  row-gap: 20px;
+  column-gap: 20px;
+  flex-wrap: wrap;
+}
+.myDetail-label {
+  text-transform: capitalize;
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0rem;
+  font-weight: 400;
+  line-height: 1rem;
+  color: rgb(42, 53, 71);
+}
+
+.myDetail-value {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.75;
+  font-weight: 600;
+}
+
+.document-container {
+  padding: 10px;
+  display: flex;
+  column-gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+

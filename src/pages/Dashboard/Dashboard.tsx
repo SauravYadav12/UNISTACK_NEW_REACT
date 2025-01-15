@@ -61,7 +61,6 @@ const cardObject: CustomCard[] = [
 ];
 
 function Dashboard() {
-  const token = localStorage.getItem("token");
 
   return (
     <>

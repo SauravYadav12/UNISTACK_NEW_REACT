@@ -5,12 +5,12 @@ import {
   DialogContentText,
   DialogTitle,
 } from '@mui/material';
-import moment from 'moment';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
-import { useEffect, useState } from 'react';
-import InterviewForm from './InterviewForm';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { interviewsList } from '../../../services/interviewApi';
+import { useEffect, useState } from 'react';
+import moment from 'moment';
+import TestAndVendorForm from './TestAndVendorForm';
+import { interviewsList } from '../../../services/vendorInterviewApi';
 import CustomSearch from './CustomSearch';
 
 type Record = {
@@ -20,7 +20,8 @@ type Record = {
   title: string;
 };
 
-export default function Interviews(props: any) {
+export default function TestAndVendorInterviews() {
+  // const [openForm, setOpenForm] = useState(false);
   const [rows, setRows] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
@@ -35,8 +36,7 @@ export default function Interviews(props: any) {
   }, [drawerOpen]);
 
   const getInterviews = async () => {
-    const query = props.query;
-    const res = await interviewsList(query);
+    const res = await interviewsList();
     // console.log(res);
     setRows(res.data.data);
   };
@@ -58,43 +58,40 @@ export default function Interviews(props: any) {
         </Button>
       ),
     },
-    { field: 'intId', headerName: 'Int ID', width: 100 },
-    { field: 'interviewStatus', headerName: 'Int Status', width: 120 },
-    { field: 'consultant', headerName: 'Consultant', width: 120 },
-    { field: 'interviewDate', headerName: 'Int date', width: 100 },
-    { field: 'interviewTime', headerName: 'Int Time (EST)', width: 150 },
-    { field: 'intResult', headerName: 'Int Result', width: 150 },
+    { field: 'testID', headerName: 'Test ID', width: 100 },
+    { field: 'interviewStatus', headerName: 'Test Status', width: 120 },
+    { field: 'interviewDate', headerName: 'Test Entered Date', width: 120 },
+    { field: 'interviewDuration', headerName: 'Test Duration', width: 100 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
     { field: 'clientName', headerName: 'Client Name', width: 120 },
-    { field: 'jobTitle', headerName: 'Job Title', width: 180 },
-    { field: 'interviewee', headerName: 'Interviewee', width: 150 },
-    { field: 'marketingPerson', headerName: 'Created by', width: 130 },
+    { field: 'primeVendorCompany', headerName: 'Prime Company', width: 120 },
+    { field: 'vendorCompany', headerName: 'Vendor Company', width: 120 },
+    { field: 'createdBy', headerName: 'Created by', width: 130 },
     {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) => {
-        // console.log('createdAt', params);
         return moment(params).format('YYYY-MM-DD hh:mm A');
       },
     },
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows.filter((r: any) => r.intId === row.intId);
+    const data = rows.filter((r: any) => r.testID === row.testID);
     console.log('data--', data[0]);
     setViewData(data[0]);
-    setFormTitle(`Interview ID ${row.intId}`);
+    setFormTitle(`Vendor Interview ID ${row.testID}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
-    // alert(`View details for Req ID: ${row.intId}`);
+    // alert(`View details for Req ID: ${row.testID}`);
   };
 
   const handleOpenForm = (record: Record) => {
     console.log('record--', record);
     setSelectedRecord(record);
-    setFormTitle('Add New Interview');
+    setFormTitle('Add New Vendor Interview');
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
@@ -102,7 +99,6 @@ export default function Interviews(props: any) {
   };
 
   const handleCloseForm = () => {
-    setDrawerOpen(false);
     setDrawerOpen(false);
   };
   const handleClickOpen = () => {
@@ -140,7 +136,7 @@ export default function Interviews(props: any) {
           <DialogTitle>Get Interview Details</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Select the Record ID for creating an interview
+              Select the Record ID for creating an Vendor interview
             </DialogContentText>
             <CustomSearch
               onClick={handleOpenForm}
@@ -148,7 +144,7 @@ export default function Interviews(props: any) {
             />
           </DialogContent>
         </Dialog>
-        <h3>{props.label}</h3>
+        <h3>Test and Vendor Interviews</h3>
       </div>
       <CustomDataGrid
         rows={rows}
@@ -161,7 +157,7 @@ export default function Interviews(props: any) {
         // title="Add New Interview"
         title={formTitle}
       >
-        <InterviewForm
+        <TestAndVendorForm
           handleCloseForm={handleCloseForm}
           selectedRecord={selectedRecord}
           viewData={viewData}
