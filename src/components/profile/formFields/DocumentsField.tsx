@@ -16,9 +16,9 @@ import '../profile.css';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { AttachFile } from '@mui/icons-material';
 import { UserProfile } from '../../../Interfaces/profile';
-import { getBlobFileByUrl, isImage } from '../../../utils/utils';
+import { getBlobFileByUrl, isImage, isPDF } from '../../../utils/utils';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
-import './formFields.css'
+import './formFields.css';
 export default function DocumentsField({
   field,
   formErrors,
@@ -233,6 +233,23 @@ const SelectedFile = ({
     }
   };
 
+  const fileMetaData = (input: File | string) => {
+    if (input instanceof File) {
+      return input;
+    }
+
+    const url = new URL(input);
+    const name = url.pathname.split('/').pop() || 'unknown-file';
+    return { name, size: undefined };
+  };
+
+  const imgSrc = (input: File | string) => {
+    if (input instanceof File) {
+      return URL.createObjectURL(input);
+    }
+
+    return input;
+  };
   const initSelectedFile = async () => {
     if (typeof file === 'string') {
       const blob = await getBlobFileByUrl(file);
@@ -247,16 +264,11 @@ const SelectedFile = ({
     console.log('11');
   }, [file]);
 
-  if (!selectedFile) return null;
-  const { name, size } = selectedFile;
+  const { name, size } = fileMetaData(selectedFile || file);
   return (
     <>
-      <Card
-        variant="outlined"
-        className='selected-file-card'
-        sx={{ p: 0.2 }}
-      >
-        {selectedFile.type === 'application/pdf' ? (
+      <Card variant="outlined" className="selected-file-card" sx={{ p: 0.2 }}>
+        {isPDF(selectedFile || file) ? (
           <Document file={selectedFile} onLoadSuccess={() => {}}>
             <Page pageNumber={1} width={38} />
           </Document>
@@ -265,8 +277,8 @@ const SelectedFile = ({
             {isImage(selectedFile) ? (
               <>
                 <img
-                  className='img-preview'
-                  src={URL.createObjectURL(selectedFile)}
+                  className="img-preview"
+                  src={imgSrc(selectedFile || file)}
                   alt="preview"
                 />
               </>
@@ -274,7 +286,7 @@ const SelectedFile = ({
               <embed
                 width={38}
                 height={40}
-                className='embed-other-files'
+                className="embed-other-files"
                 src={
                   typeof file === 'string' ? file : URL.createObjectURL(file)
                 }
@@ -283,9 +295,7 @@ const SelectedFile = ({
           </>
         )}
       </Card>
-      <div
-        className='file-details'
-      >
+      <div className="file-details">
         <p
           className="myDetail-label"
           style={{
@@ -298,19 +308,19 @@ const SelectedFile = ({
           {name.length > 25 && '...'}
         </p>
 
-        <p
-          style={{
-            margin: 0,
-            fontSize: 'small',
-            marginBottom: '5px',
-          }}
-        >
-          {(size / (1024 * 1024)).toFixed(2)} MB
-        </p>
+        {size && (
+          <p
+            style={{
+              margin: 0,
+              fontSize: 'small',
+              marginBottom: '5px',
+            }}
+          >
+            {(size / (1024 * 1024)).toFixed(2)} MB
+          </p>
+        )}
       </div>
-      <div
-      className='action-buttons'
-      >
+      <div className="action-buttons">
         <Button size="small" onClick={() => onClickDelete()}>
           <DeleteOutlineIcon style={{ color: 'red', width: '18px' }} />
         </Button>

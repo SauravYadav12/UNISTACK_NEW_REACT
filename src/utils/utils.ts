@@ -51,3 +51,18 @@ export function isImage(input: any): boolean {
   }
   return false;
 }
+
+export function isPDF(input: any) {
+  if (input instanceof Blob) {
+    return input.type === 'application/pdf';
+  } else if (typeof input === 'string') {
+    try {
+      const urlObj = new URL(input);
+      return urlObj.pathname.toLowerCase().endsWith('.pdf');
+    } catch (error) {
+      console.log('Invalid URL:', error);
+      return false;
+    }
+  }
+  return false;
+}

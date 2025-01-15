@@ -9,6 +9,7 @@ import Address from '../../../components/profile/Address';
 import Documents from '../../../components/profile/Documents';
 import BankDetailsComponent from '../../../components/profile/BankDetails';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import CircularProgress from '@mui/material/CircularProgress';
 import { FaRegIdBadge } from 'react-icons/fa';
 import './profile.css';
 function Profile() {
@@ -23,7 +24,12 @@ function Profile() {
   useEffect(() => {
     getMyProfile();
   }, []);
-  if (!myProfile) return null;
+  if (!myProfile)
+    return (
+      <Box className="loader">
+        <CircularProgress />
+      </Box>
+    );
   return (
     <>
       <div style={{ marginRight: 25 }}>
@@ -46,7 +52,7 @@ function Profile() {
             }}
           >
             <Box className="left-box">
-              <FaRegIdBadge color='#032840' fontSize={17} />
+              <FaRegIdBadge color="#032840" fontSize={17} />
               <Typography variant="h6">
                 {myProfile?.employeeId || 'G17275HH1'}
               </Typography>
