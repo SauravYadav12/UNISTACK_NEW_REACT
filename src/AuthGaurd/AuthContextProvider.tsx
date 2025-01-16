@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext,  useState } from 'react';
 import { UserProfile } from '../Interfaces/profile';
 import { getIUser } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';

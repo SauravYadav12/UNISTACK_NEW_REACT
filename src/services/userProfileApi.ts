@@ -2,7 +2,6 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { UserProfile } from '../Interfaces/profile';
 import { iUser } from '../Interfaces/iUser';
-// import { emptyProfileTemplate } from '../pages/Marketing/Profile/constants';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
@@ -63,13 +62,11 @@ export async function getProfileByUser(user: iUser) {
     'Content-Type': 'application/json',
     Authorization: token,
   };
+
   const { data } = await axios.get<UserProfileApiResponse<UserQueryRes>>(
-    `${BASE_URL}/user-profiles/`,
+    `${BASE_URL}/user-profiles?user=${user.id}`,
     {
       headers,
-      data: {
-        user: user.id,
-      },
     }
   );
   const { error } = data;
