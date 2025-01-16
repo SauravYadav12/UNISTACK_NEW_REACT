@@ -20,7 +20,7 @@ export const getBlobFileByUrl = async (url?: string) => {
 
     return file;
   } catch (error) {
-    console.error('Error fetching blob:', error);
+    console.log('Error fetching blob:', error);
     return null;
   }
 };
@@ -66,3 +66,13 @@ export function isPDF(input: any) {
   }
   return false;
 }
+
+export const getFileMetaData = (input: File | string) => {
+  if (input instanceof File) {
+    return input;
+  }
+
+  const url = new URL(input);
+  const name = url.pathname.split('/').pop() || 'unknown-file';
+  return { name, size: undefined };
+};

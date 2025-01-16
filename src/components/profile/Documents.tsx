@@ -5,10 +5,8 @@ import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import Divider from '@mui/material/Divider';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { getBlobFileByUrl, getIUser } from '../../utils/utils';
-import {
-  getMaterialFileIcon,
-} from "file-extension-icon-js";
+import { getBlobFileByUrl, getFileMetaData, getIUser } from '../../utils/utils';
+import { getMaterialFileIcon } from 'file-extension-icon-js';
 import { updateProfile } from '../../services/userProfileApi';
 
 const Documents = () => {
@@ -28,14 +26,21 @@ const Documents = () => {
     }
   };
 
-
+  const filesInformation = async (input: string) => {
+    if (!input) return null;
+    try {
+      return await getBlobFileByUrl(input);
+    } catch (error) {
+      return await getFileMetaData(input);
+    }
+  };
 
   const initSchema = async () => {
-    const pofilePhotoPromise = getBlobFileByUrl(myProfile!.photo);
-    const aadharPromise = getBlobFileByUrl(myProfile!.aadharCopy);
-    const panPromise = getBlobFileByUrl(myProfile!.panCopy);
-    const resumePromise = getBlobFileByUrl(myProfile?.resume);
-    const [pofilePhoto,aadharCopy, panCopy, resume] = await Promise.all([
+    const pofilePhotoPromise = filesInformation(myProfile!.photo);
+    const aadharPromise = filesInformation(myProfile!.aadharCopy);
+    const panPromise = filesInformation(myProfile!.panCopy);
+    const resumePromise = filesInformation(myProfile!.resume);
+    const [pofilePhoto, aadharCopy, panCopy, resume] = await Promise.all([
       pofilePhotoPromise,
       aadharPromise,
       panPromise,
@@ -71,7 +76,7 @@ const Documents = () => {
         fieldName: 'resume',
       },
     ];
-
+    console.log({ documentsSchema });
     setMyDocuments(documentsSchema);
   };
 
@@ -84,8 +89,11 @@ const Documents = () => {
       <>
         {myDocuments.map((detail, i) => {
           let { label, name, size, url } = detail;
-          if (!name || !size || !url) return null;
-          name = name.split('-').slice(1).join('');
+          if (!url) return null;
+          name = (name || getFileMetaData(url).name)
+            .split('-')
+            .slice(1)
+            .join('');
           return (
             <Card key={i} sx={{ width: '300px', minWidth: '300px' }}>
               <Box
@@ -126,9 +134,12 @@ const Documents = () => {
                 )}
               </Box>
               <Divider />
-              <Box  className="document-container" sx={{ width: '100%' }}>
-
-              <img src={`${getMaterialFileIcon(url)}`} alt="icon" style={{width: '20%', height: '20%' }} />
+              <Box className="document-container" sx={{ width: '100%' }}>
+                <img
+                  src={`${getMaterialFileIcon(url)}`}
+                  alt="icon"
+                  style={{ width: '20%', height: '20%' }}
+                />
                 <div
                   style={{
                     width: '60%',
@@ -147,18 +158,20 @@ const Documents = () => {
                       margin: 0,
                     }}
                   >
-                    {name.slice(0, 25)}
-                    {name.length > 25 && '...'}
+                    {name.slice(0, 20)}
+                    {name.length > 20 && '...'}
                   </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 'small',
-                      paddingBottom: '5px',
-                    }}
-                  >
-                    {(size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
+                  {!!size && (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 'small',
+                        paddingBottom: '5px',
+                      }}
+                    >
+                      {(size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                  )}
                 </div>
                 <div
                   style={{
@@ -195,4 +208,4 @@ interface DocumentsSchema {
   fieldName: DocumentsField;
 }
 
-type DocumentsField = 'aadharCopy' | 'panCopy' | 'resume'|'photo';
+type DocumentsField = 'aadharCopy' | 'panCopy' | 'resume' | 'photo';
