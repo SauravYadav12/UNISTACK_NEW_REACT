@@ -67,7 +67,7 @@ export default function Interviews(props: any) {
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
     { field: 'clientName', headerName: 'Client Name', width: 120 },
     { field: 'jobTitle', headerName: 'Job Title', width: 180 },
-    { field: 'interviewee', headerName: 'Interviewee', width: 150 },
+    { field: 'candidateName', headerName: 'Interviewee', width: 150 },
     { field: 'marketingPerson', headerName: 'Created by', width: 130 },
     {
       field: 'createdAt',
