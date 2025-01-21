@@ -10,7 +10,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Document, Page } from 'react-pdf';
-
+import { toast } from 'react-toastify';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import '../profile.css';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
@@ -74,6 +74,7 @@ export default function DocumentsField({
       } as any);
       setSelectedFile(undefined);
     } catch (error) {
+      toast.error('Failed to upload');
       console.error(error);
     }
   };
@@ -261,7 +262,6 @@ const SelectedFile = ({
 
   React.useEffect(() => {
     initSelectedFile();
-    console.log('11');
   }, [file]);
 
   const { name, size } = fileMetaData(selectedFile || file);
@@ -269,7 +269,7 @@ const SelectedFile = ({
     <>
       <Card variant="outlined" className="selected-file-card" sx={{ p: 0.2 }}>
         {isPDF(selectedFile || file) ? (
-          <Document file={selectedFile} onLoadSuccess={() => {}}>
+          <Document file={selectedFile || file} onLoadSuccess={() => {}}>
             <Page pageNumber={1} width={38} />
           </Document>
         ) : (

@@ -27,15 +27,14 @@ const RenderFields = ({
   const validationError = parentFieldName
     ? (formError as any)[parentFieldName][field.fieldName]
     : (formError as any)[field.fieldName];
-  
-  if (
-    fieldName === 'phoneNumber' ||
-    fieldName === 'emergencyPhoneNumber'
-  ) {
+
+  if (fieldName === 'phoneNumber' || fieldName === 'emergencyPhoneNumber') {
     return (
       <div>
         <Grid item sx={{ m: 1, width: 230 }}>
           <MuiTelInput
+            inputProps={{ maxLength: 15 }}
+            defaultCountry={'IN'}
             onChange={(value) => onChange({ target: { value } } as any)}
             onBlur={() => onBlur && onBlur(field)}
             label={label}
@@ -95,6 +94,8 @@ const RenderFields = ({
               label={label}
               value={myProfile.dob}
               onChange={(newValue) => {
+                console.log(newValue);
+                dayjs(newValue).format('YYYY-MM-DD');
                 onChange({
                   target: {
                     value: newValue ? dayjs(newValue).format('YYYY-MM-DD') : '',

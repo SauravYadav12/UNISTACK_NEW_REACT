@@ -6,13 +6,14 @@ import {
 } from '@mui/material';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { UserProfile } from '../../../Interfaces/profile';
-
+import { toast } from 'react-toastify';
 import {
   Android12Switch,
   convertValuesToEmptyString,
-  documentFormSection,
+  // documentFormSection,
+  DocumentSectionField,
   FormSections,
-  profileFormSections,
+  // profileFormSections,
   SectionField,
 } from './constants';
 import { updateProfile } from '../../../services/userProfileApi';
@@ -26,28 +27,39 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url
 ).toString();
-const ProfileForm = ({ template, onClose }: MyProps) => {
+const ProfileForm = ({
+  template,
+  onClose,
+  profileFormSections,
+  documentFormSection,
+  documentSectionHeader
+}: MyProps) => {
   const auth = useAuth();
   const [myProfile, setMyProfile] = useState<UserProfile>(
     JSON.parse(JSON.stringify(template))
   );
   const [formErrors, setFormErrors] = useState<UserProfile>(() => {
     const templateCopy = convertValuesToEmptyString(template) as UserProfile;
-    console.log({ templateCopy });
     return templateCopy;
   });
   const primaryAddress: AddressTypes = 'permanentAddress';
   const [isBothAddressSame, setIsBothAddressSame] = useState<boolean>(false);
 
   const submitForm = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      toast.error('Invalid submission');
+      return;
+    }
     try {
       const { data } = await updateProfile(myProfile._id, myProfile);
-      if (!data.error && data.data) {
-        auth.setMyProfile(data.data);
-        onClose();
+      if (data.error || !data.data) {
+        toast.error(data.error || 'Something went wrong');
+        return;
       }
+      auth.setMyProfile(data.data);
+      onClose();
     } catch (error) {
+      toast.error('Something went wrong');
       console.log({ error });
     }
   };
@@ -62,7 +74,10 @@ const ProfileForm = ({ template, onClose }: MyProps) => {
     label = label[0].toUpperCase() + label.slice(1);
 
     const setMessage = (val: string) => {
-      if ((!optional && !val) || (customValidation && !customValidation(val))) {
+      if (
+        (!optional && !val) ||
+        (val && customValidation && !customValidation(val))
+      ) {
         message =
           field.fieldType === 'file'
             ? `Please upload ${label}`
@@ -300,30 +315,34 @@ const ProfileForm = ({ template, onClose }: MyProps) => {
           );
         })}
 
-        <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-          <Grid item xs={12}>
-            <h4>
-              {profileFormSections.length + 2}. {'Documents'}
-            </h4>
-          </Grid>
-        </Grid>
+        {documentFormSection.length && (
+          <>
+            <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
+              <Grid item xs={12}>
+                <h4>
+                  {profileFormSections.length + 1}. {documentSectionHeader||'Documents'}
+                </h4>
+              </Grid>
+            </Grid>
 
-        <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-          {documentFormSection.map((field, i) => {
-            return (
-              <DocumentsField
-                key={i}
-                field={field}
-                onChange={(f, e) => {
-                  onChangeProfileValues(undefined, f, e);
-                }}
-                myProfile={myProfile}
-                onBlur={(f) => onBlurFields(f)}
-                formErrors={formErrors}
-              />
-            );
-          })}
-        </Grid>
+            <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
+              {documentFormSection.map((field, i) => {
+                return (
+                  <DocumentsField
+                    key={i}
+                    field={field}
+                    onChange={(f, e) => {
+                      onChangeProfileValues(undefined, f, e);
+                    }}
+                    myProfile={myProfile}
+                    onBlur={(f) => onBlurFields(f)}
+                    formErrors={formErrors}
+                  />
+                );
+              })}
+            </Grid>
+          </>
+        )}
       </form>
     )
   );
@@ -334,6 +353,9 @@ export default ProfileForm;
 interface MyProps {
   template: UserProfile;
   onClose: () => void;
+  profileFormSections: FormSections[];
+  documentFormSection: DocumentSectionField[];
+  documentSectionHeader?:string
 }
 
 type AddressTypes = 'communicationAddress' | 'permanentAddress';

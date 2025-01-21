@@ -13,7 +13,7 @@ import {
   validatePanNumber,
   validatePhone,
 } from '../../../utils/validators';
-
+import dayjs from 'dayjs';
 export function convertValuesToEmptyString(obj: any) {
   obj = JSON.parse(JSON.stringify(obj));
   const isObject = (value: any): boolean =>
@@ -32,17 +32,19 @@ export function convertValuesToEmptyString(obj: any) {
 const addresssectionFields: SectionField[] = [
   {
     fieldName: 'address1',
+    optional: true,
   },
   {
     fieldName: 'address2',
     optional: true,
   },
-  { fieldName: 'country' },
+  { fieldName: 'country', optional: true },
   { fieldName: 'state', optional: true },
   {
     fieldName: 'city',
+    optional: true,
   },
-  { fieldName: 'zip/pin' },
+  { fieldName: 'zip/pin', optional: true },
 ];
 
 export const profileFormSections: FormSections[] = [
@@ -51,13 +53,19 @@ export const profileFormSections: FormSections[] = [
     sectionFields: [
       {
         fieldName: 'name',
+        optional: true,
       },
       {
+        optional: true,
         fieldName: 'dob',
         fieldType: 'date',
         label: 'Date of Birth',
+        customValidation: (val) => {
+          return dayjs(val, 'YYYY-MM-DD', false).isValid();
+        },
       },
       {
+        optional: true,
         parentFieldName: 'email',
         fieldName: 'official',
         label: 'Official Email',
@@ -72,12 +80,14 @@ export const profileFormSections: FormSections[] = [
         customValidation: validateEmail,
       },
       {
+        optional: true,
         fieldName: 'phoneNumber',
         label: 'Phone Number',
         fieldType: 'number',
         customValidation: validatePhone,
       },
       {
+        optional: true,
         fieldName: 'emergencyPhoneNumber',
         label: 'Emergency Phone Number',
         fieldType: 'number',
@@ -101,24 +111,34 @@ export const profileFormSections: FormSections[] = [
     parentFieldName: 'bankDetails',
     sectionFields: [
       {
+        optional: true,
         fieldName: 'bankName',
         label: 'Bank name',
       },
       {
+        optional: true,
         fieldName: 'accountName',
         label: 'Account name',
       },
       {
+        optional: true,
         fieldName: 'accountNumber',
         label: 'Account Number',
       },
-      { fieldName: 'ifscCode', label: 'IFSC Code' },
-      { fieldName: 'swiftCode', label: 'Swift Code' },
-      { fieldName: 'bankAddress', label: 'Bank Address' },
+      { fieldName: 'ifscCode', label: 'IFSC Code', optional: true },
+      { fieldName: 'swiftCode', label: 'Swift Code', optional: true },
+      { fieldName: 'bankAddress', label: 'Bank Address', optional: true },
     ],
   },
 ];
-
+export const profilePhotoSection: DocumentSectionField = {
+  label: 'Profile photo',
+  fieldName: 'photo',
+  fieldType: 'file',
+  customValidation: urlValidator,
+  accept: 'image/*',
+  optional: true,
+};
 export const documentFormSection: DocumentSectionField[] = [
   {
     fieldName: 'aadharCopy',
@@ -129,8 +149,10 @@ export const documentFormSection: DocumentSectionField[] = [
       fieldName: 'aadharNumber',
       label: 'Aadhar Number',
       customValidation: validateAadharNumber,
+      optional: true,
     },
     accept: '.pdf',
+    optional: true,
   },
 
   {
@@ -142,23 +164,20 @@ export const documentFormSection: DocumentSectionField[] = [
       fieldName: 'panNumber',
       label: 'PAN Number',
       customValidation: validatePanNumber,
-      transformValue:(val)=>val.toUpperCase()
+      transformValue: (val) => val.toUpperCase(),
+      optional: true,
     },
     accept: '.pdf',
+    optional: true,
   },
-  {
-    label: 'Profile photo',
-    fieldName: 'photo',
-    fieldType: 'file',
-    customValidation: urlValidator,
-    accept: 'image/*',
-  },
+  profilePhotoSection,
   {
     fieldName: 'resume',
     fieldType: 'file',
     label: 'Resume',
     customValidation: urlValidator,
     accept: '.pdf',
+    optional: true,
   },
 ];
 
@@ -177,7 +196,7 @@ export interface FormSections {
 }
 export interface AssociatedField extends Omit<SectionField, 'parentFieldName'> {
   fieldName: Exclude<UserProfileTopLevelPrimitiveFields, undefined>;
-  transformValue?:(val:string)=>string
+  transformValue?: (val: string) => string;
 }
 export interface DocumentSectionField extends AssociatedField {
   associatedField?: AssociatedField;

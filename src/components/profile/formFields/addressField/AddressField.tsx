@@ -73,7 +73,7 @@ const AddressField = ({
                 >
                   {Country.getAllCountries().map((option) => (
                     <MenuItem key={option.isoCode} value={option.isoCode}>
-                      {option.name} ({option.isoCode}) +{option.phonecode}
+                      {option.name} ({option.isoCode})
                     </MenuItem>
                   ))}
                 </Select>
