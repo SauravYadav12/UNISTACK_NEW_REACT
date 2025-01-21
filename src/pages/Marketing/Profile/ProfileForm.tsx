@@ -10,10 +10,8 @@ import { toast } from 'react-toastify';
 import {
   Android12Switch,
   convertValuesToEmptyString,
-  // documentFormSection,
   DocumentSectionField,
   FormSections,
-  // profileFormSections,
   SectionField,
 } from './constants';
 import { updateProfile } from '../../../services/userProfileApi';
@@ -32,7 +30,7 @@ const ProfileForm = ({
   onClose,
   profileFormSections,
   documentFormSection,
-  documentSectionHeader
+  documentSectionHeader,
 }: MyProps) => {
   const auth = useAuth();
   const [myProfile, setMyProfile] = useState<UserProfile>(
@@ -67,15 +65,20 @@ const ProfileForm = ({
   const validateField = (field: SectionField, section?: FormSections) => {
     let isValueValid = true;
     let message: string = '';
-    let { fieldName, parentFieldName, label, optional, customValidation } =
-      field;
+    let {
+      fieldName,
+      parentFieldName,
+      label,
+      inputAttributes,
+      customValidation,
+    } = field;
     parentFieldName = parentFieldName || section?.parentFieldName;
     label = label || fieldName;
     label = label[0].toUpperCase() + label.slice(1);
 
     const setMessage = (val: string) => {
       if (
-        (!optional && !val) ||
+        (inputAttributes?.required && !val) ||
         (val && customValidation && !customValidation(val))
       ) {
         message =
@@ -293,7 +296,6 @@ const ProfileForm = ({
                 return (
                   <RenderFields
                     formError={formErrors}
-                    required={!field.optional}
                     disabled={false}
                     key={j}
                     parentFieldName={parentFieldName || field.parentFieldName}
@@ -320,7 +322,8 @@ const ProfileForm = ({
             <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
               <Grid item xs={12}>
                 <h4>
-                  {profileFormSections.length + 1}. {documentSectionHeader||'Documents'}
+                  {profileFormSections.length + 1}.{' '}
+                  {documentSectionHeader || 'Documents'}
                 </h4>
               </Grid>
             </Grid>
@@ -355,7 +358,7 @@ interface MyProps {
   onClose: () => void;
   profileFormSections: FormSections[];
   documentFormSection: DocumentSectionField[];
-  documentSectionHeader?:string
+  documentSectionHeader?: string;
 }
 
 type AddressTypes = 'communicationAddress' | 'permanentAddress';

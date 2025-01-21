@@ -1,4 +1,4 @@
-import { HTMLInputTypeAttribute } from 'react';
+import { HTMLInputTypeAttribute, InputHTMLAttributes } from 'react';
 import { styled } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import {
@@ -32,19 +32,16 @@ export function convertValuesToEmptyString(obj: any) {
 const addresssectionFields: SectionField[] = [
   {
     fieldName: 'address1',
-    optional: true,
   },
   {
     fieldName: 'address2',
-    optional: true,
   },
-  { fieldName: 'country', optional: true },
-  { fieldName: 'state', optional: true },
+  { fieldName: 'country' },
+  { fieldName: 'state' },
   {
     fieldName: 'city',
-    optional: true,
   },
-  { fieldName: 'zip/pin', optional: true },
+  { fieldName: 'zip/pin' },
 ];
 
 export const profileFormSections: FormSections[] = [
@@ -53,10 +50,8 @@ export const profileFormSections: FormSections[] = [
     sectionFields: [
       {
         fieldName: 'name',
-        optional: true,
       },
       {
-        optional: true,
         fieldName: 'dob',
         fieldType: 'date',
         label: 'Date of Birth',
@@ -65,7 +60,6 @@ export const profileFormSections: FormSections[] = [
         },
       },
       {
-        optional: true,
         parentFieldName: 'email',
         fieldName: 'official',
         label: 'Official Email',
@@ -80,14 +74,12 @@ export const profileFormSections: FormSections[] = [
         customValidation: validateEmail,
       },
       {
-        optional: true,
         fieldName: 'phoneNumber',
         label: 'Phone Number',
         fieldType: 'number',
         customValidation: validatePhone,
       },
       {
-        optional: true,
         fieldName: 'emergencyPhoneNumber',
         label: 'Emergency Phone Number',
         fieldType: 'number',
@@ -111,23 +103,20 @@ export const profileFormSections: FormSections[] = [
     parentFieldName: 'bankDetails',
     sectionFields: [
       {
-        optional: true,
         fieldName: 'bankName',
         label: 'Bank name',
       },
       {
-        optional: true,
         fieldName: 'accountName',
         label: 'Account name',
       },
       {
-        optional: true,
         fieldName: 'accountNumber',
         label: 'Account Number',
       },
-      { fieldName: 'ifscCode', label: 'IFSC Code', optional: true },
-      { fieldName: 'swiftCode', label: 'Swift Code', optional: true },
-      { fieldName: 'bankAddress', label: 'Bank Address', optional: true },
+      { fieldName: 'ifscCode', label: 'IFSC Code' },
+      { fieldName: 'swiftCode', label: 'Swift Code' },
+      { fieldName: 'bankAddress', label: 'Bank Address' },
     ],
   },
 ];
@@ -137,7 +126,6 @@ export const profilePhotoSection: DocumentSectionField = {
   fieldType: 'file',
   customValidation: urlValidator,
   accept: 'image/*',
-  optional: true,
 };
 export const documentFormSection: DocumentSectionField[] = [
   {
@@ -149,10 +137,12 @@ export const documentFormSection: DocumentSectionField[] = [
       fieldName: 'aadharNumber',
       label: 'Aadhar Number',
       customValidation: validateAadharNumber,
-      optional: true,
+
+      inputAttributes: {
+        maxLength: 12,
+      },
     },
     accept: '.pdf',
-    optional: true,
   },
 
   {
@@ -165,10 +155,12 @@ export const documentFormSection: DocumentSectionField[] = [
       label: 'PAN Number',
       customValidation: validatePanNumber,
       transformValue: (val) => val.toUpperCase(),
-      optional: true,
+
+      inputAttributes: {
+        maxLength: 10,
+      },
     },
     accept: '.pdf',
-    optional: true,
   },
   profilePhotoSection,
   {
@@ -177,7 +169,6 @@ export const documentFormSection: DocumentSectionField[] = [
     label: 'Resume',
     customValidation: urlValidator,
     accept: '.pdf',
-    optional: true,
   },
 ];
 
@@ -186,7 +177,7 @@ export interface SectionField {
   label?: string;
   parentFieldName?: UserProfileParentFields;
   fieldType?: HTMLInputTypeAttribute;
-  optional?: boolean;
+  inputAttributes?: InputHTMLAttributes<HTMLInputElement>;
   customValidation?: (val: any) => boolean;
 }
 export interface FormSections {
