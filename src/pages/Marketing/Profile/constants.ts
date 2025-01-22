@@ -1,4 +1,4 @@
-import { HTMLInputTypeAttribute } from 'react';
+import { HTMLInputTypeAttribute, InputHTMLAttributes } from 'react';
 import { styled } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import {
@@ -13,7 +13,7 @@ import {
   validatePanNumber,
   validatePhone,
 } from '../../../utils/validators';
-
+import dayjs from 'dayjs';
 export function convertValuesToEmptyString(obj: any) {
   obj = JSON.parse(JSON.stringify(obj));
   const isObject = (value: any): boolean =>
@@ -35,10 +35,9 @@ const addresssectionFields: SectionField[] = [
   },
   {
     fieldName: 'address2',
-    optional: true,
   },
   { fieldName: 'country' },
-  { fieldName: 'state', optional: true },
+  { fieldName: 'state' },
   {
     fieldName: 'city',
   },
@@ -56,6 +55,9 @@ export const profileFormSections: FormSections[] = [
         fieldName: 'dob',
         fieldType: 'date',
         label: 'Date of Birth',
+        customValidation: (val) => {
+          return dayjs(val, 'YYYY-MM-DD', false).isValid();
+        },
       },
       {
         parentFieldName: 'email',
@@ -118,7 +120,13 @@ export const profileFormSections: FormSections[] = [
     ],
   },
 ];
-
+export const profilePhotoSection: DocumentSectionField = {
+  label: 'Profile photo',
+  fieldName: 'photo',
+  fieldType: 'file',
+  customValidation: urlValidator,
+  accept: 'image/*',
+};
 export const documentFormSection: DocumentSectionField[] = [
   {
     fieldName: 'aadharCopy',
@@ -129,6 +137,10 @@ export const documentFormSection: DocumentSectionField[] = [
       fieldName: 'aadharNumber',
       label: 'Aadhar Number',
       customValidation: validateAadharNumber,
+
+      inputAttributes: {
+        maxLength: 12,
+      },
     },
     accept: '.pdf',
   },
@@ -142,17 +154,15 @@ export const documentFormSection: DocumentSectionField[] = [
       fieldName: 'panNumber',
       label: 'PAN Number',
       customValidation: validatePanNumber,
-      transformValue:(val)=>val.toUpperCase()
+      transformValue: (val) => val.toUpperCase(),
+
+      inputAttributes: {
+        maxLength: 10,
+      },
     },
     accept: '.pdf',
   },
-  {
-    label: 'Profile photo',
-    fieldName: 'photo',
-    fieldType: 'file',
-    customValidation: urlValidator,
-    accept: 'image/*',
-  },
+  profilePhotoSection,
   {
     fieldName: 'resume',
     fieldType: 'file',
@@ -167,7 +177,7 @@ export interface SectionField {
   label?: string;
   parentFieldName?: UserProfileParentFields;
   fieldType?: HTMLInputTypeAttribute;
-  optional?: boolean;
+  inputAttributes?: InputHTMLAttributes<HTMLInputElement>;
   customValidation?: (val: any) => boolean;
 }
 export interface FormSections {
@@ -177,7 +187,7 @@ export interface FormSections {
 }
 export interface AssociatedField extends Omit<SectionField, 'parentFieldName'> {
   fieldName: Exclude<UserProfileTopLevelPrimitiveFields, undefined>;
-  transformValue?:(val:string)=>string
+  transformValue?: (val: string) => string;
 }
 export interface DocumentSectionField extends AssociatedField {
   associatedField?: AssociatedField;

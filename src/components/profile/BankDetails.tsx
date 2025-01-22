@@ -58,7 +58,7 @@ const BankDetailsComponent = () => {
               }}
             >
               <p className="myDetail-label">{label}</p>
-              <p className="myDetail-value">{value|| '---'}</p>
+              <p className="myDetail-value">{value|| 'NA'}</p>
             </Box>
           );
         })}

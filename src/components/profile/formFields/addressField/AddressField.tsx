@@ -26,7 +26,7 @@ const AddressField = ({
   return (
     <>
       {sectionFields.map((field, j) => {
-        const { fieldName, optional, label } = field;
+        const { fieldName, label } = field;
         const validationError = (formErrors as any)[parentFieldName][
           field.fieldName
         ];
@@ -73,7 +73,7 @@ const AddressField = ({
                 >
                   {Country.getAllCountries().map((option) => (
                     <MenuItem key={option.isoCode} value={option.isoCode}>
-                      {option.name} ({option.isoCode}) +{option.phonecode}
+                      {option.name} ({option.isoCode})
                     </MenuItem>
                   ))}
                 </Select>
@@ -118,7 +118,6 @@ const AddressField = ({
           <RenderFields
             formError={formErrors}
             disabled={disabled}
-            required={!optional}
             key={j}
             parentFieldName={parentFieldName}
             field={field}

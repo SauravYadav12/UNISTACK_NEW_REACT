@@ -12,8 +12,14 @@ import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import CircularProgress from '@mui/material/CircularProgress';
 import { FaRegIdBadge } from 'react-icons/fa';
 import './profile.css';
+import {
+  documentFormSection,
+  profileFormSections,
+  profilePhotoSection,
+} from './constants';
 function Profile() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [profilePictureDrawer, setProfilePictureDrawer] = useState(false);
   const [value, setValue] = React.useState(0);
   const { myProfile, getMyProfile } = useAuth();
 
@@ -54,12 +60,15 @@ function Profile() {
             <Box className="left-box">
               <FaRegIdBadge color="#032840" fontSize={17} />
               <Typography variant="h6">
-                {myProfile?.employeeId || 'G17275HH1'}
+                {myProfile?.employeeId || 'NA'}
               </Typography>
             </Box>
           </Box>
           <Box className="middle-box">
-            <MyAvatar avatar={myProfile?.photo} />
+            <MyAvatar
+              avatar={myProfile?.photo}
+              onEdit={() => setProfilePictureDrawer(!profilePictureDrawer)}
+            />
             <Box className="profile-name">
               <span>{myProfile?.name}</span>
             </Box>
@@ -121,11 +130,28 @@ function Profile() {
         <CustomDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
-          title={'Profile Details'}
+          title={'Edit Profile'}
         >
           <ProfileForm
             template={myProfile}
+            profileFormSections={profileFormSections}
+            documentFormSection={documentFormSection}
             onClose={() => setDrawerOpen(false)}
+          />
+        </CustomDrawer>
+      )}
+      {!!myProfile && (
+        <CustomDrawer
+          open={profilePictureDrawer}
+          onClose={() => setProfilePictureDrawer(false)}
+          title={'Edit Profile'}
+        >
+          <ProfileForm
+            template={myProfile}
+            profileFormSections={[]}
+            documentFormSection={[profilePhotoSection]}
+            documentSectionHeader="Profile photo"
+            onClose={() => setProfilePictureDrawer(false)}
           />
         </CustomDrawer>
       )}

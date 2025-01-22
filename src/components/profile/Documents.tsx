@@ -8,7 +8,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { getBlobFileByUrl, getFileMetaData, getIUser } from '../../utils/utils';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import { updateProfile } from '../../services/userProfileApi';
-
+import './profile.css';
 const Documents = () => {
   const { myProfile, setMyProfile } = useAuth();
   const [myDocuments, setMyDocuments] = useState<DocumentsSchema[]>([]);
@@ -76,7 +76,6 @@ const Documents = () => {
         fieldName: 'resume',
       },
     ];
-    console.log({ documentsSchema });
     setMyDocuments(documentsSchema);
   };
 
@@ -87,6 +86,11 @@ const Documents = () => {
   return (
     <div className="myDetails-container">
       <>
+        {!myDocuments.filter((d) => !!d.url).length && (
+          <>
+            <Box className="loader">Not found</Box>
+          </>
+        )}
         {myDocuments.map((detail, i) => {
           let { label, name, size, url } = detail;
           if (!url) return null;

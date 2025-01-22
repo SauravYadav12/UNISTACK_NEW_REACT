@@ -37,7 +37,6 @@ const CityField = ({
       valueOptions={cityList.map((c) => c.name)}
       selectedValue={selectedCity}
       error={!!validationError}
-      required
       helperText={validationError}
       disabled={disabled}
       onChange={(value: any) => onChange({ target: { value } } as any)}
@@ -48,7 +47,6 @@ const CityField = ({
       <RenderFields
         formError={formErrors}
         disabled={disabled}
-        required={!field.optional}
         parentFieldName={parentFieldName}
         field={field}
         setMyProfile={setMyProfile}

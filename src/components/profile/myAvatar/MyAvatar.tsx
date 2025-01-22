@@ -1,14 +1,22 @@
 import { Box } from '@mui/material';
+import { FaUserCircle } from 'react-icons/fa';
+import { ModeEditOutline } from '@mui/icons-material';
 import './myAvatar.css';
-import { FaUserCircle } from "react-icons/fa";
 
 interface MyProps {
   avatar?: string | File;
+  onEdit: () => void;
 }
 
-const MyAvatar = ({ avatar }: MyProps) => {
+const MyAvatar = ({ avatar, onEdit }: MyProps) => {
   return (
     <Box className="my-avatar-parent-box" sx={{}}>
+      <Box className="edit-box" onClick={() => onEdit()}>
+        <ModeEditOutline
+          sx={{ width: '16px', height: '16px' }}
+          className="edit-icon"
+        />
+      </Box>
       <Box className="my-avatar-box" sx={{}}>
         {!!avatar && (
           <img
@@ -19,7 +27,9 @@ const MyAvatar = ({ avatar }: MyProps) => {
             alt="profile-image"
           />
         )}
-        {!avatar && <FaUserCircle style={{ color: 'white',fontSize:'100', }} />}
+        {!avatar && (
+          <FaUserCircle style={{ color: 'white', fontSize: '100' }} />
+        )}
       </Box>
     </Box>
   );

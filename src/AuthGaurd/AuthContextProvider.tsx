@@ -1,8 +1,8 @@
-import { createContext, useContext,  useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { UserProfile } from '../Interfaces/profile';
 import { getIUser } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';
-
+import { toast } from 'react-toastify';
 const AuthContext = createContext({
   isAuthenticated: false,
   validateLogin: (token: string) => {},
@@ -35,8 +35,12 @@ export const AuthContextProvider = ({ children }: any) => {
       setIsGetMyProfileInProgress(true);
       const iUser = getIUser()!;
       const profile = await getProfileByUser(iUser);
+      if (!profile) {
+        toast.error('Not found');
+      }
       setMyProfile(profile);
     } catch (error) {
+      toast.error('Some thing went wrong');
       console.log(error);
     } finally {
       setIsGetMyProfileInProgress(false);

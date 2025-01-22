@@ -34,7 +34,6 @@ const StateField = ({
         valueOptions={stateList.map((s) => s.name)}
         selectedValue={selectedState}
         error={error}
-        required
         helperText={helperText}
         disabled={disabled}
         onChange={(value: any) => onChange({ target: { value } } as any)}

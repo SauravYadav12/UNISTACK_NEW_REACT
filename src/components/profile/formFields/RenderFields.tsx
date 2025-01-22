@@ -5,10 +5,10 @@ import { Grid, TextField } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { MuiTelInput } from 'mui-tel-input';
+import PhoneField from './PhoneField';
+
 const RenderFields = ({
   disabled,
-  required,
   field,
   formError,
   myProfile,
@@ -27,26 +27,17 @@ const RenderFields = ({
   const validationError = parentFieldName
     ? (formError as any)[parentFieldName][field.fieldName]
     : (formError as any)[field.fieldName];
-  
-  if (
-    fieldName === 'phoneNumber' ||
-    fieldName === 'emergencyPhoneNumber'
-  ) {
+  if (fieldName === 'phoneNumber' || fieldName === 'emergencyPhoneNumber') {
     return (
       <div>
         <Grid item sx={{ m: 1, width: 230 }}>
-          <MuiTelInput
-            onChange={(value) => onChange({ target: { value } } as any)}
-            onBlur={() => onBlur && onBlur(field)}
+          <PhoneField
+            field={field}
             label={label}
+            validationError={validationError}
             value={val}
-            disabled={disabled}
-            fullWidth
-            error={!!validationError}
-            helperText={validationError}
-            required={required}
-            size="small"
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+            onChange={onChange}
+            onBlur={onBlur}
           />
         </Grid>
       </div>
@@ -69,7 +60,7 @@ const RenderFields = ({
               fullWidth
               error={!!validationError}
               helperText={validationError}
-              required={required}
+              inputProps={{ ...field.inputAttributes }}
               size="small"
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
               multiline={fieldType === 'number' ? false : true}
@@ -95,6 +86,8 @@ const RenderFields = ({
               label={label}
               value={myProfile.dob}
               onChange={(newValue) => {
+                console.log(newValue);
+                dayjs(newValue).format('YYYY-MM-DD');
                 onChange({
                   target: {
                     value: newValue ? dayjs(newValue).format('YYYY-MM-DD') : '',
@@ -107,6 +100,7 @@ const RenderFields = ({
               }}
               renderInput={(params) => (
                 <TextField
+                  inputProps={{ ...field.inputAttributes }}
                   onBlur={() => onBlur && onBlur(field)}
                   size="small"
                   {...params}
@@ -129,7 +123,6 @@ export default RenderFields;
 interface RenderFieldProps {
   field: SectionField;
   disabled: boolean;
-  required: boolean;
   parentFieldName?: keyof UserProfile;
   formError: UserProfile;
   myProfile: UserProfile;

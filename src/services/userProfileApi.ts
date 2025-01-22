@@ -5,9 +5,18 @@ import { iUser } from '../Interfaces/iUser';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
-export async function createProfile(userId: string) {
+export async function createProfile(
+  userId: string,
+  email: string,
+  name: string
+) {
   const body: Partial<UserProfile> = {
     user: userId,
+    email: {
+      personal: email,
+      official: email,
+    },
+    name,
   };
   const token = await getJwtToken();
   let headers: any = {

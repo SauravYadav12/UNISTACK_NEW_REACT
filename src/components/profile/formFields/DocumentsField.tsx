@@ -10,7 +10,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Document, Page } from 'react-pdf';
-
+import { toast } from 'react-toastify';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import '../profile.css';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
@@ -74,6 +74,7 @@ export default function DocumentsField({
       } as any);
       setSelectedFile(undefined);
     } catch (error) {
+      toast.error('Failed to upload');
       console.error(error);
     }
   };
@@ -189,7 +190,7 @@ export default function DocumentsField({
                 fullWidth
                 error={!!formErrors[associatedField.fieldName]}
                 helperText={formErrors[associatedField.fieldName]}
-                required={!associatedField.optional}
+                inputProps={{ ...associatedField.inputAttributes }}
                 size="small"
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
                 multiline={
@@ -222,6 +223,7 @@ const SelectedFile = ({
 }: SelectedFileProps) => {
   const [selectedFile, setSelectedFile] = React.useState<File>();
   const [uploadingFile, setUploadingFile] = React.useState<boolean>(false);
+  const [failedToloadPdf, setFailedToloadPdf] = React.useState<boolean>(false);
 
   const handleUploadButton = async () => {
     try {
@@ -261,20 +263,23 @@ const SelectedFile = ({
 
   React.useEffect(() => {
     initSelectedFile();
-    console.log('11');
   }, [file]);
 
-  const { name, size } = fileMetaData(selectedFile || file);
+  let { name, size } = fileMetaData(selectedFile || file);
+  name = name.split('-').slice(1).join('');
   return (
     <>
       <Card variant="outlined" className="selected-file-card" sx={{ p: 0.2 }}>
-        {isPDF(selectedFile || file) ? (
-          <Document file={selectedFile} onLoadSuccess={() => {}}>
+        {isPDF(selectedFile || file) && !failedToloadPdf ? (
+          <Document
+            file={selectedFile || file}
+            onLoadError={() => setFailedToloadPdf(true)}
+          >
             <Page pageNumber={1} width={38} />
           </Document>
         ) : (
           <>
-            {isImage(selectedFile) ? (
+            {isImage(selectedFile||file) ? (
               <>
                 <img
                   className="img-preview"
@@ -304,8 +309,8 @@ const SelectedFile = ({
             marginTop: '5px',
           }}
         >
-          {name.slice(0, 25)}
-          {name.length > 25 && '...'}
+          {name.slice(0, 20)}
+          {name.length > 20 && '...'}
         </p>
 
         {size && (
