@@ -330,6 +330,7 @@ export default function RequirementsForm(props: any) {
                 >
                   Edit
                 </Button>
+            {user.role === 'super-admin' && (
                 <Button
                   variant="contained"
                   color="primary"
@@ -341,6 +342,7 @@ export default function RequirementsForm(props: any) {
                 >
                   Delete
                 </Button>
+                )}
                 <Dialog
                   open={openAlert}
                   onClose={handleClickCloseAlert}
