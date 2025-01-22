@@ -41,6 +41,7 @@ const ProfileForm = ({
     return templateCopy;
   });
   const primaryAddress: AddressTypes = 'permanentAddress';
+  const secondryAddress: AddressTypes = 'communicationAddress';
   const [isBothAddressSame, setIsBothAddressSame] = useState<boolean>(false);
 
   const submitForm = async () => {
@@ -164,8 +165,7 @@ const ProfileForm = ({
     setMyProfile((pre) => {
       return {
         ...pre,
-        communicationAddress: { ...address },
-        permanentAddress: { ...address },
+        [secondryAddress]: { ...address },
       };
     });
   };
@@ -180,13 +180,19 @@ const ProfileForm = ({
   };
 
   useEffect(() => {
-    setMyProfile(JSON.parse(JSON.stringify(template)));
+    const templateCopy: UserProfile = JSON.parse(JSON.stringify(template));
+    templateCopy.permanentAddress.country =
+      templateCopy.permanentAddress.country || 'IN';
+    templateCopy.communicationAddress.country =
+      templateCopy.communicationAddress.country || 'IN';
+    setMyProfile(templateCopy);
   }, [template]);
+
   useEffect(() => {
     if (isBothAddressSame) {
       applySameAddress();
     }
-  }, [myProfile.permanentAddress]);
+  }, [myProfile[primaryAddress], isBothAddressSame]);
 
   return (
     !!myProfile && (

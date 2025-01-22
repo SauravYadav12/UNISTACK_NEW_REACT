@@ -173,7 +173,7 @@ const Documents = () => {
                         paddingBottom: '5px',
                       }}
                     >
-                      {(size / (1024 * 1024)).toFixed(2)} MB
+                      {(size / 1024).toFixed(2)} KB
                     </p>
                   )}
                 </div>
