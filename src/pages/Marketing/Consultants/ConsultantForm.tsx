@@ -47,6 +47,7 @@ const initialValues = {
   cameToUsYear: '',
   originCountry: '',
   lookingToChange: '',
+  createdBy:''
 };
 
 export default function ConsultantForm(props: any) {
@@ -149,6 +150,7 @@ export default function ConsultantForm(props: any) {
     const payload = {
       ...values,
       projects: filteredProjects,
+      createdBy: user.firstName
     };
     try {
       const res = await createConsultant(payload);
