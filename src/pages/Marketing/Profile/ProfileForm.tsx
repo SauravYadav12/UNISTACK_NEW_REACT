@@ -1,5 +1,6 @@
 import {
   Button,
+  CircularProgress,
   FormControlLabel,
   Grid,
   SelectChangeEvent,
@@ -18,7 +19,6 @@ import { updateProfile } from '../../../services/userProfileApi';
 import AddressField from '../../../components/profile/formFields/addressField/AddressField';
 import RenderFields from '../../../components/profile/formFields/RenderFields';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
-
 import { pdfjs } from 'react-pdf';
 import DocumentsField from '../../../components/profile/formFields/DocumentsField';
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -36,6 +36,7 @@ const ProfileForm = ({
   const [myProfile, setMyProfile] = useState<UserProfile>(
     JSON.parse(JSON.stringify(template))
   );
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<UserProfile>(() => {
     const templateCopy = convertValuesToEmptyString(template) as UserProfile;
     return templateCopy;
@@ -45,10 +46,12 @@ const ProfileForm = ({
   const [isBothAddressSame, setIsBothAddressSame] = useState<boolean>(false);
 
   const submitForm = async () => {
+    if (isFormSubmitting) return;
     if (!validateForm()) {
       toast.error('Invalid submission');
       return;
     }
+    setIsFormSubmitting(true);
     try {
       const { data } = await updateProfile(myProfile._id, myProfile);
       if (data.error || !data.data) {
@@ -60,6 +63,8 @@ const ProfileForm = ({
     } catch (error) {
       toast.error('Something went wrong');
       console.log({ error });
+    } finally {
+      setIsFormSubmitting(false);
     }
   };
 
@@ -218,6 +223,7 @@ const ProfileForm = ({
             size="small"
             sx={{ borderRadius: '10px' }}
             onClick={onClose}
+            disabled={isFormSubmitting}
           >
             Cancel
           </Button>
@@ -227,8 +233,18 @@ const ProfileForm = ({
             type="submit"
             size="small"
             sx={{ borderRadius: '10px' }}
+            disabled={isFormSubmitting}
           >
-            Submit
+            {!isFormSubmitting ? (
+              'Submit'
+            ) : (
+              <>
+                <CircularProgress
+                  style={{ color: '#1976d2', width: '14px', height: '14px' }}
+                />
+              <span style={{paddingLeft:'5px'}}>Submitting</span>
+              </>
+            )}
           </Button>
         </Grid>
 
@@ -261,7 +277,9 @@ const ProfileForm = ({
                     formErrors={formErrors}
                     key={i}
                     disabled={
-                      parentFieldName !== primaryAddress && isBothAddressSame
+                      (parentFieldName !== primaryAddress &&
+                        isBothAddressSame) ||
+                      isFormSubmitting
                     }
                     parentFieldName={parentFieldName}
                     myProfile={myProfile}
@@ -274,6 +292,7 @@ const ProfileForm = ({
                   <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
                     <Grid item xs={12}>
                       <FormControlLabel
+                        disabled={isFormSubmitting}
                         control={
                           <Android12Switch checked={isBothAddressSame} />
                         }
@@ -302,7 +321,7 @@ const ProfileForm = ({
                 return (
                   <RenderFields
                     formError={formErrors}
-                    disabled={false}
+                    disabled={isFormSubmitting}
                     key={j}
                     parentFieldName={parentFieldName || field.parentFieldName}
                     field={field}
@@ -338,6 +357,7 @@ const ProfileForm = ({
               {documentFormSection.map((field, i) => {
                 return (
                   <DocumentsField
+                    disabled={isFormSubmitting}
                     key={i}
                     field={field}
                     onChange={(f, e) => {
