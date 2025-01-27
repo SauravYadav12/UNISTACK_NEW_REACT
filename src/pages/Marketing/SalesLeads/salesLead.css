@@ -1,0 +1,12 @@
+.sync-icon-loading {
+  animation: irotate 1s infinite linear;
+}
+
+@keyframes irotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

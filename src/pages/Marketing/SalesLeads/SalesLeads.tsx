@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
@@ -7,12 +7,15 @@ import { getSalesLeads } from '../../../services/salesLeadsApi';
 import { iSalesLead } from '../../../Interfaces/salesLeads';
 import SalesLeadForm from './SalesLeadForm';
 import SalesLeadStatusSelect from '../../../components/salesLead/SalesLeadStatusSelect';
+import SyncIcon from '@mui/icons-material/Sync';
 import { Country } from 'country-state-city';
+import './salesLead.css';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [viewData, setViewData] = useState({});
   const [rows, setRows] = useState<iSalesLead[]>();
   const columns = [
@@ -88,14 +91,21 @@ const SalesLeads = () => {
   };
   async function initSalesLeads() {
     try {
+      setSyncing(true);
       const { data } = await getSalesLeads();
       console.log('Teams Response', data.data);
       setRows(data.data || []);
       console.log(data.data);
     } catch (error) {
       console.error('Error while fetching API response', error);
+    } finally {
+      setSyncing(false);
     }
   }
+
+  const syncSalesLeads = async () => {
+    await initSalesLeads();
+  };
 
   useEffect(() => {
     initSalesLeads();
@@ -104,6 +114,16 @@ const SalesLeads = () => {
   return (
     <>
       <div>
+        <IconButton
+          onClick={syncSalesLeads}
+          disabled={syncing}
+          style={{ marginRight: 25, float: 'right' }}
+        >
+          <SyncIcon
+            className={syncing ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
         <h3>Sales Leads</h3>
       </div>
       <CustomDataGrid
