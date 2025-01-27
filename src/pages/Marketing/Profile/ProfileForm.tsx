@@ -60,9 +60,15 @@ const ProfileForm = ({
       }
       auth.setMyProfile(data.data);
       onClose();
-    } catch (error) {
-      toast.error('Something went wrong');
-      console.log({ error });
+    } catch (error: any) {
+      const { codeName, keyPattern, keyValue } = error.response.data.error;
+      if (codeName === 'DuplicateKey' && keyPattern.employeeId) {
+        toast.error(
+          `Employee Id ${keyValue.employeeId} already Associated with another profile`
+        );
+      } else {
+        toast.error('Something went wrong');
+      }
     } finally {
       setIsFormSubmitting(false);
     }
@@ -242,7 +248,7 @@ const ProfileForm = ({
                 <CircularProgress
                   style={{ color: '#1976d2', width: '14px', height: '14px' }}
                 />
-              <span style={{paddingLeft:'5px'}}>Submitting</span>
+                <span style={{ paddingLeft: '5px' }}>Submitting</span>
               </>
             )}
           </Button>
