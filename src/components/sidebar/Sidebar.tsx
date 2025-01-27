@@ -4,6 +4,7 @@ import InterpreterModeIcon from '@mui/icons-material/InterpreterMode';
 import Face6Icon from '@mui/icons-material/Face6';
 import Diversity1Icon from '@mui/icons-material/Diversity1';
 import SummarizeIcon from '@mui/icons-material/Summarize';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import BadgeIcon from '@mui/icons-material/Badge';
 import unistack_Img from '../../assets/unistack.png';
 import unistack_small_Img from '../../assets/unistack_small.png';
@@ -67,6 +68,11 @@ function Sidebar({ toggleSideBar }: any) {
       text: 'Reports',
       icon: <SummarizeIcon className="icon-style" />,
       path: '/reports',
+    },
+    {
+      text: 'Sales Leads',
+      icon: <PointOfSaleIcon className="icon-style" />,
+      path: '/sales-leads',
     },
   ];
 
