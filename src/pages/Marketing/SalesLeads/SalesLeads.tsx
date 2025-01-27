@@ -7,6 +7,7 @@ import { getSalesLeads } from '../../../services/salesLeadsApi';
 import { iSalesLead } from '../../../Interfaces/salesLeads';
 import SalesLeadForm from './SalesLeadForm';
 import SalesLeadStatusSelect from '../../../components/salesLead/SalesLeadStatusSelect';
+import { Country } from 'country-state-city';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -39,22 +40,30 @@ const SalesLeads = () => {
         `${row.firstName} ${row.lastName}`,
     },
     { field: 'email', headerName: 'Email', width: 250 },
-    { field: 'phone', headerName: 'Phone', width: 150 },
+    {
+      field: 'phone',
+      headerName: 'Phone',
+      width: 150,
+      valueFormatter: (v: any) => v || 'NA',
+    },
     {
       field: 'status',
       headerName: 'Status',
-      width: 100,
+      width: 150,
 
       type: 'actions',
       renderCell: (params: any) => (
-        <SalesLeadStatusSelect
-          row={params.row}
-          setRows={setRows}
-        />
+        <SalesLeadStatusSelect row={params.row} setRows={setRows} />
       ),
     },
-    { field: 'country', headerName: 'Country', width: 100 },
-    { field: 'city', headerName: 'City', width: 100 },
+    {
+      field: 'country',
+      headerName: 'Country',
+      width: 150,
+      valueFormatter: (params: any) =>
+        `${Country.getCountryByCode(params)?.name} (${params})`,
+    },
+    { field: 'city', headerName: 'City', width: 150 },
     {
       field: 'createdAt',
       headerName: 'Created At',
@@ -63,13 +72,6 @@ const SalesLeads = () => {
         moment(params).format('YYYY-MM-DD hh:mm A'),
     },
   ];
-  const handleAddNew = () => {
-    setFormTitle('Add New Teams');
-    setViewData({});
-    setMode('add');
-    setIsEditing(true);
-    setDrawerOpen(true);
-  };
   const handleViewDetails = (row: iSalesLead) => {
     const data = rows?.filter((r) => r._id === row._id);
     if (!data?.length) return;
@@ -88,8 +90,8 @@ const SalesLeads = () => {
     try {
       const { data } = await getSalesLeads();
       console.log('Teams Response', data.data);
-      setRows(data.data?.results || []);
-      console.log(data.data?.results);
+      setRows(data.data || []);
+      console.log(data.data);
     } catch (error) {
       console.error('Error while fetching API response', error);
     }
@@ -102,15 +104,6 @@ const SalesLeads = () => {
   return (
     <>
       <div>
-        <Button
-          variant="contained"
-          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
-          size="small"
-          onClick={handleAddNew}
-          disabled
-        >
-          Add New
-        </Button>
         <h3>Sales Leads</h3>
       </div>
       <CustomDataGrid

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { UserProfile } from '../Interfaces/profile';
 import { iUser } from '../Interfaces/iUser';
-import { ApiQueryRes, PaginateResult } from '../Interfaces/pagination';
+import { ApiQueryRes } from '../Interfaces/apiRes';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
@@ -43,7 +43,7 @@ export async function updateProfile(
     'Content-Type': 'application/json',
     Authorization: token,
   };
-  const response = await axios.put<ApiQueryRes<UserProfile>>(
+  const response = await axios.patch<ApiQueryRes<UserProfile>>(
     `${BASE_URL}/user-profiles/${profileId}`,
     body,
     {
@@ -73,7 +73,7 @@ export async function getProfileByUser(user: iUser) {
     Authorization: token,
   };
 
-  const { data } = await axios.get<ApiQueryRes<PaginateResult<UserProfile>>>(
+  const { data } = await axios.get<ApiQueryRes<UserProfile[]>>(
     `${BASE_URL}/user-profiles?user=${user.id}`,
     {
       headers,
@@ -81,7 +81,7 @@ export async function getProfileByUser(user: iUser) {
   );
   const { error } = data;
   if (error) return;
-  const result = data.data?.results;
+  const result = data.data;
   if (result?.length) {
     return result[0];
   }

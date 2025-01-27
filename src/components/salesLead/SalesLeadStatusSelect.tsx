@@ -34,9 +34,9 @@ const SalesLeadStatusSelect = ({ row, setRows }: SalesLeadStatusProps) => {
     }
   };
   return (
-    <Box sx={{ minWidth: 120 }}>
+    <Box sx={{ minWidth: 120,width:'100%' }}>
       <FormControl fullWidth>
-        <Select value={row.status} label="Status" onChange={handleChange}>
+        <Select fullWidth value={row.status} label="Status" onChange={handleChange}>
           {salesLeadStatusOptions.map((s,i) => {
             return <MenuItem key={i} value={s}>{s}</MenuItem>;
           })}
