@@ -34,11 +34,24 @@ const SalesLeadStatusSelect = ({ row, setRows }: SalesLeadStatusProps) => {
     }
   };
   return (
-    <Box sx={{ minWidth: 120,width:'100%' }}>
+    <Box sx={{ minWidth: 120, width: '100%' }}>
       <FormControl fullWidth>
-        <Select fullWidth value={row.status} label="Status" onChange={handleChange}>
-          {salesLeadStatusOptions.map((s,i) => {
-            return <MenuItem key={i} value={s}>{s}</MenuItem>;
+        <Select
+          sx={{
+            boxShadow: 'none',
+            '.MuiOutlinedInput-notchedOutline': { border: 0 },
+          }}
+          fullWidth
+          value={row.status}
+          label="Status"
+          onChange={handleChange}
+        >
+          {salesLeadStatusOptions.map((s, i) => {
+            return (
+              <MenuItem key={i} value={s}>
+                {s}
+              </MenuItem>
+            );
           })}
         </Select>
       </FormControl>
