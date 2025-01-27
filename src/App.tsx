@@ -20,6 +20,7 @@ import ProtectedRoute from './AuthGaurd/ProtectedRoute';
 import UserManagement from './pages/UserManagement/UserManagement';
 import TestAndVendorInterviews from './pages/Marketing/TestAndVendorInterviews/TestAndVendorInterviews';
 import ListTabs from './components/tabs/CustomTabs';
+import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -90,6 +91,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="sales-leads"
+              element={
+                <ProtectedRoute>
+                  <SalesLead />
                 </ProtectedRoute>
               }
             />

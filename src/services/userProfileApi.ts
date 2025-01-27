@@ -2,6 +2,7 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { UserProfile } from '../Interfaces/profile';
 import { iUser } from '../Interfaces/iUser';
+import { ApiQueryRes } from '../Interfaces/apiRes';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
@@ -23,7 +24,7 @@ export async function createProfile(
     'Content-Type': 'application/json',
     Authorization: token,
   };
-  const response = await axios.post<UserProfileApiResponse>(
+  const response = await axios.post<ApiQueryRes<UserProfile>>(
     `${BASE_URL}/user-profiles`,
     body,
     {
@@ -42,7 +43,7 @@ export async function updateProfile(
     'Content-Type': 'application/json',
     Authorization: token,
   };
-  const response = await axios.put<UserProfileApiResponse>(
+  const response = await axios.patch<ApiQueryRes<UserProfile>>(
     `${BASE_URL}/user-profiles/${profileId}`,
     body,
     {
@@ -57,7 +58,7 @@ export async function getProfile(profileId: string) {
     'Content-Type': 'application/json',
     Authorization: token,
   };
-  const response = await axios.get<UserProfileApiResponse>(
+  const response = await axios.get<ApiQueryRes<UserProfile>>(
     `${BASE_URL}/user-profiles/${profileId}`,
     {
       headers,
@@ -72,7 +73,7 @@ export async function getProfileByUser(user: iUser) {
     Authorization: token,
   };
 
-  const { data } = await axios.get<UserProfileApiResponse<UserQueryRes>>(
+  const { data } = await axios.get<ApiQueryRes<UserProfile[]>>(
     `${BASE_URL}/user-profiles?user=${user.id}`,
     {
       headers,
@@ -80,21 +81,8 @@ export async function getProfileByUser(user: iUser) {
   );
   const { error } = data;
   if (error) return;
-  const result = data.data?.results;
+  const result = data.data;
   if (result?.length) {
     return result[0];
   }
-}
-
-export interface UserProfileApiResponse<T = UserProfile> {
-  error?: any;
-  data?: T;
-  message?: string;
-  status?: string;
-}
-
-interface UserQueryRes {
-  results?: UserProfile[];
-  currentPage?: number;
-  totalPages?: number;
 }

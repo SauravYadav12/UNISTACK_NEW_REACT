@@ -49,6 +49,13 @@ export const profileFormSections: FormSections[] = [
     sectionTitle: 'Personal Details',
     sectionFields: [
       {
+        fieldName: 'employeeId',
+        label:'Employee ID',
+        inputAttributes: {
+          required: true,
+        },
+      },
+      {
         fieldName: 'name',
       },
       {
@@ -72,6 +79,9 @@ export const profileFormSections: FormSections[] = [
         label: 'Personal Email',
         fieldType: 'email',
         customValidation: validateEmail,
+        inputAttributes: {
+          required: true,
+        },
       },
       {
         fieldName: 'phoneNumber',

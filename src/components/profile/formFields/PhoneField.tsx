@@ -5,6 +5,7 @@ import { getExampleNumber } from 'libphonenumber-js';
 import examples from 'libphonenumber-js/examples.mobile.json';
 const PhoneField = ({
   field,
+  disabled,
   label,
   value,
   validationError,
@@ -28,6 +29,7 @@ const PhoneField = ({
 
   return (
     <MuiTelInput
+      disabled={disabled}
       inputProps={{ ...field.inputAttributes, maxLength: maxPhoneLength }}
       defaultCountry={'IN'}
       onChange={onPhoneChange}
@@ -49,6 +51,7 @@ interface MyProps {
   field: SectionField;
   label: string;
   value: string;
+  disabled: boolean;
   validationError: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: SectionField) => void;

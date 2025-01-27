@@ -6,6 +6,7 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import PhoneField from './PhoneField';
+import { getIUser } from '../../../utils/utils';
 
 const RenderFields = ({
   disabled,
@@ -16,11 +17,15 @@ const RenderFields = ({
   onChange,
   onBlur,
 }: RenderFieldProps) => {
+  const user = getIUser();
   const {
     fieldName,
     fieldType = 'text',
     label = fieldName.charAt(0).toUpperCase() + fieldName.slice(1),
   } = field;
+
+  if (fieldName === 'employeeId' && user?.role !== 'super-admin') return null;
+
   const val = parentFieldName
     ? (myProfile as any)[parentFieldName][field.fieldName]
     : (myProfile as any)[field.fieldName];
@@ -32,6 +37,7 @@ const RenderFields = ({
       <div>
         <Grid item sx={{ m: 1, width: 230 }}>
           <PhoneField
+            disabled={disabled}
             field={field}
             label={label}
             validationError={validationError}
@@ -83,6 +89,7 @@ const RenderFields = ({
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              disabled={disabled}
               label={label}
               value={myProfile.dob}
               onChange={(newValue) => {
@@ -100,6 +107,7 @@ const RenderFields = ({
               }}
               renderInput={(params) => (
                 <TextField
+                  disabled={disabled}
                   inputProps={{ ...field.inputAttributes }}
                   onBlur={() => onBlur && onBlur(field)}
                   size="small"

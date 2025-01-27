@@ -21,6 +21,7 @@ import { getMaterialFileIcon } from 'file-extension-icon-js';
 import './formFields.css';
 export default function DocumentsField({
   field,
+  disabled,
   formErrors,
   onChange,
   myProfile,
@@ -128,6 +129,7 @@ export default function DocumentsField({
           >
             {!!currentFile ? (
               <SelectedFile
+                disabled={disabled}
                 file={currentFile}
                 onClickDelete={removeFile}
                 onClickUpload={handleMyDocumentUpload}
@@ -143,6 +145,7 @@ export default function DocumentsField({
                   }}
                 >
                   <Button
+                    disabled={disabled}
                     variant="contained"
                     component="label"
                     startIcon={<AttachFile />}
@@ -175,6 +178,7 @@ export default function DocumentsField({
           <div style={{ marginTop: '15px' }}>
             <Grid item sx={{ m: 1 }}>
               <TextField
+                disabled={disabled}
                 onBlur={() => onBlur && onBlur(associatedField)}
                 label={associatedField.label}
                 type={associatedField.fieldType}
@@ -206,6 +210,7 @@ export default function DocumentsField({
 }
 
 interface MyProps {
+  disabled: boolean;
   field: DocumentSectionField;
   myProfile: UserProfile;
   formErrors: UserProfile;
@@ -217,6 +222,7 @@ interface MyProps {
 }
 
 const SelectedFile = ({
+  disabled,
   file,
   onClickDelete,
   onClickUpload,
@@ -266,7 +272,12 @@ const SelectedFile = ({
   }, [file]);
 
   let { name, size } = fileMetaData(selectedFile || file);
-  name = name.split('-').slice(1).join('');
+  if (
+    name.includes('-') &&
+    new Date(parseInt(name.split('-')[0])).toString() !== 'Invalid Date'
+  ) {
+    name = name.split('-').slice(1).join('');
+  }
   return (
     <>
       <Card variant="outlined" className="selected-file-card" sx={{ p: 0.2 }}>
@@ -279,7 +290,7 @@ const SelectedFile = ({
           </Document>
         ) : (
           <>
-            {isImage(selectedFile||file) ? (
+            {isImage(selectedFile || file) ? (
               <>
                 <img
                   className="img-preview"
@@ -321,24 +332,37 @@ const SelectedFile = ({
               marginBottom: '5px',
             }}
           >
-            {(size / (1024)).toFixed(2)} KB
+            {(size / 1024).toFixed(2)} KB
           </p>
         )}
       </div>
       <div className="action-buttons">
-        <Button size="small" onClick={() => onClickDelete()}>
+        <Button
+          disabled={disabled}
+          size="small"
+          onClick={() => onClickDelete()}
+        >
           <DeleteOutlineIcon style={{ color: 'red', width: '18px' }} />
         </Button>
         {typeof file === 'string' ? (
           <>
-            <Button target="_blank" href={file} size="small">
+            <Button
+              disabled={disabled}
+              target="_blank"
+              href={file}
+              size="small"
+            >
               <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
             </Button>
           </>
         ) : (
           <>
             {!uploadingFile ? (
-              <Button size="small" onClick={handleUploadButton}>
+              <Button
+                disabled={disabled}
+                size="small"
+                onClick={handleUploadButton}
+              >
                 <FileUploadIcon style={{ color: '#1976d2', width: '18px' }} />
               </Button>
             ) : (
@@ -355,6 +379,7 @@ const SelectedFile = ({
 
 interface SelectedFileProps {
   file: File | string;
+  disabled: boolean;
   onClickDelete: () => void;
   onClickUpload: () => void;
 }
