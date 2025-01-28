@@ -33,7 +33,6 @@ const SalesLeadForm = (props: any) => {
   const [values, setValues] = useState(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [errors, setErrors] = useState(initialValues);
   const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
 
   useEffect(() => {
@@ -75,7 +74,8 @@ const SalesLeadForm = (props: any) => {
       if (!data.data?.comments.length) {
         return;
       }
-      setValues((pre) => ({ ...pre, comments: [...data.data!.comments] }));
+      setValues(data.data);
+      onEdit(data.data)
     } catch (error) {
       console.log(error);
     }
@@ -233,7 +233,9 @@ const AlertBox = ({ open, onClose, onAgree }: AlertBoxProps) => {
 };
 
 interface AlertBoxProps {
+
   open: boolean;
   onClose: () => void;
   onAgree: () => void;
+
 }
