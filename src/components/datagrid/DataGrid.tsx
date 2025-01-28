@@ -1,7 +1,6 @@
-
-import * as React from "react";
-import Box from "@mui/material/Box";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
 export default function CustomDataGrid(props: any) {
   const [rows, setRows] = React.useState([]);
@@ -15,17 +14,18 @@ export default function CustomDataGrid(props: any) {
   return (
     <Box sx={{ height: 500, width: 0.98, pr: 5 }}>
       <DataGrid
+        loading={props.loading}
         rows={rows}
         disableColumnFilter
         disableColumnSelector
         disableDensitySelector
         columns={columns}
-        getRowId={(row:any) => row._id}
+        getRowId={(row: any) => row._id}
         slots={{ toolbar: GridToolbar }}
         slotProps={{
           toolbar: {
-            showQuickFilter: true
-          }
+            showQuickFilter: true,
+          },
         }}
       />
     </Box>

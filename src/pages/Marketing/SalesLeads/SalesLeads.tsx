@@ -85,17 +85,22 @@ const SalesLeads = () => {
     setIsEditing(false);
     setDrawerOpen(true);
   };
-  const handleEdit = (editMode: any) => {
-    setIsEditing(editMode);
-    setMode(editMode ? 'edit' : 'view');
+  const handleEdit = (row: iSalesLead) => {
+    setRows((pre) => {
+      if (!pre) return;
+      pre = pre.map((r) => {
+        if (r._id === row._id) return row;
+        return r;
+      });
+      return [...pre];
+    });
   };
   async function initSalesLeads() {
     try {
       setSyncing(true);
       const { data } = await getSalesLeads();
-      console.log('Teams Response', data.data);
       setRows(data.data || []);
-      console.log(data.data);
+      console.log('getting');
     } catch (error) {
       console.error('Error while fetching API response', error);
     } finally {
@@ -109,7 +114,7 @@ const SalesLeads = () => {
 
   useEffect(() => {
     initSalesLeads();
-  }, [drawerOpen]);
+  }, []);
 
   return (
     <>
@@ -127,6 +132,7 @@ const SalesLeads = () => {
         <h3>Sales Leads</h3>
       </div>
       <CustomDataGrid
+        loading={syncing}
         columns={columns}
         rows={rows || []}
         onViewDetails={handleViewDetails}
