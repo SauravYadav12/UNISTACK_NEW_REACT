@@ -89,21 +89,16 @@ const RenderFields = ({
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              onClose={() => onBlur && onBlur(field)}
               disabled={disabled}
               label={label}
               value={myProfile.dob}
               onChange={(newValue) => {
-                console.log(newValue);
-                dayjs(newValue).format('YYYY-MM-DD');
                 onChange({
                   target: {
                     value: newValue ? dayjs(newValue).format('YYYY-MM-DD') : '',
                   },
                 } as any);
-                const timeOut = setTimeout(() => {
-                  onBlur && onBlur(field);
-                  clearTimeout(timeOut);
-                }, 0);
               }}
               renderInput={(params) => (
                 <TextField

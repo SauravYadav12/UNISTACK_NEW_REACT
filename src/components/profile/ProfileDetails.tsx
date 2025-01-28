@@ -3,13 +3,13 @@ import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { MyDetail } from '../../Interfaces/profile';
 import { Box } from '@mui/material';
 import './profile.css';
+import dayjs from 'dayjs';
 const ProfileDetails = () => {
   const { myProfile } = useAuth();
   const [MyDetails, setMyDetails] = useState<MyDetail[]>([]);
 
   const initializeDetails = () => {
     const name = myProfile?.name;
-    const dob = myProfile?.dob ? new Date(myProfile.dob) : undefined;
     const personalEmail = myProfile?.email.personal;
     const professionalEmail = myProfile?.email.personal;
     const phoneNumber = myProfile?.phoneNumber;
@@ -21,9 +21,7 @@ const ProfileDetails = () => {
       },
       {
         label: 'Date of birth',
-        value: dob
-          ? `${dob.getDate()}/${dob.getMonth()}/${dob.getFullYear()}`
-          : '',
+        value: myProfile?.dob ? dayjs(myProfile.dob).format('YYYY-MM-DD') : '',
       },
       {
         label: 'Peronal Email',

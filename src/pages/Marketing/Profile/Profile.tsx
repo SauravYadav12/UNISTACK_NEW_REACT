@@ -11,6 +11,7 @@ import BankDetailsComponent from '../../../components/profile/BankDetails';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import CircularProgress from '@mui/material/CircularProgress';
 import { FaRegIdBadge } from 'react-icons/fa';
+import coverImage from '../../../assets/unistack_banner.png';
 import './profile.css';
 import {
   documentFormSection,
@@ -47,7 +48,13 @@ function Profile() {
               bgcolor: 'primary.dark',
             },
           }}
-        />
+        >
+          <img
+            src={coverImage}
+            alt="profile cover image"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Box>
       </div>
       <div style={{ marginRight: 25 }}>
         <Box className="middle-container">
