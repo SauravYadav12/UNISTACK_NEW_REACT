@@ -19,12 +19,14 @@ import { updateProfile } from '../../../services/userProfileApi';
 import AddressField from '../../../components/profile/formFields/addressField/AddressField';
 import RenderFields from '../../../components/profile/formFields/RenderFields';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
-import { pdfjs } from 'react-pdf';
 import DocumentsField from '../../../components/profile/formFields/DocumentsField';
+import { pdfjs } from 'react-pdf';
+import { uploadFile } from '../../../services/storageApi';
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url
 ).toString();
+
 const ProfileForm = ({
   template,
   onClose,
@@ -41,9 +43,40 @@ const ProfileForm = ({
     const templateCopy = convertValuesToEmptyString(template) as UserProfile;
     return templateCopy;
   });
+  const [selectedBlobFiles, setSelectedBlobFiles] = React.useState<
+    SelectedBlobFiles[]
+  >([]);
   const primaryAddress: AddressTypes = 'permanentAddress';
   const secondryAddress: AddressTypes = 'communicationAddress';
   const [isBothAddressSame, setIsBothAddressSame] = useState<boolean>(false);
+  const handleMyDocumentUpload = async (
+    field: DocumentSectionField,
+    file?: File
+  ) => {
+    if (!file) return;
+    try {
+      const { data } = await uploadFile(file);
+      onChangeProfileValues(undefined, field, {
+        target: {
+          value: data.data.url,
+        },
+      } as any);
+      setSelectedBlobFiles((pre) =>
+        pre.filter((f) => f.field.fieldName !== field.fieldName)
+      );
+      return { field, value: data.data.url };
+    } catch (error) {
+      toast.error('Failed to upload');
+      console.error(error);
+    }
+  };
+
+  const uploadUnsavedFiles = async () => {
+    const promise = [...selectedBlobFiles].map((f) =>
+      handleMyDocumentUpload(f.field, f.value)
+    );
+    return await Promise.all(promise);
+  };
 
   const submitForm = async () => {
     if (isFormSubmitting) return;
@@ -51,9 +84,20 @@ const ProfileForm = ({
       toast.error('Invalid submission');
       return;
     }
+
     setIsFormSubmitting(true);
+    const payload = { ...myProfile };
+
+    if (selectedBlobFiles.length) {
+      const res = await uploadUnsavedFiles();
+      for (const element of res) {
+        if (!element) continue;
+        payload[element.field.fieldName] = element.value;
+      }
+    }
+
     try {
-      const { data } = await updateProfile(myProfile._id, myProfile);
+      const { data } = await updateProfile(myProfile._id, payload);
       if (data.error || !data.data) {
         toast.error(data.error || 'Something went wrong');
         return;
@@ -170,7 +214,12 @@ const ProfileForm = ({
       };
     });
   };
-
+  const handleChangeBlobFile = (field: DocumentSectionField, file?: File) => {
+    setSelectedBlobFiles((pre) => {
+      pre = pre.filter((pf) => pf.field.fieldName !== field.fieldName);
+      return [...pre, { field, value: file }];
+    });
+  };
   const applySameAddress = () => {
     const address = myProfile[primaryAddress];
     setMyProfile((pre) => {
@@ -361,9 +410,15 @@ const ProfileForm = ({
 
             <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
               {documentFormSection.map((field, i) => {
+                const selectedFile = selectedBlobFiles.find(
+                  (f) => f.field.fieldName === field.fieldName
+                );
                 return (
                   <DocumentsField
                     disabled={isFormSubmitting}
+                    selectedFile={selectedFile?.value}
+                    setSelectedFile={(f) => handleChangeBlobFile(field, f)}
+                    onUpload={(f) => handleMyDocumentUpload(field, f)}
                     key={i}
                     field={field}
                     onChange={(f, e) => {
@@ -394,3 +449,7 @@ interface MyProps {
 }
 
 type AddressTypes = 'communicationAddress' | 'permanentAddress';
+interface SelectedBlobFiles {
+  field: DocumentSectionField;
+  value: File | undefined;
+}
