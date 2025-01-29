@@ -18,6 +18,7 @@ import Comment from '../../../components/salesLead/Comment';
 import CustomSelectField from '../../../components/select/CustomSelectField';
 import { salesLeadStatusOptions } from './constants';
 import { getIUser } from '../../../utils/utils';
+import { Country } from 'country-state-city';
 export const initialValues: InitialValues = {
   firstName: '',
   lastName: '',
@@ -75,7 +76,7 @@ const SalesLeadForm = (props: any) => {
         return;
       }
       setValues(data.data);
-      onEdit(data.data)
+      onEdit(data.data);
     } catch (error) {
       console.log(error);
     }
@@ -112,7 +113,6 @@ const SalesLeadForm = (props: any) => {
         )}
       </Grid>
       <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-        {/* Section 1: Consultant Info */}
         <Grid item xs={12}>
           <h4>1. Sender Info</h4>
         </Grid>
@@ -137,21 +137,16 @@ const SalesLeadForm = (props: any) => {
         <CustomTextField
           label="Phone"
           width={220}
-          selectedValue={values.phone}
+          selectedValue={values.phone || 'NA'}
           disabled
         />
-        <CustomSelectField
-          label="Status"
-          valueOptions={salesLeadStatusOptions}
-          disabled={!isEditing}
-          selectedValue={values.status}
-          onChange={(value: any) => addValue('status', value)}
-          width={220}
-        />
+
         <CustomTextField
           label="Country"
           width={220}
-          selectedValue={values.country}
+          selectedValue={`${Country.getCountryByCode(values.country)?.name} (${
+            values.country
+          })`}
           disabled
         />
         <CustomTextField
@@ -171,11 +166,22 @@ const SalesLeadForm = (props: any) => {
             disabled
           />
         </Grid>
+        <Grid item xs={12}>
+          <h4>3. Status</h4>
+        </Grid>
+        <CustomSelectField
+          label="Status"
+          valueOptions={salesLeadStatusOptions}
+          disabled={!isEditing}
+          selectedValue={values.status}
+          onChange={(value: any) => addValue('status', value)}
+          width={220}
+        />
 
         {mode === 'view' && (
           <>
             <Grid item xs={12}>
-              <h4>3. Comments</h4>
+              <h4>4. Comments</h4>
             </Grid>
 
             <Comment
@@ -233,9 +239,7 @@ const AlertBox = ({ open, onClose, onAgree }: AlertBoxProps) => {
 };
 
 interface AlertBoxProps {
-
   open: boolean;
   onClose: () => void;
   onAgree: () => void;
-
 }
