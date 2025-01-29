@@ -20,6 +20,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {
   appliedForOptions,
   assignedToOptions,
+  duration,
   gotRequirementForm,
   requestStatusOptions,
   taxTypeOptions,
@@ -31,6 +32,7 @@ import {
   updateRequirement,
 } from '../../../services/requirementApi';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import CustomSelectField from '../../../components/select/CustomSelectField';
 
 const initialValues = {
   reqStatus: '',
@@ -61,7 +63,7 @@ const initialValues = {
   vendorPersonName: '',
   vendorPhone: '',
   vendorEmail: '',
-  reqEnteredDate: dayjs().format('YYYY-MM-DD'),
+  // reqEnteredDate: null,
   gotReqFrom: '',
   primaryTech: '',
   jobTitle: '',
@@ -81,6 +83,7 @@ export default function RequirementsForm(props: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [openAlert, setOpenAlert] = useState(false);
   const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setValues(viewData);
@@ -99,7 +102,8 @@ export default function RequirementsForm(props: any) {
 
   async function handleSubmitForm(event: any) {
     event.preventDefault();
-
+    if (isSubmitting) return;
+    setIsSubmitting(true)
     // console.log('mComment', comments);
     const newErrors: any = {};
     if (!values.reqStatus) newErrors.reqStatus = 'Req Status is required';
@@ -113,10 +117,11 @@ export default function RequirementsForm(props: any) {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setIsSubmitting(false)
       return; // Stop the form submission
     }
     const commentsPayload = {
-      username: user.firstName,
+      username: `${user.firstName} ${user.lastName}`,
       date: new Date(),
       comment: comments,
     };
@@ -135,6 +140,8 @@ export default function RequirementsForm(props: any) {
       console.log('POST', res);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -144,7 +151,7 @@ export default function RequirementsForm(props: any) {
       return;
     }
     const commentsPayload = {
-      username: user.firstName,
+      username: `${user.firstName} ${user.lastName}`,
       date: new Date(),
       comment: comments,
     };
@@ -196,8 +203,10 @@ export default function RequirementsForm(props: any) {
   };
 
   const addValue = (key: any, newValue: any) => {
-    console.log('AddValues', newValue);
-    if (key === 'reqEnteredDate') {
+    // console.log('AddValues', newValue);
+    setErrors(initialValues)
+    const updatedValues: any = {...values, [key]: newValue}
+    if (key === 'createdAt') {
       const formattedDate = newValue
         ? dayjs(newValue).format('YYYY-MM-DD')
         : null;
@@ -292,6 +301,7 @@ export default function RequirementsForm(props: any) {
                 onClick={handleSubmitForm}
                 size="small"
                 sx={{ borderRadius: '10px' }}
+                disabled={isSubmitting}
               >
                 Submit
               </Button>
@@ -376,7 +386,7 @@ export default function RequirementsForm(props: any) {
           <Grid item xs={12}>
             <h4>1. Requirement & Communication</h4>
           </Grid>
-          <CustomSelect
+          <CustomSelectField
             label="Req Status"
             valueOptions={requestStatusOptions}
             selectedValue={values.reqStatus}
@@ -388,7 +398,7 @@ export default function RequirementsForm(props: any) {
             error={!!errors.reqStatus}
             helperText={errors.reqStatus}
           />
-          <CustomSelect
+          <CustomSelectField
             label="Assigned To"
             valueOptions={assignedToOptions}
             selectedValue={values.assignedTo}
@@ -407,7 +417,7 @@ export default function RequirementsForm(props: any) {
             selectedValue={values.nextStep}
             onChange={(event: any) => addValue('nextStep', event.target.value)}
           />
-          <CustomSelect
+          <CustomSelectField
             label="Applied For"
             valueOptions={appliedForOptions}
             disabled={!isEditing}
@@ -426,7 +436,7 @@ export default function RequirementsForm(props: any) {
             onChange={(event: any) => addValue('rate', event.target.value)}
           />
 
-          <CustomSelect
+          <CustomSelectField
             label={'Tax Type'}
             width={230}
             disabled={!isEditing}
@@ -445,12 +455,13 @@ export default function RequirementsForm(props: any) {
             onChange={(event: any) => addValue('remote', event.target.value)}
           />
 
-          <CustomTextField
+          <CustomSelectField
             label={'Duration'}
             width={230}
             disabled={!isEditing}
+            valueOptions={duration}
             selectedValue={values.duration}
-            onChange={(event: any) => addValue('duration', event.target.value)}
+            onChange={(value: any) => handleChange({ target: { value } }, 'duration')}
           />
 
           <Stack>
@@ -666,9 +677,9 @@ export default function RequirementsForm(props: any) {
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Requirement Entered Date"
-                value={values.reqEnteredDate}
+                value={values.createdAt}
                 disabled
-                onChange={(newValue) => addValue('reqEnteredDate', newValue)} // Handle date change
+                onChange={(newValue) => addValue('createdAt', newValue)} // Handle date change
                 renderInput={(params) => (
                   <TextField
                     size="small"
@@ -692,7 +703,7 @@ export default function RequirementsForm(props: any) {
               />
             </LocalizationProvider>
           </Grid>
-          <CustomSelect
+          <CustomSelectField
             label="Got Requirement from"
             valueOptions={gotRequirementForm}
             selectedValue={values.gotReqFrom || ''}
@@ -702,7 +713,7 @@ export default function RequirementsForm(props: any) {
             }
             width={315}
           />
-          <CustomSelect
+          <CustomSelectField
             label="Primary Tech Stack"
             valueOptions={techStack}
             selectedValue={values.primaryTechStack}
@@ -737,13 +748,23 @@ export default function RequirementsForm(props: any) {
               addValue('jobPortalLink', event.target.value)
             }
           />
-          <CustomTextField
+          {/* <CustomTextField
             label="Requirement Entered By"
             width={315}
             selectedValue={values.reqEnteredBy}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('reqEnteredBy', event.target.value)
+            }
+          /> */}
+          <CustomSelectField
+            label="Requirement Entered By"
+            valueOptions={assignedToOptions}
+            selectedValue={values.reqEnteredBy}
+            disabled={!isEditing}
+            width={315}
+            onChange={(value: any) =>
+              handleChange({ target: { value } }, 'reqEnteredBy')
             }
           />
           <CustomTextField
@@ -777,6 +798,32 @@ export default function RequirementsForm(props: any) {
             helperText={errors.jobDescription}
           />
         </Grid>
+        {/* Section 6: Footer */}
+        { mode === "view" ? (
+          <div style={{ marginTop: '20px', justifyContent: "space-between", display: "flex", fontSize: "14px", borderTop: '1px solid #ccc' }}>
+            <p>
+              <span>Entered By:</span>
+              <strong> {values.reqEnteredBy}</strong>
+              <span> On Date:</span>
+              <strong> {dayjs(values.createdAt).format('YYYY-MM-DD hh:mm:ss A')}</strong>
+            </p>
+            <p>
+              <span>Last Updated By: </span>
+              <strong> 
+                {values.mComment && values.mComment.length > 0
+              ? values.mComment[values.mComment.length - 1].username
+              : "N/A"}
+              </strong>
+              <span> On Date:</span>
+              <strong> {values.mComment && values.mComment.length > 0
+              ? dayjs(values.mComment[values.mComment.length - 1].date).format(
+                  "YYYY-MM-DD hh:mm:ss A"
+                )
+              : "N/A"}
+              </strong>
+            </p>
+          </div>
+        ) : null }
       </form>
     </>
   );
