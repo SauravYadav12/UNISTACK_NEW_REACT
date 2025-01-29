@@ -49,6 +49,7 @@ const ProfileForm = ({
   const primaryAddress: AddressTypes = 'permanentAddress';
   const secondryAddress: AddressTypes = 'communicationAddress';
   const [isBothAddressSame, setIsBothAddressSame] = useState<boolean>(false);
+
   const handleMyDocumentUpload = async (
     field: DocumentSectionField,
     file?: File
@@ -67,7 +68,7 @@ const ProfileForm = ({
       return { field, value: data.data.url };
     } catch (error) {
       toast.error('Failed to upload');
-      console.error(error);
+      console.log(error);
     }
   };
 
@@ -118,17 +119,16 @@ const ProfileForm = ({
     }
   };
 
-  const validateField = (field: SectionField, section?: FormSections) => {
+  const validateField = (
+    field: SectionField,
+    parentFieldName?: keyof UserProfile,
+    value?: string,
+    applyErrors: boolean = true
+  ) => {
     let isValueValid = true;
     let message: string = '';
-    let {
-      fieldName,
-      parentFieldName,
-      label,
-      inputAttributes,
-      customValidation,
-    } = field;
-    parentFieldName = parentFieldName || section?.parentFieldName;
+    let { fieldName, label, inputAttributes, customValidation } = field;
+    parentFieldName = field.parentFieldName || parentFieldName;
     label = label || fieldName;
     label = label[0].toUpperCase() + label.slice(1);
 
@@ -148,22 +148,24 @@ const ProfileForm = ({
     };
 
     if (parentFieldName) {
-      const val = (myProfile as any)[parentFieldName][fieldName];
+      const val = value || (myProfile as any)[parentFieldName][fieldName];
       setMessage(val);
-      setFormErrors((pre) => ({
-        ...pre,
-        [parentFieldName]: {
-          ...(pre as any)[parentFieldName],
-          [fieldName]: message,
-        },
-      }));
+      applyErrors &&
+        setFormErrors((pre) => ({
+          ...pre,
+          [parentFieldName]: {
+            ...(pre as any)[parentFieldName],
+            [fieldName]: message,
+          },
+        }));
     } else {
-      const val = (myProfile as any)[fieldName];
+      const val = value || (myProfile as any)[fieldName];
       setMessage(val);
-      setFormErrors((pre) => ({
-        ...pre,
-        [fieldName]: message,
-      }));
+      applyErrors &&
+        setFormErrors((pre) => ({
+          ...pre,
+          [fieldName]: message,
+        }));
     }
     return isValueValid;
   };
@@ -172,24 +174,27 @@ const ProfileForm = ({
     let isAllValuesValid = true;
     profileFormSections.map((section) => {
       section.sectionFields.forEach((f) => {
-        if (!validateField(f, section)) {
+        if (!validateField(f, section.parentFieldName)) {
           isAllValuesValid = false;
         }
       });
     });
-    documentFormSection.map((section) => {
-      if (!validateField(section)) {
+    documentFormSection.map((field) => {
+      if (!validateField(field)) {
         isAllValuesValid = false;
       }
-      if (section.associatedField && !validateField(section.associatedField)) {
+      if (field.associatedField && !validateField(field.associatedField)) {
         isAllValuesValid = false;
       }
     });
     return isAllValuesValid;
   };
 
-  const onBlurFields = (field: SectionField, section?: FormSections) => {
-    validateField(field, section);
+  const onBlurFields = (
+    field: SectionField,
+    parentFieldName?: keyof UserProfile
+  ) => {
+    validateField(field, parentFieldName);
   };
 
   const onChangeProfileValues = (
@@ -213,6 +218,15 @@ const ProfileForm = ({
         [field.fieldName]: e.target.value,
       };
     });
+    const errorMessage = parentFieldName
+      ? (formErrors as any)[parentFieldName][field.fieldName]
+      : (formErrors as any)[field.fieldName];
+    if (
+      !!errorMessage &&
+      validateField(field, parentFieldName, e.target.value, false)
+    ) {
+      validateField(field, parentFieldName, e.target.value);
+    }
   };
   const handleChangeBlobFile = (field: DocumentSectionField, file?: File) => {
     setSelectedBlobFiles((pre) => {
@@ -389,7 +403,7 @@ const ProfileForm = ({
                         e
                       )
                     }
-                    onBlur={() => onBlurFields(field, section)}
+                    onBlur={() => onBlurFields(field, section.parentFieldName)}
                   />
                 );
               })}
