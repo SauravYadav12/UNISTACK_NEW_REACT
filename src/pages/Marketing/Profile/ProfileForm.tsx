@@ -273,7 +273,7 @@ const ProfileForm = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          submitForm();
+          validateForm() && submitForm();
         }}
       >
         <Grid
