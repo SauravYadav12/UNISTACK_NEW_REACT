@@ -79,7 +79,13 @@ const Comment = ({ onAdd, comment, disabled, createMode }: Iprops) => {
                 style={{ color: '#1976d2', width: '20px', height: '20px' }}
               />
             ) : (
-              <SendIcon color="primary" />
+              <SendIcon
+                color={
+                  !commentMessage.length || savingNewComment
+                    ? 'disabled'
+                    : 'primary'
+                }
+              />
             )}
           </IconButton>
         </div>

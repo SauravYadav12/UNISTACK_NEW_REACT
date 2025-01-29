@@ -5,12 +5,10 @@ import {
   DocumentSectionField,
 } from '../../../pages/Marketing/Profile/constants';
 import CircularProgress from '@mui/material/CircularProgress';
-import { uploadFile } from '../../../services/storageApi';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Document, Page } from 'react-pdf';
-import { toast } from 'react-toastify';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import '../profile.css';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
@@ -23,13 +21,15 @@ export default function DocumentsField({
   field,
   disabled,
   formErrors,
-  onChange,
   myProfile,
+  selectedFile,
+  setSelectedFile,
+  onUpload,
+  onChange,
   onBlur,
 }: MyProps) {
   const maxSize = 5 * (1024 * 1024);
   const savedFile = myProfile[field.fieldName];
-  const [selectedFile, setSelectedFile] = React.useState<File>();
   const [validationErrorMessage, setValidationErrorMessage] =
     React.useState<string>('');
   const { label, associatedField } = field;
@@ -61,22 +61,6 @@ export default function DocumentsField({
       setSelectedFile(file);
     } else {
       setSelectedFile(undefined);
-    }
-  };
-  const handleMyDocumentUpload = async () => {
-    if (!selectedFile) return;
-
-    try {
-      const { data } = await uploadFile(selectedFile);
-      onChange(field, {
-        target: {
-          value: data.data.url,
-        },
-      } as any);
-      setSelectedFile(undefined);
-    } catch (error) {
-      toast.error('Failed to upload');
-      console.error(error);
     }
   };
 
@@ -132,7 +116,7 @@ export default function DocumentsField({
                 disabled={disabled}
                 file={currentFile}
                 onClickDelete={removeFile}
-                onClickUpload={handleMyDocumentUpload}
+                onClickUpload={() => selectedFile && onUpload(selectedFile)}
               />
             ) : (
               <>
@@ -214,6 +198,10 @@ interface MyProps {
   field: DocumentSectionField;
   myProfile: UserProfile;
   formErrors: UserProfile;
+  selectedFile?: File;
+  setSelectedFile: (file: File | undefined) => void;
+  onUpload: (file: File) => void;
+
   onChange: (
     field: DocumentSectionField | AssociatedField,
     e: React.ChangeEvent<HTMLInputElement>
