@@ -11,7 +11,7 @@ const ProfileDetails = () => {
   const initializeDetails = () => {
     const name = myProfile?.name;
     const personalEmail = myProfile?.email.personal;
-    const professionalEmail = myProfile?.email.personal;
+    const officialEmail = myProfile?.email.official;
     const phoneNumber = myProfile?.phoneNumber;
     const emergencyPhoneNumber = myProfile?.emergencyPhoneNumber;
     const myDetalSchema: MyDetail[] = [
@@ -24,12 +24,12 @@ const ProfileDetails = () => {
         value: myProfile?.dob ? dayjs(myProfile.dob).format('YYYY-MM-DD') : '',
       },
       {
-        label: 'Peronal Email',
+        label: 'Personal Email',
         value: personalEmail,
       },
       {
-        label: 'Professional Email',
-        value: professionalEmail,
+        label: 'Official Email',
+        value: officialEmail,
       },
 
       {
