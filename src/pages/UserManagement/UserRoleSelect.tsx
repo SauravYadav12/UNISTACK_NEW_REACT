@@ -39,6 +39,9 @@ export default function BasicSelect({
           <MenuItem value="user">user</MenuItem>
           <MenuItem value="admin">admin</MenuItem>
           <MenuItem value="super-admin">super-admin</MenuItem>
+          <MenuItem value="support">support</MenuItem>
+          <MenuItem value="marketing">marketing</MenuItem>
+          <MenuItem value="hr">hr</MenuItem>
         </Select>
       </FormControl>
     </Box>
