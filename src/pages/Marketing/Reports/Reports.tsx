@@ -1,140 +1,121 @@
-import { Box, Button, Grid, TextField, Typography } from '@mui/material';
-import CustomAccordion from '../../../components/accordion/CustomAccordion';
-import ReportsAccordionContent from './ReportsAccordionContent';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { useState } from 'react';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { Box, Tab, Tabs } from '@mui/material';
+import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
+import DateBar from '../../../components/reports/DateBar';
+import {
+  InterviewReports,
+  MarketingReports,
+  SupportReports,
+} from '../../../components/reports/MyReports';
 
-const initialValues = {
-  fromDate: null,
-  toDate: null,
-};
+export type TabTypes = 'support' | 'marketing' | 'interview';
 
 export default function Reports() {
-  const [values, setValues] = useState(initialValues);
+  const [values, setValues] = useState({
+    fromDate: undefined,
+    toDate: undefined,
+  });
+
+  const [metaText, setMetaText] = useState('');
+
+  const tabs: TabTypes[] = ['support', 'marketing', 'interview'];
+  const [tab, setTab] = useState(0);
 
   const addValue = (key: any, newValue: any) => {
-    if (key === 'fromDate') {
-      const formattedDate = newValue
-        ? dayjs(newValue).format('YYYY-MM-DD')
-        : null;
-      setValues((prevValues) => ({
-        ...prevValues,
-        [key]: formattedDate,
-      }));
-    } else if (key === 'toDate') {
-      const formattedDate = newValue
-        ? dayjs(newValue).format('YYYY-MM-DD')
-        : null;
-      setValues((prevValues) => ({
-        ...prevValues,
-        [key]: formattedDate,
-      }));
-    } else {
-      setValues((prevValues) => ({
-        ...prevValues,
-        [key]: newValue,
-      }));
+    if (key === 'fromDate' || key === 'toDate') {
+      newValue = newValue ? dayjs(newValue).format('YYYY-MM-DD') : null;
     }
+    setValues((prevValues) => ({
+      ...prevValues,
+      [key]: newValue,
+    }));
   };
 
+  useEffect(() => {
+    if (!dayjs(values.fromDate).isValid() || !dayjs(values.toDate).isValid()) {
+      setMetaText('Invalid Dates');
+    } else {
+      setMetaText('Loading');
+    }
+  }, [values, tab]);
+
+  useEffect(() => {
+    addValue('fromDate', new Date());
+    addValue('toDate', new Date());
+  }, []);
   return (
     <>
-      <div>
-        <Box mb={2}>
-          <Grid
-            container
-            alignItems="center"
-            justifyContent="space-between"
-            spacing={1}
-          >
-            <Grid item sx={{ flexGrow: 1, textAlign: 'left' }}>
-              <Typography variant="h6" component="span" fontWeight="bold">
-                Reports:
-              </Typography>
-              <Typography component="span" sx={{ mx: 1 }}>
-                From {values.fromDate ? values.fromDate : '____-__-__'}
-              </Typography>
-              <Typography component="span">
-                To {values.toDate ? values.toDate : '____-__-__'}
-              </Typography>
-              <Box mt={1}>
-                <Typography>Total Position: 0</Typography>
-              </Box>
-            </Grid>
-
-            <Grid
-              item
-              sx={{
-                width: 190,
-                mr: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '10px',
-                },
-              }}
+      <div style={{ marginRight: 25 }}>
+        <Box>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs
+              value={tab}
+              onChange={(v, t) => setTab(t)}
+              aria-label="basic tabs example"
             >
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="From Date"
-                  value={values.fromDate ? dayjs(values.fromDate) : null}
-                  onChange={(newValue) => addValue('fromDate', newValue)}
-                  renderInput={(params) => (
-                    <TextField size="small" {...params} />
-                  )}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid
-              item
-              sx={{
-                width: 190,
-                mr: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '10px',
-                },
-              }}
-            >
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="To Date"
-                  value={values.toDate ? dayjs(values.toDate) : null}
-                  onChange={(newValue) => addValue('toDate', newValue)}
-                  renderInput={(params) => (
-                    <TextField size="small" {...params} />
-                  )}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid item>
-              <Button
-                variant="contained"
-                size="small"
-                sx={{
-                  marginRight: 1,
-                  width: 100,
-                  borderRadius: '10px',
-                  height: '40px',
-                }}
-              >
-                Generate
-              </Button>
-            </Grid>
-          </Grid>
-        </Box>
-      </div>
-      <div>
-        <Box mb={1}>
-          <CustomAccordion title="Saurav Yadav">
-            <ReportsAccordionContent />
-          </CustomAccordion>
-        </Box>
-        <Box mt={1}>
-          <CustomAccordion title="Navendra Yadav">
-            <ReportsAccordionContent />
-          </CustomAccordion>
+              {tabs.map((t, i) => (
+                <Tab key={i} label={t} {...a11yProps(i)} />
+              ))}
+            </Tabs>
+          </Box>
+          {tabs.map((t, i) => {
+            return (
+              <CustomTabPanel key={i} value={tab} index={i}>
+                <DateBar metaText={metaText} {...values} addValue={addValue} />
+                {dayjs(values.fromDate).isValid() &&
+                dayjs(values.toDate).isValid() ? (
+                  <>
+                    {t === 'support' && (
+                      <SupportReports setMetaText={setMetaText} {...values} />
+                    )}
+                    {t === 'interview' && (
+                      <InterviewReports setMetaText={setMetaText} {...values} />
+                    )}
+                    {t === 'marketing' && (
+                      <MarketingReports setMetaText={setMetaText} {...values} />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Box sx={{ textAlign: 'center', color: 'red' }}>
+                      <p>Please ensure that dates are valid</p>
+                    </Box>
+                  </>
+                )}
+              </CustomTabPanel>
+            );
+          })}
         </Box>
       </div>
     </>
   );
+}
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function CustomTabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`,
+  };
 }

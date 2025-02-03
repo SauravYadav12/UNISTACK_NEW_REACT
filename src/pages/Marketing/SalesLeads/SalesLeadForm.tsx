@@ -34,7 +34,7 @@ const SalesLeadForm = (props: any) => {
   const [values, setValues] = useState(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
+  const { viewData, mode, setDrawerOpen, isEditing, onEdit, onDelete } = props;
 
   useEffect(() => {
     setValues(viewData);
@@ -54,6 +54,7 @@ const SalesLeadForm = (props: any) => {
       if (response.status === 200) {
         console.log('Interview  deleted successfully:', response.data);
         setDrawerOpen(false);
+        onDelete(_id);
       } else {
         console.error('Failed to delete requirement:', response);
       }

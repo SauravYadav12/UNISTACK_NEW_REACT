@@ -302,6 +302,7 @@ const ProfileForm = ({
             type="submit"
             size="small"
             sx={{ borderRadius: '10px' }}
+            onClick={() => validateForm()}
             disabled={isFormSubmitting}
           >
             {!isFormSubmitting ? (
