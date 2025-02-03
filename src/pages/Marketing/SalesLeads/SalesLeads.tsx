@@ -95,6 +95,13 @@ const SalesLeads = () => {
       return [...pre];
     });
   };
+  const filterRows=(id:string)=>{
+    setRows((pre) => {
+      if (!pre) return;
+      pre = pre.filter((r) => r._id!==id);
+      return [...pre];
+    });
+  }
   async function initSalesLeads() {
     try {
       setSyncing(true);
@@ -148,6 +155,7 @@ const SalesLeads = () => {
           setDrawerOpen={setDrawerOpen}
           isEditing={isEditing}
           onEdit={handleEdit}
+          onDelete={filterRows}
         />
       </CustomDrawer>
     </>
