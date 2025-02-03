@@ -2,11 +2,9 @@ import { Box, Tab, Tabs } from '@mui/material';
 import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import DateBar from '../../../components/reports/DateBar';
-import {
-  InterviewReports,
-  MarketingReports,
-  SupportReports,
-} from '../../../components/reports/MyReports';
+import { InterviewReports } from '../../../components/reports/InterviewReports';
+import { MarketingReports } from '../../../components/reports/MarketingReports';
+import { SupportReports } from '../../../components/reports/SupportReports';
 
 export type TabTypes = 'support' | 'marketing' | 'interview';
 
@@ -17,6 +15,7 @@ export default function Reports() {
   });
 
   const [metaText, setMetaText] = useState('');
+  const [error, setError] = useState(false);
 
   const tabs: TabTypes[] = ['support', 'marketing', 'interview'];
   const [tab, setTab] = useState(0);
@@ -37,6 +36,7 @@ export default function Reports() {
     } else {
       setMetaText('Loading');
     }
+    setError(false);
   }, [values, tab]);
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function Reports() {
             <Tabs
               value={tab}
               onChange={(v, t) => setTab(t)}
-              aria-label="basic tabs example"
+              aria-label="Reports tabs"
             >
               {tabs.map((t, i) => (
                 <Tab key={i} label={t} {...a11yProps(i)} />
@@ -61,26 +61,52 @@ export default function Reports() {
           {tabs.map((t, i) => {
             return (
               <CustomTabPanel key={i} value={tab} index={i}>
-                <DateBar metaText={metaText} {...values} addValue={addValue} />
-                {dayjs(values.fromDate).isValid() &&
-                dayjs(values.toDate).isValid() ? (
+                <DateBar
+                  metaText={error ? '___-__-___' : metaText}
+                  {...values}
+                  addValue={addValue}
+                />
+                {!error && (
                   <>
-                    {t === 'support' && (
-                      <SupportReports setMetaText={setMetaText} {...values} />
-                    )}
-                    {t === 'interview' && (
-                      <InterviewReports setMetaText={setMetaText} {...values} />
-                    )}
-                    {t === 'marketing' && (
-                      <MarketingReports setMetaText={setMetaText} {...values} />
+                    {dayjs(values.fromDate).isValid() &&
+                    dayjs(values.toDate).isValid() ? (
+                      <>
+                        {t === 'support' && (
+                          <SupportReports
+                            setError={setError}
+                            setMetaText={setMetaText}
+                            {...values}
+                          />
+                        )}
+                        {t === 'interview' && (
+                          <InterviewReports
+                            setError={setError}
+                            setMetaText={setMetaText}
+                            {...values}
+                          />
+                        )}
+                        {t === 'marketing' && (
+                          <MarketingReports
+                            setError={setError}
+                            setMetaText={setMetaText}
+                            {...values}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Box sx={{ textAlign: 'center', color: 'red', py: 10 }}>
+                          <p>Please ensure that dates are valid</p>
+                        </Box>
+                      </>
                     )}
                   </>
-                ) : (
-                  <>
-                    <Box sx={{ textAlign: 'center', color: 'red' }}>
-                      <p>Please ensure that dates are valid</p>
-                    </Box>
-                  </>
+                )}
+
+                {error && (
+                  <Box sx={{ textAlign: 'center', color: 'red', py: 10 }}>
+                    <p>Something went wrong</p>
+                  </Box>
                 )}
               </CustomTabPanel>
             );
