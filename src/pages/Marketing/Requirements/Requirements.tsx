@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -9,7 +9,7 @@ import { requirementsList } from '../../../services/requirementApi';
 export default function Requirements() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState<any>([]);
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
@@ -22,7 +22,10 @@ export default function Requirements() {
     try {
       const res = await requirementsList();
       console.log('API Response:', res.data);
-      setRows(res.data.data);
+      const sortedData = res.data.data.sort(
+        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      console.log("setreq",sortedData)
+      setRows(sortedData);
     } catch (error) {
       console.error('Error fetching requirements:', error);
     }

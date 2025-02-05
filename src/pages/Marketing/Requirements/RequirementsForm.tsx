@@ -114,6 +114,8 @@ export default function RequirementsForm(props: any) {
       newErrors.vendorCompany = 'Vendor Company is required';
     if (!values.vendorPersonName)
       newErrors.vendorPersonName = 'Vendor Person Name is required';
+    if (!values.reqEnteredBy)
+      newErrors.reqEnteredBy = 'Requirement Entered By is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -763,6 +765,8 @@ export default function RequirementsForm(props: any) {
             selectedValue={values.reqEnteredBy}
             disabled={!isEditing}
             width={315}
+            error={!!errors.reqEnteredBy}
+            helperText={errors.reqEnteredBy}
             onChange={(value: any) =>
               handleChange({ target: { value } }, 'reqEnteredBy')
             }
