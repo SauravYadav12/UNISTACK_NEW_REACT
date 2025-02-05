@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { ApiQueryRes } from '../Interfaces/apiRes';
 import { getJwtToken } from '../utils/utils';
-import { SupportReport, InterviewReport, MarketingReport } from '../Interfaces/reports';
+import {
+  SupportReport,
+  InterviewReport,
+  MarketingReport,
+} from '../Interfaces/reports';
 
 const BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
 
@@ -37,16 +41,15 @@ export async function getMarketingReport(
   fromDate: string = d,
   toDate: string = d
 ) {
-  return await getReport<{ assigned: MarketingReport[]; unassigned: any[] }>(
-    'marketing',
-    fromDate,
-    toDate
-  );
+  return await getReport<MarketingReport[]>('marketing', fromDate, toDate);
 }
 
 export async function getInterviewReport(
   fromDate: string = d,
   toDate: string = d
 ) {
-  return await getReport<InterviewReport[]>('interview', fromDate, toDate);
+  return await getReport<{
+    report: InterviewReport[];
+    totalInterviews: number;
+  }>('interview', fromDate, toDate);
 }

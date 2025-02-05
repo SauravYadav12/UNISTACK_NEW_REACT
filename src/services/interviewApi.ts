@@ -1,14 +1,14 @@
 import axios from "axios";
 import { getJwtToken } from "../utils/utils";
 
-export async function interviewsList(query: any) {
+export async function interviewsList(query?: string) {
     const token = await getJwtToken();
     const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
     let headers: any = {
       "Content-Type": "application/json",
       Authorization: token
     };
-    const response = await axios.get(`${BASE_URL}/interviews/get-interviews?interviewStatus=${query}`, {
+    const response = await axios.get(`${BASE_URL}/interviews/get-interviews?${query}`, {
       headers
     });
     return response;

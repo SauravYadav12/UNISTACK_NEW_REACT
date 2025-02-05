@@ -5,22 +5,22 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useEffect, useState } from 'react';
 import RequirementsForm from './RequirementsForm';
 import { requirementsList } from '../../../services/requirementApi';
-
+import { useSearchParams } from 'react-router-dom';
 export default function Requirements() {
+  const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [rows, setRows] = useState([]);
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
-
   useEffect(() => {
     getRequirements();
   }, [drawerOpen]);
 
   const getRequirements = async () => {
     try {
-      const res = await requirementsList();
+      const res = await requirementsList(searchParams.toString());
       console.log('API Response:', res.data);
       setRows(res.data.data);
     } catch (error) {

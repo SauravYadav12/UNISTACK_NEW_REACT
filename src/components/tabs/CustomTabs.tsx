@@ -3,11 +3,76 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import Interviews from '../../pages/Marketing/Interviews/Interviews';
+import { useSearchParams } from 'react-router-dom';
+import { InterviewStatus } from '../../Interfaces/reports';
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+}
+
+export default function ListTabs() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [value, setValue] = React.useState(0);
+  const tabs: { label: string; status?: InterviewStatus }[] = [
+    {
+      label: 'Confirmed',
+      status: 'Interview Confirm',
+    },
+    {
+      label: 'Tentative',
+      status: 'Interview Tentative',
+    },
+    {
+      label: 'Completed',
+      status: 'Interview Completed',
+    },
+    {
+      label: 'Cancelled',
+      status: 'Interview Cancelled',
+    },
+    {
+      label: 'All',
+    },
+  ];
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+    searchParams.toString().length && setSearchParams({});
+  };
+
+  React.useEffect(() => {
+    const interviewStatus = searchParams.get('interviewStatus');
+    const i = tabs.findIndex((t) => t.status === interviewStatus);
+    if (i >= 1) {
+      setValue(i);
+    }
+  }, []);
+  return (
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs
+          value={value}
+          onChange={handleChange}
+          aria-label="basic tabs example"
+        >
+          {tabs.map((t, i) => {
+            return <Tab key={i} label={t.label} {...a11yProps(i)} />;
+          })}
+        </Tabs>
+      </Box>
+      {tabs.map((t, i) => {
+        return (
+          <CustomTabPanel key={i} value={value} index={i}>
+            <Interviews
+              query={t.status || ''}
+              label={t.label + ' Interviews'}
+            />
+          </CustomTabPanel>
+        );
+      })}
+    </Box>
+  );
 }
 
 function CustomTabPanel(props: TabPanelProps) {
@@ -31,61 +96,4 @@ function a11yProps(index: number) {
     id: `simple-tab-${index}`,
     'aria-controls': `simple-tabpanel-${index}`,
   };
-}
-
-export default function ListTabs() {
-  const [value, setValue] = React.useState(0);
-
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
-
-  return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          aria-label="basic tabs example"
-        >
-          <Tab label="Confirmed" {...a11yProps(0)} />
-          <Tab label="Tentative" {...a11yProps(1)} />
-          <Tab label="Completed " {...a11yProps(2)} />
-          <Tab label="Cancelled " {...a11yProps(3)} />
-          <Tab label="All Interviews" {...a11yProps(4)} />
-        </Tabs>
-      </Box>
-      <CustomTabPanel value={value} index={0}>
-        {/* Confirmed Interviews */}
-        <Interviews
-          query={'Interview Confirm'}
-          label={'Confirmed Interviews'}
-        />
-      </CustomTabPanel>
-      <CustomTabPanel value={value} index={1}>
-        {/* Tentative Interviews */}
-        <Interviews
-          query={'Interview Tentative'}
-          label={'Tentative Interviews'}
-        />
-      </CustomTabPanel>
-      <CustomTabPanel value={value} index={2}>
-        {/* Completed Interviews */}
-        <Interviews
-          query={'Interview Completed'}
-          label={'Completed Interviews'}
-        />
-      </CustomTabPanel>
-      <CustomTabPanel value={value} index={3}>
-        {/* Cancelled Interviews */}
-        <Interviews
-          query={'Interview Cancelled'}
-          label={'Cancelled Interviews'}
-        />
-      </CustomTabPanel>
-      <CustomTabPanel value={value} index={4}>
-        <Interviews query={''} label={'All Interviews'} />
-      </CustomTabPanel>
-    </Box>
-  );
 }

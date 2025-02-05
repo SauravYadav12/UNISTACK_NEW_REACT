@@ -94,6 +94,7 @@ export default function InterviewForm(props: any) {
         duration: selectedRecord.duration,
         taxType: selectedRecord.taxType,
         marketingPerson: user.firstName,
+        marketingPersonRef:user.id
       }));
     }
   }, [selectedRecord]);

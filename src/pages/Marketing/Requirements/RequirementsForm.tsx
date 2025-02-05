@@ -33,10 +33,13 @@ import {
 } from '../../../services/requirementApi';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CustomSelectField from '../../../components/select/CustomSelectField';
+import { usersList } from '../../../services/authApi';
+import { getIUser } from '../../../utils/utils';
 
 const initialValues = {
   reqStatus: '',
   assignedTo: '',
+  assignedToRef: '',
   appliedFor: '',
   reqForm: '',
   primaryTechStack: '',
@@ -70,6 +73,7 @@ const initialValues = {
   employmentType: '',
   jobPortalLink: '',
   reqEnteredBy: '',
+  reqEnteredByRef: '',
   secondaryTech: '',
   jobDescription: '',
 };
@@ -84,9 +88,27 @@ export default function RequirementsForm(props: any) {
   const [openAlert, setOpenAlert] = useState(false);
   const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [accounts, setAccounts] = useState<any[]>();
+
+  async function getAccountList() {
+    try {
+      const { data } = await usersList();
+      const { users } = data;
+      setAccounts(users.filter((u: any) => u.active) || []);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
+    getAccountList();
     setValues(viewData);
+    mode === 'add' &&
+      setValues((pre: any) => ({
+        ...pre,
+        reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
+        reqEnteredByRef: `${getIUser()?.id}`,
+      }));
   }, []);
 
   // console.log('values', values);
@@ -103,7 +125,7 @@ export default function RequirementsForm(props: any) {
   async function handleSubmitForm(event: any) {
     event.preventDefault();
     if (isSubmitting) return;
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     // console.log('mComment', comments);
     const newErrors: any = {};
     if (!values.reqStatus) newErrors.reqStatus = 'Req Status is required';
@@ -117,7 +139,7 @@ export default function RequirementsForm(props: any) {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setIsSubmitting(false)
+      setIsSubmitting(false);
       return; // Stop the form submission
     }
     const commentsPayload = {
@@ -204,8 +226,8 @@ export default function RequirementsForm(props: any) {
 
   const addValue = (key: any, newValue: any) => {
     // console.log('AddValues', newValue);
-    setErrors(initialValues)
-    const updatedValues: any = {...values, [key]: newValue}
+    setErrors(initialValues);
+    const updatedValues: any = { ...values, [key]: newValue };
     if (key === 'createdAt') {
       const formattedDate = newValue
         ? dayjs(newValue).format('YYYY-MM-DD')
@@ -340,18 +362,18 @@ export default function RequirementsForm(props: any) {
                 >
                   Edit
                 </Button>
-            {user.role === 'super-admin' && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="button"
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                  // onClick={handleDeleteRequirement}
-                  onClick={handleClickOpenAlert}
-                >
-                  Delete
-                </Button>
+                {user.role === 'super-admin' && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="button"
+                    size="small"
+                    sx={{ borderRadius: '10px' }}
+                    // onClick={handleDeleteRequirement}
+                    onClick={handleClickOpenAlert}
+                  >
+                    Delete
+                  </Button>
                 )}
                 <Dialog
                   open={openAlert}
@@ -400,12 +422,20 @@ export default function RequirementsForm(props: any) {
           />
           <CustomSelectField
             label="Assigned To"
-            valueOptions={assignedToOptions}
+            valueOptions={
+              accounts?.flatMap((a) =>
+                a.role === 'marketing' ? [`${a.firstName} ${a.lastName}`] : []
+              ) || []
+            }
             selectedValue={values.assignedTo}
             disabled={!isEditing}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'assignedTo')
-            }
+            onChange={(value: any) => {
+              handleChange({ target: { value } }, 'assignedTo');
+              const id = accounts?.find(
+                (a) => `${a.firstName} ${a.lastName}` === value
+              )._id;
+              handleChange({ target: { value: id } }, 'assignedToRef');
+            }}
             width={230}
             error={!!errors.assignedTo}
             helperText={errors.assignedTo}
@@ -461,7 +491,9 @@ export default function RequirementsForm(props: any) {
             disabled={!isEditing}
             valueOptions={duration}
             selectedValue={values.duration}
-            onChange={(value: any) => handleChange({ target: { value } }, 'duration')}
+            onChange={(value: any) =>
+              handleChange({ target: { value } }, 'duration')
+            }
           />
 
           <Stack>
@@ -469,9 +501,10 @@ export default function RequirementsForm(props: any) {
               .length
               ? values?.mComment
                   ?.filter((comment: any) => comment.comment.trim())
-                  .map((comment: any) => {
+                  .map((comment: any, i:number) => {
                     return (
                       <CustomTextField
+                        key={i}
                         label={"Marketing Person's Comment"}
                         width={970}
                         disabled={true}
@@ -759,13 +792,19 @@ export default function RequirementsForm(props: any) {
           /> */}
           <CustomSelectField
             label="Requirement Entered By"
-            valueOptions={assignedToOptions}
+            valueOptions={
+              accounts?.map((a) => `${a.firstName} ${a.lastName}`) || []
+            }
             selectedValue={values.reqEnteredBy}
             disabled={!isEditing}
             width={315}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'reqEnteredBy')
-            }
+            onChange={(value: any) => {
+              handleChange({ target: { value } }, 'reqEnteredBy');
+              const id = accounts?.find(
+                (a) => `${a.firstName} ${a.lastName}` === value
+              )._id;
+              handleChange({ target: { value: id } }, 'reqEnteredByRef');
+            }}
           />
           <CustomTextField
             label="Primary Tech Stack"
@@ -799,31 +838,44 @@ export default function RequirementsForm(props: any) {
           />
         </Grid>
         {/* Section 6: Footer */}
-        { mode === "view" ? (
-          <div style={{ marginTop: '20px', justifyContent: "space-between", display: "flex", fontSize: "14px", borderTop: '1px solid #ccc' }}>
+        {mode === 'view' ? (
+          <div
+            style={{
+              marginTop: '20px',
+              justifyContent: 'space-between',
+              display: 'flex',
+              fontSize: '14px',
+              borderTop: '1px solid #ccc',
+            }}
+          >
             <p>
               <span>Entered By:</span>
               <strong> {values.reqEnteredBy}</strong>
               <span> On Date:</span>
-              <strong> {dayjs(values.createdAt).format('YYYY-MM-DD hh:mm:ss A')}</strong>
+              <strong>
+                {' '}
+                {dayjs(values.createdAt).format('YYYY-MM-DD hh:mm:ss A')}
+              </strong>
             </p>
             <p>
               <span>Last Updated By: </span>
-              <strong> 
+              <strong>
                 {values.mComment && values.mComment.length > 0
-              ? values.mComment[values.mComment.length - 1].username
-              : "N/A"}
+                  ? values.mComment[values.mComment.length - 1].username
+                  : 'N/A'}
               </strong>
               <span> On Date:</span>
-              <strong> {values.mComment && values.mComment.length > 0
-              ? dayjs(values.mComment[values.mComment.length - 1].date).format(
-                  "YYYY-MM-DD hh:mm:ss A"
-                )
-              : "N/A"}
+              <strong>
+                {' '}
+                {values.mComment && values.mComment.length > 0
+                  ? dayjs(
+                      values.mComment[values.mComment.length - 1].date
+                    ).format('YYYY-MM-DD hh:mm:ss A')
+                  : 'N/A'}
               </strong>
             </p>
           </div>
-        ) : null }
+        ) : null}
       </form>
     </>
   );
