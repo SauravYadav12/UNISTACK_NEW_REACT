@@ -1,6 +1,7 @@
 import {
   Box,
   CircularProgress,
+  Link,
   Table,
   TableBody,
   TableCell,
@@ -38,7 +39,7 @@ export const SupportReports = ({
       setReport(data.data);
       setMetaText(`Total Position: ${totalPosition || 0}`);
     } catch (error) {
-      setError(true)
+      setError(true);
       toast.error('Failed to load');
     }
   };
@@ -61,6 +62,7 @@ export const SupportReports = ({
         const title = a.name
           ? a.name.slice(0, 1).toUpperCase() + a.name.slice(1)
           : 'NA';
+        const href = `/requirements?fromDate=${fromDate}&toDate=${toDate}&reqEnteredByRef=${a.id}&`;
         return (
           <Box mb={1} key={i}>
             <CustomAccordion title={title}>
@@ -68,14 +70,17 @@ export const SupportReports = ({
                 <Table sx={{ maxWidth: 'max-content' }}>
                   <TableBody>
                     <MyDataRow
+                      href={href}
                       label="Total Position Entered"
                       value={a.totalPositions}
                     />
                     <MyDataRow
+                      href={href + `reqStatus=Submitted`}
                       label="Total Position Submitted"
                       value={a.Submitted}
                     />
                     <MyDataRow
+                      href={href + `reqStatus=Cancelled`}
                       label="Total Position Cancelled"
                       value={a.Cancelled}
                     />
@@ -87,7 +92,7 @@ export const SupportReports = ({
         );
       })}
       {!report.length && (
-        <Box sx={{ textAlign: 'center',py: 10 }}>
+        <Box sx={{ textAlign: 'center', py: 10 }}>
           <p>Not found</p>
         </Box>
       )}
@@ -95,14 +100,30 @@ export const SupportReports = ({
   );
 };
 
-export const MyDataRow = ({ label, value }: { label: string; value: any }) => {
+export const MyDataRow = ({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: any;
+  href?: string;
+}) => {
   return (
     <TableRow>
       <TableCell sx={{ border: 'none', py: 1 }}>
         <Typography>{label}:</Typography>
       </TableCell>
       <TableCell sx={{ border: 'none', py: 1 }}>
-        <Typography>{value || 0}</Typography>
+        <Typography>
+          {value ? (
+            <Link target="_blank" href={href || '#'}>
+              {value}
+            </Link>
+          ) : (
+            0
+          )}
+        </Typography>
       </TableCell>
     </TableRow>
   );

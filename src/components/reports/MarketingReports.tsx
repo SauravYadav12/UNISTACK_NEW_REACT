@@ -16,26 +16,19 @@ export const MarketingReports = ({
   fromDate,
   toDate,
   setMetaText,
-  setError
+  setError,
 }: MyReportsProps) => {
-  const [report, setReport] = useState<{
-    assigned: MarketingReport[];
-    unassigned: any[];
-  }>();
+  const [report, setReport] = useState<MarketingReport[]>();
   const getReport = async () => {
     try {
       const { data } = await getMarketingReport(fromDate, toDate);
       setReport(data.data);
-      const totalAssigned = data.data?.assigned?.reduce((sum, report) => {
+      const totalAssigned = data.data?.reduce((sum, report) => {
         return sum + (report.totalAssigned || 0);
       }, 0);
-      setMetaText(
-        `Assigned: ${totalAssigned || 0} | Unassigned: ${
-          data.data?.unassigned.length || 0
-        }`
-      );
+      setMetaText(`Total Assigned: ${totalAssigned || 0} `);
     } catch (error) {
-      setError(true)
+      setError(true);
       toast.error('Failed to load');
     }
   };
@@ -54,30 +47,36 @@ export const MarketingReports = ({
 
   return (
     <div>
-      {report?.assigned?.map((a, i) => {
+      {report?.map((a, i) => {
+        const href = `/requirements?fromDate=${fromDate}&toDate=${toDate}&assignedToRef=${a.id}&`;
         return (
           <Box mb={1} key={i}>
-            <CustomAccordion title={a.marketingPerson}>
+            <CustomAccordion title={a.name}>
               <TableContainer>
                 <Table sx={{ maxWidth: 'max-content' }}>
                   <TableBody>
                     <MyDataRow
+                      href={href}
                       label="Total Position Assigned"
                       value={a.totalAssigned}
                     />
                     <MyDataRow
+                      href={href + `&reqStatus=Submitted`}
                       label="Total Position Submitted"
                       value={a.Submitted}
                     />
                     <MyDataRow
+                      href={href + `&reqStatus=Project Active`}
                       label="Total Project Active"
                       value={a['Project Active']}
                     />
                     <MyDataRow
+                      href={href + `&reqStatus=Project Inactive`}
                       label="Total Project In-Active"
                       value={a['Project Inactive']}
                     />
                     <MyDataRow
+                      href={href + `&reqStatus=Cancelled`}
                       label="Total Position Cancelled"
                       value={a.Cancelled}
                     />
@@ -88,8 +87,8 @@ export const MarketingReports = ({
           </Box>
         );
       })}
-       {!report.assigned.length && (
-        <Box sx={{ textAlign: 'center',py: 10 }}>
+      {!report.length && (
+        <Box sx={{ textAlign: 'center', py: 10 }}>
           <p>Not found</p>
         </Box>
       )}

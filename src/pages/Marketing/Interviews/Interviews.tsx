@@ -12,6 +12,7 @@ import InterviewForm from './InterviewForm';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { interviewsList } from '../../../services/interviewApi';
 import CustomSearch from './CustomSearch';
+import { useSearchParams } from 'react-router-dom';
 
 type Record = {
   id: number;
@@ -21,6 +22,7 @@ type Record = {
 };
 
 export default function Interviews(props: any) {
+  const [searchParams] = useSearchParams();
   const [rows, setRows] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
@@ -36,7 +38,10 @@ export default function Interviews(props: any) {
 
   const getInterviews = async () => {
     const query = props.query;
-    const res = await interviewsList(query);
+    const interviewStatus = searchParams.get('interviewStatus');
+    const res = await interviewsList(
+      interviewStatus ? searchParams.toString() : `interviewStatus=${query}`
+    );
     // console.log(res);
     setRows(res.data.data);
   };

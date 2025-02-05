@@ -16,16 +16,16 @@ export const InterviewReports = ({
   fromDate,
   toDate,
   setMetaText,
-  setError
+  setError,
 }: MyReportsProps) => {
   const [report, setReport] = useState<InterviewReport[]>();
   const getReport = async () => {
     try {
       const { data } = await getInterviewReport(fromDate, toDate);
-      setReport(data.data);
-      setMetaText(`Total Interviews: ${data.data?.length || 0}`);
+      setReport(data.data?.report);
+      setMetaText(`Total Interviews: ${data.data?.totalInterviews || 0}`);
     } catch (error) {
-      setError(true)
+      setError(true);
       toast.error('Failed to load');
     }
   };
@@ -45,6 +45,7 @@ export const InterviewReports = ({
   return (
     <div>
       {report?.map((a, i) => {
+        const href = `/interviews?fromDate=${fromDate}&toDate=${toDate}&marketingPersonRef=${a.id}&`;
         return (
           <Box mb={1} key={i}>
             <CustomAccordion title={a.name}>
@@ -52,24 +53,29 @@ export const InterviewReports = ({
                 <Table sx={{ maxWidth: 'max-content' }}>
                   <TableBody>
                     <MyDataRow
+                      href={href + `interviewStatus=Interview Confirm`}
                       label="Total Interview Confirm"
                       value={a['Interview Confirm']}
                     />
                     <MyDataRow
+                      href={href + `interviewStatus=Interview Tentative`}
                       label="Total Interview Tentative"
                       value={a['Interview Tentative']}
                     />
                     <MyDataRow
+                      href={href + `interviewStatus=Interview Re-Scheduled`}
                       label="Total Interview Re-Scheduled"
                       value={a['Interview Re-Scheduled']}
                     />
                     <MyDataRow
+                      href={href + `interviewStatus=Interview Completed`}
                       label="Total Interview Completed"
                       value={a['Interview Completed']}
                     />
                     <MyDataRow
+                      href={href + `interviewStatus=Interview Cancelled`}
                       label="Total Interview Cancelled"
-                      value={a['Interview Completed']}
+                      value={a['Interview Cancelled']}
                     />
                   </TableBody>
                 </Table>
@@ -78,8 +84,8 @@ export const InterviewReports = ({
           </Box>
         );
       })}
-       {!report.length && (
-        <Box sx={{ textAlign: 'center',py: 10 }}>
+      {!report.length && (
+        <Box sx={{ textAlign: 'center', py: 10 }}>
           <p>Not found</p>
         </Box>
       )}
