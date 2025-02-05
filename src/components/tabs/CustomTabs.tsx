@@ -43,6 +43,10 @@ export default function ListTabs() {
 
   React.useEffect(() => {
     const interviewStatus = searchParams.get('interviewStatus');
+    if (searchParams.toString().length && !interviewStatus) {
+      setValue(tabs.length - 1);
+      return;
+    }
     const i = tabs.findIndex((t) => t.status === interviewStatus);
     if (i >= 1) {
       setValue(i);
