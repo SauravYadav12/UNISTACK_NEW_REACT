@@ -22,7 +22,9 @@ export default function Requirements() {
     try {
       const res = await requirementsList(searchParams.toString());
       console.log('API Response:', res.data);
-      setRows(res.data.data);
+      const sortedData = res.data.data.sort(
+        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setRows(sortedData);
     } catch (error) {
       console.error('Error fetching requirements:', error);
     }
