@@ -53,6 +53,11 @@ export const InterviewReports = ({
                 <Table sx={{ maxWidth: 'max-content' }}>
                   <TableBody>
                     <MyDataRow
+                      href={href}
+                      label="Total Interviews"
+                      value={a.totalInterviews}
+                    />
+                    <MyDataRow
                       href={href + `interviewStatus=Interview Confirm`}
                       label="Total Interview Confirm"
                       value={a['Interview Confirm']}

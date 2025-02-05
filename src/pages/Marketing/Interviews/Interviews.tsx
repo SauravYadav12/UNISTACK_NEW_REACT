@@ -34,15 +34,15 @@ export default function Interviews(props: any) {
 
   useEffect(() => {
     getInterviews();
-  }, [drawerOpen]);
+  }, [drawerOpen, props.query]);
 
   const getInterviews = async () => {
-    const query = props.query;
-    const interviewStatus = searchParams.get('interviewStatus');
-    const res = await interviewsList(
-      interviewStatus ? searchParams.toString() : `interviewStatus=${query}`
-    );
-    // console.log(res);
+    const query = searchParams.toString().length
+      ? searchParams.toString()
+      : props.query
+      ? `interviewStatus=${props.query}`
+      : '';
+    const res = await interviewsList(query);
     setRows(res.data.data);
   };
 
