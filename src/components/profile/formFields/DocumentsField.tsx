@@ -209,9 +209,10 @@ interface MyProps {
   onBlur?: (e: DocumentSectionField | AssociatedField) => void;
 }
 
-const SelectedFile = ({
+export const SelectedFile = ({
   disabled,
   file,
+  hideDeleteIcon,
   onClickDelete,
   onClickUpload,
 }: SelectedFileProps) => {
@@ -312,26 +313,26 @@ const SelectedFile = ({
           {name.length > 20 && '...'}
         </p>
 
-        {size && (
-          <p
-            style={{
-              margin: 0,
-              fontSize: 'small',
-              marginBottom: '5px',
-            }}
-          >
-            {(size / 1024).toFixed(2)} KB
-          </p>
-        )}
+        <p
+          style={{
+            margin: 0,
+            fontSize: 'small',
+            marginBottom: '5px',
+          }}
+        >
+          {size ? (size / 1024).toFixed(2) + ' KB' : 'NA'}
+        </p>
       </div>
       <div className="action-buttons">
-        <Button
-          disabled={disabled}
-          size="small"
-          onClick={() => onClickDelete()}
-        >
-          <DeleteOutlineIcon style={{ color: 'red', width: '18px' }} />
-        </Button>
+        {!hideDeleteIcon && (
+          <Button
+            disabled={disabled}
+            size="small"
+            onClick={() => onClickDelete()}
+          >
+            <DeleteOutlineIcon style={{ color: 'red', width: '18px' }} />
+          </Button>
+        )}
         {typeof file === 'string' ? (
           <>
             <Button
@@ -368,6 +369,7 @@ const SelectedFile = ({
 interface SelectedFileProps {
   file: File | string;
   disabled: boolean;
+  hideDeleteIcon?: boolean;
   onClickDelete: () => void;
   onClickUpload: () => void;
 }
