@@ -6,25 +6,7 @@ export const requestStatusOptions = [
     'Project Active',
     'Project Inactive',
 ];
-export const assignedToOptions = [
-    "Saurav Yadav",
-    "Anmol",
-    "Sam",
-    "Pramod",
-    "Navendra Yadav",
-    "Ankush",
-    "Rahul RR",
-    "Alina",
-    "Shivam Tiwari",
-    "Ravindra Joshi",
-    "Aditi",
-    "Khushboo",
-    "Saloni Yadav",
-    "Aman Rajawat",
-    "Bhupendra Verma",
-    "Rohit Singh",
-    "Yashwant Thakur"
-];
+
 export const appliedForOptions = [
     "Not in use",
     "Taya Veer",

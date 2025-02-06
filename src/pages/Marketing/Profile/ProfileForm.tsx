@@ -20,12 +20,8 @@ import AddressField from '../../../components/profile/formFields/addressField/Ad
 import RenderFields from '../../../components/profile/formFields/RenderFields';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import DocumentsField from '../../../components/profile/formFields/DocumentsField';
-import { pdfjs } from 'react-pdf';
 import { uploadFile } from '../../../services/storageApi';
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+
 
 const ProfileForm = ({
   template,

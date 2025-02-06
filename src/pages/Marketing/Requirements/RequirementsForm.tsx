@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Card,
   Dialog,
   DialogActions,
   DialogContent,
@@ -11,7 +12,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import CustomSelect from '../../../components/select/CustomSelectField';
 import { useEffect, useState } from 'react';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import dayjs from 'dayjs';
@@ -19,7 +19,6 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {
   appliedForOptions,
-  assignedToOptions,
   duration,
   gotRequirementForm,
   requestStatusOptions,
@@ -31,10 +30,13 @@ import {
   deleteRequirement,
   updateRequirement,
 } from '../../../services/requirementApi';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CustomSelectField from '../../../components/select/CustomSelectField';
 import { usersList } from '../../../services/authApi';
 import { getIUser } from '../../../utils/utils';
+import { SelectedFile } from '../../../components/profile/formFields/DocumentsField';
+import { AttachFile } from '@mui/icons-material';
+import { uploadFile } from '../../../services/storageApi';
+import { toast } from 'react-toastify';
 
 const initialValues = {
   reqStatus: '',
@@ -43,7 +45,7 @@ const initialValues = {
   appliedFor: '',
   reqForm: '',
   primaryTechStack: '',
-  file: undefined,
+  resumeUpload: '',
   nextStep: '',
   taxType: '',
   rate: '',
@@ -66,7 +68,6 @@ const initialValues = {
   vendorPersonName: '',
   vendorPhone: '',
   vendorEmail: '',
-  // reqEnteredDate: null,
   gotReqFrom: '',
   primaryTech: '',
   jobTitle: '',
@@ -80,7 +81,7 @@ const initialValues = {
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
-  const [file, setFile]: any = useState(null);
+  const [file, setFile] = useState<File>();
   const [errors, setErrors] = useState(initialValues);
   const [comments, setComments] = useState<any>('');
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -89,7 +90,8 @@ export default function RequirementsForm(props: any) {
   const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [accounts, setAccounts] = useState<any[]>();
-
+  const currentFile = file || values.resumeUpload;
+  const fileCardButtonDisabled = mode === 'view' || isSubmitting;
   async function getAccountList() {
     try {
       const { data } = await usersList();
@@ -110,23 +112,56 @@ export default function RequirementsForm(props: any) {
         reqEnteredByRef: `${getIUser()?.id}`,
       }));
   }, []);
+  useEffect(() => {
+    setFile(undefined);
+  }, [mode]);
+  function handleFileChange(e?: React.ChangeEvent<HTMLInputElement>) {
+    e?.preventDefault();
+    if (!e?.target.files?.length) return;
+    const maxSize = 5 * (1024 * 1024);
+    const file = e.target.files[0];
+    if (file.size > maxSize) {
+      setFile(undefined);
+      setErrors((pre: any) => ({
+        ...pre,
+        resumeUpload: `File size should be less than ${(
+          maxSize /
+          (1024 * 1024)
+        ).toFixed(2)} MB`,
+      }));
+      return;
+    }
 
-  // console.log('values', values);
-  function handleFileChange(event: any) {
-    event.preventDefault();
-    setFile(event.target.files[0]);
+    setFile(file);
+    setErrors((pre: any) => ({
+      ...pre,
+      resumeUpload: ``,
+    }));
   }
 
-  function handleUpload(event: any) {
-    event.preventDefault();
-    console.log('file is uploaded', file);
+  async function handleFileUpload(file: File) {
+    try {
+      const { data } = await uploadFile(file);
+      setValues((pre: any) => ({ ...pre, resumeUpload: data.data.url }));
+      setFile(undefined);
+      setErrors((pre: any) => ({
+        ...pre,
+        resumeUpload: ``,
+      }));
+      return data.data.url;
+    } catch (error) {
+      console.log(error);
+      toast.error('Failed to upload');
+    }
   }
-
+  const removeFile = () => {
+    setFile(undefined);
+    setValues((pre: any) => ({ ...pre, resumeUpload: '' }));
+  };
   async function handleSubmitForm(event: any) {
     event.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
-    // console.log('mComment', comments);
     const newErrors: any = {};
     if (!values.reqStatus) newErrors.reqStatus = 'Req Status is required';
     if (!values.assignedTo) newErrors.assignedTo = 'Assigned To is required';
@@ -150,6 +185,13 @@ export default function RequirementsForm(props: any) {
     values.mComment = values.mComment
       ? [...values.mComment, commentsPayload]
       : [commentsPayload];
+
+    if (file) {
+      const url = await handleFileUpload(file);
+      if (url) {
+        values.resumeUpload = url;
+      }
+    }
 
     try {
       console.log('Form is submitted successfully', values);
@@ -183,7 +225,12 @@ export default function RequirementsForm(props: any) {
 
     try {
       const payload = { ...values, mComment: updatedComments };
-
+      if (file) {
+        const url = await handleFileUpload(file);
+        if (url) {
+          payload.resumeUpload = url;
+        }
+      }
       const response: any = await updateRequirement(values._id, payload);
       if (response.status === 200) {
         // console.log('Comment updated successfully:', response.data);
@@ -259,7 +306,7 @@ export default function RequirementsForm(props: any) {
   return (
     <>
       <Box sx={{ width: '100%', margin: '0 20px' }}>
-        <Typography variant="h6">Choose File</Typography>
+        <Typography variant="h6">Resume for</Typography>
         <Box
           sx={{
             display: 'flex',
@@ -268,45 +315,65 @@ export default function RequirementsForm(props: any) {
             mt: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <TextField
-              type="text"
-              value={file ? file.name : 'No File Chosen'}
-              size="small"
-              disabled
-              sx={{
-                width: '230px',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '10px',
-                  height: '30px',
-                },
-              }}
-            />
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<AttachFileIcon />}
-              size="small"
+          <Box>
+            <Card
+              variant="outlined"
+              className="document-container"
               sx={{
                 borderRadius: '10px',
-                backgroundColor: '#1976d2',
-                '&:hover': { backgroundColor: '#1565c0' },
+                justifyContent: 'center',
+                width: '300px',
               }}
             >
-              Choose File
-              <input type="file" hidden onChange={handleFileChange} />
-            </Button>
-            <Button
-              onClick={handleUpload}
-              color="success"
-              variant="contained"
-              size="small"
-              disabled={!file}
-              sx={{ borderRadius: '10px' }}
-            >
-              Upload
-            </Button>
+              {!!currentFile ? (
+                <SelectedFile
+                  disabled={isSubmitting}
+                  hideDeleteIcon={mode === 'view'}
+                  file={currentFile}
+                  onClickDelete={removeFile}
+                  onClickUpload={() => file && handleFileUpload(file)}
+                />
+              ) : (
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      columnGap: '5px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Button
+                      disabled={fileCardButtonDisabled}
+                      variant="contained"
+                      component="label"
+                      startIcon={<AttachFile />}
+                      size="small"
+                      sx={{
+                        borderRadius: '10px',
+                        backgroundColor: '#1976d2',
+                        '&:hover': { backgroundColor: '#1565c0' },
+                      }}
+                    >
+                      {mode === 'view' ? 'Not found' : 'Choose File'}
+                      <input
+                        type="file"
+                        accept={'.pdf'}
+                        hidden
+                        onChange={handleFileChange}
+                      />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </Card>
+            {!!errors.resumeUpload && (
+              <p style={{ margin: 0, fontSize: 'small', color: 'red' }}>
+                {errors.resumeUpload}
+              </p>
+            )}
           </Box>
+
           <Grid
             sx={{
               display: 'flex',
@@ -501,7 +568,7 @@ export default function RequirementsForm(props: any) {
               .length
               ? values?.mComment
                   ?.filter((comment: any) => comment.comment.trim())
-                  .map((comment: any, i:number) => {
+                  .map((comment: any, i: number) => {
                     return (
                       <CustomTextField
                         key={i}

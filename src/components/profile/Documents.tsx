@@ -165,17 +165,15 @@ const Documents = () => {
                     {name.slice(0, 20)}
                     {name.length > 20 && '...'}
                   </p>
-                  {!!size && (
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 'small',
-                        paddingBottom: '5px',
-                      }}
-                    >
-                      {(size / 1024).toFixed(2)} KB
-                    </p>
-                  )}
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 'small',
+                      paddingBottom: '5px',
+                    }}
+                  >
+                    {size ? (size / 1024).toFixed(2) + ' KB' : 'NA'}
+                  </p>
                 </div>
                 <div
                   style={{
