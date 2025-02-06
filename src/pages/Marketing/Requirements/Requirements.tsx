@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -6,11 +6,12 @@ import { useEffect, useState } from 'react';
 import RequirementsForm from './RequirementsForm';
 import { requirementsList } from '../../../services/requirementApi';
 import { useSearchParams } from 'react-router-dom';
+import { separateByDates } from '../../../utils/dataGrid';
 export default function Requirements() {
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState<any>([]);
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
@@ -24,7 +25,7 @@ export default function Requirements() {
       console.log('API Response:', res.data);
       const sortedData = res.data.data.sort(
         (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setRows(sortedData);
+      setRows(separateByDates(sortedData));
     } catch (error) {
       console.error('Error fetching requirements:', error);
     }
@@ -34,18 +35,40 @@ export default function Requirements() {
     {
       field: 'view',
       headerName: 'View',
-      width: 100,
-      renderCell: (params: any) => (
-        <Button
-          size="small"
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: '10px' }}
-          onClick={() => handleViewDetails(params.row)}
-        >
-          View
-        </Button>
-      ),
+      width: 120,
+      renderCell: (params: any) => {
+        if (params.row.dateSeparator) {
+          const date = new Date(params.row.fromDate as string);
+          const today = new Date();
+          const isToday = date.toDateString() === today.toDateString();
+          return (
+            <Typography
+              width="100%"
+              sx={{
+                padding: '12px 5px',
+                borderRadius: '10px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+                {isToday ? "Today's Date" : date.toLocaleDateString()}
+            </Typography>
+          );
+        }
+
+        return (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            sx={{ borderRadius: '10px' }}
+            onClick={() => handleViewDetails(params.row)}
+          >
+            View
+          </Button>
+        );
+      },
     },
     { field: 'reqID', headerName: 'Req ID', width: 180 },
     { field: 'assignedTo', headerName: 'Assigned to', width: 120 },
