@@ -5,7 +5,7 @@ import { iUser } from '../Interfaces/iUser';
 import { ApiQueryRes } from '../Interfaces/apiRes';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
-
+console.log(process.env.VITE_API_BASE_URL)
 export async function createProfile(
   userId: string,
   email: string,
