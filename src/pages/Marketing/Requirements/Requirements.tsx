@@ -23,7 +23,9 @@ export default function Requirements() {
       const res = await requirementsList(searchParams.toString());
       console.log('API Response:', res.data);
       const sortedData = res.data.data.sort(
-        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        (a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setRows(sortedData);
     } catch (error) {
       console.error('Error fetching requirements:', error);
@@ -91,6 +93,11 @@ export default function Requirements() {
     setDrawerOpen(true);
   };
 
+  const handleCopy = () => {
+    setMode('add');
+    setIsEditing(true);
+  };
+
   const handleDrawerClose = () => {
     setDrawerOpen(false);
   };
@@ -124,6 +131,7 @@ export default function Requirements() {
           setDrawerOpen={setDrawerOpen}
           isEditing={isEditing}
           onEdit={handleEdit}
+          onCopy={handleCopy}
         />
       </CustomDrawer>
     </>
