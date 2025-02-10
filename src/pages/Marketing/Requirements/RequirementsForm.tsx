@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  Card,
-  Grid,
-  Stack,
-  TextField,
-} from '@mui/material';
+import { Box, Button, Card, Grid, Stack, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import dayjs from 'dayjs';
@@ -80,6 +73,8 @@ export default function RequirementsForm(props: any) {
       ...values,
       reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
       reqEnteredByRef: `${getIUser()?.id}`,
+      isDuplicate: true,
+      duplicateWith: values.reqID,
       rate: '',
       taxType: '',
       remote: '',
@@ -391,6 +386,19 @@ export default function RequirementsForm(props: any) {
               </>
             ) : (
               <>
+                {viewData.reqStatus === 'Submitted' && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="button"
+                    href={`/interviews?createInterviewByReqId=${viewData.reqID}`}
+                    target="_blank"
+                    size="small"
+                    sx={{ borderRadius: '10px' }}
+                  >
+                    Create interview
+                  </Button>
+                )}
                 <AlertBox
                   open={copyAlert}
                   title="Copy Requirement"
@@ -913,4 +921,3 @@ export default function RequirementsForm(props: any) {
     </>
   );
 }
-

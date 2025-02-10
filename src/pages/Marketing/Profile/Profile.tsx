@@ -15,6 +15,7 @@ import coverImage from '../../../assets/unistack_banner.png';
 import './profile.css';
 import {
   documentFormSection,
+  getProfileFormInitialValues,
   profileFormSections,
   profilePhotoSection,
 } from './constants';
@@ -140,7 +141,7 @@ function Profile() {
           title={'Edit Profile'}
         >
           <ProfileForm
-            template={myProfile}
+            template={getProfileFormInitialValues(myProfile)}
             profileFormSections={profileFormSections}
             documentFormSection={documentFormSection}
             onClose={() => setDrawerOpen(false)}
@@ -154,7 +155,7 @@ function Profile() {
           title={'Edit Profile'}
         >
           <ProfileForm
-            template={myProfile}
+            template={getProfileFormInitialValues(myProfile)}
             profileFormSections={[]}
             documentFormSection={[profilePhotoSection]}
             documentSectionHeader="Profile photo"

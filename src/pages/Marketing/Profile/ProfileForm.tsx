@@ -32,7 +32,7 @@ const ProfileForm = ({
 }: MyProps) => {
   const auth = useAuth();
   const [myProfile, setMyProfile] = useState<UserProfile>(
-    JSON.parse(JSON.stringify(template))
+   template
   );
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<UserProfile>(() => {
@@ -250,7 +250,7 @@ const ProfileForm = ({
   };
 
   useEffect(() => {
-    const templateCopy: UserProfile = JSON.parse(JSON.stringify(template));
+    const templateCopy: UserProfile = {...template};
     templateCopy.permanentAddress.country =
       templateCopy.permanentAddress.country || 'IN';
     templateCopy.communicationAddress.country =
