@@ -93,7 +93,7 @@ export default function InterviewForm(props: any) {
         jobDescription: selectedRecord.jobDescription,
         duration: selectedRecord.duration,
         taxType: selectedRecord.taxType,
-        marketingPerson: user.firstName,
+        marketingPerson: `${user.firstName} ${user.lastName}`,
         marketingPersonRef:user.id
       }));
     }
@@ -310,6 +310,7 @@ export default function InterviewForm(props: any) {
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+            disabled={!isEditing}
               label="Interview Date"
               value={values.interviewDate ? dayjs(values.interviewDate) : null}
               onChange={(newValue) => addValue('interviewDate', newValue)}
@@ -342,6 +343,7 @@ export default function InterviewForm(props: any) {
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <TimePicker
+            disabled={!isEditing}
               label="Interview Time"
               value={
                 values.interviewTime

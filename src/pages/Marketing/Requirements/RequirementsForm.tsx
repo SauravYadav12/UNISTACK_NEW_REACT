@@ -289,7 +289,7 @@ export default function RequirementsForm(props: any) {
               sx={{
                 borderRadius: '10px',
                 justifyContent: 'center',
-                width: '300px',
+                width: '275px',
               }}
             >
               {!!currentFile ? (
@@ -347,6 +347,7 @@ export default function RequirementsForm(props: any) {
               alignItems: 'center',
               gap: 1,
               marginRight: 10,
+              flexWrap: 'wrap',
             }}
           >
             {mode === 'add' ? (
@@ -392,9 +393,8 @@ export default function RequirementsForm(props: any) {
                     color="primary"
                     type="button"
                     href={`/interviews?createInterviewByReqId=${viewData.reqID}`}
-                    target="_blank"
                     size="small"
-                    sx={{ borderRadius: '10px' }}
+                    sx={{ borderRadius: '10px', width: 'max-content' }}
                   >
                     Create interview
                   </Button>
