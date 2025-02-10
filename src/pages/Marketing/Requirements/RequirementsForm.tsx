@@ -281,6 +281,7 @@ export default function RequirementsForm(props: any) {
       jobTitle: val.jobTitle,
       taxType: val.taxType,
       duration: val.duration,
+      consultant: val.appliedFor,
     };
     return record;
   };

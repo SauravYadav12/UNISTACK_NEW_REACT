@@ -50,6 +50,7 @@ export default function CustomSearch(props: any) {
         jobTitle: val.jobTitle,
         taxType: val.taxType,
         duration: val.duration,
+        consultant: val.appliedFor,
       }));
       setRecords(fetchedRecords);
       setError('');
