@@ -14,7 +14,6 @@ import { interviewsList } from '../../../services/interviewApi';
 import CustomSearch from './CustomSearch';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { requirementsList } from '../../../services/requirementApi';
 
 type Record = {
   id: number;
