@@ -40,7 +40,7 @@ export default function Interviews(props: any) {
 
   const getInterviews = async () => {
     const myParams = new URLSearchParams(searchParams);
-    myParams.delete('createInterviewByReqId');
+    myParams.delete('createInterviewByReq');
     const query = myParams.toString().length
       ? myParams.toString()
       : props.query
@@ -125,28 +125,10 @@ export default function Interviews(props: any) {
     setMode(editMode ? 'edit' : 'view');
   };
 
-  const createInterview = async (reqID: string) => {
+  const createInterview = async (record: any) => {
     try {
       setDrawerOpen(true);
-      const { data } = await requirementsList(`reqID=${reqID}`);
-      if (data.data.length) {
-        const val = data.data[0];
-        const record = {
-          id: val.reqID,
-          name: val.clientPerson,
-          company: val.vendorCompany,
-          title: val.jobTitle,
-          primeVendorCompany: val.primeVendorCompany,
-          jobDescription: val.jobDescription,
-          jobTitle: val.jobTitle,
-          taxType: val.taxType,
-          duration: val.duration,
-        };
-        handleOpenForm(record);
-      } else {
-        toast.error('Requirement not found');
-        return;
-      }
+      handleOpenForm(record);
     } catch (error) {
       console.log('Error creating interview', error);
       toast.error('Error creating interview');
@@ -154,9 +136,9 @@ export default function Interviews(props: any) {
   };
 
   useEffect(() => {
-    const reqId = searchParams.get('createInterviewByReqId');
-    if (reqId) {
-      createInterview(reqId);
+    const req = searchParams.get('createInterviewByReq');
+    if (req) {
+      createInterview(JSON.parse(req));
     }
   }, [searchParams]);
   return (

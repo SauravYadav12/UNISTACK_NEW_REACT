@@ -26,6 +26,7 @@ import { AttachFile } from '@mui/icons-material';
 import { uploadFile } from '../../../services/storageApi';
 import { toast } from 'react-toastify';
 import AlertBox from '../../../components/alert/AlertBox';
+import { useNavigate } from 'react-router-dom';
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
@@ -41,6 +42,7 @@ export default function RequirementsForm(props: any) {
   const [accounts, setAccounts] = useState<any[]>();
   const currentFile = file || values.resumeUpload;
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
+  const navigate = useNavigate();
 
   async function getAccountList() {
     try {
@@ -267,7 +269,21 @@ export default function RequirementsForm(props: any) {
       addValue(field, value);
     }
   };
-
+  const reqFields = () => {
+    const val = viewData;
+    const record = {
+      id: val.reqID,
+      name: val.clientPerson,
+      company: val.vendorCompany,
+      title: val.jobTitle,
+      primeVendorCompany: val.primeVendorCompany,
+      jobDescription: val.jobDescription,
+      jobTitle: val.jobTitle,
+      taxType: val.taxType,
+      duration: val.duration,
+    };
+    return record;
+  };
   return (
     <>
       <Box sx={{ width: '100%', margin: '0 20px' }}>
@@ -392,7 +408,13 @@ export default function RequirementsForm(props: any) {
                     variant="contained"
                     color="primary"
                     type="button"
-                    href={`/interviews?createInterviewByReqId=${viewData.reqID}`}
+                    onClick={() =>
+                      navigate(
+                        `/interviews?createInterviewByReq=${JSON.stringify(
+                          reqFields()
+                        )}`
+                      )
+                    }
                     size="small"
                     sx={{ borderRadius: '10px', width: 'max-content' }}
                   >
