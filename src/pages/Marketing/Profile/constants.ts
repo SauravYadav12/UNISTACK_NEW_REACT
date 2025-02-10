@@ -2,6 +2,7 @@ import { HTMLInputTypeAttribute, InputHTMLAttributes } from 'react';
 import { styled } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import {
+  UserProfile,
   UserProfileParentFields,
   UserProfilePrimitiveFields,
   UserProfileTopLevelPrimitiveFields,
@@ -14,6 +15,54 @@ import {
   validatePhone,
 } from '../../../utils/validators';
 import dayjs from 'dayjs';
+
+export function getProfileFormInitialValues(val?: Partial<UserProfile>) {
+  const template:UserProfile = {
+    _id: val?._id || '',
+    employeeId: val?.employeeId || '',
+    user: val?.user || '',
+    name: val?.name || '',
+    photo: val?.photo || '',
+    email: {
+      personal: val?.email?.personal || '',
+      official: val?.email?.official || '',
+    },
+    dob: val?.dob || '',
+    phoneNumber: val?.phoneNumber || '',
+    emergencyPhoneNumber: val?.emergencyPhoneNumber || '',
+    panNumber: val?.panNumber || '',
+    aadharNumber: val?.aadharNumber || '',
+    panCopy: val?.panCopy || '',
+    aadharCopy: val?.aadharCopy || '',
+    resume: val?.resume || '',
+    bankDetails: {
+      accountName: val?.bankDetails?.accountName || '',
+      accountNumber: val?.bankDetails?.accountNumber || '',
+      bankName: val?.bankDetails?.bankName || '',
+      ifscCode: val?.bankDetails?.ifscCode || '',
+      swiftCode: val?.bankDetails?.swiftCode || '',
+      bankAddress: val?.bankDetails?.bankAddress || '',
+    },
+    communicationAddress: {
+      address1: val?.communicationAddress?.address1 || '',
+      address2: val?.communicationAddress?.address2 || '',
+      country: val?.communicationAddress?.country || '',
+      state: val?.communicationAddress?.state || '',
+      city: val?.communicationAddress?.city || '',
+      'zip/pin': val?.communicationAddress?.['zip/pin'] || '',
+    },
+    permanentAddress: {
+      address1: val?.permanentAddress?.address1 || '',
+      address2: val?.permanentAddress?.address2 || '',
+      country: val?.permanentAddress?.country || '',
+      state: val?.permanentAddress?.state || '',
+      city: val?.permanentAddress?.city || '',
+      'zip/pin': val?.permanentAddress?.['zip/pin'] || '',
+    },
+  };
+  return { ...template };
+}
+
 export function convertValuesToEmptyString(obj: any) {
   obj = JSON.parse(JSON.stringify(obj));
   const isObject = (value: any): boolean =>
@@ -50,7 +99,7 @@ export const profileFormSections: FormSections[] = [
     sectionFields: [
       {
         fieldName: 'employeeId',
-        label:'Employee ID',
+        label: 'Employee ID',
         inputAttributes: {
           required: true,
         },

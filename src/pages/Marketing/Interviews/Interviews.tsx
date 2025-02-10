@@ -13,6 +13,8 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { interviewsList } from '../../../services/interviewApi';
 import CustomSearch from './CustomSearch';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { requirementsList } from '../../../services/requirementApi';
 
 type Record = {
   id: number;
@@ -37,8 +39,10 @@ export default function Interviews(props: any) {
   }, [drawerOpen, props.query]);
 
   const getInterviews = async () => {
-    const query = searchParams.toString().length
-      ? searchParams.toString()
+    const myParams = new URLSearchParams(searchParams);
+    myParams.delete('createInterviewByReqId');
+    const query = myParams.toString().length
+      ? myParams.toString()
       : props.query
       ? `interviewStatus=${props.query}`
       : '';
@@ -121,6 +125,28 @@ export default function Interviews(props: any) {
     setMode(editMode ? 'edit' : 'view');
   };
 
+  const createInterview = async (reqID: string) => {
+    try {
+      setDrawerOpen(true);
+      const { data } = await requirementsList(`reqID=${reqID}`);
+      if (data.data.length) {
+        handleOpenForm(data.data[0]);
+      } else {
+        toast.error('Requirement not found');
+        return;
+      }
+    } catch (error) {
+      console.log('Error creating interview', error);
+      toast.error('Error creating interview');
+    }
+  };
+
+  useEffect(() => {
+    const reqId = searchParams.get('createInterviewByReqId');
+    if (reqId) {
+      createInterview(reqId);
+    }
+  }, [searchParams]);
   return (
     <>
       <div>

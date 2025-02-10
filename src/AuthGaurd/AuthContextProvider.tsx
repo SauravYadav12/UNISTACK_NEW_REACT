@@ -10,15 +10,12 @@ const AuthContext = createContext({
   myProfile: undefined,
   getMyProfile: () => {},
   setMyProfile: () => {},
-  isGetMyProfileInProgress: false,
 } as DefaultContextValue);
 
 export const AuthContextProvider = ({ children }: any) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem('token')
   );
-  const [isGetMyProfileInProgress, setIsGetMyProfileInProgress] =
-    useState(false);
   const [myProfile, setMyProfile] = useState<UserProfile>();
 
   const validateLogin = (token: string) => {
@@ -32,7 +29,6 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const getMyProfile = async () => {
     try {
-      setIsGetMyProfileInProgress(true);
       const iUser = getIUser()!;
       const profile = await getProfileByUser(iUser);
       if (!profile) {
@@ -40,10 +36,8 @@ export const AuthContextProvider = ({ children }: any) => {
       }
       setMyProfile(profile);
     } catch (error) {
-      toast.error('Some thing went wrong');
+      toast.error('Something went wrong');
       console.log(error);
-    } finally {
-      setIsGetMyProfileInProgress(false);
     }
   };
 
@@ -53,7 +47,6 @@ export const AuthContextProvider = ({ children }: any) => {
         isAuthenticated,
         validateLogin,
         validateLogout,
-        isGetMyProfileInProgress,
         getMyProfile,
         setMyProfile,
         myProfile,
@@ -73,5 +66,4 @@ interface DefaultContextValue {
   myProfile: undefined | UserProfile;
   getMyProfile: () => void;
   setMyProfile: (profile: UserProfile) => void;
-  isGetMyProfileInProgress: boolean;
 }

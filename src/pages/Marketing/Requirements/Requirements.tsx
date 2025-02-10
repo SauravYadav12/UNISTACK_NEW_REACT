@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button, Link } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -11,7 +11,7 @@ export default function Requirements() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [rows, setRows] = useState([]);
-  const [viewData, setViewData] = useState({});
+  const [viewData, setViewData] = useState<any>({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
   useEffect(() => {
@@ -72,7 +72,6 @@ export default function Requirements() {
 
   const handleViewDetails = (row: any) => {
     const data = rows.filter((r: any) => r.reqID === row.reqID);
-    // console.log('Data', data[0]);
     setViewData(data[0]);
     setFormTitle(`Requirement ID ${row.reqID}`);
     setMode('view');
@@ -96,12 +95,12 @@ export default function Requirements() {
   const handleCopy = () => {
     setMode('add');
     setIsEditing(true);
+    setFormTitle('Add New Requirement');
   };
 
   const handleDrawerClose = () => {
     setDrawerOpen(false);
   };
-
   return (
     <>
       <div>
@@ -124,6 +123,16 @@ export default function Requirements() {
         open={drawerOpen}
         onClose={handleDrawerClose}
         title={formTitle}
+        subTitle={
+          viewData.isDuplicate && viewData.duplicateWith ? (
+            <>
+              Copied from :{' '}
+              <Link target="_blank" href={'?reqID=' + viewData.duplicateWith}>
+                {viewData.duplicateWith}
+              </Link>
+            </>
+          ) : null
+        }
       >
         <RequirementsForm
           viewData={viewData}
