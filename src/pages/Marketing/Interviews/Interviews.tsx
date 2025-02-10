@@ -130,7 +130,19 @@ export default function Interviews(props: any) {
       setDrawerOpen(true);
       const { data } = await requirementsList(`reqID=${reqID}`);
       if (data.data.length) {
-        handleOpenForm(data.data[0]);
+        const val = data.data[0];
+        const record = {
+          id: val.reqID,
+          name: val.clientPerson,
+          company: val.vendorCompany,
+          title: val.jobTitle,
+          primeVendorCompany: val.primeVendorCompany,
+          jobDescription: val.jobDescription,
+          jobTitle: val.jobTitle,
+          taxType: val.taxType,
+          duration: val.duration,
+        };
+        handleOpenForm(record);
       } else {
         toast.error('Requirement not found');
         return;
