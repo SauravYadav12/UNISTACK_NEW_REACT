@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, Button } from '@mui/material';
+import { iSalesLead } from '../../../Interfaces/salesLeads';
+import {
+  Grid,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import {
   createComment,
@@ -7,18 +16,22 @@ import {
 } from '../../../services/salesLeadsApi';
 import Comment from '../../../components/salesLead/Comment';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import {
-  SalesLeadInitialValues,
-  salesLeadInitialValues,
-  salesLeadStatusOptions,
-} from './constants';
+import { salesLeadStatusOptions } from './constants';
 import { getIUser } from '../../../utils/utils';
 import { Country } from 'country-state-city';
-import AlertBox from '../../../components/alert/AlertBox';
-import { toast } from 'react-toastify';
-
+export const initialValues: InitialValues = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  country: '',
+  city: '',
+  message: '',
+  comments: [],
+  status: 'New',
+};
 const SalesLeadForm = (props: any) => {
-  const [values, setValues] = useState(salesLeadInitialValues);
+  const [values, setValues] = useState(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const { viewData, mode, setDrawerOpen, isEditing, onEdit, onDelete } = props;
@@ -27,7 +40,7 @@ const SalesLeadForm = (props: any) => {
     setValues(viewData);
   }, [mode, viewData]);
 
-  const addValue = (key: keyof SalesLeadInitialValues, newValue: any) => {
+  const addValue = (key: keyof InitialValues, newValue: any) => {
     setValues((prevValues: any) => ({
       ...prevValues,
       [key]: newValue,
@@ -35,12 +48,17 @@ const SalesLeadForm = (props: any) => {
   };
 
   async function handleDeleteSalesLead(_id: string) {
+    console.log('Delete button clicked');
     try {
-      await deleteSalesLead(_id);
-      setDrawerOpen(false);
-      onDelete(_id);
+      const response = await deleteSalesLead(_id);
+      if (response.status === 200) {
+        console.log('Interview  deleted successfully:', response.data);
+        setDrawerOpen(false);
+        onDelete(_id);
+      } else {
+        console.error('Failed to delete requirement:', response);
+      }
     } catch (error) {
-      toast.error('Failed to delete')
       console.error('An error occurred while deleting the requirement:', error);
     }
   }
@@ -61,7 +79,6 @@ const SalesLeadForm = (props: any) => {
       setValues(data.data);
       onEdit(data.data);
     } catch (error) {
-      toast.error('Something went wrong')
       console.log(error);
     }
   };
@@ -90,10 +107,7 @@ const SalesLeadForm = (props: any) => {
             </Button>
             <AlertBox
               open={openAlert}
-              title="Delete"
-              description="Are you sure you want to delete this requirement? This
-                      action cannot be undone."
-              onOk={() => values._id && handleDeleteSalesLead(values._id)}
+              onAgree={() => values._id && handleDeleteSalesLead(values._id)}
               onClose={() => setOpenAlert(false)}
             />
           </>
@@ -190,3 +204,43 @@ const SalesLeadForm = (props: any) => {
 };
 
 export default SalesLeadForm;
+
+export interface InitialValues
+  extends Omit<iSalesLead, '_id' | 'createdAt' | 'updatedAt'> {
+  _id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const AlertBox = ({ open, onClose, onAgree }: AlertBoxProps) => {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogTitle id="alert-dialog-title">{'Delete'}</DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description">
+          Are you sure you want to delete this sales lead? This action cannot be
+          undone.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} autoFocus>
+          Disagree
+        </Button>
+        <Button onClick={onAgree} autoFocus>
+          Agree
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+interface AlertBoxProps {
+  open: boolean;
+  onClose: () => void;
+  onAgree: () => void;
+}

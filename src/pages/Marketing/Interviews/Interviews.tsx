@@ -13,7 +13,6 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { interviewsList } from '../../../services/interviewApi';
 import CustomSearch from './CustomSearch';
 import { useSearchParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
 
 type Record = {
   id: number;
@@ -38,10 +37,8 @@ export default function Interviews(props: any) {
   }, [drawerOpen, props.query]);
 
   const getInterviews = async () => {
-    const myParams = new URLSearchParams(searchParams);
-    myParams.delete('createInterviewByReq');
-    const query = myParams.toString().length
-      ? myParams.toString()
+    const query = searchParams.toString().length
+      ? searchParams.toString()
       : props.query
       ? `interviewStatus=${props.query}`
       : '';
@@ -124,22 +121,6 @@ export default function Interviews(props: any) {
     setMode(editMode ? 'edit' : 'view');
   };
 
-  const createInterview = async (record: any) => {
-    try {
-      setDrawerOpen(true);
-      handleOpenForm(record);
-    } catch (error) {
-      console.log('Error creating interview', error);
-      toast.error('Error creating interview');
-    }
-  };
-
-  useEffect(() => {
-    const req = searchParams.get('createInterviewByReq');
-    if (req) {
-      createInterview(JSON.parse(req));
-    }
-  }, [searchParams]);
   return (
     <>
       <div>

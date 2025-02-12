@@ -1,4 +1,17 @@
-import { Box, Button, Card, Grid, Stack, TextField } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Grid,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useEffect, useState } from 'react';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import dayjs from 'dayjs';
@@ -8,7 +21,6 @@ import {
   appliedForOptions,
   duration,
   gotRequirementForm,
-  requirementFormInitialValues,
   requestStatusOptions,
   taxTypeOptions,
   techStack,
@@ -25,25 +37,61 @@ import { SelectedFile } from '../../../components/profile/formFields/DocumentsFi
 import { AttachFile } from '@mui/icons-material';
 import { uploadFile } from '../../../services/storageApi';
 import { toast } from 'react-toastify';
-import AlertBox from '../../../components/alert/AlertBox';
-import { useNavigate } from 'react-router-dom';
+
+const initialValues = {
+  reqStatus: '',
+  assignedTo: '',
+  assignedToRef: '',
+  appliedFor: '',
+  reqForm: '',
+  primaryTechStack: '',
+  resumeUpload: '',
+  nextStep: '',
+  taxType: '',
+  rate: '',
+  remote: '',
+  duration: '',
+  mComment: [],
+  clientCompany: '',
+  clientWebsite: '',
+  clientAddress: '',
+  clientPerson: '',
+  clientPhone: '',
+  clientEmail: '',
+  primeVendorCompany: '',
+  primeVendorWebsite: '',
+  primeVendorName: '',
+  primeVendorPhone: '',
+  primeVendorEmail: '',
+  vendorCompany: '',
+  vendorWebsite: '',
+  vendorPersonName: '',
+  vendorPhone: '',
+  vendorEmail: '',
+  gotReqFrom: '',
+  primaryTech: '',
+  jobTitle: '',
+  employmentType: '',
+  jobPortalLink: '',
+  reqEnteredBy: '',
+  reqEnteredByRef: '',
+  secondaryTech: '',
+  jobDescription: '',
+};
 
 export default function RequirementsForm(props: any) {
-  const [values, setValues] = useState<any>(requirementFormInitialValues);
+  const [values, setValues] = useState<any>(initialValues);
   const [file, setFile] = useState<File>();
-  const [errors, setErrors] = useState(requirementFormInitialValues);
+  const [errors, setErrors] = useState(initialValues);
   const [comments, setComments] = useState<any>('');
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [deleteAlert, setDeleteAlert] = useState(false);
-  const [copyAlert, setCopyAlert] = useState(false);
-  const { viewData, mode, setDrawerOpen, isEditing, onEdit, onCopy } = props;
+  const [openAlert, setOpenAlert] = useState(false);
+  const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [accounts, setAccounts] = useState<any[]>();
   const currentFile = file || values.resumeUpload;
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
-  const navigate = useNavigate();
-
   async function getAccountList() {
     try {
       const { data } = await usersList();
@@ -64,34 +112,9 @@ export default function RequirementsForm(props: any) {
         reqEnteredByRef: `${getIUser()?.id}`,
       }));
   }, []);
-
   useEffect(() => {
     setFile(undefined);
   }, [mode]);
-
-  const handleCopyRequirement = () => {
-    onCopy();
-    const copy = {
-      ...values,
-      reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
-      reqEnteredByRef: `${getIUser()?.id}`,
-      isDuplicate: true,
-      duplicateWith: values.reqID,
-      rate: '',
-      taxType: '',
-      remote: '',
-      duration: '',
-      mComment: [],
-      resumeUpload: '',
-    };
-    delete copy.createdAt;
-    delete copy.reqID;
-    delete copy._id;
-    delete copy.__v;
-    setValues({ ...copy });
-    setErrors(requirementFormInitialValues);
-  };
-
   function handleFileChange(e?: React.ChangeEvent<HTMLInputElement>) {
     e?.preventDefault();
     if (!e?.target.files?.length) return;
@@ -220,7 +243,7 @@ export default function RequirementsForm(props: any) {
     }
   }
 
-  async function handleDeleteRequirement() {
+  async function handleDeleteRequirement(_id: any) {
     try {
       const response = await deleteRequirement(values._id);
 
@@ -235,13 +258,23 @@ export default function RequirementsForm(props: any) {
     }
   }
 
+  const handleClickOpenAlert = () => {
+    setOpenAlert(true);
+  };
+
+  const handleClickCloseAlert = () => {
+    setOpenAlert(false);
+  };
+
   const handleChange = (event: any, key: string) => {
-    setErrors(requirementFormInitialValues);
+    setErrors(initialValues);
     setValues((prev: any) => ({ ...prev, [key]: event.target.value }));
   };
 
   const addValue = (key: any, newValue: any) => {
-    setErrors(requirementFormInitialValues);
+    // console.log('AddValues', newValue);
+    setErrors(initialValues);
+    const updatedValues: any = { ...values, [key]: newValue };
     if (key === 'createdAt') {
       const formattedDate = newValue
         ? dayjs(newValue).format('YYYY-MM-DD')
@@ -269,44 +302,27 @@ export default function RequirementsForm(props: any) {
       addValue(field, value);
     }
   };
-  const reqFields = () => {
-    const val = viewData;
-    const record = {
-      id: val.reqID,
-      name: val.clientPerson,
-      company: val.vendorCompany,
-      title: val.jobTitle,
-      primeVendorCompany: val.primeVendorCompany,
-      jobDescription: val.jobDescription,
-      jobTitle: val.jobTitle,
-      taxType: val.taxType,
-      duration: val.duration,
-      consultant: val.appliedFor,
-    };
-    return record;
-  };
+
   return (
     <>
       <Box sx={{ width: '100%', margin: '0 20px' }}>
+        <Typography variant="h6">Resume for</Typography>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             mt: 2,
-            flexWrap: 'wrap-reverse',
-            rowGap: '20px',
           }}
         >
           <Box>
-            <h4 style={{ margin: 0 }}>Resume for</h4>
             <Card
               variant="outlined"
               className="document-container"
               sx={{
                 borderRadius: '10px',
                 justifyContent: 'center',
-                width: '275px',
+                width: '300px',
               }}
             >
               {!!currentFile ? (
@@ -364,7 +380,6 @@ export default function RequirementsForm(props: any) {
               alignItems: 'center',
               gap: 1,
               marginRight: 10,
-              flexWrap: 'wrap',
             }}
           >
             {mode === 'add' ? (
@@ -404,41 +419,6 @@ export default function RequirementsForm(props: any) {
               </>
             ) : (
               <>
-                {viewData.reqStatus === 'Submitted' && (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="button"
-                    onClick={() =>
-                      navigate(
-                        `/interviews?createInterviewByReq=${JSON.stringify(
-                          reqFields()
-                        )}`
-                      )
-                    }
-                    size="small"
-                    sx={{ borderRadius: '10px', width: 'max-content' }}
-                  >
-                    Create interview
-                  </Button>
-                )}
-                <AlertBox
-                  open={copyAlert}
-                  title="Copy Requirement"
-                  description="Are you sure you want to copy this requirement ?"
-                  onClose={() => setCopyAlert(false)}
-                  onOk={handleCopyRequirement}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="button"
-                  onClick={() => setCopyAlert(true)}
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  Copy
-                </Button>
                 <Button
                   variant="contained"
                   color="primary"
@@ -450,27 +430,40 @@ export default function RequirementsForm(props: any) {
                   Edit
                 </Button>
                 {user.role === 'super-admin' && (
-                  <>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      type="button"
-                      size="small"
-                      sx={{ borderRadius: '10px' }}
-                      onClick={() => setDeleteAlert(true)}
-                    >
-                      Delete
-                    </Button>
-                    <AlertBox
-                      open={deleteAlert}
-                      title="Delete Requirement"
-                      description="Are you sure you want to delete this requirement? This
-                      action cannot be undone."
-                      onClose={() => setDeleteAlert(false)}
-                      onOk={() => handleDeleteRequirement()}
-                    />
-                  </>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="button"
+                    size="small"
+                    sx={{ borderRadius: '10px' }}
+                    // onClick={handleDeleteRequirement}
+                    onClick={handleClickOpenAlert}
+                  >
+                    Delete
+                  </Button>
                 )}
+                <Dialog
+                  open={openAlert}
+                  onClose={handleClickCloseAlert}
+                  aria-labelledby="alert-dialog-title"
+                  aria-describedby="alert-dialog-description"
+                >
+                  <DialogTitle id="alert-dialog-title">
+                    {'Delete Requirement?'}
+                  </DialogTitle>
+                  <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                      Are you sure you want to delete this requirement? This
+                      action cannot be undone.
+                    </DialogContentText>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={handleClickCloseAlert}>Disagree</Button>
+                    <Button onClick={handleDeleteRequirement} autoFocus>
+                      Agree
+                    </Button>
+                  </DialogActions>
+                </Dialog>
               </>
             )}
           </Grid>
@@ -497,7 +490,9 @@ export default function RequirementsForm(props: any) {
           <CustomSelectField
             label="Assigned To"
             valueOptions={
-              accounts?.map((a) => `${a.firstName} ${a.lastName}`) || []
+              accounts?.flatMap((a) =>
+                a.role === 'marketing' ? [`${a.firstName} ${a.lastName}`] : []
+              ) || []
             }
             selectedValue={values.assignedTo}
             disabled={!isEditing}
@@ -853,14 +848,22 @@ export default function RequirementsForm(props: any) {
               addValue('jobPortalLink', event.target.value)
             }
           />
-
+          {/* <CustomTextField
+            label="Requirement Entered By"
+            width={315}
+            selectedValue={values.reqEnteredBy}
+            disabled={!isEditing}
+            onChange={(event: any) =>
+              addValue('reqEnteredBy', event.target.value)
+            }
+          /> */}
           <CustomSelectField
             label="Requirement Entered By"
             valueOptions={
               accounts?.map((a) => `${a.firstName} ${a.lastName}`) || []
             }
             selectedValue={values.reqEnteredBy}
-            disabled
+            disabled={!isEditing}
             width={315}
             onChange={(value: any) => {
               handleChange({ target: { value } }, 'reqEnteredBy');

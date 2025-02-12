@@ -1,30 +1,22 @@
-export interface DashboardReport {
-  totalUsers: number;
-  totalActiveUsers: number;
-  totalRequirements: number;
-  totalInterviews: number;
-  totalConfirmInterviews: number;
-}
-
 export type SupportReport = {
   [key in RequirementStatus]?: number;
 } & {
   name?: string;
-  id?: string;
+  id?:string;
   totalPositions?: number;
 };
 export type MarketingReport = {
   [key in RequirementStatus]?: number;
 } & {
   name?: string;
-  id?: string;
+  id?:string;
   totalAssigned?: number;
 };
 export type InterviewReport = {
   [key in InterviewStatus]?: number;
 } & {
   name?: string;
-  id?: string;
+  id?:string;
   totalInterviews?: number;
 };
 
