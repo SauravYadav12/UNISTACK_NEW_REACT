@@ -351,6 +351,7 @@ export default function ConsultantForm(props: any) {
         <Grid item>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              disabled={!isEditing}
               label="Date of Birth"
               value={values.dob ? dayjs(values.dob) : null}
               onChange={(newValue) => addValue('dob', newValue)}
@@ -551,6 +552,7 @@ export default function ConsultantForm(props: any) {
             <Grid item>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  disabled={!isEditing}
                   label="Project Start Date"
                   value={
                     project.projectStartDate
@@ -585,6 +587,7 @@ export default function ConsultantForm(props: any) {
             <Grid item>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  disabled={!isEditing}
                   label="Project End Date"
                   value={
                     project.projectEndDate

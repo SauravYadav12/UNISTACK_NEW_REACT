@@ -18,22 +18,20 @@ import {
 import { updateProfile } from '../../../services/userProfileApi';
 import AddressField from '../../../components/profile/formFields/addressField/AddressField';
 import RenderFields from '../../../components/profile/formFields/RenderFields';
-import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import DocumentsField from '../../../components/profile/formFields/DocumentsField';
 import { uploadFile } from '../../../services/storageApi';
 
-
 const ProfileForm = ({
+  viewMode,
   template,
-  onClose,
   profileFormSections,
   documentFormSection,
   documentSectionHeader,
+  onClickEdit,
+  onClickCancel,
+  onSubmitSuccessfully,
 }: MyProps) => {
-  const auth = useAuth();
-  const [myProfile, setMyProfile] = useState<UserProfile>(
-   template
-  );
+  const [myProfile, setMyProfile] = useState<UserProfile>(template);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<UserProfile>(() => {
     const templateCopy = convertValuesToEmptyString(template) as UserProfile;
@@ -99,8 +97,7 @@ const ProfileForm = ({
         toast.error(data.error || 'Something went wrong');
         return;
       }
-      auth.setMyProfile(data.data);
-      onClose();
+      onSubmitSuccessfully(data.data);
     } catch (error: any) {
       const { codeName, keyPattern, keyValue } = error.response.data.error;
       if (codeName === 'DuplicateKey' && keyPattern.employeeId) {
@@ -250,11 +247,13 @@ const ProfileForm = ({
   };
 
   useEffect(() => {
-    const templateCopy: UserProfile = {...template};
-    templateCopy.permanentAddress.country =
-      templateCopy.permanentAddress.country || 'IN';
-    templateCopy.communicationAddress.country =
-      templateCopy.communicationAddress.country || 'IN';
+    const templateCopy: UserProfile = { ...template };
+    if (!viewMode) {
+      templateCopy.permanentAddress.country =
+        templateCopy.permanentAddress.country || 'IN';
+      templateCopy.communicationAddress.country =
+        templateCopy.communicationAddress.country || 'IN';
+    }
     setMyProfile(templateCopy);
   }, [template]);
 
@@ -281,37 +280,57 @@ const ProfileForm = ({
             marginRight: 10,
           }}
         >
-          <Button
-            variant="contained"
-            color="error"
-            type="button"
-            size="small"
-            sx={{ borderRadius: '10px' }}
-            onClick={onClose}
-            disabled={isFormSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            type="submit"
-            size="small"
-            sx={{ borderRadius: '10px' }}
-            onClick={() => validateForm()}
-            disabled={isFormSubmitting}
-          >
-            {!isFormSubmitting ? (
-              'Submit'
-            ) : (
-              <>
-                <CircularProgress
-                  style={{ color: '#1976d2', width: '14px', height: '14px' }}
-                />
-                <span style={{ paddingLeft: '5px' }}>Submitting</span>
-              </>
-            )}
-          </Button>
+          {viewMode ? (
+            <Button
+              variant="contained"
+              color="primary"
+              type="button"
+              size="small"
+              sx={{ borderRadius: '10px' }}
+              onClick={onClickEdit}
+              disabled={isFormSubmitting}
+            >
+              Edit
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="contained"
+                color="error"
+                type="button"
+                size="small"
+                sx={{ borderRadius: '10px' }}
+                onClick={onClickCancel}
+                disabled={isFormSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                type="submit"
+                size="small"
+                sx={{ borderRadius: '10px' }}
+                onClick={() => validateForm()}
+                disabled={isFormSubmitting}
+              >
+                {!isFormSubmitting ? (
+                  'Submit'
+                ) : (
+                  <>
+                    <CircularProgress
+                      style={{
+                        color: '#1976d2',
+                        width: '14px',
+                        height: '14px',
+                      }}
+                    />
+                    <span style={{ paddingLeft: '5px' }}>Submitting</span>
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </Grid>
 
         {profileFormSections.map((section, i) => {
@@ -345,7 +364,8 @@ const ProfileForm = ({
                     disabled={
                       (parentFieldName !== primaryAddress &&
                         isBothAddressSame) ||
-                      isFormSubmitting
+                      isFormSubmitting ||
+                      !!viewMode
                     }
                     parentFieldName={parentFieldName}
                     myProfile={myProfile}
@@ -354,7 +374,7 @@ const ProfileForm = ({
                     setMyProfile={setMyProfile}
                   />
                 </Grid>
-                {parentFieldName !== primaryAddress && (
+                {!viewMode && parentFieldName !== primaryAddress && (
                   <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
                     <Grid item xs={12}>
                       <FormControlLabel
@@ -387,7 +407,7 @@ const ProfileForm = ({
                 return (
                   <RenderFields
                     formError={formErrors}
-                    disabled={isFormSubmitting}
+                    disabled={isFormSubmitting || !!viewMode}
                     key={j}
                     parentFieldName={parentFieldName || field.parentFieldName}
                     field={field}
@@ -426,7 +446,8 @@ const ProfileForm = ({
                 );
                 return (
                   <DocumentsField
-                    disabled={isFormSubmitting}
+                    viewMode={viewMode}
+                    disabled={isFormSubmitting || !!viewMode}
                     selectedFile={selectedFile?.value}
                     setSelectedFile={(f) => handleChangeBlobFile(field, f)}
                     onUpload={(f) => handleMyDocumentUpload(field, f)}
@@ -452,8 +473,11 @@ const ProfileForm = ({
 export default ProfileForm;
 
 interface MyProps {
+  viewMode?: boolean;
   template: UserProfile;
-  onClose: () => void;
+  onClickEdit?: () => void;
+  onClickCancel: () => void;
+  onSubmitSuccessfully: (profile: UserProfile) => void;
   profileFormSections: FormSections[];
   documentFormSection: DocumentSectionField[];
   documentSectionHeader?: string;

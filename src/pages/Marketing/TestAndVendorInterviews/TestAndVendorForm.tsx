@@ -24,19 +24,15 @@ import {
   intRoundOptions,
   intStatusOptions,
   intTypeOptions,
-  // intWithOptions,
   meetingTypeOptions,
   paymentStatusOptions,
   resultOptions,
   timeZoneOptions,
 } from './testAndViValues';
 import {
-  // createInterview,
   createVendorInterview,
   deleteVendorInterview,
   updateVendorInterview,
-  // deleteInterview,
-  // updateInterview,
 } from '../../../services/vendorInterviewApi';
 
 const initialValues = {
@@ -309,6 +305,7 @@ export default function InterviewForm(props: any) {
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              disabled={!isEditing}
               label="Interview Date"
               value={values.interviewDate ? dayjs(values.interviewDate) : null}
               onChange={(newValue) => addValue('interviewDate', newValue)}
@@ -341,6 +338,7 @@ export default function InterviewForm(props: any) {
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <TimePicker
+              disabled={!isEditing}
               label="Interview Time"
               value={
                 values.interviewTime

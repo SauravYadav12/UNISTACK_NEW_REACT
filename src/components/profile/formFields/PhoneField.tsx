@@ -31,7 +31,7 @@ const PhoneField = ({
     <MuiTelInput
       disabled={disabled}
       inputProps={{ ...field.inputAttributes, maxLength: maxPhoneLength }}
-      defaultCountry={'IN'}
+      defaultCountry={disabled ? undefined : 'IN'}
       onChange={onPhoneChange}
       onBlur={() => onBlur && onBlur(field)}
       label={label}
