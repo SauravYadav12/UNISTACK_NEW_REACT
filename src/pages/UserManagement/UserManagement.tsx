@@ -1,16 +1,40 @@
-import { Box, Grid, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
+  Typography,
+} from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { ReactElement, useEffect, useMemo, useState } from 'react';
+import {
+  Dispatch,
+  ReactElement,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import BasicCard from '../../components/card/Card';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import InterpreterModeIcon from '@mui/icons-material/InterpreterMode';
 import Face6Icon from '@mui/icons-material/Face6';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import { usersList } from '../../services/authApi';
-import ActiveUserSwitch from './ActiveUserSwitch';
+import ActiveUserSwitch from '../../components/userManagement/ActiveUserSwitch';
 import PositionedSnackbar from '../../components/snackbar/Snackbar';
 import moment from 'moment';
-import BasicSelect from './UserRoleSelect';
+import BasicSelect from '../../components/userManagement/UserRoleSelect';
+import CanEditSwitch from '../../components/userManagement/canEditSwitch';
+import CustomDrawer from '../../components/drawer/CustomDrawer';
+import ProfileForm from '../Marketing/Profile/ProfileForm';
+import {
+  documentFormSection,
+  getProfileFormInitialValues,
+  profileFormSections,
+} from '../Marketing/Profile/constants';
+import { UserProfile } from '../../Interfaces/profile';
+import { getProfileByUser } from '../../services/userProfileApi';
+import { toast } from 'react-toastify';
 
 interface CustomCard {
   color: string;
@@ -22,12 +46,18 @@ interface CustomCard {
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [selectedUser, setSelectedUser] = useState<any>();
   const [activeUsers, setActiveUsers] = useState(0);
   const [inactiveUsers, setInactiveUsers] = useState(0);
-  // const [pageSize, setPageSize] = useState(5)
   const [open, setOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+
+  function viewDetails(row: any): void {
+    setSelectedUser(row);
+    setDrawerOpen(true);
+  }
 
   useEffect(() => {
     getUsersList();
@@ -35,7 +65,22 @@ function UserManagement() {
 
   const Columns: any = useMemo(
     () => [
-      { field: 'photoURL', headerName: 'Avatar', width: 60 },
+      {
+        field: 'view',
+        headerName: 'Profile',
+        width: 100,
+        renderCell: (params: any) => (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            sx={{ borderRadius: '10px' }}
+            onClick={() => viewDetails(params.row)}
+          >
+            view
+          </Button>
+        ),
+      },
       {
         field: 'firstName',
         headerName: 'First Name',
@@ -79,6 +124,20 @@ function UserManagement() {
         ),
       },
       {
+        field: 'canEdit',
+        headerName: 'Can Edit Profile',
+        width: 100,
+        type: 'actions',
+        renderCell: (params: any) => (
+          <CanEditSwitch
+            active={!!params.row.canEdit}
+            userId={params.row._id}
+            setOpen={setOpen}
+            setAlertMessage={setAlertMessage}
+          />
+        ),
+      },
+      {
         field: 'premium',
         headerName: 'Premium',
         width: 100,
@@ -104,9 +163,81 @@ function UserManagement() {
     []
   );
 
+  const dateFormater = (date?: string) => {
+    if (!date) return;
+    return moment(date).format('YYYY-MM-DD HH:MM:SS');
+  };
+  const extractLocationField = (val: any, field: string) => {
+    if (!val) return;
+    val = JSON.parse(val);
+    return val[field];
+  };
+  const activityColumn = [
+    {
+      field: 'loggedInAt',
+      headerName: 'Logged-In At',
+      width: 200,
+      valueGetter: (v: any) => dateFormater(v) || 'NA',
+    },
+    {
+      field: 'loggedOutAt',
+      headerName: 'Logged-Out At',
+      width: 200,
+      valueGetter: (v: any) => dateFormater(v) || 'NA',
+    },
+
+    {
+      field: 'ip',
+      headerName: 'IP',
+      width: 200,
+      valueGetter: (v: any) => v || 'NA',
+    },
+    {
+      field: 'latitude',
+      headerName: 'Latitude',
+      width: 150,
+      valueGetter: (v: any, row: any) =>
+        extractLocationField(row.location, 'latitude') || 'NA',
+    },
+    {
+      field: 'longitude',
+      headerName: 'Longitude',
+      width: 150,
+      valueGetter: (v: any, row: any) =>
+        extractLocationField(row.location, 'longitude') || 'NA',
+    },
+    {
+      field: 'altitude',
+      headerName: 'Altitude',
+      width: 150,
+      valueGetter: (v: any, row: any) =>
+        extractLocationField(row.location, 'altitude') || 'NA',
+    },
+    {
+      field: 'accuracy',
+      headerName: 'Accuracy',
+      width: 150,
+      valueGetter: (v: any, row: any) =>
+        extractLocationField(row.location, 'accuracy') || 'NA',
+    },
+  ];
+
+  const activityColumnGroupingModel = [
+    {
+      groupId: 'Location',
+      align: 'center',
+      description: '',
+      children: [
+        { field: 'latitude' },
+        { field: 'longitude' },
+        { field: 'altitude' },
+        { field: 'accuracy' },
+      ],
+    },
+  ];
+
   const getUsersList = async () => {
     try {
-      setLoading(true);
       const res = await usersList();
       if (res.data?.users.length) {
         setUsers(res.data?.users);
@@ -118,15 +249,12 @@ function UserManagement() {
         );
         setActiveUsers(activeuserCount.length);
         setInactiveUsers(inactiveuserCount.length);
-        setLoading(false);
       } else {
         setActiveUsers(0);
         setInactiveUsers(0);
-        setLoading(false);
       }
     } catch (error) {
       console.log(error);
-      setLoading(false);
     }
   };
 
@@ -207,8 +335,99 @@ function UserManagement() {
           slots={{ toolbar: GridToolbar }}
         />
       </Box>
+
+      {!!selectedUser && (
+        <CustomDrawer
+          open={drawerOpen}
+          onClose={() => {
+            setDrawerOpen(false);
+            setMode('view');
+          }}
+          title={
+            (mode === 'view' ? '' : 'Edit') +
+            ' Profile: ' +
+            `${selectedUser.firstName} ${selectedUser.lastName}`
+          }
+        >
+          <MyForm modeState={[mode, setMode]} user={selectedUser} />
+          {mode === 'view' && (
+            <>
+              <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
+                <Grid item xs={12}>
+                  <h4>6. Activity</h4>
+                </Grid>
+              </Grid>
+              <Box
+                sx={{
+                  height: 600,
+                  width: '100%',
+                }}
+              >
+                <DataGrid
+                  columns={activityColumn}
+                  rows={[...(selectedUser?.activity || [])].reverse()}
+                  getRowId={(row: any) => row._id}
+                  slots={{ toolbar: GridToolbar }}
+                  // columnGroupingModel={activityColumnGroupingModel}
+                  slotProps={{
+                    toolbar: {
+                      showQuickFilter: true,
+                    },
+                  }}
+                />
+              </Box>
+            </>
+          )}
+        </CustomDrawer>
+      )}
     </>
   );
 }
 
 export default UserManagement;
+
+const MyForm = ({ user, modeState }: MyFormqProps) => {
+  const [mode, setMode] = modeState;
+  const [myProfile, setMyProfile] = useState<UserProfile>();
+  const getProfile = async () => {
+    try {
+      const res = await getProfileByUser({ ...user, id: user._id });
+      if (res) {
+        setMyProfile(res);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch profile');
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getProfile();
+  }, [user]);
+
+  if (!myProfile)
+    return (
+      <Box className="loader">
+        <CircularProgress />
+      </Box>
+    );
+
+  return (
+    <ProfileForm
+      template={getProfileFormInitialValues(myProfile)}
+      profileFormSections={profileFormSections}
+      documentFormSection={documentFormSection}
+      viewMode={mode === 'view'}
+      onClickCancel={() => setMode('view')}
+      onClickEdit={() => setMode('edit')}
+      onSubmitSuccessfully={(p) => {
+        setMyProfile(p);
+        setMode('view');
+      }}
+    />
+  );
+};
+
+interface MyFormqProps {
+  user: any;
+  modeState: ['view' | 'edit', Dispatch<SetStateAction<'view' | 'edit'>>];
+}

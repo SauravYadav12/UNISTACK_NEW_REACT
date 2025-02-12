@@ -1,8 +1,9 @@
 import { createContext, useContext, useState } from 'react';
 import { UserProfile } from '../Interfaces/profile';
-import { getIUser } from '../utils/utils';
+import { getIUser, isTokenExpired } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';
 import { toast } from 'react-toastify';
+
 const AuthContext = createContext({
   isAuthenticated: false,
   validateLogin: (token: string) => {},
@@ -14,7 +15,7 @@ const AuthContext = createContext({
 
 export const AuthContextProvider = ({ children }: any) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem('token')
+    !!localStorage.getItem('token') && !isTokenExpired()
   );
   const [myProfile, setMyProfile] = useState<UserProfile>();
 
@@ -22,10 +23,10 @@ export const AuthContextProvider = ({ children }: any) => {
     localStorage.setItem('token', token);
     setIsAuthenticated(true);
   };
-  const validateLogout = () => {
+  function validateLogout() {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
-  };
+  }
 
   const getMyProfile = async () => {
     try {

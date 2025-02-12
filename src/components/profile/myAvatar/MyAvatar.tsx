@@ -5,18 +5,21 @@ import './myAvatar.css';
 
 interface MyProps {
   avatar?: string | File;
+  editable?: boolean;
   onEdit: () => void;
 }
 
-const MyAvatar = ({ avatar, onEdit }: MyProps) => {
+const MyAvatar = ({ avatar, onEdit, editable }: MyProps) => {
   return (
     <Box className="my-avatar-parent-box" sx={{}}>
-      <Box className="edit-box" onClick={() => onEdit()}>
-        <ModeEditOutline
-          sx={{ width: '16px', height: '16px' }}
-          className="edit-icon"
-        />
-      </Box>
+      {editable && (
+        <Box className="edit-box" onClick={() => onEdit()}>
+          <ModeEditOutline
+            sx={{ width: '16px', height: '16px' }}
+            className="edit-icon"
+          />
+        </Box>
+      )}
       <Box className="my-avatar-box" sx={{}}>
         {!!avatar && (
           <img
