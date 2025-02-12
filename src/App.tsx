@@ -97,7 +97,7 @@ function App() {
             <Route
               path="sales-leads"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allow={['admin']}>
                   <SalesLead />
                 </ProtectedRoute>
               }
@@ -113,7 +113,7 @@ function App() {
             <Route
               path="user-management"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allow={['super-admin']}>
                   <UserManagement />
                 </ProtectedRoute>
               }
