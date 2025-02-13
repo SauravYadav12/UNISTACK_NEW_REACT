@@ -329,12 +329,14 @@ export default function InterviewForm(props: any) {
                     ml: 1,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '10px',
+                      backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
                     },
                     '& .MuiInputBase-input.Mui-disabled': {
                       WebkitTextFillColor: 'black',
                       backgroundColor: '#f0f0f0',
                       borderRadius: '10px',
                     },
+                    
                   }}
                 />
               )}
@@ -366,6 +368,7 @@ export default function InterviewForm(props: any) {
                     ml: 1,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '10px',
+                      backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
                     },
                     '& .MuiInputBase-input.Mui-disabled': {
                       WebkitTextFillColor: 'black',

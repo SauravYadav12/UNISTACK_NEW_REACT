@@ -68,7 +68,16 @@ const RenderFields = ({
               helperText={validationError}
               inputProps={{ ...field.inputAttributes }}
               size="small"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '10px',
+                  backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+                },
+                '& .MuiInputBase-input.Mui-disabled': {
+                  WebkitTextFillColor: 'black',
+                  backgroundColor: '#f0f0f0',
+                },
+              }}
               multiline={fieldType === 'number' ? false : true}
             />
           </Grid>
@@ -109,6 +118,16 @@ const RenderFields = ({
                   {...params}
                   error={!!validationError}
                   helperText={validationError}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                      backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+                    },
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'black',
+                      backgroundColor: '#f0f0f0',
+                    },
+                  }}
                 />
               )}
             />

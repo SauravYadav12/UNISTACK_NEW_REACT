@@ -36,4 +36,5 @@ body {
   height: calc(100vh - 80px); /* Adjust height based on navbar height */
   padding-top: 80px;
   padding-left: 20px;
+  padding-right: 20px;
 }

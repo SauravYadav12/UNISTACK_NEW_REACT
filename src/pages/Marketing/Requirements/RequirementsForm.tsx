@@ -796,11 +796,11 @@ export default function RequirementsForm(props: any) {
                       mr: 1,
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '10px',
+                        backgroundColor: '#f0f0f0',
                       },
                       '& .MuiInputBase-input.Mui-disabled': {
                         WebkitTextFillColor: 'black',
                         backgroundColor: '#f0f0f0',
-                        borderRadius: '10px',
                       },
                     }}
                   />
