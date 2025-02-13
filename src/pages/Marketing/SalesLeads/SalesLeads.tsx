@@ -27,7 +27,7 @@ const SalesLeads = () => {
         <Button
           size="small"
           variant="contained"
-          color="primary"
+          color={params.row.comments.length ? 'success' : 'primary'}
           sx={{ borderRadius: '10px' }}
           onClick={() => handleViewDetails(params.row)}
         >
@@ -95,13 +95,13 @@ const SalesLeads = () => {
       return [...pre];
     });
   };
-  const filterRows=(id:string)=>{
+  const filterRows = (id: string) => {
     setRows((pre) => {
       if (!pre) return;
-      pre = pre.filter((r) => r._id!==id);
+      pre = pre.filter((r) => r._id !== id);
       return [...pre];
     });
-  }
+  };
   async function initSalesLeads() {
     try {
       setSyncing(true);
@@ -123,26 +123,25 @@ const SalesLeads = () => {
     initSalesLeads();
   }, []);
 
+  const dataGridHeader = (
+    <>
+      <h3>Sales Leads</h3>
+      <IconButton onClick={syncSalesLeads} disabled={syncing}>
+        <SyncIcon
+          className={syncing ? 'sync-icon-loading' : ''}
+          color="primary"
+        />
+      </IconButton>
+    </>
+  );
+
   return (
     <>
-      <div>
-        <IconButton
-          onClick={syncSalesLeads}
-          disabled={syncing}
-          style={{ marginRight: 25, float: 'right' }}
-        >
-          <SyncIcon
-            className={syncing ? 'sync-icon-loading' : ''}
-            color="primary"
-          />
-        </IconButton>
-        <h3>Sales Leads</h3>
-      </div>
       <CustomDataGrid
+        header={dataGridHeader}
         loading={syncing}
         columns={columns}
         rows={rows || []}
-        onViewDetails={handleViewDetails}
       />
       <CustomDrawer
         open={drawerOpen}

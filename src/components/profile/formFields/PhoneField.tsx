@@ -40,7 +40,16 @@ const PhoneField = ({
       error={!!validationError}
       helperText={validationError}
       size="small"
-      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          borderRadius: '10px',
+          backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+        },
+        '& .MuiInputBase-input.Mui-disabled': {
+          WebkitTextFillColor: 'black',
+          backgroundColor: '#f0f0f0',
+        },
+      }}
     />
   );
 };

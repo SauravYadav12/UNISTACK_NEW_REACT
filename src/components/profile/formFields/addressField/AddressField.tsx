@@ -69,6 +69,10 @@ const AddressField = ({
                     '& .MuiSelect-root': {
                       color: validationError ? 'red' : 'inherit', // Red text on error
                     },
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'black',
+                      backgroundColor: '#f0f0f0',
+                    },
                   }}
                 >
                   {Country.getAllCountries().map((option) => (
