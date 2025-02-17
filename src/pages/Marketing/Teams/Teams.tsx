@@ -6,6 +6,7 @@ import TeamsForm from './TeamsForm';
 import { useEffect, useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
 import { toast } from 'react-toastify';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -56,7 +57,7 @@ export default function Teams() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format('YYYY-MM-DD hh:mm A'),
+        moment(params).format(dateFormate+' '+timeFormate),
     },
   ];
 

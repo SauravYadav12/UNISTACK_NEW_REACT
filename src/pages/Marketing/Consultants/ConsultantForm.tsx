@@ -24,6 +24,7 @@ import {
   deleteConsultant,
   updateConsultant,
 } from '../../../services/consultantApi';
+import { dateFormate } from '../../../components/constants';
 
 const initialValues = {
   timeZone: '',
@@ -47,7 +48,7 @@ const initialValues = {
   cameToUsYear: '',
   originCountry: '',
   lookingToChange: '',
-  createdBy:''
+  createdBy: '',
 };
 
 export default function ConsultantForm(props: any) {
@@ -150,7 +151,7 @@ export default function ConsultantForm(props: any) {
     const payload = {
       ...values,
       projects: filteredProjects,
-      createdBy: user.firstName
+      createdBy: user.firstName,
     };
     try {
       const res = await createConsultant(payload);
@@ -351,6 +352,7 @@ export default function ConsultantForm(props: any) {
         <Grid item>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              inputFormat={dateFormate}
               disabled={!isEditing}
               label="Date of Birth"
               value={values.dob ? dayjs(values.dob) : null}
@@ -553,6 +555,7 @@ export default function ConsultantForm(props: any) {
             <Grid item>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  inputFormat={dateFormate}
                   disabled={!isEditing}
                   label="Project Start Date"
                   value={
@@ -588,6 +591,7 @@ export default function ConsultantForm(props: any) {
             <Grid item>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  inputFormat={dateFormate}
                   disabled={!isEditing}
                   label="Project End Date"
                   value={

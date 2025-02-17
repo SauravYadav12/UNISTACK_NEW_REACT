@@ -116,7 +116,6 @@ export const myGeoLocation = async (): Promise<
 export const myIp = async () => {
   try {
     const { data } = await axios.get('https://api.ipify.org?format=json');
-    console.log('ip:', data);
     return data.ip;
   } catch (error) {
     console.log('Error fetching ip:', error);
@@ -126,7 +125,7 @@ export const myIp = async () => {
 
 export const myIpGeoLocation = async () => {
     const position = await myGeoLocation();
-    const location = JSON.stringify({ ...position?.coords });
+    const location = position? JSON.stringify({ ...position?.coords }):null;
     const ip = (await myIp()) || '';
     const data = { ip, location };
     return data;

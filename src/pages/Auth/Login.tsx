@@ -17,10 +17,8 @@ import { login } from "../../services/authApi";
 import { toast } from "react-toastify";
 import Loader from "../../components/loader/Loader";
 import { useAuth } from "../../AuthGaurd/AuthContextProvider";
-import { Token } from "@mui/icons-material";
 
 function Copyright(props: any) {
-  const navigate = useNavigate();
 
   return (
     <Typography

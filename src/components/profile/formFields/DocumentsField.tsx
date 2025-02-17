@@ -116,7 +116,7 @@ export default function DocumentsField({
             {!!currentFile ? (
               <SelectedFile
                 disabled={disabled}
-                hideDeleteIcon={viewMode||disabled}
+                hideDeleteIcon={viewMode || disabled}
                 file={currentFile}
                 onClickDelete={removeFile}
                 onClickUpload={() => selectedFile && onUpload(selectedFile)}
@@ -143,7 +143,7 @@ export default function DocumentsField({
                       '&:hover': { backgroundColor: '#1565c0' },
                     }}
                   >
-                    {viewMode? 'Not found':'Choose File'}
+                    {viewMode ? 'Not found' : 'Choose File'}
                     <input
                       type="file"
                       accept={field.accept || '*'}
@@ -183,7 +183,12 @@ export default function DocumentsField({
                 helperText={formErrors[associatedField.fieldName]}
                 inputProps={{ ...associatedField.inputAttributes }}
                 size="small"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+                  },
+                }}
                 multiline={
                   associatedField.fieldType === 'number' ? false : true
                 }
@@ -339,11 +344,7 @@ export const SelectedFile = ({
         )}
         {typeof file === 'string' ? (
           <>
-            <Button
-              target="_blank"
-              href={file}
-              size="small"
-            >
+            <Button target="_blank" href={file} size="small">
               <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
             </Button>
           </>

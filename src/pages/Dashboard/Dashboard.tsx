@@ -9,16 +9,19 @@ import { ReactElement, useEffect, useState } from 'react';
 import { DashboardReport } from '../../Interfaces/reports';
 import { toast } from 'react-toastify';
 import { getDashboardReport } from '../../services/reportsApi';
-
+import Interviews from '../Marketing/Interviews/Interviews';
+import dayjs from 'dayjs';
+import { dateFormate } from '../../components/constants';
 interface CustomCard {
   color: string;
   title: string;
-  count: number;
+  count?: number;
   icon: ReactElement;
   titleColor: string;
 }
 
 function Dashboard() {
+  const toDay = dayjs(new Date());
   const [report, setReport] = useState<DashboardReport>();
   const cardObject: CustomCard[] = [
     {
@@ -47,7 +50,7 @@ function Dashboard() {
     {
       color: '#FCEDE8',
       title: 'Projects',
-      count: 0,
+      count: undefined,
       icon: <SummarizeIcon fontSize="large" style={{ color: '#FA896B' }} />,
       titleColor: '#FA896B',
     },
@@ -81,7 +84,6 @@ function Dashboard() {
     getMyReports();
   }, []);
 
-  
   if (!report)
     return (
       <Box height={100} className="loader" sx={{ py: 10 }}>
@@ -91,14 +93,15 @@ function Dashboard() {
 
   return (
     <>
-      <Grid container spacing={2} sx={{ width: '100%' }}>
+     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+     <Grid container spacing={2} sx={{ width: '100%' }}>
         {cardObject.map((card: any) => {
           return (
             <Grid key={card.title} item xs={12} sm={6} md={4} lg={2} xl={2}>
               <BasicCard
                 color={card.color}
                 title={card.title}
-                count={card.count}
+                count={card.count??"NA"}
                 icon={card.icon}
                 titleColor={card.titleColor}
               />
@@ -106,6 +109,16 @@ function Dashboard() {
           );
         })}
       </Grid>
+      <div style={{ flex:1 }}>
+        <Interviews
+          addNew={false}
+          query={`interviewDate=${toDay.format(
+            'YYYY-MM-DD'
+          )}&interviewDate=${toDay.format(dateFormate)}`}
+          label={"Today's Interviews"}
+        />
+      </div>
+     </div>
     </>
   );
 }

@@ -27,6 +27,7 @@ import { uploadFile } from '../../../services/storageApi';
 import { toast } from 'react-toastify';
 import AlertBox from '../../../components/alert/AlertBox';
 import { useNavigate } from 'react-router-dom';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
@@ -189,6 +190,7 @@ export default function RequirementsForm(props: any) {
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
     if (!comments.trim()) {
+      toast.warning('Comment is required');
       return;
     }
     const commentsPayload = {
@@ -244,7 +246,7 @@ export default function RequirementsForm(props: any) {
     setErrors(requirementFormInitialValues);
     if (key === 'createdAt') {
       const formattedDate = newValue
-        ? dayjs(newValue).format('YYYY-MM-DD')
+        ? dayjs(newValue).format(dateFormate)
         : null;
       setValues((prevValues: any) => ({
         ...prevValues,
@@ -781,6 +783,7 @@ export default function RequirementsForm(props: any) {
           <Grid>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
+                inputFormat={dateFormate}
                 label="Requirement Entered Date"
                 value={values.createdAt}
                 disabled
@@ -918,7 +921,9 @@ export default function RequirementsForm(props: any) {
               <span> On Date:</span>
               <strong>
                 {' '}
-                {dayjs(values.createdAt).format('YYYY-MM-DD hh:mm:ss A')}
+                {dayjs(values.createdAt).format(
+                  dateFormate + ' ' + timeFormate
+                )}
               </strong>
             </p>
             <p>
@@ -934,7 +939,7 @@ export default function RequirementsForm(props: any) {
                 {values.mComment && values.mComment.length > 0
                   ? dayjs(
                       values.mComment[values.mComment.length - 1].date
-                    ).format('YYYY-MM-DD hh:mm:ss A')
+                    ).format(dateFormate + ' ' + timeFormate)
                   : 'N/A'}
               </strong>
             </p>

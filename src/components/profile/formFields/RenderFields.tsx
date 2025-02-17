@@ -7,6 +7,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import PhoneField from './PhoneField';
 import { getIUser } from '../../../utils/utils';
+import { dateFormate } from '../../constants';
 
 const RenderFields = ({
   disabled,
@@ -98,6 +99,7 @@ const RenderFields = ({
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              inputFormat={dateFormate}
               onClose={() => onBlur && onBlur(field)}
               disabled={disabled}
               label={label}
@@ -105,7 +107,7 @@ const RenderFields = ({
               onChange={(newValue) => {
                 onChange({
                   target: {
-                    value: newValue ? dayjs(newValue).format('YYYY-MM-DD') : '',
+                    value: newValue ? dayjs(newValue).format(dateFormate) : '',
                   },
                 } as any);
               }}

@@ -2,6 +2,7 @@ import { Box, Grid, Typography, TextField } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { dateFormate } from '../constants';
 interface DateBarProps {
   fromDate?: string;
   toDate?: string;
@@ -46,6 +47,7 @@ const DateBar = ({ fromDate, toDate, metaText, addValue }: DateBarProps) => {
             >
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  inputFormat={dateFormate}
                   maxDate={toDate}
                   label="From Date"
                   value={fromDate ? dayjs(fromDate) : null}
@@ -72,6 +74,7 @@ const DateBar = ({ fromDate, toDate, metaText, addValue }: DateBarProps) => {
             >
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  inputFormat={dateFormate}
                   minDate={fromDate}
                   label="To Date"
                   value={toDate ? dayjs(toDate) : null}

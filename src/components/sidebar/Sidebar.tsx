@@ -92,7 +92,7 @@ function Sidebar({ toggleSideBar }: any) {
       variant="permanent"
       anchor="left"
     >
-      <div>
+      <div style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
         <Typography variant="h5">
           <img
             src={toggleSideBar ? unistack_small_Img : unistack_Img}
