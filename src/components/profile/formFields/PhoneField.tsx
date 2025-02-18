@@ -31,7 +31,7 @@ const PhoneField = ({
     <MuiTelInput
       disabled={disabled}
       inputProps={{ ...field.inputAttributes, maxLength: maxPhoneLength }}
-      defaultCountry={'IN'}
+      defaultCountry={disabled ? undefined : 'IN'}
       onChange={onPhoneChange}
       onBlur={() => onBlur && onBlur(field)}
       label={label}
@@ -40,7 +40,16 @@ const PhoneField = ({
       error={!!validationError}
       helperText={validationError}
       size="small"
-      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          borderRadius: '10px',
+          backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+        },
+        '& .MuiInputBase-input.Mui-disabled': {
+          WebkitTextFillColor: 'black',
+          backgroundColor: '#f0f0f0',
+        },
+      }}
     />
   );
 };

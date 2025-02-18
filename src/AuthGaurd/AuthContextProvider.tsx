@@ -1,8 +1,9 @@
 import { createContext, useContext, useState } from 'react';
 import { UserProfile } from '../Interfaces/profile';
-import { getIUser } from '../utils/utils';
+import { getIUser, isTokenExpired } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';
 import { toast } from 'react-toastify';
+
 const AuthContext = createContext({
   isAuthenticated: false,
   validateLogin: (token: string) => {},
@@ -10,29 +11,25 @@ const AuthContext = createContext({
   myProfile: undefined,
   getMyProfile: () => {},
   setMyProfile: () => {},
-  isGetMyProfileInProgress: false,
 } as DefaultContextValue);
 
 export const AuthContextProvider = ({ children }: any) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem('token')
+    !!localStorage.getItem('token') && !isTokenExpired()
   );
-  const [isGetMyProfileInProgress, setIsGetMyProfileInProgress] =
-    useState(false);
   const [myProfile, setMyProfile] = useState<UserProfile>();
 
   const validateLogin = (token: string) => {
     localStorage.setItem('token', token);
     setIsAuthenticated(true);
   };
-  const validateLogout = () => {
+  function validateLogout() {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
-  };
+  }
 
   const getMyProfile = async () => {
     try {
-      setIsGetMyProfileInProgress(true);
       const iUser = getIUser()!;
       const profile = await getProfileByUser(iUser);
       if (!profile) {
@@ -40,10 +37,8 @@ export const AuthContextProvider = ({ children }: any) => {
       }
       setMyProfile(profile);
     } catch (error) {
-      toast.error('Some thing went wrong');
+      toast.error('Something went wrong');
       console.log(error);
-    } finally {
-      setIsGetMyProfileInProgress(false);
     }
   };
 
@@ -53,7 +48,6 @@ export const AuthContextProvider = ({ children }: any) => {
         isAuthenticated,
         validateLogin,
         validateLogout,
-        isGetMyProfileInProgress,
         getMyProfile,
         setMyProfile,
         myProfile,
@@ -73,5 +67,4 @@ interface DefaultContextValue {
   myProfile: undefined | UserProfile;
   getMyProfile: () => void;
   setMyProfile: (profile: UserProfile) => void;
-  isGetMyProfileInProgress: boolean;
 }

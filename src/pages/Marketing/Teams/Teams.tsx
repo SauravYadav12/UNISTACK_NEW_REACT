@@ -5,6 +5,8 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import TeamsForm from './TeamsForm';
 import { useEffect, useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
+import { toast } from 'react-toastify';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -12,7 +14,7 @@ export default function Teams() {
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
   const [viewData, setViewData] = useState({});
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState <any[]>();
 
   useEffect(() => {
     getTeams();
@@ -20,10 +22,10 @@ export default function Teams() {
 
   async function getTeams() {
     try {
-      const res = await teamsList();
-      console.log('Teams Response', res);
-      setRows(res.data.data);
+      const {data} = await teamsList();
+      setRows(data.data||[]);
     } catch (error) {
+      toast.error('Failed to load');
       console.error('Error while fetching API response', error);
     }
   }
@@ -55,7 +57,7 @@ export default function Teams() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format('YYYY-MM-DD hh:mm A'),
+        moment(params).format(dateFormate+' '+timeFormate),
     },
   ];
 
@@ -67,8 +69,8 @@ export default function Teams() {
     setDrawerOpen(true);
   };
   const handleViewDetails = (row: any) => {
-    const data = rows.filter((r: any) => r.teamId === row.teamId);
-    console.log('viewRecord', data[0]);
+    const data = rows?.filter((r: any) => r.teamId === row.teamId);
+    if(!data) return;
     setViewData(data[0]);
     setFormTitle(`Team ID :- ${row.teamId}`);
     setMode('view');
@@ -83,23 +85,27 @@ export default function Teams() {
     setMode(editMode ? 'edit' : 'view');
   };
 
+  const header = (
+    <>
+      <h3>Teams</h3>
+      <Button
+        variant="contained"
+        style={{ borderRadius: '10px' }}
+        size="small"
+        onClick={handleAddNew}
+      >
+        Add New
+      </Button>
+    </>
+  );
+
   return (
     <>
-      <div>
-        <Button
-          variant="contained"
-          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
-          size="small"
-          onClick={handleAddNew}
-        >
-          Add New
-        </Button>
-        <h3>Teams</h3>
-      </div>
       <CustomDataGrid
+        loading={!rows}
+        header={header}
         columns={columns}
-        rows={rows}
-        onViewDetails={handleViewDetails}
+        rows={rows||[]}
       />
       <CustomDrawer
         open={drawerOpen}

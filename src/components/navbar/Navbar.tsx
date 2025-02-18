@@ -17,6 +17,7 @@ import './navbar.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { iUser } from '../../Interfaces/iUser';
+import { logout } from '../../services/authApi';
 
 const pages = ['Attendance', 'Leaves'];
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
@@ -50,10 +51,11 @@ function Navbar({ sidebar, toggleSideBar }: any) {
     sidebar();
   };
 
-  const handleSetting = (setting: String) => {
+  const handleSetting = async(setting: String) => {
     if (setting.toLowerCase() === 'logout') {
       validateLogout();
       navigate(`/`);
+      await logout();
     } else {
       navigate(`/${setting.toLowerCase()}`);
     }

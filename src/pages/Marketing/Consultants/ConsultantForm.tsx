@@ -24,6 +24,7 @@ import {
   deleteConsultant,
   updateConsultant,
 } from '../../../services/consultantApi';
+import { dateFormate } from '../../../components/constants';
 
 const initialValues = {
   timeZone: '',
@@ -47,7 +48,7 @@ const initialValues = {
   cameToUsYear: '',
   originCountry: '',
   lookingToChange: '',
-  createdBy:''
+  createdBy: '',
 };
 
 export default function ConsultantForm(props: any) {
@@ -150,7 +151,7 @@ export default function ConsultantForm(props: any) {
     const payload = {
       ...values,
       projects: filteredProjects,
-      createdBy: user.firstName
+      createdBy: user.firstName,
     };
     try {
       const res = await createConsultant(payload);
@@ -351,6 +352,8 @@ export default function ConsultantForm(props: any) {
         <Grid item>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              inputFormat={dateFormate}
+              disabled={!isEditing}
               label="Date of Birth"
               value={values.dob ? dayjs(values.dob) : null}
               onChange={(newValue) => addValue('dob', newValue)}
@@ -364,6 +367,7 @@ export default function ConsultantForm(props: any) {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '10px',
+                      backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
                     },
                     '& .MuiInputBase-input.Mui-disabled': {
                       WebkitTextFillColor: 'black',
@@ -551,6 +555,8 @@ export default function ConsultantForm(props: any) {
             <Grid item>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  inputFormat={dateFormate}
+                  disabled={!isEditing}
                   label="Project Start Date"
                   value={
                     project.projectStartDate
@@ -585,6 +591,8 @@ export default function ConsultantForm(props: any) {
             <Grid item>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  inputFormat={dateFormate}
+                  disabled={!isEditing}
                   label="Project End Date"
                   value={
                     project.projectEndDate

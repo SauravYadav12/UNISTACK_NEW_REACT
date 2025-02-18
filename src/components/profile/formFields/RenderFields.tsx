@@ -7,6 +7,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import PhoneField from './PhoneField';
 import { getIUser } from '../../../utils/utils';
+import { dateFormate } from '../../constants';
 
 const RenderFields = ({
   disabled,
@@ -68,7 +69,16 @@ const RenderFields = ({
               helperText={validationError}
               inputProps={{ ...field.inputAttributes }}
               size="small"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '10px',
+                  backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+                },
+                '& .MuiInputBase-input.Mui-disabled': {
+                  WebkitTextFillColor: 'black',
+                  backgroundColor: '#f0f0f0',
+                },
+              }}
               multiline={fieldType === 'number' ? false : true}
             />
           </Grid>
@@ -89,6 +99,7 @@ const RenderFields = ({
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              inputFormat={dateFormate}
               onClose={() => onBlur && onBlur(field)}
               disabled={disabled}
               label={label}
@@ -96,7 +107,7 @@ const RenderFields = ({
               onChange={(newValue) => {
                 onChange({
                   target: {
-                    value: newValue ? dayjs(newValue).format('YYYY-MM-DD') : '',
+                    value: newValue ? dayjs(newValue).format(dateFormate) : '',
                   },
                 } as any);
               }}
@@ -109,6 +120,16 @@ const RenderFields = ({
                   {...params}
                   error={!!validationError}
                   helperText={validationError}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                      backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+                    },
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'black',
+                      backgroundColor: '#f0f0f0',
+                    },
+                  }}
                 />
               )}
             />

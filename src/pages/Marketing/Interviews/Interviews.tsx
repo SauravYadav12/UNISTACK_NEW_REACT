@@ -13,6 +13,9 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { interviewsList } from '../../../services/interviewApi';
 import CustomSearch from './CustomSearch';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValues';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 type Record = {
   id: number;
@@ -20,10 +23,15 @@ type Record = {
   company: string;
   title: string;
 };
-
-export default function Interviews(props: any) {
+interface Iprops {
+  label: string;
+  query: string;
+  addNew?: boolean;
+}
+export default function Interviews(props: Iprops) {
+  const { addNew = true } = props;
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState<any[]>();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
@@ -37,13 +45,12 @@ export default function Interviews(props: any) {
   }, [drawerOpen, props.query]);
 
   const getInterviews = async () => {
-    const query = searchParams.toString().length
-      ? searchParams.toString()
-      : props.query
-      ? `interviewStatus=${props.query}`
-      : '';
-    const res = await interviewsList(query);
-    setRows(res.data.data);
+    try {
+      const { data } = await interviewsList(props.query);
+      setRows(data.data || []);
+    } catch (error) {
+      toast.error('Failed to load');
+    }
   };
 
   const columns = [
@@ -64,10 +71,39 @@ export default function Interviews(props: any) {
       ),
     },
     { field: 'intId', headerName: 'Int ID', width: 100 },
-    { field: 'interviewStatus', headerName: 'Int Status', width: 120 },
+    {
+      field: 'interviewStatus',
+      headerName: 'Int Status',
+      width: 180,
+      renderCell: (params: any) => (
+        <span
+          style={{
+            color: (interviewStatusColors as any)[params.row.interviewStatus],
+          }}
+        >
+          {params.row.interviewStatus}
+        </span>
+      ),
+    },
     { field: 'consultant', headerName: 'Consultant', width: 120 },
-    { field: 'interviewDate', headerName: 'Int date', width: 100 },
-    { field: 'interviewTime', headerName: 'Int Time (EST)', width: 150 },
+    {
+      field: 'interviewDate',
+      headerName: 'Int date',
+      width: 100,
+      valueFormatter: (params: any) => {
+        return moment(params).format(dateFormate);
+      },
+    },
+    {
+      field: 'interviewTime',
+      headerName: 'Int Time',
+      width: 150,
+      valueFormatter: (params: any, r: any) => {
+        return (
+          moment(params, timeFormate).format(timeFormate) + ' ' + (r.timeZone||'')
+        );
+      },
+    },
     { field: 'intResult', headerName: 'Int Result', width: 150 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
     { field: 'clientName', headerName: 'Client Name', width: 120 },
@@ -79,21 +115,19 @@ export default function Interviews(props: any) {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) => {
-        // console.log('createdAt', params);
-        return moment(params).format('YYYY-MM-DD hh:mm A');
+        return moment(params).format(dateFormate + ' ' + timeFormate);
       },
     },
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows.filter((r: any) => r.intId === row.intId);
-    console.log('data--', data[0]);
+    const data = rows?.filter((r: any) => r.intId === row.intId);
+    if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Interview ID ${row.intId}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
-    // alert(`View details for Req ID: ${row.intId}`);
   };
 
   const handleOpenForm = (record: Record) => {
@@ -121,49 +155,71 @@ export default function Interviews(props: any) {
     setMode(editMode ? 'edit' : 'view');
   };
 
-  return (
+  const createInterview = async (record: any) => {
+    try {
+      setDrawerOpen(true);
+      handleOpenForm(record);
+    } catch (error) {
+      console.log('Error creating interview', error);
+      toast.error('Error creating interview');
+    }
+  };
+
+  useEffect(() => {
+    const req = searchParams.get('createInterviewByReq');
+    if (req) {
+      createInterview(JSON.parse(req));
+    }
+  }, [searchParams]);
+
+  const dataGridHeader = (
     <>
-      <div>
+      <h3>{props.label}</h3>
+      {addNew && (
         <Button
           variant="contained"
-          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
           size="small"
           onClick={handleClickOpen}
+          style={{ borderRadius: '10px' }}
         >
           Add New
         </Button>
-        <Dialog
-          open={openDialog}
-          onClose={handleClose}
-          sx={{
-            '& .MuiDialog-paper': {
-              width: '850px',
-              maxWidth: '80%',
-            },
-          }}
-        >
-          <DialogTitle>Get Interview Details</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Select the Record ID for creating an interview
-            </DialogContentText>
-            <CustomSearch
-              onClick={handleOpenForm}
-              setDrawerOpen={setDrawerOpen}
-            />
-          </DialogContent>
-        </Dialog>
-        <h3>{props.label}</h3>
-      </div>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      <Dialog
+        open={openDialog}
+        onClose={handleClose}
+        sx={{
+          '& .MuiDialog-paper': {
+            width: '850px',
+            maxWidth: '80%',
+          },
+        }}
+      >
+        <DialogTitle>Get Interview Details</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Select the Record ID for creating an interview
+          </DialogContentText>
+          <CustomSearch
+            onClick={handleOpenForm}
+            setDrawerOpen={setDrawerOpen}
+          />
+        </DialogContent>
+      </Dialog>
       <CustomDataGrid
-        rows={rows}
+        header={dataGridHeader}
+        rows={rows || []}
         columns={columns}
-        onViewDetails={handleViewDetails}
+        loading={!rows}
       />
       <CustomDrawer
         open={drawerOpen}
         onClose={handleCloseForm}
-        // title="Add New Interview"
         title={formTitle}
       >
         <InterviewForm

@@ -4,6 +4,7 @@ import { MyDetail } from '../../Interfaces/profile';
 import { Box } from '@mui/material';
 import './profile.css';
 import dayjs from 'dayjs';
+import { dateFormate } from '../constants';
 const ProfileDetails = () => {
   const { myProfile } = useAuth();
   const [MyDetails, setMyDetails] = useState<MyDetail[]>([]);
@@ -21,7 +22,7 @@ const ProfileDetails = () => {
       },
       {
         label: 'Date of birth',
-        value: myProfile?.dob ? dayjs(myProfile.dob).format('YYYY-MM-DD') : '',
+        value: myProfile?.dob ? dayjs(myProfile.dob).format(dateFormate) : '',
       },
       {
         label: 'Personal Email',

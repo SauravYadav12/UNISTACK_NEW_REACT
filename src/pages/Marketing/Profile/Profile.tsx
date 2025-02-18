@@ -15,14 +15,18 @@ import coverImage from '../../../assets/unistack_banner.png';
 import './profile.css';
 import {
   documentFormSection,
+  getProfileFormInitialValues,
   profileFormSections,
   profilePhotoSection,
 } from './constants';
+import { getIUser } from '../../../utils/utils';
 function Profile() {
+  const iuser = getIUser();
+  const canEdit = iuser?.canEdit || iuser?.role === 'super-admin';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePictureDrawer, setProfilePictureDrawer] = useState(false);
   const [value, setValue] = React.useState(0);
-  const { myProfile, getMyProfile } = useAuth();
+  const { myProfile, getMyProfile, setMyProfile } = useAuth();
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -31,12 +35,14 @@ function Profile() {
   useEffect(() => {
     getMyProfile();
   }, []);
+
   if (!myProfile)
     return (
       <Box className="loader">
         <CircularProgress />
       </Box>
     );
+
   return (
     <>
       <div style={{ marginRight: 25 }}>
@@ -73,6 +79,7 @@ function Profile() {
           </Box>
           <Box className="middle-box">
             <MyAvatar
+              editable={canEdit}
               avatar={myProfile?.photo}
               onEdit={() => setProfilePictureDrawer(!profilePictureDrawer)}
             />
@@ -82,17 +89,23 @@ function Profile() {
           </Box>
 
           <Box className="right-box">
-            <Button
-              variant="contained"
-              style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
-              onClick={() => setDrawerOpen(true)}
-              size="small"
-            >
-              <ModeEditOutline
-                style={{ paddingRight: '8px', width: '16px', height: '16px' }}
-              />{' '}
-              <span>Edit</span>
-            </Button>
+            {canEdit && (
+              <Button
+                variant="contained"
+                style={{
+                  marginRight: 25,
+                  float: 'right',
+                  borderRadius: '10px',
+                }}
+                onClick={() => setDrawerOpen(true)}
+                size="small"
+              >
+                <ModeEditOutline
+                  style={{ paddingRight: '8px', width: '16px', height: '16px' }}
+                />{' '}
+                <span>Edit</span>
+              </Button>
+            )}
           </Box>
         </Box>
       </div>
@@ -140,10 +153,14 @@ function Profile() {
           title={'Edit Profile'}
         >
           <ProfileForm
-            template={myProfile}
+            onSubmitSuccessfully={(p) => {
+              setMyProfile(p);
+              setDrawerOpen(false);
+            }}
+            template={getProfileFormInitialValues(myProfile)}
             profileFormSections={profileFormSections}
             documentFormSection={documentFormSection}
-            onClose={() => setDrawerOpen(false)}
+            onClickCancel={() => setDrawerOpen(false)}
           />
         </CustomDrawer>
       )}
@@ -154,11 +171,15 @@ function Profile() {
           title={'Edit Profile'}
         >
           <ProfileForm
-            template={myProfile}
+            onSubmitSuccessfully={(p) => {
+              setMyProfile(p);
+              setProfilePictureDrawer(false);
+            }}
+            template={getProfileFormInitialValues(myProfile)}
             profileFormSections={[]}
             documentFormSection={[profilePhotoSection]}
             documentSectionHeader="Profile photo"
-            onClose={() => setProfilePictureDrawer(false)}
+            onClickCancel={() => setProfilePictureDrawer(false)}
           />
         </CustomDrawer>
       )}

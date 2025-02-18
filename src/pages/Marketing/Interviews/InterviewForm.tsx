@@ -35,6 +35,7 @@ import {
   deleteInterview,
   updateInterview,
 } from '../../../services/interviewApi';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 const initialValues = {
   timeShift: '',
@@ -85,6 +86,7 @@ export default function InterviewForm(props: any) {
     if (selectedRecord) {
       setValues((prevValues: any) => ({
         ...prevValues,
+        consultant: selectedRecord.consultant,
         reqID: selectedRecord.id,
         clientName: selectedRecord.name,
         vendorCompany: selectedRecord.company,
@@ -93,8 +95,8 @@ export default function InterviewForm(props: any) {
         jobDescription: selectedRecord.jobDescription,
         duration: selectedRecord.duration,
         taxType: selectedRecord.taxType,
-        marketingPerson: user.firstName,
-        marketingPersonRef:user.id
+        marketingPerson: `${user.firstName} ${user.lastName}`,
+        marketingPersonRef: user.id,
       }));
     }
   }, [selectedRecord]);
@@ -310,6 +312,8 @@ export default function InterviewForm(props: any) {
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              inputFormat={dateFormate}
+              disabled={!isEditing}
               label="Interview Date"
               value={values.interviewDate ? dayjs(values.interviewDate) : null}
               onChange={(newValue) => addValue('interviewDate', newValue)}
@@ -327,6 +331,7 @@ export default function InterviewForm(props: any) {
                     ml: 1,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '10px',
+                      backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
                     },
                     '& .MuiInputBase-input.Mui-disabled': {
                       WebkitTextFillColor: 'black',
@@ -342,10 +347,12 @@ export default function InterviewForm(props: any) {
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <TimePicker
+              disabled={!isEditing}
+              inputFormat={timeFormate}
               label="Interview Time"
               value={
                 values.interviewTime
-                  ? dayjs(values.interviewTime, 'hh:mm:ss A')
+                  ? dayjs(values.interviewTime, timeFormate)
                   : null
               }
               onChange={(newValue) => addValue('interviewTime', newValue)}
@@ -363,6 +370,7 @@ export default function InterviewForm(props: any) {
                     ml: 1,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '10px',
+                      backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
                     },
                     '& .MuiInputBase-input.Mui-disabled': {
                       WebkitTextFillColor: 'black',

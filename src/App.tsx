@@ -9,7 +9,6 @@ import Login from './pages/Auth/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Layout from './components/layout/Layout';
 import Requirements from './pages/Marketing/Requirements/Requirements';
-import Interviews from './pages/Marketing/Interviews/Interviews';
 import Consultants from './pages/Marketing/Consultants/Consultants';
 import Teams from './pages/Marketing/Teams/Teams';
 import Profile from './pages/Marketing/Profile/Profile';
@@ -19,7 +18,7 @@ import { AuthContextProvider, useAuth } from './AuthGaurd/AuthContextProvider';
 import ProtectedRoute from './AuthGaurd/ProtectedRoute';
 import UserManagement from './pages/UserManagement/UserManagement';
 import TestAndVendorInterviews from './pages/Marketing/TestAndVendorInterviews/TestAndVendorInterviews';
-import ListTabs from './components/tabs/CustomTabs';
+import InterviewTabs from './components/interview/InterviewTabs';
 import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
 
 function App() {
@@ -58,7 +57,7 @@ function App() {
               path="interviews"
               element={
                 <ProtectedRoute>
-                  <ListTabs />
+                  <InterviewTabs />
                 </ProtectedRoute>
               }
             />
@@ -97,7 +96,7 @@ function App() {
             <Route
               path="sales-leads"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allow={['admin']}>
                   <SalesLead />
                 </ProtectedRoute>
               }
@@ -113,7 +112,7 @@ function App() {
             <Route
               path="user-management"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allow={['super-admin']}>
                   <UserManagement />
                 </ProtectedRoute>
               }

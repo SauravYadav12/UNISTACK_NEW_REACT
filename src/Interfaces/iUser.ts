@@ -7,4 +7,5 @@ export interface iUser {
   lastName: string;
   premium: boolean;
   role: string;
+  canEdit: boolean;
 }

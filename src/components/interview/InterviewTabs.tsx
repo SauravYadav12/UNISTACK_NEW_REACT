@@ -6,13 +6,7 @@ import Interviews from '../../pages/Marketing/Interviews/Interviews';
 import { useSearchParams } from 'react-router-dom';
 import { InterviewStatus } from '../../Interfaces/reports';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-export default function ListTabs() {
+export default function InterviewTabs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [value, setValue] = React.useState(0);
   const tabs: { label: string; status?: InterviewStatus }[] = [
@@ -53,7 +47,7 @@ export default function ListTabs() {
     }
   }, []);
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box display={'flex'} flexDirection={'column'} height={'100%'}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
           value={value}
@@ -66,32 +60,22 @@ export default function ListTabs() {
         </Tabs>
       </Box>
       {tabs.map((t, i) => {
+        if (value !== i) return null;
+        const myParams = new URLSearchParams(searchParams);
+        myParams.delete('createInterviewByReq');
+        const p = myParams.toString();
+        const query = p.length
+          ? p
+          : t.status
+          ? `interviewStatus=${t.status}`
+          : '';
         return (
-          <CustomTabPanel key={i} value={value} index={i}>
-            <Interviews
-              query={t.status || ''}
-              label={t.label + ' Interviews'}
-            />
-          </CustomTabPanel>
+          <div key={i} style={{ flex: 1 }}>
+            <Interviews query={query} label={t.label + ' Interviews'} />
+          </div>
         );
       })}
     </Box>
-  );
-}
-
-function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
   );
 }
 

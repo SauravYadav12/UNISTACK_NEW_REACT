@@ -1,17 +1,18 @@
-import { Button } from '@mui/material';
+import { Button, Link } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
-import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useEffect, useState } from 'react';
 import RequirementsForm from './RequirementsForm';
 import { requirementsList } from '../../../services/requirementApi';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { reqirementStatusColors } from './requirementsValues';
 export default function Requirements() {
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [rows, setRows] = useState([]);
-  const [viewData, setViewData] = useState({});
+  const [rows, setRows] = useState<any[]>();
+  const [viewData, setViewData] = useState<any>({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
   useEffect(() => {
@@ -20,15 +21,11 @@ export default function Requirements() {
 
   const getRequirements = async () => {
     try {
-      const res = await requirementsList(searchParams.toString());
-      console.log('API Response:', res.data);
-      const sortedData = res.data.data.sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setRows(sortedData);
+      const { data } = await requirementsList(searchParams.toString());
+      setRows(data.data || []);
     } catch (error) {
       console.error('Error fetching requirements:', error);
+      toast.error('Failed to load');
     }
   };
 
@@ -53,26 +50,31 @@ export default function Requirements() {
     { field: 'assignedTo', headerName: 'Assigned to', width: 120 },
     { field: 'appliedFor', headerName: 'Applied For', width: 150 },
     { field: 'clientCompany', headerName: 'Client Name', width: 150 },
-    { field: 'reqStatus', headerName: 'Req Status', width: 120 },
+    {
+      field: 'reqStatus',
+      headerName: 'Req Status',
+      width: 120,
+      renderCell: (params: any) => (
+        <span
+          style={{
+            color: (reqirementStatusColors as any)[params.row.reqStatus],
+          }}
+        >
+          {params.row.reqStatus}
+        </span>
+      ),
+    },
     { field: 'nextStep', headerName: 'Next Step', width: 120 },
     { field: 'vendorCompany', headerName: 'Vendor Company', width: 150 },
     { field: 'vendorPersonName', headerName: 'Vendor Person', width: 150 },
     { field: 'vendorPhone', headerName: 'Vendor Phone', width: 130 },
     { field: 'jobTitle', headerName: 'Requirement Title', width: 200 },
     { field: 'reqEnteredBy', headerName: 'Created by', width: 130 },
-    {
-      field: 'createdAt',
-      headerName: 'Created At',
-      width: 180,
-      valueFormatter: (params: any) => {
-        return moment(params).format('YYYY-MM-DD hh:mm:ss A');
-      },
-    },
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows.filter((r: any) => r.reqID === row.reqID);
-    // console.log('Data', data[0]);
+    const data = rows?.filter((r: any) => r.reqID === row.reqID);
+    if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Requirement ID ${row.reqID}`);
     setMode('view');
@@ -96,34 +98,47 @@ export default function Requirements() {
   const handleCopy = () => {
     setMode('add');
     setIsEditing(true);
+    setFormTitle('Add New Requirement');
   };
 
   const handleDrawerClose = () => {
     setDrawerOpen(false);
   };
-
+  const header = (
+    <>
+      <h3>Requirements</h3>
+      <Button
+        variant="contained"
+        style={{ borderRadius: '10px' }}
+        onClick={handleAddNew}
+        size="small"
+      >
+        Add New
+      </Button>
+    </>
+  );
   return (
     <>
-      <div>
-        <Button
-          variant="contained"
-          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
-          onClick={handleAddNew}
-          size="small"
-        >
-          Add New
-        </Button>
-        <h3>Requirements</h3>
-      </div>
       <CustomDataGrid
-        rows={rows}
+        header={header}
+        rows={rows || []}
         columns={columns}
-        onViewDetails={handleViewDetails}
+        loading={!rows}
       />
       <CustomDrawer
         open={drawerOpen}
         onClose={handleDrawerClose}
         title={formTitle}
+        subTitle={
+          viewData.isDuplicate && viewData.duplicateWith ? (
+            <>
+              Copied from :{' '}
+              <Link target="_blank" href={'?reqID=' + viewData.duplicateWith}>
+                {viewData.duplicateWith}
+              </Link>
+            </>
+          ) : null
+        }
       >
         <RequirementsForm
           viewData={viewData}

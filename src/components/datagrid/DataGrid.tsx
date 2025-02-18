@@ -1,33 +1,47 @@
-import * as React from 'react';
+import React from 'react';
 import Box from '@mui/material/Box';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
-export default function CustomDataGrid(props: any) {
-  const [rows, setRows] = React.useState([]);
-  const [columns, setColumns] = React.useState([]);
-  React.useEffect(() => {
-    if (Array.isArray(props.columns)) {
-      setColumns(props.columns);
-      setRows(props.rows);
-    }
-  }, [props.columns]);
+export default function CustomDataGrid(props: Iprops) {
   return (
-    <Box sx={{ height: 500, width: 0.98, pr: 5 }}>
-      <DataGrid
-        loading={props.loading}
-        rows={rows}
-        disableColumnFilter
-        disableColumnSelector
-        disableDensitySelector
-        columns={columns}
-        getRowId={(row: any) => row._id}
-        slots={{ toolbar: GridToolbar }}
-        slotProps={{
-          toolbar: {
-            showQuickFilter: true,
-          },
-        }}
-      />
-    </Box>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
+      <Box
+        display={'flex'}
+        justifyContent={'space-between'}
+        alignContent={'center'}
+        alignItems={'center'}
+      >
+        {props.header}
+      </Box>
+      <div style={{ flex: 1,minHeight:'300px'}}>
+        <Box sx={{ height: '98%' }}>
+          <DataGrid
+            loading={props.loading}
+            rows={props.rows}
+            columns={props.columns}
+            getRowId={(row: any) => row._id}
+            slots={{ toolbar: GridToolbar }}
+            slotProps={{
+              toolbar: {
+                showQuickFilter: true,
+              },
+            }}
+          />
+        </Box>
+      </div>
+    </div>
   );
+}
+
+interface Iprops {
+  loading: boolean;
+  header: JSX.Element;
+  rows: any[];
+  columns: any[];
 }

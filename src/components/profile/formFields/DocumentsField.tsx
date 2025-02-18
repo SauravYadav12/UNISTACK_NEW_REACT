@@ -18,6 +18,7 @@ import { getBlobFileByUrl, isImage, isPDF } from '../../../utils/utils';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import './formFields.css';
 export default function DocumentsField({
+  viewMode,
   field,
   disabled,
   formErrors,
@@ -28,6 +29,7 @@ export default function DocumentsField({
   onChange,
   onBlur,
 }: MyProps) {
+  disabled = disabled || !!viewMode;
   const maxSize = 5 * (1024 * 1024);
   const savedFile = myProfile[field.fieldName];
   const [validationErrorMessage, setValidationErrorMessage] =
@@ -114,6 +116,7 @@ export default function DocumentsField({
             {!!currentFile ? (
               <SelectedFile
                 disabled={disabled}
+                hideDeleteIcon={viewMode || disabled}
                 file={currentFile}
                 onClickDelete={removeFile}
                 onClickUpload={() => selectedFile && onUpload(selectedFile)}
@@ -140,7 +143,7 @@ export default function DocumentsField({
                       '&:hover': { backgroundColor: '#1565c0' },
                     }}
                   >
-                    Choose File
+                    {viewMode ? 'Not found' : 'Choose File'}
                     <input
                       type="file"
                       accept={field.accept || '*'}
@@ -180,7 +183,12 @@ export default function DocumentsField({
                 helperText={formErrors[associatedField.fieldName]}
                 inputProps={{ ...associatedField.inputAttributes }}
                 size="small"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+                  },
+                }}
                 multiline={
                   associatedField.fieldType === 'number' ? false : true
                 }
@@ -195,6 +203,7 @@ export default function DocumentsField({
 
 interface MyProps {
   disabled: boolean;
+  viewMode?: boolean;
   field: DocumentSectionField;
   myProfile: UserProfile;
   formErrors: UserProfile;
@@ -335,12 +344,7 @@ export const SelectedFile = ({
         )}
         {typeof file === 'string' ? (
           <>
-            <Button
-              disabled={disabled}
-              target="_blank"
-              href={file}
-              size="small"
-            >
+            <Button target="_blank" href={file} size="small">
               <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
             </Button>
           </>

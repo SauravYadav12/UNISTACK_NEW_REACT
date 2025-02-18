@@ -1,7 +1,13 @@
-import { Drawer, Box, IconButton } from '@mui/material';
+import { Drawer, Box, IconButton, Link } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
-export default function CustomDrawer({ open, onClose, title, children }: any) {
+export default function CustomDrawer({
+  open,
+  onClose,
+  title,
+  subTitle,
+  children,
+}: any) {
   return (
     <Drawer
       anchor="right"
@@ -9,17 +15,23 @@ export default function CustomDrawer({ open, onClose, title, children }: any) {
       sx={{
         '& .MuiDrawer-paper': {
           width: 1100,
-          transition: 'width 0.3s ease', // Smooth transition on width change
-          maxWidth: '100vw', // Ensures the drawer never exceeds the viewport width
-          left: 'auto', // Position drawer on the right side
-          right: 0, // Ensure it sticks to the right
+          maxWidth: '100vw',
+          left: 'auto',
+          right: 0,
         },
       }}
     >
       <Box sx={{ padding: 2 }} role="presentation">
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <h2>{title}</h2>
-          <IconButton onClick={onClose}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="flex-start"
+        >
+          <div>
+            <h2 style={{ marginBottom: 0 }}>{title}</h2>
+            <h4 style={{ marginTop: 0 }}>{subTitle}</h4>
+          </div>
+          <IconButton onClick={onClose} sx={{ mt: '20px' }}>
             <CloseIcon />
           </IconButton>
         </Box>

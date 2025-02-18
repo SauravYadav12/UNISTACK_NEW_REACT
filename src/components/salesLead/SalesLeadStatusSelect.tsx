@@ -12,6 +12,15 @@ import { updateSalesLead } from '../../services/salesLeadsApi';
 import { toast } from 'react-toastify';
 
 const SalesLeadStatusSelect = ({ row, setRows }: SalesLeadStatusProps) => {
+  const statusColors: StatusColor = {
+    New: '#1976D2',
+    Contacted: '#03A9F4',
+    HotLead: '#9C27B0',
+    'Cold Lead': '#9E9E9E',
+    Converted: '#4CAF50',
+    Closed: '#D32F2F',
+    'Bad Lead': 'black',
+  };
   const handleChange = async (event: SelectChangeEvent) => {
     const status = event.target.value as iSalesLeadStatus;
     try {
@@ -30,7 +39,6 @@ const SalesLeadStatusSelect = ({ row, setRows }: SalesLeadStatusProps) => {
     } catch (error) {
       toast.error(`Request failed`);
       console.log(error);
-    } finally {
     }
   };
   return (
@@ -38,6 +46,7 @@ const SalesLeadStatusSelect = ({ row, setRows }: SalesLeadStatusProps) => {
       <FormControl fullWidth>
         <Select
           sx={{
+            color: statusColors[row.status],
             boxShadow: 'none',
             '.MuiOutlinedInput-notchedOutline': { border: 0 },
           }}
@@ -48,7 +57,7 @@ const SalesLeadStatusSelect = ({ row, setRows }: SalesLeadStatusProps) => {
         >
           {salesLeadStatusOptions.map((s, i) => {
             return (
-              <MenuItem key={i} value={s}>
+              <MenuItem sx={{ color: statusColors[s] }} key={i} value={s}>
                 {s}
               </MenuItem>
             );
@@ -65,3 +74,7 @@ interface SalesLeadStatusProps {
   row: iSalesLead;
   setRows: React.Dispatch<React.SetStateAction<iSalesLead[] | undefined>>;
 }
+
+type StatusColor = {
+  [key in iSalesLeadStatus]: string;
+};

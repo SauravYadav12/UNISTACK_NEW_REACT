@@ -5,6 +5,7 @@ import DateBar from '../../../components/reports/DateBar';
 import { InterviewReports } from '../../../components/reports/InterviewReports';
 import { MarketingReports } from '../../../components/reports/MarketingReports';
 import { SupportReports } from '../../../components/reports/SupportReports';
+import { dateFormate } from '../../../components/constants';
 
 export type TabTypes = 'support' | 'marketing' | 'interview';
 
@@ -22,7 +23,7 @@ export default function Reports() {
 
   const addValue = (key: any, newValue: any) => {
     if (key === 'fromDate' || key === 'toDate') {
-      newValue = newValue ? dayjs(newValue).format('YYYY-MM-DD') : null;
+      newValue = newValue ? dayjs(newValue).format(dateFormate) : null;
     }
     setValues((prevValues) => ({
       ...prevValues,

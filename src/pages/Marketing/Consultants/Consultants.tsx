@@ -5,10 +5,12 @@ import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
+import { toast } from 'react-toastify';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState<any[]>();
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -20,14 +22,19 @@ export default function Consultants() {
 
   const getConsultants = async () => {
     try {
-      const res = await consultantsList();
-      console.log('Response', res.data.data);
-      setRows(res.data.data);
+      const { data } = await consultantsList();
+      setRows(data.data || []);
     } catch (error) {
+      toast.error('Failed to load');
       console.error('Error while fetching API response', error);
     }
   };
-
+  const statusColor = (s: any) => {
+    if (s === 'Active') {
+      return 'green';
+    }
+    return 'red';
+  };
   const columns = [
     {
       field: 'view',
@@ -46,7 +53,16 @@ export default function Consultants() {
       ),
     },
     { field: 'consultantId', headerName: 'ID', width: 100 },
-    { field: 'consultantStatus', headerName: 'Status', width: 120 },
+    {
+      field: 'consultantStatus',
+      headerName: 'Status',
+      width: 120,
+      renderCell: (params: any) => (
+        <span style={{ color: statusColor(params.row.consultantStatus) }}>
+          {params.row.consultantStatus}
+        </span>
+      ),
+    },
     { field: 'consultantName', headerName: 'Name', width: 120 },
     { field: 'psuedoName', headerName: 'Psuedo Name', width: 120 },
     { field: 'visaStatus', headerName: 'Visa Status', width: 150 },
@@ -59,13 +75,13 @@ export default function Consultants() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format('YYYY-MM-DD hh:mm A'),
+        moment(params).format(dateFormate+' '+timeFormate),
     },
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows.filter((r: any) => r.consultantId === row.consultantId);
-    // console.log('viewRecord', data[0]);
+    const data = rows?.filter((r: any) => r.consultantId === row.consultantId);
+    if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Consultant ID :- ${row.consultantId}`);
     setMode('view');
@@ -90,23 +106,27 @@ export default function Consultants() {
     setMode(editMode ? 'edit' : 'view');
   };
 
+  const header = (
+    <>
+      <h3>Consultants</h3>
+      <Button
+        variant="contained"
+        style={{ borderRadius: '10px' }}
+        size="small"
+        onClick={handleAddNew}
+      >
+        Add New
+      </Button>
+    </>
+  );
+
   return (
     <>
-      <div>
-        <Button
-          variant="contained"
-          style={{ marginRight: 25, float: 'right', borderRadius: '10px' }}
-          size="small"
-          onClick={handleAddNew}
-        >
-          Add New
-        </Button>
-        <h3>Consultants</h3>
-      </div>
       <CustomDataGrid
-        rows={rows}
+        loading={!rows}
+        rows={rows || []}
         columns={columns}
-        onViewDetails={handleViewDetails}
+        header={header}
       />
       <CustomDrawer
         open={drawerOpen}

@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  Card,
-  Grid,
-  Stack,
-  TextField,
-} from '@mui/material';
+import { Box, Button, Card, Grid, Stack, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import dayjs from 'dayjs';
@@ -33,6 +26,8 @@ import { AttachFile } from '@mui/icons-material';
 import { uploadFile } from '../../../services/storageApi';
 import { toast } from 'react-toastify';
 import AlertBox from '../../../components/alert/AlertBox';
+import { useNavigate } from 'react-router-dom';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
@@ -48,6 +43,7 @@ export default function RequirementsForm(props: any) {
   const [accounts, setAccounts] = useState<any[]>();
   const currentFile = file || values.resumeUpload;
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
+  const navigate = useNavigate();
 
   async function getAccountList() {
     try {
@@ -80,6 +76,8 @@ export default function RequirementsForm(props: any) {
       ...values,
       reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
       reqEnteredByRef: `${getIUser()?.id}`,
+      isDuplicate: true,
+      duplicateWith: values.reqID,
       rate: '',
       taxType: '',
       remote: '',
@@ -192,6 +190,7 @@ export default function RequirementsForm(props: any) {
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
     if (!comments.trim()) {
+      toast.warning('Comment is required');
       return;
     }
     const commentsPayload = {
@@ -247,7 +246,7 @@ export default function RequirementsForm(props: any) {
     setErrors(requirementFormInitialValues);
     if (key === 'createdAt') {
       const formattedDate = newValue
-        ? dayjs(newValue).format('YYYY-MM-DD')
+        ? dayjs(newValue).format(dateFormate)
         : null;
       setValues((prevValues: any) => ({
         ...prevValues,
@@ -272,7 +271,22 @@ export default function RequirementsForm(props: any) {
       addValue(field, value);
     }
   };
-
+  const reqFields = () => {
+    const val = viewData;
+    const record = {
+      id: val.reqID,
+      name: val.clientPerson,
+      company: val.vendorCompany,
+      title: val.jobTitle,
+      primeVendorCompany: val.primeVendorCompany,
+      jobDescription: val.jobDescription,
+      jobTitle: val.jobTitle,
+      taxType: val.taxType,
+      duration: val.duration,
+      consultant: val.appliedFor,
+    };
+    return record;
+  };
   return (
     <>
       <Box sx={{ width: '100%', margin: '0 20px' }}>
@@ -294,7 +308,7 @@ export default function RequirementsForm(props: any) {
               sx={{
                 borderRadius: '10px',
                 justifyContent: 'center',
-                width: '300px',
+                width: '275px',
               }}
             >
               {!!currentFile ? (
@@ -352,6 +366,7 @@ export default function RequirementsForm(props: any) {
               alignItems: 'center',
               gap: 1,
               marginRight: 10,
+              flexWrap: 'wrap',
             }}
           >
             {mode === 'add' ? (
@@ -391,6 +406,24 @@ export default function RequirementsForm(props: any) {
               </>
             ) : (
               <>
+                {viewData.reqStatus === 'Submitted' && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/interviews?createInterviewByReq=${JSON.stringify(
+                          reqFields()
+                        )}`
+                      )
+                    }
+                    size="small"
+                    sx={{ borderRadius: '10px', width: 'max-content' }}
+                  >
+                    Create interview
+                  </Button>
+                )}
                 <AlertBox
                   open={copyAlert}
                   title="Copy Requirement"
@@ -750,6 +783,7 @@ export default function RequirementsForm(props: any) {
           <Grid>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
+                inputFormat={dateFormate}
                 label="Requirement Entered Date"
                 value={values.createdAt}
                 disabled
@@ -765,11 +799,11 @@ export default function RequirementsForm(props: any) {
                       mr: 1,
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '10px',
+                        backgroundColor: '#f0f0f0',
                       },
                       '& .MuiInputBase-input.Mui-disabled': {
                         WebkitTextFillColor: 'black',
                         backgroundColor: '#f0f0f0',
-                        borderRadius: '10px',
                       },
                     }}
                   />
@@ -887,7 +921,9 @@ export default function RequirementsForm(props: any) {
               <span> On Date:</span>
               <strong>
                 {' '}
-                {dayjs(values.createdAt).format('YYYY-MM-DD hh:mm:ss A')}
+                {dayjs(values.createdAt).format(
+                  dateFormate + ' ' + timeFormate
+                )}
               </strong>
             </p>
             <p>
@@ -903,7 +939,7 @@ export default function RequirementsForm(props: any) {
                 {values.mComment && values.mComment.length > 0
                   ? dayjs(
                       values.mComment[values.mComment.length - 1].date
-                    ).format('YYYY-MM-DD hh:mm:ss A')
+                    ).format(dateFormate + ' ' + timeFormate)
                   : 'N/A'}
               </strong>
             </p>
@@ -913,4 +949,3 @@ export default function RequirementsForm(props: any) {
     </>
   );
 }
-

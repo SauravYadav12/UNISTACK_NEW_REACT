@@ -10,6 +10,7 @@ import SalesLeadStatusSelect from '../../../components/salesLead/SalesLeadStatus
 import SyncIcon from '@mui/icons-material/Sync';
 import { Country } from 'country-state-city';
 import './salesLead.css';
+import { dateFormate, timeFormate } from '../../../components/constants';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -27,7 +28,7 @@ const SalesLeads = () => {
         <Button
           size="small"
           variant="contained"
-          color="primary"
+          color={params.row.comments.length ? 'success' : 'primary'}
           sx={{ borderRadius: '10px' }}
           onClick={() => handleViewDetails(params.row)}
         >
@@ -72,7 +73,7 @@ const SalesLeads = () => {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format('YYYY-MM-DD hh:mm A'),
+        moment(params).format(dateFormate + ' ' + timeFormate),
     },
   ];
   const handleViewDetails = (row: iSalesLead) => {
@@ -80,7 +81,7 @@ const SalesLeads = () => {
     if (!data?.length) return;
     console.log('viewRecord', data);
     setViewData(data[0]);
-    setFormTitle(`Sales Lead ID :- ${row._id}`);
+    setFormTitle(`Sales Lead : ${row.firstName + ' ' + row.lastName}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
@@ -95,13 +96,13 @@ const SalesLeads = () => {
       return [...pre];
     });
   };
-  const filterRows=(id:string)=>{
+  const filterRows = (id: string) => {
     setRows((pre) => {
       if (!pre) return;
-      pre = pre.filter((r) => r._id!==id);
+      pre = pre.filter((r) => r._id !== id);
       return [...pre];
     });
-  }
+  };
   async function initSalesLeads() {
     try {
       setSyncing(true);
@@ -123,26 +124,25 @@ const SalesLeads = () => {
     initSalesLeads();
   }, []);
 
+  const dataGridHeader = (
+    <>
+      <h3>Sales Leads</h3>
+      <IconButton onClick={syncSalesLeads} disabled={syncing}>
+        <SyncIcon
+          className={syncing ? 'sync-icon-loading' : ''}
+          color="primary"
+        />
+      </IconButton>
+    </>
+  );
+
   return (
     <>
-      <div>
-        <IconButton
-          onClick={syncSalesLeads}
-          disabled={syncing}
-          style={{ marginRight: 25, float: 'right' }}
-        >
-          <SyncIcon
-            className={syncing ? 'sync-icon-loading' : ''}
-            color="primary"
-          />
-        </IconButton>
-        <h3>Sales Leads</h3>
-      </div>
       <CustomDataGrid
+        header={dataGridHeader}
         loading={syncing}
         columns={columns}
         rows={rows || []}
-        onViewDetails={handleViewDetails}
       />
       <CustomDrawer
         open={drawerOpen}

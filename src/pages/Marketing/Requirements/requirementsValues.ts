@@ -1,3 +1,5 @@
+import { RequirementStatus } from '../../../Interfaces/reports';
+
 export const requirementFormInitialValues = {
   reqStatus: '',
   assignedTo: '',
@@ -39,7 +41,7 @@ export const requirementFormInitialValues = {
   jobDescription: '',
 };
 
-export const requestStatusOptions = [
+export const requestStatusOptions: RequirementStatus[] = [
   'New Working',
   'Submitted',
   'Interviewed',
@@ -47,7 +49,14 @@ export const requestStatusOptions = [
   'Project Active',
   'Project Inactive',
 ];
-
+export const reqirementStatusColors: ReqirementStatusColors = {
+  'New Working': '#1976D2',
+  Submitted: '#4CAF50',
+  Interviewed: '#03A9F4',
+  Cancelled: '#D32F2F',
+  'Project Active': '#9C27B0',
+  'Project Inactive': '#9E9E9E',
+};
 export const appliedForOptions = [
   'Not in use',
   'Taya Veer',
@@ -115,3 +124,7 @@ export const techStack = [
 ];
 
 export const duration = ['03 Months', '06 Months', '12 Months', '12+ Months'];
+
+type ReqirementStatusColors = {
+  [key in RequirementStatus]: string;
+};
