@@ -14,6 +14,7 @@ import { createTeam, deleteTeam, updateTeam } from '../../../services/teamsApi';
 import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { dateFormate } from '../../../components/constants';
 
 const initialValues = {
   teamName: '',
@@ -49,10 +50,9 @@ export default function TeamsForm(props: any) {
   };
 
   const addValue = (key: any, newValue: any) => {
-    // console.log('AddValues', newValue);
     if (key === 'createdAt') {
       const formattedDate = newValue
-        ? dayjs(newValue).format('YYYY-MM-DD')
+        ? dayjs(newValue).format(dateFormate)
         : null;
       setValues((prevValues: any) => ({
         ...prevValues,
@@ -260,6 +260,7 @@ export default function TeamsForm(props: any) {
         />
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
+            inputFormat={dateFormate}
             label="Created at"
             value={values.createdAt ? dayjs(values.createdAt) : null}
             disabled={!isEditing}

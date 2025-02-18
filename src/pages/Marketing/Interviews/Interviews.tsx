@@ -15,6 +15,7 @@ import CustomSearch from './CustomSearch';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValues';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 type Record = {
   id: number;
@@ -22,8 +23,13 @@ type Record = {
   company: string;
   title: string;
 };
-
-export default function Interviews(props: any) {
+interface Iprops {
+  label: string;
+  query: string;
+  addNew?: boolean;
+}
+export default function Interviews(props: Iprops) {
+  const { addNew = true } = props;
   const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<any[]>();
   const [openDialog, setOpenDialog] = useState(false);
@@ -40,15 +46,7 @@ export default function Interviews(props: any) {
 
   const getInterviews = async () => {
     try {
-      const myParams = new URLSearchParams(searchParams);
-      myParams.delete('createInterviewByReq');
-      const p = myParams.toString();
-      const query = p.length
-        ? p
-        : props.query
-        ? `interviewStatus=${props.query}`
-        : '';
-      const { data } = await interviewsList(query);
+      const { data } = await interviewsList(props.query);
       setRows(data.data || []);
     } catch (error) {
       toast.error('Failed to load');
@@ -88,8 +86,24 @@ export default function Interviews(props: any) {
       ),
     },
     { field: 'consultant', headerName: 'Consultant', width: 120 },
-    { field: 'interviewDate', headerName: 'Int date', width: 100 },
-    { field: 'interviewTime', headerName: 'Int Time (EST)', width: 150 },
+    {
+      field: 'interviewDate',
+      headerName: 'Int date',
+      width: 100,
+      valueFormatter: (params: any) => {
+        return moment(params).format(dateFormate);
+      },
+    },
+    {
+      field: 'interviewTime',
+      headerName: 'Int Time',
+      width: 150,
+      valueFormatter: (params: any, r: any) => {
+        return (
+          moment(params, timeFormate).format(timeFormate) + ' ' + (r.timeZone||'')
+        );
+      },
+    },
     { field: 'intResult', headerName: 'Int Result', width: 150 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
     { field: 'clientName', headerName: 'Client Name', width: 120 },
@@ -101,7 +115,7 @@ export default function Interviews(props: any) {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) => {
-        return moment(params).format('YYYY-MM-DD hh:mm A');
+        return moment(params).format(dateFormate + ' ' + timeFormate);
       },
     },
   ];
@@ -161,14 +175,16 @@ export default function Interviews(props: any) {
   const dataGridHeader = (
     <>
       <h3>{props.label}</h3>
-      <Button
-        variant="contained"
-        size="small"
-        onClick={handleClickOpen}
-        style={{ borderRadius: '10px' }}
-      >
-        Add New
-      </Button>
+      {addNew && (
+        <Button
+          variant="contained"
+          size="small"
+          onClick={handleClickOpen}
+          style={{ borderRadius: '10px' }}
+        >
+          Add New
+        </Button>
+      )}
     </>
   );
 

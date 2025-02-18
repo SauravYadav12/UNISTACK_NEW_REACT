@@ -14,6 +14,7 @@ import { interviewsList } from '../../../services/vendorInterviewApi';
 import CustomSearch from './CustomSearch';
 import { toast } from 'react-toastify';
 import { interviewStatusColors } from './testAndViValues';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 type Record = {
   id: number;
@@ -77,7 +78,14 @@ export default function TestAndVendorInterviews() {
         </span>
       ),
     },
-    { field: 'interviewDate', headerName: 'Test Entered Date', width: 120 },
+    {
+      field: 'interviewDate',
+      headerName: 'Test Entered Date',
+      width: 120,
+      valueFormatter: (params: any) => {
+        return moment(params).format(dateFormate);
+      },
+    },
     { field: 'interviewDuration', headerName: 'Test Duration', width: 100 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
     { field: 'clientName', headerName: 'Client Name', width: 120 },
@@ -89,7 +97,7 @@ export default function TestAndVendorInterviews() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) => {
-        return moment(params).format('YYYY-MM-DD hh:mm A');
+        return moment(params).format(dateFormate+' '+timeFormate);
       },
     },
   ];

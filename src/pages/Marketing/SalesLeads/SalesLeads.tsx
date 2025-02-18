@@ -10,6 +10,7 @@ import SalesLeadStatusSelect from '../../../components/salesLead/SalesLeadStatus
 import SyncIcon from '@mui/icons-material/Sync';
 import { Country } from 'country-state-city';
 import './salesLead.css';
+import { dateFormate, timeFormate } from '../../../components/constants';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -72,7 +73,7 @@ const SalesLeads = () => {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format('YYYY-MM-DD hh:mm A'),
+        moment(params).format(dateFormate + ' ' + timeFormate),
     },
   ];
   const handleViewDetails = (row: iSalesLead) => {
@@ -80,7 +81,7 @@ const SalesLeads = () => {
     if (!data?.length) return;
     console.log('viewRecord', data);
     setViewData(data[0]);
-    setFormTitle(`Sales Lead ID :- ${row._id}`);
+    setFormTitle(`Sales Lead : ${row.firstName + ' ' + row.lastName}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);

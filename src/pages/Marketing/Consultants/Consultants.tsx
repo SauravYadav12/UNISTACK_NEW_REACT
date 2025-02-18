@@ -6,6 +6,7 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
 import { toast } from 'react-toastify';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -74,7 +75,7 @@ export default function Consultants() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format('YYYY-MM-DD hh:mm A'),
+        moment(params).format(dateFormate+' '+timeFormate),
     },
   ];
 

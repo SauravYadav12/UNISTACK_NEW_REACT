@@ -35,6 +35,7 @@ import {
   deleteInterview,
   updateInterview,
 } from '../../../services/interviewApi';
+import { dateFormate, timeFormate } from '../../../components/constants';
 
 const initialValues = {
   timeShift: '',
@@ -311,6 +312,7 @@ export default function InterviewForm(props: any) {
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
+              inputFormat={dateFormate}
               disabled={!isEditing}
               label="Interview Date"
               value={values.interviewDate ? dayjs(values.interviewDate) : null}
@@ -336,7 +338,6 @@ export default function InterviewForm(props: any) {
                       backgroundColor: '#f0f0f0',
                       borderRadius: '10px',
                     },
-                    
                   }}
                 />
               )}
@@ -347,10 +348,11 @@ export default function InterviewForm(props: any) {
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <TimePicker
               disabled={!isEditing}
+              inputFormat={timeFormate}
               label="Interview Time"
               value={
                 values.interviewTime
-                  ? dayjs(values.interviewTime, 'hh:mm:ss A')
+                  ? dayjs(values.interviewTime, timeFormate)
                   : null
               }
               onChange={(newValue) => addValue('interviewTime', newValue)}

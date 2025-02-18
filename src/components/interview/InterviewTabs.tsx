@@ -6,7 +6,6 @@ import Interviews from '../../pages/Marketing/Interviews/Interviews';
 import { useSearchParams } from 'react-router-dom';
 import { InterviewStatus } from '../../Interfaces/reports';
 
-
 export default function InterviewTabs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [value, setValue] = React.useState(0);
@@ -62,19 +61,23 @@ export default function InterviewTabs() {
       </Box>
       {tabs.map((t, i) => {
         if (value !== i) return null;
+        const myParams = new URLSearchParams(searchParams);
+        myParams.delete('createInterviewByReq');
+        const p = myParams.toString();
+        const query = p.length
+          ? p
+          : t.status
+          ? `interviewStatus=${t.status}`
+          : '';
         return (
           <div key={i} style={{ flex: 1 }}>
-            <Interviews
-              query={t.status || ''}
-              label={t.label + ' Interviews'}
-            />
+            <Interviews query={query} label={t.label + ' Interviews'} />
           </div>
         );
       })}
     </Box>
   );
 }
-
 
 function a11yProps(index: number) {
   return {

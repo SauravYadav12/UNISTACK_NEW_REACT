@@ -3,7 +3,6 @@ import Box from '@mui/material/Box';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
 export default function CustomDataGrid(props: Iprops) {
-  const { minHeight = '500px' } = props;
   return (
     <div
       style={{
@@ -20,7 +19,7 @@ export default function CustomDataGrid(props: Iprops) {
       >
         {props.header}
       </Box>
-      <div style={{ minHeight: minHeight, flex: 1 }}>
+      <div style={{ flex: 1,minHeight:'300px'}}>
         <Box sx={{ height: '98%' }}>
           <DataGrid
             loading={props.loading}
@@ -45,5 +44,4 @@ interface Iprops {
   header: JSX.Element;
   rows: any[];
   columns: any[];
-  minHeight?: string|number;
 }

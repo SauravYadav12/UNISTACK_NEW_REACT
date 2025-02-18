@@ -1,10 +1,4 @@
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Grid,
-  Typography,
-} from '@mui/material';
+import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import {
   Dispatch,
@@ -35,6 +29,7 @@ import {
 import { UserProfile } from '../../Interfaces/profile';
 import { getProfileByUser } from '../../services/userProfileApi';
 import { toast } from 'react-toastify';
+import { dateFormate, timeFormate } from '../../components/constants';
 
 interface CustomCard {
   color: string;
@@ -52,10 +47,22 @@ function UserManagement() {
   const [open, setOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const activeUsrCount = users?.filter((user: any) => user.active).length;
+  const premiumUsrCount = users?.filter((user: any) => user.premium).length;
+
   function viewDetails(row: any): void {
     setSelectedUser(row);
     setDrawerOpen(true);
   }
+  
+  const getUsersList = async () => {
+    try {
+      const { data } = await usersList();
+      setUsers(data.users || []);
+    } catch (error) {
+      toast.error('Failed to fetch users');
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
     getUsersList();
@@ -148,14 +155,14 @@ function UserManagement() {
         headerName: 'Created At',
         width: 200,
         renderCell: (params: any) =>
-          moment(params.row.createdAt).format('YYYY-MM-DD HH:MM:SS'),
+          moment(params.row.createdAt).format(dateFormate + ' ' + timeFormate),
       },
       {
         field: 'updatedAt',
         headerName: 'Updated At',
         width: 200,
         renderCell: (params: any) =>
-          moment(params.row.updatedAt).format('YYYY-MM-DD HH:MM:SS'),
+          moment(params.row.updatedAt).format(dateFormate + ' ' + timeFormate),
       },
     ],
     []
@@ -163,7 +170,7 @@ function UserManagement() {
 
   const dateFormater = (date?: string) => {
     if (!date) return;
-    return moment(date).format('YYYY-MM-DD HH:MM:SS');
+    return moment(date).format(dateFormate + ' ' + timeFormate);
   };
   const extractLocationField = (val: any, field: string) => {
     if (!val) return;
@@ -220,30 +227,6 @@ function UserManagement() {
     },
   ];
 
-  const activityColumnGroupingModel = [
-    {
-      groupId: 'Location',
-      align: 'center',
-      description: '',
-      children: [
-        { field: 'latitude' },
-        { field: 'longitude' },
-        { field: 'altitude' },
-        { field: 'accuracy' },
-      ],
-    },
-  ];
-
-  const getUsersList = async () => {
-    try {
-      const { data } = await usersList();
-      setUsers(data.users || []);
-    } catch (error) {
-      toast.error('Failed to fetch users');
-      console.log(error);
-    }
-  };
-
   const cardObject: CustomCard[] = [
     {
       color: '#ECF2FF',
@@ -271,7 +254,7 @@ function UserManagement() {
     {
       color: '#FCEDE8',
       title: 'Premium   ',
-      count: 'NA',
+      count: premiumUsrCount,
       icon: <SummarizeIcon fontSize="large" style={{ color: '#FA896B' }} />,
       titleColor: '#FA896B',
     },
@@ -292,7 +275,7 @@ function UserManagement() {
                 <BasicCard
                   color={card.color}
                   title={card.title}
-                  count={card.count}
+                  count={card.count ?? 'NA'}
                   icon={card.icon}
                   titleColor={card.titleColor}
                 />
@@ -354,7 +337,6 @@ function UserManagement() {
                   rows={[...(selectedUser?.activity || [])].reverse()}
                   getRowId={(row: any) => row._id}
                   slots={{ toolbar: GridToolbar }}
-                  // columnGroupingModel={activityColumnGroupingModel}
                   slotProps={{
                     toolbar: {
                       showQuickFilter: true,
