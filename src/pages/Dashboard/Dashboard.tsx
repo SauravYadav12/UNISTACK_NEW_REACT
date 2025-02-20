@@ -5,13 +5,12 @@ import InterpreterModeIcon from '@mui/icons-material/InterpreterMode';
 import Face6Icon from '@mui/icons-material/Face6';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import BadgeIcon from '@mui/icons-material/Badge';
-import { ReactElement, useEffect, useState } from 'react';
+import React, { ReactElement, useEffect, useState } from 'react';
 import { DashboardReport } from '../../Interfaces/reports';
 import { toast } from 'react-toastify';
 import { getDashboardReport } from '../../services/reportsApi';
-import Interviews from '../Marketing/Interviews/Interviews';
-import dayjs from 'dayjs';
-import { dateFormate } from '../../components/constants';
+import TodaysInterviews from '../../components/dashboard/TodaysInterviews';
+import ChartsGrid from './ChartsGrid';
 interface CustomCard {
   color: string;
   title: string;
@@ -21,7 +20,6 @@ interface CustomCard {
 }
 
 function Dashboard() {
-  const toDay = dayjs(new Date());
   const [report, setReport] = useState<DashboardReport>();
   const cardObject: CustomCard[] = [
     {
@@ -93,32 +91,27 @@ function Dashboard() {
 
   return (
     <>
-     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
-     <Grid container spacing={2} sx={{ width: '100%' }}>
-        {cardObject.map((card: any) => {
-          return (
-            <Grid key={card.title} item xs={12} sm={6} md={4} lg={2} xl={2}>
-              <BasicCard
-                color={card.color}
-                title={card.title}
-                count={card.count??"NA"}
-                icon={card.icon}
-                titleColor={card.titleColor}
-              />
-            </Grid>
-          );
-        })}
-      </Grid>
-      <div style={{ flex:1 }}>
-        <Interviews
-          addNew={false}
-          query={`interviewDate=${toDay.format(
-            'YYYY-MM-DD'
-          )}&interviewDate=${toDay.format(dateFormate)}`}
-          label={"Today's Interviews"}
-        />
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Grid container spacing={1} sx={{ width: '100%' }}>
+          {cardObject.map((card: any) => {
+            return (
+              <Grid key={card.title} item xs={12} sm={6} md={4} lg={2} xl={2}>
+                <BasicCard
+                  color={card.color}
+                  title={card.title}
+                  count={card.count ?? 'NA'}
+                  icon={card.icon}
+                  titleColor={card.titleColor}
+                />
+              </Grid>
+            );
+          })}
+        </Grid>
+        <Box display={'flex'} flexDirection={'column'} rowGap={3} py={3}>
+          <ChartsGrid />
+          <TodaysInterviews />
+        </Box>
       </div>
-     </div>
     </>
   );
 }

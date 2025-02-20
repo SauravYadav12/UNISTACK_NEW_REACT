@@ -76,8 +76,15 @@ const initialValues = {
 
 export default function InterviewForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
-  const { selectedRecord, viewData, mode, isEditing, onEdit, setDrawerOpen } =
-    props;
+  const {
+    selectedRecord,
+    viewData,
+    mode,
+    isEditing,
+    onEdit,
+    setDrawerOpen,
+    hideButtons = false,
+  } = props;
   const [errors, setErrors] = useState(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -211,98 +218,100 @@ export default function InterviewForm(props: any) {
 
   return (
     <form style={{ margin: '0 20px' }}>
-      <Grid
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: 1,
-          marginRight: 10,
-        }}
-      >
-        {mode === 'add' ? (
-          <Button
-            variant="contained"
-            color="primary"
-            type="submit"
-            onClick={handleSubmitForm}
-            size="small"
-            sx={{ borderRadius: '10px' }}
-          >
-            Submit
-          </Button>
-        ) : isEditing ? (
-          <>
-            <Button
-              variant="contained"
-              color="primary"
-              type="button"
-              onClick={() => onEdit(false)}
-              size="small"
-              sx={{ borderRadius: '10px' }}
-            >
-              Cancel
-            </Button>
+      {!hideButtons && (
+        <Grid
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 1,
+            marginRight: 10,
+          }}
+        >
+          {mode === 'add' ? (
             <Button
               variant="contained"
               color="primary"
               type="submit"
-              onClick={handleEditSubmitForm}
+              onClick={handleSubmitForm}
               size="small"
               sx={{ borderRadius: '10px' }}
             >
               Submit
             </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="contained"
-              color="primary"
-              type="button"
-              onClick={() => onEdit(true)}
-              size="small"
-              sx={{ borderRadius: '10px' }}
-            >
-              Edit
-            </Button>
-            {user.role === 'super-admin' && (
+          ) : isEditing ? (
+            <>
               <Button
                 variant="contained"
                 color="primary"
                 type="button"
+                onClick={() => onEdit(false)}
                 size="small"
                 sx={{ borderRadius: '10px' }}
-                onClick={handleClickOpenAlert}
               >
-                Delete
+                Cancel
               </Button>
-            )}
-            <Dialog
-              open={openAlert}
-              onClose={handleClickCloseAlert}
-              aria-labelledby="alert-dialog-title"
-              aria-describedby="alert-dialog-description"
-            >
-              <DialogTitle id="alert-dialog-title">
-                {'Delete Interview?'}
-              </DialogTitle>
-              <DialogContent>
-                <DialogContentText id="alert-dialog-description">
-                  Are you sure you want to delete this Interview? This action
-                  cannot be undone.
-                </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleClickCloseAlert}>Disagree</Button>
-                <Button onClick={handleDeleteInterview} autoFocus>
-                  Agree
+              <Button
+                variant="contained"
+                color="primary"
+                type="submit"
+                onClick={handleEditSubmitForm}
+                size="small"
+                sx={{ borderRadius: '10px' }}
+              >
+                Submit
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="contained"
+                color="primary"
+                type="button"
+                onClick={() => onEdit(true)}
+                size="small"
+                sx={{ borderRadius: '10px' }}
+              >
+                Edit
+              </Button>
+              {user.role === 'super-admin' && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="button"
+                  size="small"
+                  sx={{ borderRadius: '10px' }}
+                  onClick={handleClickOpenAlert}
+                >
+                  Delete
                 </Button>
-              </DialogActions>
-            </Dialog>
-          </>
-        )}
-      </Grid>
+              )}
+              <Dialog
+                open={openAlert}
+                onClose={handleClickCloseAlert}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+              >
+                <DialogTitle id="alert-dialog-title">
+                  {'Delete Interview?'}
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText id="alert-dialog-description">
+                    Are you sure you want to delete this Interview? This action
+                    cannot be undone.
+                  </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleClickCloseAlert}>Disagree</Button>
+                  <Button onClick={handleDeleteInterview} autoFocus>
+                    Agree
+                  </Button>
+                </DialogActions>
+              </Dialog>
+            </>
+          )}
+        </Grid>
+      )}
 
       <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
         {/* Section 1: Interview Details */}

@@ -89,7 +89,7 @@ function Navbar({ sidebar, toggleSideBar }: any) {
         color="transparent"
         className="header"
       >
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" style={{background:'#ffffffde'}}>
           <Toolbar disableGutters>
             <Typography component={'span'} onClick={handleSidebar}>
               <ListItemButton>

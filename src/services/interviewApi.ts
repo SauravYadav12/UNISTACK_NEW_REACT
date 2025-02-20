@@ -8,7 +8,7 @@ export async function interviewsList(query?: string) {
       "Content-Type": "application/json",
       Authorization: token
     };
-    const response = await axios.get(`${BASE_URL}/interviews/get-interviews?${query}`, {
+    const response = await axios.get(`${BASE_URL}/interviews/get-interviews?${query||''}`, {
       headers
     });
     return response;

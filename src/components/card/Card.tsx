@@ -36,13 +36,14 @@ export default function BasicCard({
           <Typography variant="h4" component="div">
             {icon}
           </Typography>
-          <Typography sx={{ mb: 1.5 }} color={titleColor}>
+          <Typography sx={{ mt: 1.5 }} color={titleColor}>
             {title}
           </Typography>
           <CardActions
             sx={{
               display: "flex",
               justifyContent: "center",
+              paddingTop:0
             }}
           >
             <Typography variant="h5" component="span" color={titleColor}>
