@@ -26,10 +26,8 @@ type Record = {
 interface Iprops {
   label: string;
   query: string;
-  addNew?: boolean;
 }
 export default function Interviews(props: Iprops) {
-  const { addNew = true } = props;
   const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<any[]>();
   const [openDialog, setOpenDialog] = useState(false);
@@ -100,7 +98,9 @@ export default function Interviews(props: Iprops) {
       width: 150,
       valueFormatter: (params: any, r: any) => {
         return (
-          moment(params, timeFormate).format(timeFormate) + ' ' + (r.timeZone||'')
+          moment(params, timeFormate).format(timeFormate) +
+          ' ' +
+          (r.timeZone || '')
         );
       },
     },
@@ -142,7 +142,6 @@ export default function Interviews(props: Iprops) {
 
   const handleCloseForm = () => {
     setDrawerOpen(false);
-    setDrawerOpen(false);
   };
   const handleClickOpen = () => {
     setOpenDialog(true);
@@ -175,16 +174,15 @@ export default function Interviews(props: Iprops) {
   const dataGridHeader = (
     <>
       <h3>{props.label}</h3>
-      {addNew && (
-        <Button
-          variant="contained"
-          size="small"
-          onClick={handleClickOpen}
-          style={{ borderRadius: '10px' }}
-        >
-          Add New
-        </Button>
-      )}
+
+      <Button
+        variant="contained"
+        size="small"
+        onClick={handleClickOpen}
+        style={{ borderRadius: '10px' }}
+      >
+        Add New
+      </Button>
     </>
   );
 
