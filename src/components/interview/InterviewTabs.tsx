@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState } from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -8,7 +8,8 @@ import { InterviewStatus } from '../../Interfaces/reports';
 
 export default function InterviewTabs() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [value, setValue] = React.useState(0);
+  const [archive, setArchive] = useState(false);
+  const [value, setValue] = useState(0);
   const tabs: { label: string; status?: InterviewStatus }[] = [
     {
       label: 'Confirmed',
@@ -70,8 +71,12 @@ export default function InterviewTabs() {
           ? `interviewStatus=${t.status}`
           : '';
         return (
-          <div key={i} style={{ flex: 1 }}>
-            <Interviews query={query} label={t.label + ' Interviews'} />
+          <div key={i} style={{ flex: 1, minHeight: '300px' }}>
+            <Interviews
+              query={query}
+              label={t.label + ' Interviews'}
+              archiveState={[archive, setArchive]}
+            />
           </div>
         );
       })}

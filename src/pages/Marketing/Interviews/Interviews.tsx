@@ -16,6 +16,7 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValues';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { archiveInterviewsList } from '../../../services/archivesApi';
 
 type Record = {
   id: number;
@@ -26,6 +27,7 @@ type Record = {
 interface Iprops {
   label: string;
   query: string;
+  archiveState: [boolean, (s: boolean) => void];
 }
 export default function Interviews(props: Iprops) {
   const [searchParams] = useSearchParams();
@@ -37,19 +39,7 @@ export default function Interviews(props: Iprops) {
   const [mode, setMode] = useState('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-
-  useEffect(() => {
-    getInterviews();
-  }, [drawerOpen, props.query]);
-
-  const getInterviews = async () => {
-    try {
-      const { data } = await interviewsList(props.query);
-      setRows(data.data || []);
-    } catch (error) {
-      toast.error('Failed to load');
-    }
-  };
+  const [archive, setArchive] = props.archiveState;
 
   const columns = [
     {
@@ -164,6 +154,39 @@ export default function Interviews(props: Iprops) {
     }
   };
 
+  const getInterviews = async () => {
+    try {
+      const { data } = await interviewsList(props.query);
+      setRows(data.data || []);
+      setArchive(false);
+    } catch (error) {
+      toast.error('Failed to load');
+    }
+  };
+  const getArchiveInterviews = async () => {
+    try {
+      const { data } = await archiveInterviewsList(props.query);
+      setRows(data.data || []);
+      setArchive(true);
+    } catch (error) {
+      toast.error('Failed to load');
+    }
+  };
+
+  useEffect(() => {
+    if (!archive) {
+      getInterviews();
+    }
+  }, [drawerOpen, props.query]);
+
+  useEffect(() => {
+    if (archive) {
+      getArchiveInterviews();
+    } else {
+      getInterviews();
+    }
+  }, [props.query, archive]);
+
   useEffect(() => {
     const req = searchParams.get('createInterviewByReq');
     if (req) {
@@ -210,6 +233,16 @@ export default function Interviews(props: Iprops) {
         </DialogContent>
       </Dialog>
       <CustomDataGrid
+        archiveState={[
+          archive,
+          (s) => {
+            setArchive(s);
+            setRows(undefined);
+          },
+          {
+            disabled: !rows,
+          },
+        ]}
         header={dataGridHeader}
         rows={rows || []}
         columns={columns}
@@ -221,6 +254,7 @@ export default function Interviews(props: Iprops) {
         title={formTitle}
       >
         <InterviewForm
+          hideButtons={archive}
           handleCloseForm={handleCloseForm}
           selectedRecord={selectedRecord}
           viewData={viewData}
