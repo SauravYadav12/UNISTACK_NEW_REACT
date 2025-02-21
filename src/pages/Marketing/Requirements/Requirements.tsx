@@ -7,6 +7,9 @@ import { requirementsList } from '../../../services/requirementApi';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { reqirementStatusColors } from './requirementsValues';
+import { archiveRequirementsList } from '../../../services/archivesApi';
+import { usersList } from '../../../services/authApi';
+
 export default function Requirements() {
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -15,19 +18,8 @@ export default function Requirements() {
   const [viewData, setViewData] = useState<any>({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
-  useEffect(() => {
-    getRequirements();
-  }, [drawerOpen]);
-
-  const getRequirements = async () => {
-    try {
-      const { data } = await requirementsList(searchParams.toString());
-      setRows(data.data || []);
-    } catch (error) {
-      console.error('Error fetching requirements:', error);
-      toast.error('Failed to load');
-    }
-  };
+  const [archive, setArchive] = useState(false);
+  const [accounts, setAccounts] = useState<any[]>();
 
   const columns = [
     {
@@ -72,6 +64,33 @@ export default function Requirements() {
     { field: 'reqEnteredBy', headerName: 'Created by', width: 130 },
   ];
 
+  const getRequirements = async () => {
+    try {
+      const { data } = await requirementsList(searchParams.toString());
+      setRows(data.data || []);
+      setArchive(false);
+    } catch (error) {
+      console.error('Error fetching requirements:', error);
+      toast.error('Failed to load');
+    }
+  };
+
+  const getArchiveRequirements = async () => {
+    try {
+      const { data } = await archiveRequirementsList(searchParams.toString());
+      setRows(data.data || []);
+      setArchive(true);
+    } catch (error) {
+      console.error('Error fetching requirements:', error);
+      toast.error('Failed to load');
+    }
+  };
+
+  const onChangeArchive = (status: boolean) => {
+    setArchive(status);
+    setRows(undefined);
+  };
+
   const handleViewDetails = (row: any) => {
     const data = rows?.filter((r: any) => r.reqID === row.reqID);
     if (!data) return;
@@ -104,6 +123,35 @@ export default function Requirements() {
   const handleDrawerClose = () => {
     setDrawerOpen(false);
   };
+
+  async function getAccountList() {
+    try {
+      const { data } = await usersList();
+      const { users } = data;
+      setAccounts(users.filter((u: any) => u.active) || []);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    if (!archive) {
+      getRequirements();
+    }
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    if (!archive) {
+      getRequirements();
+    } else {
+      getArchiveRequirements();
+    }
+  }, [archive]);
+
+  useEffect(()=>{
+    getAccountList()
+  },[])
+
   const header = (
     <>
       <h3>Requirements</h3>
@@ -117,9 +165,11 @@ export default function Requirements() {
       </Button>
     </>
   );
+
   return (
     <>
       <CustomDataGrid
+        archiveState={[archive, onChangeArchive,{disabled:!rows}]}
         header={header}
         rows={rows || []}
         columns={columns}
@@ -141,6 +191,8 @@ export default function Requirements() {
         }
       >
         <RequirementsForm
+          hideButtons={archive}
+          accounts={accounts}
           viewData={viewData}
           mode={mode}
           setDrawerOpen={setDrawerOpen}

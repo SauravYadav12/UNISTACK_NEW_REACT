@@ -19,7 +19,6 @@ import {
   updateRequirement,
 } from '../../../services/requirementApi';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import { usersList } from '../../../services/authApi';
 import { getIUser } from '../../../utils/utils';
 import { SelectedFile } from '../../../components/profile/formFields/DocumentsField';
 import { AttachFile } from '@mui/icons-material';
@@ -28,6 +27,7 @@ import { toast } from 'react-toastify';
 import AlertBox from '../../../components/alert/AlertBox';
 import { useNavigate } from 'react-router-dom';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { urlValidator } from '../../../utils/validators';
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
@@ -38,25 +38,14 @@ export default function RequirementsForm(props: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [deleteAlert, setDeleteAlert] = useState(false);
   const [copyAlert, setCopyAlert] = useState(false);
-  const { viewData, mode, setDrawerOpen, isEditing, onEdit, onCopy } = props;
+  const { viewData, mode, setDrawerOpen, isEditing, onEdit, onCopy,hideButtons = false,accounts } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [accounts, setAccounts] = useState<any[]>();
-  const currentFile = file || values.resumeUpload;
+  const currentFile = file || urlValidator(values.resumeUpload)?values.resumeUpload:'';
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
   const navigate = useNavigate();
 
-  async function getAccountList() {
-    try {
-      const { data } = await usersList();
-      const { users } = data;
-      setAccounts(users.filter((u: any) => u.active) || []);
-    } catch (error) {
-      console.log(error);
-    }
-  }
 
   useEffect(() => {
-    getAccountList();
     setValues(viewData);
     mode === 'add' &&
       setValues((pre: any) => ({
@@ -360,7 +349,7 @@ export default function RequirementsForm(props: any) {
             )}
           </Box>
 
-          <Grid
+       {!hideButtons &&   <Grid
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -475,7 +464,7 @@ export default function RequirementsForm(props: any) {
                 )}
               </>
             )}
-          </Grid>
+          </Grid>}
         </Box>
       </Box>
       <form style={{ margin: '0 20px' }}>
@@ -499,14 +488,14 @@ export default function RequirementsForm(props: any) {
           <CustomSelectField
             label="Assigned To"
             valueOptions={
-              accounts?.map((a) => `${a.firstName} ${a.lastName}`) || []
+              accounts?.map((a:any) => `${a.firstName} ${a.lastName}`) || []
             }
             selectedValue={values.assignedTo}
             disabled={!isEditing}
             onChange={(value: any) => {
               handleChange({ target: { value } }, 'assignedTo');
               const id = accounts?.find(
-                (a) => `${a.firstName} ${a.lastName}` === value
+                (a:any) => `${a.firstName} ${a.lastName}` === value
               )._id;
               handleChange({ target: { value: id } }, 'assignedToRef');
             }}
@@ -860,7 +849,7 @@ export default function RequirementsForm(props: any) {
           <CustomSelectField
             label="Requirement Entered By"
             valueOptions={
-              accounts?.map((a) => `${a.firstName} ${a.lastName}`) || []
+              accounts?.map((a:any) => `${a.firstName} ${a.lastName}`) || []
             }
             selectedValue={values.reqEnteredBy}
             disabled
@@ -868,7 +857,7 @@ export default function RequirementsForm(props: any) {
             onChange={(value: any) => {
               handleChange({ target: { value } }, 'reqEnteredBy');
               const id = accounts?.find(
-                (a) => `${a.firstName} ${a.lastName}` === value
+                (a:any) => `${a.firstName} ${a.lastName}` === value
               )._id;
               handleChange({ target: { value: id } }, 'reqEnteredByRef');
             }}
