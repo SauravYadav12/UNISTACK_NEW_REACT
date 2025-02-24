@@ -7,10 +7,11 @@ import {
   GridToolbarFilterButton,
   GridToolbarExport,
   GridToolbarDensitySelector,
+  GridOverlay,
 } from '@mui/x-data-grid';
 import Switch from '@mui/material/Switch';
-import { FormControlLabel } from '@mui/material';
-
+import { Button, FormControlLabel, IconButton, Typography } from '@mui/material';
+import SyncIcon from '@mui/icons-material/Sync';
 interface CustomToolbarProps {
   archiveState?: ArchiveState;
 }
@@ -18,6 +19,10 @@ function CustomToolbar({ archiveState }: CustomToolbarProps) {
   const [checked, cb, prop] = archiveState || [];
   return (
     <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarDensitySelector
+        slotProps={{ tooltip: { title: 'Change density' } }}
+      />
       <GridToolbarFilterButton />
       {archiveState && (
         <FormControlLabel
@@ -37,11 +42,7 @@ function CustomToolbar({ archiveState }: CustomToolbarProps) {
           }}
         />
       )}
-      <Box sx={{ flexGrow: 1 }} />
-      <GridToolbarColumnsButton />
-      <GridToolbarDensitySelector
-        slotProps={{ tooltip: { title: 'Change density' } }}
-      />
+
       <Box sx={{ flexGrow: 1 }} />
       <GridToolbarExport
         slotProps={{
@@ -53,8 +54,31 @@ function CustomToolbar({ archiveState }: CustomToolbarProps) {
   );
 }
 
+const ErrorOverlay = ({ message, retry }: CustomErrorOverlayProps) => {
+  return (
+    <GridOverlay>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+        }}
+      >
+        <Typography color="error">{message}</Typography>
+        <IconButton onClick={retry}>
+        <SyncIcon
+          color="primary"
+        />
+      </IconButton>
+      </div>
+    </GridOverlay>
+  );
+};
+
 export default function CustomDataGrid(props: Iprops) {
-  const { archiveState } = props;
+  const { archiveState, error, retry } = props;
   return (
     <div
       style={{
@@ -80,6 +104,15 @@ export default function CustomDataGrid(props: Iprops) {
             getRowId={(row: any) => row._id}
             slots={{
               toolbar: () => <CustomToolbar archiveState={archiveState} />,
+              noRowsOverlay: () =>
+                error ? (
+                  <ErrorOverlay
+                    message={error}
+                    retry={retry}
+                  />
+                ) : (
+                  <GridOverlay>Not found</GridOverlay>
+                ),
             }}
             slotProps={{
               toolbar: {
@@ -101,10 +134,12 @@ export default function CustomDataGrid(props: Iprops) {
 
 interface Iprops {
   loading: boolean;
+  error: string;
   header: JSX.Element;
   rows: any[];
   columns: any[];
   archiveState?: ArchiveState;
+  retry: () => void;
 }
 type ArchiveState = [
   boolean,
@@ -114,3 +149,8 @@ type ArchiveState = [
 type ArchiveStateButtonProps = {
   disabled: boolean;
 };
+
+interface CustomErrorOverlayProps {
+  message: string;
+  retry: () => void;
+}

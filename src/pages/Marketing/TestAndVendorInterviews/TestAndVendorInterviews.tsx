@@ -12,7 +12,6 @@ import moment from 'moment';
 import TestAndVendorForm from './TestAndVendorForm';
 import { interviewsList } from '../../../services/vendorInterviewApi';
 import CustomSearch from './CustomSearch';
-import { toast } from 'react-toastify';
 import { interviewStatusColors } from './testAndViValues';
 import { dateFormate, timeFormate } from '../../../components/constants';
 
@@ -25,6 +24,7 @@ type Record = {
 
 export default function TestAndVendorInterviews() {
   const [rows, setRows] = useState<any[]>();
+  const [error, setError] = useState<string>('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
@@ -39,10 +39,11 @@ export default function TestAndVendorInterviews() {
 
   const getInterviews = async () => {
     try {
+      setError('');
       const { data } = await interviewsList();
       setRows(data.data || []);
     } catch (error) {
-      toast.error('Failed to load');
+      setError('Failed to load');
     }
   };
 
@@ -97,7 +98,7 @@ export default function TestAndVendorInterviews() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) => {
-        return moment(params).format(dateFormate+' '+timeFormate);
+        return moment(params).format(dateFormate + ' ' + timeFormate);
       },
     },
   ];
@@ -173,7 +174,9 @@ export default function TestAndVendorInterviews() {
       </Dialog>
 
       <CustomDataGrid
-        loading={!rows}
+        error={error}
+        retry={getInterviews}
+        loading={!rows && !error}
         header={header}
         rows={rows || []}
         columns={columns}

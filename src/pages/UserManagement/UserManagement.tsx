@@ -136,7 +136,7 @@ function UserManagement() {
         renderCell: (params: any) => (
           <CanEditSwitch
             active={!!params.row.canEdit}
-            userId={params.row._id}
+            iUser={params.row}
             setOpen={setOpen}
             setAlertMessage={setAlertMessage}
           />

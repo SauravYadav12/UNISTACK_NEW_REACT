@@ -38,12 +38,21 @@ export default function RequirementsForm(props: any) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [deleteAlert, setDeleteAlert] = useState(false);
   const [copyAlert, setCopyAlert] = useState(false);
-  const { viewData, mode, setDrawerOpen, isEditing, onEdit, onCopy,hideButtons = false,accounts } = props;
+  const {
+    viewData,
+    mode,
+    setDrawerOpen,
+    isEditing,
+    onEdit,
+    onCopy,
+    hideButtons = false,
+    accounts,
+  } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const currentFile = file || urlValidator(values.resumeUpload)?values.resumeUpload:'';
+  const currentFile =
+    file || urlValidator(values.resumeUpload) ? values.resumeUpload : '';
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
   const navigate = useNavigate();
-
 
   useEffect(() => {
     setValues(viewData);
@@ -276,6 +285,64 @@ export default function RequirementsForm(props: any) {
     };
     return record;
   };
+
+  const AssignedToField = (
+    <>
+      {mode === 'view' ? (
+        <CustomTextField
+          label="Assigned To"
+          width={230}
+          disabled={!isEditing}
+          selectedValue={values.assignedTo}
+        />
+      ) : (
+        <CustomSelectField
+          label="Assigned To"
+          valueOptions={
+            accounts?.map((a: any) => `${a.firstName} ${a.lastName}`) || []
+          }
+          selectedValue={values.assignedTo}
+          disabled={!isEditing}
+          onChange={(value: any) => {
+            handleChange({ target: { value } }, 'assignedTo');
+            const id = accounts?.find(
+              (a: any) => `${a.firstName} ${a.lastName}` === value
+            )._id;
+            handleChange({ target: { value: id } }, 'assignedToRef');
+          }}
+          width={230}
+          error={!!errors.assignedTo}
+          helperText={errors.assignedTo}
+        />
+      )}
+    </>
+  );
+
+  const GotReqFromField = (
+    <>
+      {mode === 'view' ? (
+        <CustomTextField
+          label="Got Requirement from"
+          selectedValue={values.gotReqFrom || ''}
+          width={230}
+          disabled={!isEditing}
+          onChange={(value: any) =>
+            handleChange({ target: { value } }, 'gotReqFrom')
+          }
+        />
+      ) : (
+        <CustomSelectField
+          label="Got Requirement from"
+          valueOptions={gotRequirementForm}
+          selectedValue={values.gotReqFrom || ''}
+          disabled={!isEditing}
+          onChange={(event: any) => addValue('gotReqFrom', event.target.value)}
+          width={315}
+        />
+      )}
+    </>
+  );
+
   return (
     <>
       <Box sx={{ width: '100%', margin: '0 20px' }}>
@@ -349,122 +416,124 @@ export default function RequirementsForm(props: any) {
             )}
           </Box>
 
-       {!hideButtons &&   <Grid
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              marginRight: 10,
-              flexWrap: 'wrap',
-            }}
-          >
-            {mode === 'add' ? (
-              <Button
-                variant="contained"
-                color="primary"
-                type="submit"
-                onClick={handleSubmitForm}
-                size="small"
-                sx={{ borderRadius: '10px' }}
-                disabled={isSubmitting}
-              >
-                Submit
-              </Button>
-            ) : isEditing ? (
-              <>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="button"
-                  onClick={() => onEdit(false)}
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  Cancel
-                </Button>
+          {!hideButtons && (
+            <Grid
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                marginRight: 10,
+                flexWrap: 'wrap',
+              }}
+            >
+              {mode === 'add' ? (
                 <Button
                   variant="contained"
                   color="primary"
                   type="submit"
-                  onClick={handleEditSubmitForm}
+                  onClick={handleSubmitForm}
                   size="small"
                   sx={{ borderRadius: '10px' }}
+                  disabled={isSubmitting}
                 >
                   Submit
                 </Button>
-              </>
-            ) : (
-              <>
-                {viewData.reqStatus === 'Submitted' && (
+              ) : isEditing ? (
+                <>
                   <Button
                     variant="contained"
                     color="primary"
                     type="button"
-                    onClick={() =>
-                      navigate(
-                        `/interviews?createInterviewByReq=${JSON.stringify(
-                          reqFields()
-                        )}`
-                      )
-                    }
+                    onClick={() => onEdit(false)}
                     size="small"
-                    sx={{ borderRadius: '10px', width: 'max-content' }}
+                    sx={{ borderRadius: '10px' }}
                   >
-                    Create interview
+                    Cancel
                   </Button>
-                )}
-                <AlertBox
-                  open={copyAlert}
-                  title="Copy Requirement"
-                  description="Are you sure you want to copy this requirement ?"
-                  onClose={() => setCopyAlert(false)}
-                  onOk={handleCopyRequirement}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="button"
-                  onClick={() => setCopyAlert(true)}
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  Copy
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="button"
-                  onClick={() => onEdit(true)}
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  Edit
-                </Button>
-                {user.role === 'super-admin' && (
-                  <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="submit"
+                    onClick={handleEditSubmitForm}
+                    size="small"
+                    sx={{ borderRadius: '10px' }}
+                  >
+                    Submit
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {viewData.reqStatus === 'Submitted' && (
                     <Button
                       variant="contained"
                       color="primary"
                       type="button"
+                      onClick={() =>
+                        navigate(
+                          `/interviews?createInterviewByReq=${JSON.stringify(
+                            reqFields()
+                          )}`
+                        )
+                      }
                       size="small"
-                      sx={{ borderRadius: '10px' }}
-                      onClick={() => setDeleteAlert(true)}
+                      sx={{ borderRadius: '10px', width: 'max-content' }}
                     >
-                      Delete
+                      Create interview
                     </Button>
-                    <AlertBox
-                      open={deleteAlert}
-                      title="Delete Requirement"
-                      description="Are you sure you want to delete this requirement? This
+                  )}
+                  <AlertBox
+                    open={copyAlert}
+                    title="Copy Requirement"
+                    description="Are you sure you want to copy this requirement ?"
+                    onClose={() => setCopyAlert(false)}
+                    onOk={handleCopyRequirement}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="button"
+                    onClick={() => setCopyAlert(true)}
+                    size="small"
+                    sx={{ borderRadius: '10px' }}
+                  >
+                    Copy
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="button"
+                    onClick={() => onEdit(true)}
+                    size="small"
+                    sx={{ borderRadius: '10px' }}
+                  >
+                    Edit
+                  </Button>
+                  {user.role === 'super-admin' && (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="button"
+                        size="small"
+                        sx={{ borderRadius: '10px' }}
+                        onClick={() => setDeleteAlert(true)}
+                      >
+                        Delete
+                      </Button>
+                      <AlertBox
+                        open={deleteAlert}
+                        title="Delete Requirement"
+                        description="Are you sure you want to delete this requirement? This
                       action cannot be undone."
-                      onClose={() => setDeleteAlert(false)}
-                      onOk={() => handleDeleteRequirement()}
-                    />
-                  </>
-                )}
-              </>
-            )}
-          </Grid>}
+                        onClose={() => setDeleteAlert(false)}
+                        onOk={() => handleDeleteRequirement()}
+                      />
+                    </>
+                  )}
+                </>
+              )}
+            </Grid>
+          )}
         </Box>
       </Box>
       <form style={{ margin: '0 20px' }}>
@@ -485,24 +554,7 @@ export default function RequirementsForm(props: any) {
             error={!!errors.reqStatus}
             helperText={errors.reqStatus}
           />
-          <CustomSelectField
-            label="Assigned To"
-            valueOptions={
-              accounts?.map((a:any) => `${a.firstName} ${a.lastName}`) || []
-            }
-            selectedValue={values.assignedTo}
-            disabled={!isEditing}
-            onChange={(value: any) => {
-              handleChange({ target: { value } }, 'assignedTo');
-              const id = accounts?.find(
-                (a:any) => `${a.firstName} ${a.lastName}` === value
-              )._id;
-              handleChange({ target: { value: id } }, 'assignedToRef');
-            }}
-            width={230}
-            error={!!errors.assignedTo}
-            helperText={errors.assignedTo}
-          />
+          {AssignedToField}
           <CustomTextField
             label="Next Step"
             width={230}
@@ -800,16 +852,7 @@ export default function RequirementsForm(props: any) {
               />
             </LocalizationProvider>
           </Grid>
-          <CustomSelectField
-            label="Got Requirement from"
-            valueOptions={gotRequirementForm}
-            selectedValue={values.gotReqFrom || ''}
-            disabled={!isEditing}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'gotReqFrom')
-            }
-            width={315}
-          />
+          {GotReqFromField}
           <CustomSelectField
             label="Primary Tech Stack"
             valueOptions={techStack}
@@ -845,20 +888,14 @@ export default function RequirementsForm(props: any) {
               addValue('jobPortalLink', event.target.value)
             }
           />
-
-          <CustomSelectField
+          <CustomTextField
             label="Requirement Entered By"
-            valueOptions={
-              accounts?.map((a:any) => `${a.firstName} ${a.lastName}`) || []
-            }
+            width={315}
             selectedValue={values.reqEnteredBy}
             disabled
-            width={315}
-            onChange={(value: any) => {
-              handleChange({ target: { value } }, 'reqEnteredBy');
-              const id = accounts?.find(
-                (a:any) => `${a.firstName} ${a.lastName}` === value
-              )._id;
+            onChange={(event: any) => {
+              handleChange(event, 'reqEnteredBy');
+              const id = getIUser()?.id;
               handleChange({ target: { value: id } }, 'reqEnteredByRef');
             }}
           />

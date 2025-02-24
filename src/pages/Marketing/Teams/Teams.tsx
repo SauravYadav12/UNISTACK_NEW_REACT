@@ -5,7 +5,6 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import TeamsForm from './TeamsForm';
 import { useEffect, useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
-import { toast } from 'react-toastify';
 import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function Teams() {
@@ -14,7 +13,8 @@ export default function Teams() {
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
   const [viewData, setViewData] = useState({});
-  const [rows, setRows] = useState <any[]>();
+  const [rows, setRows] = useState<any[]>();
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     getTeams();
@@ -22,10 +22,11 @@ export default function Teams() {
 
   async function getTeams() {
     try {
-      const {data} = await teamsList();
-      setRows(data.data||[]);
+      setError('');
+      const { data } = await teamsList();
+      setRows(data.data || []);
     } catch (error) {
-      toast.error('Failed to load');
+      setError('Failed to load');
       console.error('Error while fetching API response', error);
     }
   }
@@ -57,7 +58,7 @@ export default function Teams() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format(dateFormate+' '+timeFormate),
+        moment(params).format(dateFormate + ' ' + timeFormate),
     },
   ];
 
@@ -70,7 +71,7 @@ export default function Teams() {
   };
   const handleViewDetails = (row: any) => {
     const data = rows?.filter((r: any) => r.teamId === row.teamId);
-    if(!data) return;
+    if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Team ID :- ${row.teamId}`);
     setMode('view');
@@ -102,10 +103,12 @@ export default function Teams() {
   return (
     <>
       <CustomDataGrid
-        loading={!rows}
+        error={error}
+        retry={getTeams}
+        loading={!rows && !error}
         header={header}
         columns={columns}
-        rows={rows||[]}
+        rows={rows || []}
       />
       <CustomDrawer
         open={drawerOpen}

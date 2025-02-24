@@ -5,12 +5,12 @@ import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
-import { toast } from 'react-toastify';
 import { dateFormate, timeFormate } from '../../../components/constants';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [rows, setRows] = useState<any[]>();
+  const [error, setError] = useState<string>('');
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -22,10 +22,11 @@ export default function Consultants() {
 
   const getConsultants = async () => {
     try {
+      setError('');
       const { data } = await consultantsList();
       setRows(data.data || []);
     } catch (error) {
-      toast.error('Failed to load');
+      setError('Failed to load');
       console.error('Error while fetching API response', error);
     }
   };
@@ -75,7 +76,7 @@ export default function Consultants() {
       headerName: 'Created At',
       width: 180,
       valueFormatter: (params: any) =>
-        moment(params).format(dateFormate+' '+timeFormate),
+        moment(params).format(dateFormate + ' ' + timeFormate),
     },
   ];
 
@@ -123,7 +124,9 @@ export default function Consultants() {
   return (
     <>
       <CustomDataGrid
-        loading={!rows}
+        error={error}
+        retry={getConsultants}
+        loading={!rows && !error}
         rows={rows || []}
         columns={columns}
         header={header}

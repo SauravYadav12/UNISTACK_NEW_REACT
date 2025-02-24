@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import RequirementsForm from './RequirementsForm';
 import { requirementsList } from '../../../services/requirementApi';
 import { useSearchParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
@@ -15,6 +14,7 @@ export default function Requirements() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [rows, setRows] = useState<any[]>();
+  const [error, setError] = useState<string>('');
   const [viewData, setViewData] = useState<any>({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
@@ -66,27 +66,29 @@ export default function Requirements() {
 
   const getRequirements = async () => {
     try {
+      setError('');
       const { data } = await requirementsList(searchParams.toString());
       setRows(data.data || []);
       setArchive(false);
     } catch (error) {
       console.error('Error fetching requirements:', error);
-      toast.error('Failed to load');
+      setError('Failed to load');
     }
   };
 
   const getArchiveRequirements = async () => {
     try {
+      setError('');
       const { data } = await archiveRequirementsList(searchParams.toString());
       setRows(data.data || []);
       setArchive(true);
     } catch (error) {
       console.error('Error fetching requirements:', error);
-      toast.error('Failed to load');
+      setError('Failed to load');
     }
   };
 
-  const onChangeArchive = (status: boolean) => {
+  const onChangeArchiveButton = (status: boolean) => {
     setArchive(status);
     setRows(undefined);
   };
@@ -134,6 +136,14 @@ export default function Requirements() {
     }
   }
 
+  async function getReqOnChangeArchiveButton() {
+    if (!archive) {
+      getRequirements();
+    } else {
+      getArchiveRequirements();
+    }
+  }
+
   useEffect(() => {
     if (!archive) {
       getRequirements();
@@ -141,16 +151,12 @@ export default function Requirements() {
   }, [drawerOpen]);
 
   useEffect(() => {
-    if (!archive) {
-      getRequirements();
-    } else {
-      getArchiveRequirements();
-    }
+    getReqOnChangeArchiveButton();
   }, [archive]);
 
-  useEffect(()=>{
-    getAccountList()
-  },[])
+  useEffect(() => {
+    getAccountList();
+  }, []);
 
   const header = (
     <>
@@ -166,21 +172,26 @@ export default function Requirements() {
     </>
   );
 
+  const isViewDataDuplicate =
+    Boolean(viewData.isDuplicate) && Boolean(viewData.duplicateWith?.trim());
+
   return (
     <>
       <CustomDataGrid
-        archiveState={[archive, onChangeArchive,{disabled:!rows}]}
+        error={error}
+        retry={getReqOnChangeArchiveButton}
+        archiveState={[archive, onChangeArchiveButton, { disabled: !rows&&!error }]}
         header={header}
         rows={rows || []}
         columns={columns}
-        loading={!rows}
+        loading={!rows&&!error}
       />
       <CustomDrawer
         open={drawerOpen}
         onClose={handleDrawerClose}
         title={formTitle}
         subTitle={
-          viewData.isDuplicate && viewData.duplicateWith ? (
+          isViewDataDuplicate ? (
             <>
               Copied from :{' '}
               <Link target="_blank" href={'?reqID=' + viewData.duplicateWith}>
