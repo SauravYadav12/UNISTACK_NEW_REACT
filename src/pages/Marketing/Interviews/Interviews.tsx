@@ -32,6 +32,7 @@ interface Iprops {
 export default function Interviews(props: Iprops) {
   const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<any[]>();
+  const [error, setError] = useState<string>('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
@@ -156,23 +157,31 @@ export default function Interviews(props: Iprops) {
 
   const getInterviews = async () => {
     try {
+      setError('')
       const { data } = await interviewsList(props.query);
       setRows(data.data || []);
       setArchive(false);
     } catch (error) {
-      toast.error('Failed to load');
+      setError('Failed to load');
     }
   };
   const getArchiveInterviews = async () => {
     try {
+      setError('')
       const { data } = await archiveInterviewsList(props.query);
       setRows(data.data || []);
       setArchive(true);
     } catch (error) {
-      toast.error('Failed to load');
+      setError('Failed to load');
     }
   };
-
+  async function getIntOnChangeArchiveButton() {
+    if (archive) {
+      getArchiveInterviews();
+    } else {
+      getInterviews();
+    }
+  }
   useEffect(() => {
     if (!archive) {
       getInterviews();
@@ -180,11 +189,7 @@ export default function Interviews(props: Iprops) {
   }, [drawerOpen, props.query]);
 
   useEffect(() => {
-    if (archive) {
-      getArchiveInterviews();
-    } else {
-      getInterviews();
-    }
+    getIntOnChangeArchiveButton();
   }, [props.query, archive]);
 
   useEffect(() => {
@@ -233,6 +238,8 @@ export default function Interviews(props: Iprops) {
         </DialogContent>
       </Dialog>
       <CustomDataGrid
+        error={error}
+        retry={getIntOnChangeArchiveButton}
         archiveState={[
           archive,
           (s) => {
@@ -240,13 +247,13 @@ export default function Interviews(props: Iprops) {
             setRows(undefined);
           },
           {
-            disabled: !rows,
+            disabled: !rows && !error,
           },
         ]}
         header={dataGridHeader}
         rows={rows || []}
         columns={columns}
-        loading={!rows}
+        loading={!rows && !error}
       />
       <CustomDrawer
         open={drawerOpen}

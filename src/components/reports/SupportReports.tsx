@@ -1,6 +1,7 @@
 import {
   Box,
   CircularProgress,
+  IconButton,
   Link,
   Table,
   TableBody,
@@ -13,25 +14,23 @@ import { useEffect, useState } from 'react';
 import CustomAccordion from '../accordion/CustomAccordion';
 import { SupportReport } from '../../Interfaces/reports';
 import { getSupportReport } from '../../services/reportsApi';
-import { toast } from 'react-toastify';
-
+import SyncIcon from '@mui/icons-material/Sync';
 export interface MyReportsProps {
   fromDate?: string;
   toDate?: string;
   setMetaText: React.Dispatch<React.SetStateAction<string>>;
-  setError: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const SupportReports = ({
   fromDate,
   toDate,
   setMetaText,
-  setError,
 }: MyReportsProps) => {
   const [report, setReport] = useState<SupportReport[]>();
-
+  const [error, setError] = useState('');
   const getReport = async () => {
     try {
+      setError('');
       const { data } = await getSupportReport(fromDate, toDate);
       const totalPosition = data.data?.reduce((sum, report) => {
         return sum + (report.totalPositions || 0);
@@ -39,8 +38,8 @@ export const SupportReports = ({
       setReport(data.data);
       setMetaText(`Total Position: ${totalPosition || 0}`);
     } catch (error) {
-      setError(true);
-      toast.error('Failed to load');
+      setError('Failed to load');
+      setMetaText('Failed');
     }
   };
 
@@ -49,7 +48,7 @@ export const SupportReports = ({
     getReport();
   }, [fromDate, toDate]);
 
-  if (!report)
+  if (!report && !error)
     return (
       <Box className="loader" sx={{ py: 10 }}>
         <CircularProgress />
@@ -58,7 +57,7 @@ export const SupportReports = ({
 
   return (
     <div>
-      {report.map((a, i) => {
+      {report?.map((a, i) => {
         const title = a.name
           ? a.name.slice(0, 1).toUpperCase() + a.name.slice(1)
           : 'NA';
@@ -91,9 +90,17 @@ export const SupportReports = ({
           </Box>
         );
       })}
-      {!report.length && (
+      {!report?.length && !error && (
         <Box sx={{ textAlign: 'center', py: 10 }}>
           <p>Not found</p>
+        </Box>
+      )}
+      {error && (
+        <Box sx={{ textAlign: 'center', py: 10 }}>
+          <Typography color="error">{error}</Typography>
+          <IconButton onClick={getReport}>
+            <SyncIcon color="primary" />
+          </IconButton>
         </Box>
       )}
     </div>

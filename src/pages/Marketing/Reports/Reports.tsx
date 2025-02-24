@@ -16,8 +16,8 @@ export default function Reports() {
   });
 
   const [metaText, setMetaText] = useState('');
-  const [error, setError] = useState(false);
-
+  const isDatesValid =
+    dayjs(values.fromDate).isValid() && dayjs(values.toDate).isValid();
   const tabs: TabTypes[] = ['support', 'marketing', 'interview'];
   const [tab, setTab] = useState(0);
 
@@ -32,12 +32,11 @@ export default function Reports() {
   };
 
   useEffect(() => {
-    if (!dayjs(values.fromDate).isValid() || !dayjs(values.toDate).isValid()) {
+    if (!isDatesValid) {
       setMetaText('Invalid Dates');
     } else {
       setMetaText('Loading');
     }
-    setError(false);
   }, [values, tab]);
 
   useEffect(() => {
@@ -63,51 +62,28 @@ export default function Reports() {
             return (
               <CustomTabPanel key={i} value={tab} index={i}>
                 <DateBar
-                  metaText={error ? '___-__-___' : metaText}
+                  metaText={!isDatesValid ? '___-__-___' : metaText}
                   {...values}
                   addValue={addValue}
                 />
-                {!error && (
+                {isDatesValid ? (
                   <>
-                    {dayjs(values.fromDate).isValid() &&
-                    dayjs(values.toDate).isValid() ? (
-                      <>
-                        {t === 'support' && (
-                          <SupportReports
-                            setError={setError}
-                            setMetaText={setMetaText}
-                            {...values}
-                          />
-                        )}
-                        {t === 'interview' && (
-                          <InterviewReports
-                            setError={setError}
-                            setMetaText={setMetaText}
-                            {...values}
-                          />
-                        )}
-                        {t === 'marketing' && (
-                          <MarketingReports
-                            setError={setError}
-                            setMetaText={setMetaText}
-                            {...values}
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <Box sx={{ textAlign: 'center', color: 'red', py: 10 }}>
-                          <p>Please ensure that dates are valid</p>
-                        </Box>
-                      </>
+                    {t === 'support' && (
+                      <SupportReports setMetaText={setMetaText} {...values} />
+                    )}
+                    {t === 'interview' && (
+                      <InterviewReports setMetaText={setMetaText} {...values} />
+                    )}
+                    {t === 'marketing' && (
+                      <MarketingReports setMetaText={setMetaText} {...values} />
                     )}
                   </>
-                )}
-
-                {error && (
-                  <Box sx={{ textAlign: 'center', color: 'red', py: 10 }}>
-                    <p>Something went wrong</p>
-                  </Box>
+                ) : (
+                  <>
+                    <Box sx={{ textAlign: 'center', color: 'red', py: 10 }}>
+                      <p>Please ensure that dates are valid</p>
+                    </Box>
+                  </>
                 )}
               </CustomTabPanel>
             );

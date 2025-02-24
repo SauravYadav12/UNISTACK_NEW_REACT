@@ -19,6 +19,7 @@ const SalesLeads = () => {
   const [syncing, setSyncing] = useState(false);
   const [viewData, setViewData] = useState({});
   const [rows, setRows] = useState<iSalesLead[]>();
+  const [error, setError] = useState<string>('');
   const columns = [
     {
       field: 'view',
@@ -105,11 +106,13 @@ const SalesLeads = () => {
   };
   async function initSalesLeads() {
     try {
+      setError('');
       setSyncing(true);
       const { data } = await getSalesLeads();
       setRows(data.data || []);
       console.log('getting');
     } catch (error) {
+      setError('Failed to load');
       console.error('Error while fetching API response', error);
     } finally {
       setSyncing(false);
@@ -139,8 +142,10 @@ const SalesLeads = () => {
   return (
     <>
       <CustomDataGrid
+        error={error}
+        retry={initSalesLeads}
         header={dataGridHeader}
-        loading={syncing}
+        loading={syncing&&!error}
         columns={columns}
         rows={rows || []}
       />
