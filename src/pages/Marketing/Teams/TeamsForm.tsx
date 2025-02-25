@@ -28,7 +28,8 @@ export default function TeamsForm(props: any) {
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [errors, setErrors] = useState(initialValues);
-  const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
+  const { viewData, mode, setDrawerOpen, isEditing, onEdit, setResults } =
+    props;
 
   useEffect(() => {
     if (mode === 'view') {
@@ -78,12 +79,10 @@ export default function TeamsForm(props: any) {
       setErrors(newErrors);
       return;
     }
-    console.log('Submit button clicked');
     try {
-      const res = await createTeam(values);
-      if (res.status === 200) console.log('Create Team', res);
+      const { data } = await createTeam(values);
+      setResults((pre: any) => [data.data, ...pre]);
       setDrawerOpen(false);
-      console.log('Teams Form submitted successfully', values);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     }
@@ -91,28 +90,25 @@ export default function TeamsForm(props: any) {
 
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
-    console.log('Edit submit clicked', values.createdAt);
     try {
-      const res = await updateTeam(values._id, values);
-      if (res.status === 200) {
-        setDrawerOpen(false);
-        console.log('Team updated successfully', res.data);
-        onEdit(res.data);
-      }
+      const { data } = await updateTeam(values._id, values);
+      setResults((pre: any) => {
+        pre = pre.map((d: any) => {
+          if (d._id === data.data._id) return data.data;
+          return d;
+        });
+        return [...pre];
+      });
+      setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     }
   }
   async function handleDeleteTeam(_id: any) {
-    console.log('Delete button clicked');
     try {
-      const response = await deleteTeam(values._id);
-      if (response.status === 200) {
-        console.log('Interview  deleted successfully:', response.data);
-        setDrawerOpen(false);
-      } else {
-        console.error('Failed to delete requirement:', response);
-      }
+      await deleteTeam(values._id);
+      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen(false);
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }

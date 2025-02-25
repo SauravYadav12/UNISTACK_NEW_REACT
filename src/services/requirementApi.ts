@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
+import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
-export async function requirementsList(query?: string) {
+export async function requirementsList(query: string='') {
   const token = await getJwtToken();
 
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
@@ -12,7 +13,9 @@ export async function requirementsList(query?: string) {
   };
 
   const url = `${BASE_URL}/requirements/get-requirements?${query}`;
-  const response = await axios.get(url, { headers });
+  const response = await axios.get<ApiQueryRes<PaginationResult>>(url, {
+    headers,
+  });
   return response;
 }
 
@@ -61,12 +64,4 @@ export async function deleteRequirement(id: string) {
     { headers }
   );
   return response;
-}
-
-interface RequirementsListPara {
-  reqID?: string;
-  fromDate?: string;
-  toDate?: string;
-  assignedToRef?: string;
-  reqEnteredByRef?: string;
 }

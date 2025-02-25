@@ -1,35 +1,37 @@
-import { Button } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
 import moment from 'moment';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { usePagination } from '../../../hooks/paginationHook';
+
+import SyncIcon from '@mui/icons-material/Sync';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
 
-  useEffect(() => {
-    getConsultants();
-  }, [drawerOpen]);
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    reload,
+    setResults,
+  } = usePagination(
+    {
+      queryFunction: consultantsList,
+    },
+    []
+  );
 
-  const getConsultants = async () => {
-    try {
-      setError('');
-      const { data } = await consultantsList();
-      setRows(data.data || []);
-    } catch (error) {
-      setError('Failed to load');
-      console.error('Error while fetching API response', error);
-    }
-  };
   const statusColor = (s: any) => {
     if (s === 'Active') {
       return 'green';
@@ -81,7 +83,9 @@ export default function Consultants() {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.consultantId === row.consultantId);
+    const data = gridData?.results?.filter(
+      (r: any) => r.consultantId === row.consultantId
+    );
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Consultant ID :- ${row.consultantId}`);
@@ -110,24 +114,37 @@ export default function Consultants() {
   const header = (
     <>
       <h3>Consultants</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        size="small"
-        onClick={handleAddNew}
-      >
-        Add New
-      </Button>
+      <span>
+        <Button
+          variant="contained"
+          style={{ borderRadius: '10px' }}
+          size="small"
+          onClick={handleAddNew}
+        >
+          Add New
+        </Button>
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
 
   return (
     <>
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={getConsultants}
-        loading={!rows && !error}
-        rows={rows || []}
+        retry={reload}
+        loading={loading}
+        rows={gridData?.results || []}
         columns={columns}
         header={header}
       />
@@ -137,6 +154,7 @@ export default function Consultants() {
         title={formTitle}
       >
         <ConsultantForm
+          setResults={setResults}
           viewData={viewData}
           mode={mode}
           setDrawerOpen={setDrawerOpen}

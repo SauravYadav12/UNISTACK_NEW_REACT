@@ -4,16 +4,19 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
 } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { useEffect, useState } from 'react';
+import SyncIcon from '@mui/icons-material/Sync';
+import { useState } from 'react';
 import moment from 'moment';
 import TestAndVendorForm from './TestAndVendorForm';
 import { interviewsList } from '../../../services/vendorInterviewApi';
 import CustomSearch from './CustomSearch';
 import { interviewStatusColors } from './testAndViValues';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { usePagination } from '../../../hooks/paginationHook';
 
 type Record = {
   id: number;
@@ -23,8 +26,6 @@ type Record = {
 };
 
 export default function TestAndVendorInterviews() {
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
@@ -33,19 +34,20 @@ export default function TestAndVendorInterviews() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
 
-  useEffect(() => {
-    getInterviews();
-  }, [drawerOpen]);
-
-  const getInterviews = async () => {
-    try {
-      setError('');
-      const { data } = await interviewsList();
-      setRows(data.data || []);
-    } catch (error) {
-      setError('Failed to load');
-    }
-  };
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    reload,
+    setResults
+  } = usePagination(
+    {
+      queryFunction: interviewsList,
+    },
+    []
+  );
 
   const columns = [
     {
@@ -104,7 +106,7 @@ export default function TestAndVendorInterviews() {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.testID === row.testID);
+    const data = gridData?.results?.filter((r: any) => r.testID === row.testID);
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Vendor Interview ID ${row.testID}`);
@@ -139,14 +141,22 @@ export default function TestAndVendorInterviews() {
   const header = (
     <>
       <h3>Test and Vendor Interviews</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        size="small"
-        onClick={handleClickOpen}
-      >
-        Add New
-      </Button>
+      <span>
+        <Button
+          variant="contained"
+          style={{ borderRadius: '10px' }}
+          size="small"
+          onClick={handleClickOpen}
+        >
+          Add New
+        </Button>
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
   return (
@@ -174,11 +184,16 @@ export default function TestAndVendorInterviews() {
       </Dialog>
 
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={getInterviews}
-        loading={!rows && !error}
+        retry={reload}
+        loading={loading}
         header={header}
-        rows={rows || []}
+        rows={gridData?.results || []}
         columns={columns}
       />
       <CustomDrawer
@@ -187,6 +202,7 @@ export default function TestAndVendorInterviews() {
         title={formTitle}
       >
         <TestAndVendorForm
+          setResults={setResults}
           handleCloseForm={handleCloseForm}
           selectedRecord={selectedRecord}
           viewData={viewData}

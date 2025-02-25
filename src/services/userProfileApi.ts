@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { UserProfile } from '../Interfaces/profile';
 import { iUser } from '../Interfaces/iUser';
-import { ApiQueryRes } from '../Interfaces/apiRes';
+import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
@@ -73,7 +73,7 @@ export async function getProfileByUser(user: iUser) {
     Authorization: token,
   };
 
-  const { data } = await axios.get<ApiQueryRes<UserProfile[]>>(
+  const { data } = await axios.get<ApiQueryRes<PaginationResult<UserProfile>>>(
     `${BASE_URL}/user-profiles?user=${user.id}`,
     {
       headers,
@@ -81,7 +81,7 @@ export async function getProfileByUser(user: iUser) {
   );
   const { error } = data;
   if (error) return;
-  const result = data.data;
+  const result = data.data?.results;
   if (result?.length) {
     return result[0];
   }

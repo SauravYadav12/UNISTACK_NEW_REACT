@@ -4,7 +4,7 @@ import {
   getJwtToken,
   myIpGeoLocation,
 } from '../utils/utils';
-import { toast } from 'react-toastify';
+// import { toast } from 'react-toastify';
 
 export async function signup(data: any) {
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
@@ -26,10 +26,10 @@ export async function login(data: any) {
   data = Object.fromEntries(data);
 
   const { ip, location } = await myIpGeoLocation();
-  if(!location){
-    toast.warning('Please allow location permission to proceed!')
-    return
-  }
+  // if(!location){
+  //   toast.warning('Please allow location permission to proceed!')
+  //   return
+  // }
   data = { ...data, ip, location };
   const response = await axios.post(`${BASE_URL}/users/login`, data, {
     headers,

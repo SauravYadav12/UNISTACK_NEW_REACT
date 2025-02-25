@@ -54,7 +54,8 @@ const initialValues = {
 export default function ConsultantForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
-  const { viewData, mode, setDrawerOpen, isEditing, onEdit } = props;
+  const { viewData, mode, setDrawerOpen, isEditing, onEdit, setResults } =
+    props;
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [projects, setProjects] = useState<any[]>([]);
   const [errors, setErrors] = useState(initialValues);
@@ -154,10 +155,9 @@ export default function ConsultantForm(props: any) {
       createdBy: user.firstName,
     };
     try {
-      const res = await createConsultant(payload);
-      console.log('Create consultant', res);
+      const { data } = await createConsultant(payload);
+      setResults((pre: any) => [data.data, ...pre]);
       setDrawerOpen(false);
-      console.log('Consultant Form submitted successfully', payload);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     }
@@ -180,11 +180,15 @@ export default function ConsultantForm(props: any) {
       projects: filteredProjects,
     };
     try {
-      const res = await updateConsultant(values._id, payload);
-      if (res.status === 200) {
-        setDrawerOpen(false);
-        console.log('Consultant updated successfully', res.data);
-      }
+      const { data } = await updateConsultant(values._id, payload);
+      setResults((pre: any) => {
+        pre = pre.map((d: any) => {
+          if (d._id === data.data._id) return data.data;
+          return d;
+        });
+        return [...pre];
+      });
+      setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     }
@@ -192,13 +196,9 @@ export default function ConsultantForm(props: any) {
 
   async function handleDeleteConsultant(_id: any) {
     try {
-      const response = await deleteConsultant(values._id);
-      if (response.status === 200) {
-        console.log('Consultant  deleted successfully:', response.data);
-        setDrawerOpen(false);
-      } else {
-        console.error('Failed to delete Consultant:', response);
-      }
+      await deleteConsultant(values._id);
+      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen(false);
     } catch (error) {
       console.error('An error occurred while deleting the Consultant:', error);
     }

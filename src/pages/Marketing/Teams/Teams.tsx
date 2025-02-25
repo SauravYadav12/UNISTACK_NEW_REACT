@@ -1,11 +1,13 @@
-import { Button } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import TeamsForm from './TeamsForm';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { usePagination } from '../../../hooks/paginationHook';
+import SyncIcon from '@mui/icons-material/Sync';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -13,23 +15,21 @@ export default function Teams() {
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
   const [viewData, setViewData] = useState({});
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    getTeams();
-  }, [drawerOpen]);
-
-  async function getTeams() {
-    try {
-      setError('');
-      const { data } = await teamsList();
-      setRows(data.data || []);
-    } catch (error) {
-      setError('Failed to load');
-      console.error('Error while fetching API response', error);
-    }
-  }
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    reload,
+    setResults,
+  } = usePagination(
+    {
+      queryFunction: teamsList,
+    },
+    []
+  );
 
   const columns = [
     {
@@ -70,7 +70,7 @@ export default function Teams() {
     setDrawerOpen(true);
   };
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.teamId === row.teamId);
+    const data = gridData?.results?.filter((r: any) => r.teamId === row.teamId);
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Team ID :- ${row.teamId}`);
@@ -89,26 +89,39 @@ export default function Teams() {
   const header = (
     <>
       <h3>Teams</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        size="small"
-        onClick={handleAddNew}
-      >
-        Add New
-      </Button>
+      <span>
+        <Button
+          variant="contained"
+          style={{ borderRadius: '10px' }}
+          size="small"
+          onClick={handleAddNew}
+        >
+          Add New
+        </Button>
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
 
   return (
     <>
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={getTeams}
-        loading={!rows && !error}
+        retry={reload}
+        loading={loading}
         header={header}
         columns={columns}
-        rows={rows || []}
+        rows={gridData?.results || []}
       />
       <CustomDrawer
         open={drawerOpen}
@@ -116,6 +129,7 @@ export default function Teams() {
         title={formTitle}
       >
         <TeamsForm
+          setResults={setResults}
           viewData={viewData}
           mode={mode}
           setDrawerOpen={setDrawerOpen}

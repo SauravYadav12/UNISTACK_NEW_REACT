@@ -38,9 +38,8 @@ export default function CustomSearch(props: any) {
         );
         return;
       }
-      const res = await requirementsList(query);
-      // console.log('handleSearch--', res.data.data);
-      const fetchedRecords = res.data.data.map((val: any) => ({
+      const {data} = await requirementsList(`reqID=${query}`);
+      const fetchedRecords = data.data?.results?.map((val: any) => ({
         id: val.reqID,
         name: val.clientPerson,
         company: val.vendorCompany,
@@ -50,7 +49,7 @@ export default function CustomSearch(props: any) {
         jobTitle: val.jobTitle,
         taxType: val.taxType,
         duration: val.duration,
-      }));
+      }))||[];
       setRecords(fetchedRecords);
       setError('');
     } catch (error) {

@@ -1,4 +1,4 @@
-import { Button, Link } from '@mui/material';
+import { Button, IconButton, Link } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useEffect, useState } from 'react';
@@ -8,13 +8,12 @@ import { useSearchParams } from 'react-router-dom';
 import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
-
+import { usePagination } from '../../../hooks/paginationHook';
+import SyncIcon from '@mui/icons-material/Sync';
 export default function Requirements() {
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
   const [viewData, setViewData] = useState<any>({});
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
@@ -63,38 +62,42 @@ export default function Requirements() {
     { field: 'jobTitle', headerName: 'Requirement Title', width: 200 },
     { field: 'reqEnteredBy', headerName: 'Created by', width: 130 },
   ];
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    setGridData,
+    reload,
+    setResults,
+  } = usePagination(
+    {
+      queryFunction: archive ? getArchiveRequirements : getRequirements,
+      queryParams: searchParams.toString(),
+    },
+    [archive]
+  );
 
-  const getRequirements = async () => {
-    try {
-      setError('');
-      const { data } = await requirementsList(searchParams.toString());
-      setRows(data.data || []);
-      setArchive(false);
-    } catch (error) {
-      console.error('Error fetching requirements:', error);
-      setError('Failed to load');
-    }
-  };
+  async function getRequirements(query?: string) {
+    const res = await requirementsList(query);
+    setArchive(false);
+    return res;
+  }
 
-  const getArchiveRequirements = async () => {
-    try {
-      setError('');
-      const { data } = await archiveRequirementsList(searchParams.toString());
-      setRows(data.data || []);
-      setArchive(true);
-    } catch (error) {
-      console.error('Error fetching requirements:', error);
-      setError('Failed to load');
-    }
-  };
+  async function getArchiveRequirements(query?: string) {
+    const res = await archiveRequirementsList(query);
+    setArchive(true);
+    return res;
+  }
 
   const onChangeArchiveButton = (status: boolean) => {
     setArchive(status);
-    setRows(undefined);
+    setGridData(undefined);
   };
 
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.reqID === row.reqID);
+    const data = gridData?.results?.filter((r: any) => r.reqID === row.reqID);
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Requirement ID ${row.reqID}`);
@@ -136,24 +139,6 @@ export default function Requirements() {
     }
   }
 
-  async function getReqOnChangeArchiveButton() {
-    if (!archive) {
-      getRequirements();
-    } else {
-      getArchiveRequirements();
-    }
-  }
-
-  useEffect(() => {
-    if (!archive) {
-      getRequirements();
-    }
-  }, [drawerOpen]);
-
-  useEffect(() => {
-    getReqOnChangeArchiveButton();
-  }, [archive]);
-
   useEffect(() => {
     getAccountList();
   }, []);
@@ -161,14 +146,24 @@ export default function Requirements() {
   const header = (
     <>
       <h3>Requirements</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        onClick={handleAddNew}
-        size="small"
-      >
-        Add New
-      </Button>
+      <span>
+        {!archive && (
+          <Button
+            variant="contained"
+            style={{ borderRadius: '10px' }}
+            onClick={handleAddNew}
+            size="small"
+          >
+            Add New
+          </Button>
+        )}
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
 
@@ -178,13 +173,18 @@ export default function Requirements() {
   return (
     <>
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={getReqOnChangeArchiveButton}
-        archiveState={[archive, onChangeArchiveButton, { disabled: !rows&&!error }]}
+        retry={reload}
+        archiveState={[archive, onChangeArchiveButton, { disabled: loading }]}
         header={header}
-        rows={rows || []}
+        rows={gridData?.results || []}
         columns={columns}
-        loading={!rows&&!error}
+        loading={loading}
       />
       <CustomDrawer
         open={drawerOpen}
@@ -202,6 +202,7 @@ export default function Requirements() {
         }
       >
         <RequirementsForm
+          setResults={setResults}
           hideButtons={archive}
           accounts={accounts}
           viewData={viewData}

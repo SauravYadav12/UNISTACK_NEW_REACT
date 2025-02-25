@@ -95,7 +95,7 @@ const TodaysInterviews = () => {
   const getInterviews = async () => {
     try {
       const { data } = await interviewsList('interviewDate=' + toDay);
-      setRows(data.data || []);
+      setRows(data.data?.results || []);
     } catch (error) {
       toast.error('Failed to load');
     }

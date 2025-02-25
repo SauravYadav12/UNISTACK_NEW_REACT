@@ -75,8 +75,15 @@ const initialValues = {
 
 export default function InterviewForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
-  const { selectedRecord, viewData, mode, isEditing, onEdit, setDrawerOpen } =
-    props;
+  const {
+    selectedRecord,
+    viewData,
+    mode,
+    isEditing,
+    onEdit,
+    setDrawerOpen,
+    setResults,
+  } = props;
   const [errors, setErrors] = useState(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -151,9 +158,9 @@ export default function InterviewForm(props: any) {
     }
 
     try {
-      const res = await createVendorInterview(values);
-      if (res.status === 200) setDrawerOpen(false);
-      console.log('rsponse 200', res);
+      const { data } = await createVendorInterview(values);
+      setResults((pre: any) => [data.data, ...pre]);
+      setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     }
@@ -164,26 +171,25 @@ export default function InterviewForm(props: any) {
     event.preventDefault();
     console.log('Edit submit button clicked');
     try {
-      const res = await updateVendorInterview(values._id, values);
-      if (res.status === 200) {
-        setDrawerOpen(false);
-        console.log('Vendor Interview updated successfully', res.data);
-      }
+      const { data } = await updateVendorInterview(values._id, values);
+      setResults((pre: any) => {
+        pre = pre.map((d: any) => {
+          if (d._id === data.data._id) return data.data;
+          return d;
+        });
+        return [...pre];
+      });
+      setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     }
   }
 
   async function handleDeleteInterview(_id: any) {
-    // console.log('Delete button clicked');
     try {
-      const response = await deleteVendorInterview(values._id);
-      if (response.status === 200) {
-        console.log('Interview  deleted successfully:', response.data);
-        setDrawerOpen(false);
-      } else {
-        console.error('Failed to delete requirement:', response);
-      }
+      await deleteVendorInterview(values._id);
+      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen(false);
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
