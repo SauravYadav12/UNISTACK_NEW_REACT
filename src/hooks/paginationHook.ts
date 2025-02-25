@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { GridPaginationModel } from '@mui/x-data-grid';
-import { ApiQueryRes, PaginationInstance } from '../Interfaces/apiRes';
+import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import { AxiosResponse } from 'axios';
 
 export function usePagination(para: ApiQuery, dependencies: any[]) {
@@ -8,19 +8,26 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     page: 0,
     pageSize: 100,
   });
-  const [gridData, setGridData] = useState<PaginationInstance>();
+  const [gridData, setGridData] = useState<PaginationResult>();
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+
+  const setResults: SetResults = (cb) => {
+    const results = cb(gridData?.results || []);
+    setGridData((pre) => ({ ...pre, results }));
+  };
+
   const loadData = async () => {
+    if (loading) return;
     let { page, pageSize } = paginationModel;
     page = page + 1;
+    console.log('loading');
     try {
       setError('');
       setLoading(true);
       const query =
         (para.queryParams || '') + `&page=${page}&limit=${pageSize}`;
       const { data } = await para.queryFunction(query);
-      // searchParams.toString() + `&page=${page}&limit=${pageSize}`
       setGridData(data.data);
     } catch (error) {
       console.error('Error fetching requirements:', error);
@@ -32,7 +39,6 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
 
   useEffect(() => {
     loadData();
-    console.log('loading');
   }, [...dependencies, paginationModel]);
 
   return {
@@ -45,12 +51,15 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     setError,
     setLoading,
     reload: loadData,
+    setResults,
   };
 }
 
 interface ApiQuery {
   queryFunction: (
     query?: string
-  ) => Promise<AxiosResponse<ApiQueryRes<PaginationInstance<any>>, any>>;
+  ) => Promise<AxiosResponse<ApiQueryRes<PaginationResult<any>>, any>>;
   queryParams?: string;
 }
+
+export type SetResults = <T = any>(cb: (pre: T[]) => T[]) => void;

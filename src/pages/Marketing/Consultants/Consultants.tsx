@@ -6,30 +6,33 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { usePagination } from '../../../hooks/paginationHook';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
 
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    reload,
+  } = usePagination(
+    {
+      queryFunction: consultantsList,
+    },
+    []
+  );
+
   useEffect(() => {
-    getConsultants();
+    reload();
   }, [drawerOpen]);
 
-  const getConsultants = async () => {
-    try {
-      setError('');
-      const { data } = await consultantsList();
-      setRows(data.data || []);
-    } catch (error) {
-      setError('Failed to load');
-      console.error('Error while fetching API response', error);
-    }
-  };
   const statusColor = (s: any) => {
     if (s === 'Active') {
       return 'green';
@@ -81,7 +84,9 @@ export default function Consultants() {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.consultantId === row.consultantId);
+    const data = gridData?.results?.filter(
+      (r: any) => r.consultantId === row.consultantId
+    );
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Consultant ID :- ${row.consultantId}`);
@@ -124,10 +129,15 @@ export default function Consultants() {
   return (
     <>
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={getConsultants}
-        loading={!rows && !error}
-        rows={rows || []}
+        retry={reload}
+        loading={loading}
+        rows={gridData?.results || []}
         columns={columns}
         header={header}
       />

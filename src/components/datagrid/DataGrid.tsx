@@ -142,7 +142,7 @@ export default function CustomDataGrid(props: Iprops) {
 interface Iprops {
   loading: boolean;
   error: string;
-  header: JSX.Element;
+  header: JSX.Element|string;
   rows: any[];
   columns: any[];
   archiveState?: ArchiveState;

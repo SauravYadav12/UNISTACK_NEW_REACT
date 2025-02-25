@@ -148,14 +148,16 @@ export default function Requirements() {
   const header = (
     <>
       <h3>Requirements</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        onClick={handleAddNew}
-        size="small"
-      >
-        Add New
-      </Button>
+      {!archive && (
+        <Button
+          variant="contained"
+          style={{ borderRadius: '10px' }}
+          onClick={handleAddNew}
+          size="small"
+        >
+          Add New
+        </Button>
+      )}
     </>
   );
 

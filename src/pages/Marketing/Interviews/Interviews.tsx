@@ -39,7 +39,6 @@ export default function Interviews(props: Iprops) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [archive, setArchive] = props.archiveState;
-
   const {
     gridData,
     paginationModel,
@@ -195,14 +194,16 @@ export default function Interviews(props: Iprops) {
     <>
       <h3>{props.label}</h3>
 
-      <Button
-        variant="contained"
-        size="small"
-        onClick={handleClickOpen}
-        style={{ borderRadius: '10px' }}
-      >
-        Add New
-      </Button>
+      {!archive && (
+        <Button
+          variant="contained"
+          size="small"
+          onClick={handleClickOpen}
+          style={{ borderRadius: '10px' }}
+        >
+          Add New
+        </Button>
+      )}
     </>
   );
 

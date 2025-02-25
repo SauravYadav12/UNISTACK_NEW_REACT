@@ -1,5 +1,5 @@
 import { Button, IconButton } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import moment from 'moment';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -11,15 +11,29 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { Country } from 'country-state-city';
 import './salesLead.css';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { usePagination } from '../../../hooks/paginationHook';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [viewData, setViewData] = useState({});
-  const [rows, setRows] = useState<iSalesLead[]>();
-  const [error, setError] = useState<string>('');
+
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    reload,
+    setResults,
+  } = usePagination(
+    {
+      queryFunction: getSalesLeads,
+    },
+    []
+  );
+
   const columns = [
     {
       field: 'view',
@@ -58,7 +72,7 @@ const SalesLeads = () => {
 
       type: 'actions',
       renderCell: (params: any) => (
-        <SalesLeadStatusSelect row={params.row} setRows={setRows} />
+        <SalesLeadStatusSelect row={params.row} setRows={setResults} />
       ),
     },
     {
@@ -78,7 +92,7 @@ const SalesLeads = () => {
     },
   ];
   const handleViewDetails = (row: iSalesLead) => {
-    const data = rows?.filter((r) => r._id === row._id);
+    const data = gridData?.results?.filter((r) => r._id === row._id);
     if (!data?.length) return;
     console.log('viewRecord', data);
     setViewData(data[0]);
@@ -87,9 +101,9 @@ const SalesLeads = () => {
     setIsEditing(false);
     setDrawerOpen(true);
   };
+
   const handleEdit = (row: iSalesLead) => {
-    setRows((pre) => {
-      if (!pre) return;
+    setResults<iSalesLead>((pre) => {
       pre = pre.map((r) => {
         if (r._id === row._id) return row;
         return r;
@@ -97,42 +111,20 @@ const SalesLeads = () => {
       return [...pre];
     });
   };
+
   const filterRows = (id: string) => {
-    setRows((pre) => {
-      if (!pre) return;
+    setResults<iSalesLead>((pre) => {
       pre = pre.filter((r) => r._id !== id);
       return [...pre];
     });
   };
-  async function initSalesLeads() {
-    try {
-      setError('');
-      setSyncing(true);
-      const { data } = await getSalesLeads();
-      setRows(data.data || []);
-      console.log('getting');
-    } catch (error) {
-      setError('Failed to load');
-      console.error('Error while fetching API response', error);
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  const syncSalesLeads = async () => {
-    await initSalesLeads();
-  };
-
-  useEffect(() => {
-    initSalesLeads();
-  }, []);
 
   const dataGridHeader = (
     <>
       <h3>Sales Leads</h3>
-      <IconButton onClick={syncSalesLeads} disabled={syncing}>
+      <IconButton onClick={reload} disabled={loading}>
         <SyncIcon
-          className={syncing ? 'sync-icon-loading' : ''}
+          className={loading ? 'sync-icon-loading' : ''}
           color="primary"
         />
       </IconButton>
@@ -142,12 +134,17 @@ const SalesLeads = () => {
   return (
     <>
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={initSalesLeads}
+        retry={reload}
         header={dataGridHeader}
-        loading={syncing&&!error}
+        loading={loading}
         columns={columns}
-        rows={rows || []}
+        rows={gridData?.results || []}
       />
       <CustomDrawer
         open={drawerOpen}

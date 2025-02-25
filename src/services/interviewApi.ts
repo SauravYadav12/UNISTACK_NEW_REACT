@@ -1,16 +1,16 @@
 import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
-import { ApiQueryRes, PaginationInstance } from '../Interfaces/apiRes';
+import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
-export async function interviewsList(query?: string) {
+export async function interviewsList(query: string='') {
   const token = await getJwtToken();
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
   };
-  const response = await axios.get<ApiQueryRes<PaginationInstance>>(
-    `${BASE_URL}/interviews/get-interviews?${query || ''}`,
+  const response = await axios.get<ApiQueryRes<PaginationResult>>(
+    `${BASE_URL}/interviews/get-interviews?${query}`,
     {
       headers,
     }

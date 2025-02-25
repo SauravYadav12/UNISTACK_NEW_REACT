@@ -14,6 +14,7 @@ import { interviewsList } from '../../../services/vendorInterviewApi';
 import CustomSearch from './CustomSearch';
 import { interviewStatusColors } from './testAndViValues';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { usePagination } from '../../../hooks/paginationHook';
 
 type Record = {
   id: number;
@@ -23,8 +24,6 @@ type Record = {
 };
 
 export default function TestAndVendorInterviews() {
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
@@ -33,19 +32,24 @@ export default function TestAndVendorInterviews() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
 
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    reload,
+  } = usePagination(
+    {
+      queryFunction: interviewsList,
+    },
+    []
+  );
+
   useEffect(() => {
-    getInterviews();
+    reload();
   }, [drawerOpen]);
 
-  const getInterviews = async () => {
-    try {
-      setError('');
-      const { data } = await interviewsList();
-      setRows(data.data || []);
-    } catch (error) {
-      setError('Failed to load');
-    }
-  };
 
   const columns = [
     {
@@ -104,7 +108,7 @@ export default function TestAndVendorInterviews() {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.testID === row.testID);
+    const data = gridData?.results?.filter((r: any) => r.testID === row.testID);
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Vendor Interview ID ${row.testID}`);
@@ -174,11 +178,16 @@ export default function TestAndVendorInterviews() {
       </Dialog>
 
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={getInterviews}
-        loading={!rows && !error}
+        retry={reload}
+        loading={loading}
         header={header}
-        rows={rows || []}
+        rows={gridData?.results || []}
         columns={columns}
       />
       <CustomDrawer

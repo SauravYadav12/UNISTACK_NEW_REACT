@@ -6,6 +6,7 @@ import TeamsForm from './TeamsForm';
 import { useEffect, useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { usePagination } from '../../../hooks/paginationHook';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -13,23 +14,24 @@ export default function Teams() {
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
   const [viewData, setViewData] = useState({});
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
+
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    reload,
+  } = usePagination(
+    {
+      queryFunction: teamsList,
+    },
+    []
+  );
 
   useEffect(() => {
-    getTeams();
+    reload();
   }, [drawerOpen]);
-
-  async function getTeams() {
-    try {
-      setError('');
-      const { data } = await teamsList();
-      setRows(data.data || []);
-    } catch (error) {
-      setError('Failed to load');
-      console.error('Error while fetching API response', error);
-    }
-  }
 
   const columns = [
     {
@@ -70,7 +72,7 @@ export default function Teams() {
     setDrawerOpen(true);
   };
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.teamId === row.teamId);
+    const data = gridData?.results?.filter((r: any) => r.teamId === row.teamId);
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Team ID :- ${row.teamId}`);
@@ -103,12 +105,17 @@ export default function Teams() {
   return (
     <>
       <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         error={error}
-        retry={getTeams}
-        loading={!rows && !error}
+        retry={reload}
+        loading={loading}
         header={header}
         columns={columns}
-        rows={rows || []}
+        rows={gridData?.results || []}
       />
       <CustomDrawer
         open={drawerOpen}

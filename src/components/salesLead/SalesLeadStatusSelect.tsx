@@ -10,6 +10,7 @@ import { iSalesLead, iSalesLeadStatus } from '../../Interfaces/salesLeads';
 import { salesLeadStatusOptions } from '../../pages/Marketing/SalesLeads/constants';
 import { updateSalesLead } from '../../services/salesLeadsApi';
 import { toast } from 'react-toastify';
+import { SetResults } from '../../hooks/paginationHook';
 
 const SalesLeadStatusSelect = ({ row, setRows }: SalesLeadStatusProps) => {
   const statusColors: StatusColor = {
@@ -72,7 +73,7 @@ export default SalesLeadStatusSelect;
 
 interface SalesLeadStatusProps {
   row: iSalesLead;
-  setRows: React.Dispatch<React.SetStateAction<iSalesLead[] | undefined>>;
+  setRows:SetResults;
 }
 
 type StatusColor = {
