@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
+import { ApiQueryRes, PaginationInstance } from '../Interfaces/apiRes';
 
 export async function archiveRequirementsList(query: string = '') {
   const token = await getJwtToken();
@@ -12,7 +13,9 @@ export async function archiveRequirementsList(query: string = '') {
   };
 
   const url = `${BASE_URL}/archives/requirements?${query}`;
-  const response = await axios.get(url, { headers });
+  const response = await axios.get<ApiQueryRes<PaginationInstance>>(url, {
+    headers,
+  });
   return response;
 }
 
@@ -23,8 +26,11 @@ export async function archiveInterviewsList(query: string = '') {
     'Content-Type': 'application/json',
     Authorization: token,
   };
-  const response = await axios.get(`${BASE_URL}/archives/interviews?${query}`, {
-    headers,
-  });
+  const response = await axios.get<ApiQueryRes<PaginationInstance>>(
+    `${BASE_URL}/archives/interviews?${query}`,
+    {
+      headers,
+    }
+  );
   return response;
 }

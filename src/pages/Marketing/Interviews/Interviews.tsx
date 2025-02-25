@@ -17,7 +17,7 @@ import { toast } from 'react-toastify';
 import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValues';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { archiveInterviewsList } from '../../../services/archivesApi';
-
+import { usePagination } from '../../../hooks/paginationHook';
 type Record = {
   id: number;
   name: string;
@@ -31,8 +31,6 @@ interface Iprops {
 }
 export default function Interviews(props: Iprops) {
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState<any[]>();
-  const [error, setError] = useState<string>('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
@@ -41,6 +39,22 @@ export default function Interviews(props: Iprops) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [archive, setArchive] = props.archiveState;
+
+  const {
+    gridData,
+    paginationModel,
+    error,
+    loading,
+    setPaginationModel,
+    setGridData,
+    reload,
+  } = usePagination(
+    {
+      queryFunction: archive ? getArchiveInterviews : getInterviews,
+      queryParams: props.query,
+    },
+    [archive, props.query]
+  );
 
   const columns = [
     {
@@ -112,7 +126,7 @@ export default function Interviews(props: Iprops) {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = rows?.filter((r: any) => r.intId === row.intId);
+    const data = gridData?.results?.filter((r: any) => r.intId === row.intId);
     if (!data) return;
     setViewData(data[0]);
     setFormTitle(`Interview ID ${row.intId}`);
@@ -155,42 +169,16 @@ export default function Interviews(props: Iprops) {
     }
   };
 
-  const getInterviews = async () => {
-    try {
-      setError('')
-      const { data } = await interviewsList(props.query);
-      setRows(data.data || []);
-      setArchive(false);
-    } catch (error) {
-      setError('Failed to load');
-    }
-  };
-  const getArchiveInterviews = async () => {
-    try {
-      setError('')
-      const { data } = await archiveInterviewsList(props.query);
-      setRows(data.data || []);
-      setArchive(true);
-    } catch (error) {
-      setError('Failed to load');
-    }
-  };
-  async function getIntOnChangeArchiveButton() {
-    if (archive) {
-      getArchiveInterviews();
-    } else {
-      getInterviews();
-    }
+  async function getInterviews(query?: string) {
+    const res = await interviewsList(query);
+    setArchive(false);
+    return res;
   }
-  useEffect(() => {
-    if (!archive) {
-      getInterviews();
-    }
-  }, [drawerOpen, props.query]);
-
-  useEffect(() => {
-    getIntOnChangeArchiveButton();
-  }, [props.query, archive]);
+  async function getArchiveInterviews(query?: string) {
+    const res = await archiveInterviewsList(query);
+    setArchive(true);
+    return res;
+  }
 
   useEffect(() => {
     const req = searchParams.get('createInterviewByReq');
@@ -198,6 +186,10 @@ export default function Interviews(props: Iprops) {
       createInterview(JSON.parse(req));
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!archive) reload();
+  }, [drawerOpen]);
 
   const dataGridHeader = (
     <>
@@ -239,21 +231,26 @@ export default function Interviews(props: Iprops) {
       </Dialog>
       <CustomDataGrid
         error={error}
-        retry={getIntOnChangeArchiveButton}
+        retry={reload}
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
         archiveState={[
           archive,
           (s) => {
             setArchive(s);
-            setRows(undefined);
+            setGridData(undefined);
           },
           {
-            disabled: !rows && !error,
+            disabled: loading,
           },
         ]}
         header={dataGridHeader}
-        rows={rows || []}
+        rows={gridData?.results || []}
         columns={columns}
-        loading={!rows && !error}
+        loading={loading}
       />
       <CustomDrawer
         open={drawerOpen}

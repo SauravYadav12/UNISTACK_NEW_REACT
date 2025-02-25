@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Box from '@mui/material/Box';
 import {
   DataGrid,
@@ -8,9 +8,15 @@ import {
   GridToolbarExport,
   GridToolbarDensitySelector,
   GridOverlay,
+  GridPaginationModel,
 } from '@mui/x-data-grid';
 import Switch from '@mui/material/Switch';
-import { Button, FormControlLabel, IconButton, Typography } from '@mui/material';
+import {
+  Button,
+  FormControlLabel,
+  IconButton,
+  Typography,
+} from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 interface CustomToolbarProps {
   archiveState?: ArchiveState;
@@ -68,17 +74,15 @@ const ErrorOverlay = ({ message, retry }: CustomErrorOverlayProps) => {
       >
         <Typography color="error">{message}</Typography>
         <IconButton onClick={retry}>
-        <SyncIcon
-          color="primary"
-        />
-      </IconButton>
+          <SyncIcon color="primary" />
+        </IconButton>
       </div>
     </GridOverlay>
   );
 };
 
 export default function CustomDataGrid(props: Iprops) {
-  const { archiveState, error, retry } = props;
+  const { archiveState, error, retry, paginateState } = props;
   return (
     <div
       style={{
@@ -101,15 +105,15 @@ export default function CustomDataGrid(props: Iprops) {
             loading={props.loading}
             rows={props.rows}
             columns={props.columns}
+            paginationMode="server"
+            rowCount={paginateState.totalRows}
+            onPaginationModelChange={paginateState.onChange}
             getRowId={(row: any) => row._id}
             slots={{
               toolbar: () => <CustomToolbar archiveState={archiveState} />,
               noRowsOverlay: () =>
                 error ? (
-                  <ErrorOverlay
-                    message={error}
-                    retry={retry}
-                  />
+                  <ErrorOverlay message={error} retry={retry} />
                 ) : (
                   <GridOverlay>Not found</GridOverlay>
                 ),
@@ -117,6 +121,9 @@ export default function CustomDataGrid(props: Iprops) {
             slotProps={{
               toolbar: {
                 showQuickFilter: true,
+              },
+              pagination: {
+                disabled:props.loading
               },
             }}
             sx={{
@@ -140,6 +147,11 @@ interface Iprops {
   columns: any[];
   archiveState?: ArchiveState;
   retry: () => void;
+  paginateState: {
+    totalRows: number;
+    model: GridPaginationModel;
+    onChange: (e: GridPaginationModel) => void;
+  };
 }
 type ArchiveState = [
   boolean,
