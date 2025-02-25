@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
 } from '@mui/material';
 import moment from 'moment';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
@@ -18,6 +19,7 @@ import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValue
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { archiveInterviewsList } from '../../../services/archivesApi';
 import { usePagination } from '../../../hooks/paginationHook';
+import SyncIcon from '@mui/icons-material/Sync';
 type Record = {
   id: number;
   name: string;
@@ -47,6 +49,7 @@ export default function Interviews(props: Iprops) {
     setPaginationModel,
     setGridData,
     reload,
+    setResults
   } = usePagination(
     {
       queryFunction: archive ? getArchiveInterviews : getInterviews,
@@ -186,24 +189,28 @@ export default function Interviews(props: Iprops) {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    if (!archive) reload();
-  }, [drawerOpen]);
-
   const dataGridHeader = (
     <>
       <h3>{props.label}</h3>
 
-      {!archive && (
-        <Button
-          variant="contained"
-          size="small"
-          onClick={handleClickOpen}
-          style={{ borderRadius: '10px' }}
-        >
-          Add New
-        </Button>
-      )}
+      <span>
+        {!archive && (
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleClickOpen}
+            style={{ borderRadius: '10px' }}
+          >
+            Add New
+          </Button>
+        )}
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
 
@@ -259,6 +266,7 @@ export default function Interviews(props: Iprops) {
         title={formTitle}
       >
         <InterviewForm
+          setResults={setResults}
           hideButtons={archive}
           handleCloseForm={handleCloseForm}
           selectedRecord={selectedRecord}

@@ -1,4 +1,4 @@
-import { Button, Link } from '@mui/material';
+import { Button, IconButton, Link } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
 import { usePagination } from '../../../hooks/paginationHook';
+import SyncIcon from '@mui/icons-material/Sync';
 export default function Requirements() {
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -69,6 +70,7 @@ export default function Requirements() {
     setPaginationModel,
     setGridData,
     reload,
+    setResults,
   } = usePagination(
     {
       queryFunction: archive ? getArchiveRequirements : getRequirements,
@@ -138,26 +140,30 @@ export default function Requirements() {
   }
 
   useEffect(() => {
-    if (!archive) reload();
-  }, [drawerOpen]);
-
-  useEffect(() => {
     getAccountList();
   }, []);
 
   const header = (
     <>
       <h3>Requirements</h3>
-      {!archive && (
-        <Button
-          variant="contained"
-          style={{ borderRadius: '10px' }}
-          onClick={handleAddNew}
-          size="small"
-        >
-          Add New
-        </Button>
-      )}
+      <span>
+        {!archive && (
+          <Button
+            variant="contained"
+            style={{ borderRadius: '10px' }}
+            onClick={handleAddNew}
+            size="small"
+          >
+            Add New
+          </Button>
+        )}
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
 
@@ -196,6 +202,7 @@ export default function Requirements() {
         }
       >
         <RequirementsForm
+          setResults={setResults}
           hideButtons={archive}
           accounts={accounts}
           viewData={viewData}

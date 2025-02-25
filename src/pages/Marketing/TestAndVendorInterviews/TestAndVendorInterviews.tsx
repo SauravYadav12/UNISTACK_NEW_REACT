@@ -4,10 +4,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
 } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { useEffect, useState } from 'react';
+import SyncIcon from '@mui/icons-material/Sync';
+import { useState } from 'react';
 import moment from 'moment';
 import TestAndVendorForm from './TestAndVendorForm';
 import { interviewsList } from '../../../services/vendorInterviewApi';
@@ -39,17 +41,13 @@ export default function TestAndVendorInterviews() {
     loading,
     setPaginationModel,
     reload,
+    setResults
   } = usePagination(
     {
       queryFunction: interviewsList,
     },
     []
   );
-
-  useEffect(() => {
-    reload();
-  }, [drawerOpen]);
-
 
   const columns = [
     {
@@ -143,14 +141,22 @@ export default function TestAndVendorInterviews() {
   const header = (
     <>
       <h3>Test and Vendor Interviews</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        size="small"
-        onClick={handleClickOpen}
-      >
-        Add New
-      </Button>
+      <span>
+        <Button
+          variant="contained"
+          style={{ borderRadius: '10px' }}
+          size="small"
+          onClick={handleClickOpen}
+        >
+          Add New
+        </Button>
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
   return (
@@ -196,6 +202,7 @@ export default function TestAndVendorInterviews() {
         title={formTitle}
       >
         <TestAndVendorForm
+          setResults={setResults}
           handleCloseForm={handleCloseForm}
           selectedRecord={selectedRecord}
           viewData={viewData}

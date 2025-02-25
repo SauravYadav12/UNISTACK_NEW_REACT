@@ -38,8 +38,7 @@ export default function CustomSearch(props: any) {
         );
         return;
       }
-      const {data} = await requirementsList(query);
-      // console.log('handleSearch--', res.data.data);
+      const {data} = await requirementsList(`reqID=${query}`);
       const fetchedRecords = data.data?.results?.map((val: any) => ({
         id: val.reqID,
         name: val.clientPerson,

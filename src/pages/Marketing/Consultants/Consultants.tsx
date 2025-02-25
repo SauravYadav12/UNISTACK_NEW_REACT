@@ -1,12 +1,14 @@
-import { Button } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
 import moment from 'moment';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
+
+import SyncIcon from '@mui/icons-material/Sync';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -22,16 +24,13 @@ export default function Consultants() {
     loading,
     setPaginationModel,
     reload,
+    setResults,
   } = usePagination(
     {
       queryFunction: consultantsList,
     },
     []
   );
-
-  useEffect(() => {
-    reload();
-  }, [drawerOpen]);
 
   const statusColor = (s: any) => {
     if (s === 'Active') {
@@ -115,14 +114,22 @@ export default function Consultants() {
   const header = (
     <>
       <h3>Consultants</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        size="small"
-        onClick={handleAddNew}
-      >
-        Add New
-      </Button>
+      <span>
+        <Button
+          variant="contained"
+          style={{ borderRadius: '10px' }}
+          size="small"
+          onClick={handleAddNew}
+        >
+          Add New
+        </Button>
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
 
@@ -147,6 +154,7 @@ export default function Consultants() {
         title={formTitle}
       >
         <ConsultantForm
+          setResults={setResults}
           viewData={viewData}
           mode={mode}
           setDrawerOpen={setDrawerOpen}

@@ -47,6 +47,7 @@ export default function RequirementsForm(props: any) {
     onCopy,
     hideButtons = false,
     accounts,
+    setResults,
   } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const currentFile =
@@ -170,14 +171,9 @@ export default function RequirementsForm(props: any) {
     }
 
     try {
-      console.log('Form is submitted successfully', values);
-      const res = await createRequirement(values);
-      if (res.status === 200) {
-        setDrawerOpen(false);
-      } else {
-        console.error('Form submission failed:', res);
-      }
-      console.log('POST', res);
+      const { data } = await createRequirement(values);
+      setResults((pre: any) => [data.data, ...pre]);
+      setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {
@@ -208,13 +204,15 @@ export default function RequirementsForm(props: any) {
           payload.resumeUpload = url;
         }
       }
-      const response: any = await updateRequirement(values._id, payload);
-      if (response.status === 200) {
-        // console.log('Comment updated successfully:', response.data);
-        setDrawerOpen(false); // Close the drawer after successful update
-      } else {
-        console.error('Failed to update the comment:', response);
-      }
+      const { data } = await updateRequirement(values._id, payload);
+      setResults((pre: any) => {
+        pre = pre.map((d: any) => {
+          if (d._id === data.mComment._id) return data.mComment;
+          return d;
+        });
+        return [...pre];
+      });
+      setDrawerOpen(false); // Close the drawer after successful update
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
     }
@@ -222,14 +220,9 @@ export default function RequirementsForm(props: any) {
 
   async function handleDeleteRequirement() {
     try {
-      const response = await deleteRequirement(values._id);
-
-      if (response.status === 200) {
-        // console.log('Requirement deleted successfully:', response.data);
-        setDrawerOpen(false);
-      } else {
-        console.error('Failed to delete requirement:', response);
-      }
+      await deleteRequirement(values._id);
+      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen(false);
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }

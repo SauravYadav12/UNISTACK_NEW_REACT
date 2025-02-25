@@ -14,7 +14,7 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
 
   const setResults: SetResults = (cb) => {
     const results = cb(gridData?.results || []);
-    setGridData((pre) => ({ ...pre, results }));
+    setGridData((pre) => ({ ...pre, results, totalDocuments: results.length }));
   };
 
   const loadData = async () => {

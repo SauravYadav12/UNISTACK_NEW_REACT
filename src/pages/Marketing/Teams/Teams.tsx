@@ -1,12 +1,13 @@
-import { Button } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import TeamsForm from './TeamsForm';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
+import SyncIcon from '@mui/icons-material/Sync';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -22,16 +23,13 @@ export default function Teams() {
     loading,
     setPaginationModel,
     reload,
+    setResults,
   } = usePagination(
     {
       queryFunction: teamsList,
     },
     []
   );
-
-  useEffect(() => {
-    reload();
-  }, [drawerOpen]);
 
   const columns = [
     {
@@ -91,14 +89,22 @@ export default function Teams() {
   const header = (
     <>
       <h3>Teams</h3>
-      <Button
-        variant="contained"
-        style={{ borderRadius: '10px' }}
-        size="small"
-        onClick={handleAddNew}
-      >
-        Add New
-      </Button>
+      <span>
+        <Button
+          variant="contained"
+          style={{ borderRadius: '10px' }}
+          size="small"
+          onClick={handleAddNew}
+        >
+          Add New
+        </Button>
+        <IconButton onClick={reload} disabled={loading} sx={{ ml: 1 }}>
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            color="primary"
+          />
+        </IconButton>
+      </span>
     </>
   );
 
@@ -123,6 +129,7 @@ export default function Teams() {
         title={formTitle}
       >
         <TeamsForm
+          setResults={setResults}
           viewData={viewData}
           mode={mode}
           setDrawerOpen={setDrawerOpen}

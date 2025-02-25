@@ -84,6 +84,7 @@ export default function InterviewForm(props: any) {
     onEdit,
     setDrawerOpen,
     hideButtons = false,
+    setResults,
   } = props;
   const [errors, setErrors] = useState(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
@@ -165,9 +166,9 @@ export default function InterviewForm(props: any) {
     }
 
     try {
-      const res = await createInterview(values);
-      if (res.status === 200) setDrawerOpen(false);
-      console.log('rsponse 200', res);
+      const { data } = await createInterview(values);
+      setResults((pre: any) => [data.data, ...pre]);
+      setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     }
@@ -178,11 +179,15 @@ export default function InterviewForm(props: any) {
     event.preventDefault();
     console.log('Edit submit button clicked');
     try {
-      const res = await updateInterview(values._id, values);
-      if (res.status === 200) {
-        setDrawerOpen(false);
-        console.log('Interview updated successfully', res.data);
-      }
+      const { data } = await updateInterview(values._id, values);
+      setResults((pre: any) => {
+        pre = pre.map((d: any) => {
+          if (d._id === data.data._id) return data.data;
+          return d;
+        });
+        return [...pre];
+      });
+      setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     }
@@ -191,13 +196,9 @@ export default function InterviewForm(props: any) {
   async function handleDeleteInterview(_id: any) {
     // console.log('Delete button clicked');
     try {
-      const response = await deleteInterview(values._id);
-      if (response.status === 200) {
-        console.log('Interview  deleted successfully:', response.data);
-        setDrawerOpen(false);
-      } else {
-        console.error('Failed to delete requirement:', response);
-      }
+      await deleteInterview(values._id);
+      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen(false);
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
