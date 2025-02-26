@@ -1,4 +1,4 @@
-import { Box, Tab, Tabs } from '@mui/material';
+import { Box, IconButton, Tab, Tabs, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import DateBar from '../../../components/reports/DateBar';
@@ -6,43 +6,86 @@ import { InterviewReports } from '../../../components/reports/InterviewReports';
 import { MarketingReports } from '../../../components/reports/MarketingReports';
 import { SupportReports } from '../../../components/reports/SupportReports';
 import { dateFormate } from '../../../components/constants';
+import {
+  InterviewReport,
+  MarketingReport,
+  SupportReport,
+} from '../../../Interfaces/reports';
+import {
+  getInterviewReport,
+  getMarketingReport,
+  getSupportReport,
+} from '../../../services/reportsApi';
 
+import SyncIcon from '@mui/icons-material/Sync';
+type MyReport = SupportReport | InterviewReport | MarketingReport;
 export type TabTypes = 'support' | 'marketing' | 'interview';
 
 export default function Reports() {
-  const [values, setValues] = useState({
-    fromDate: undefined,
-    toDate: undefined,
+  const [report, setReport] = useState<MyReport[]>();
+  const [dates, setDates] = useState({
+    fromDate: dayjs(new Date()).format(dateFormate),
+    toDate: dayjs(new Date()).format(dateFormate),
   });
-
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [metaText, setMetaText] = useState('');
   const isDatesValid =
-    dayjs(values.fromDate).isValid() && dayjs(values.toDate).isValid();
+    dayjs(dates.fromDate).isValid() && dayjs(dates.toDate).isValid();
   const tabs: TabTypes[] = ['support', 'marketing', 'interview'];
   const [tab, setTab] = useState(0);
 
-  const addValue = (key: any, newValue: any) => {
-    if (key === 'fromDate' || key === 'toDate') {
-      newValue = newValue ? dayjs(newValue).format(dateFormate) : null;
-    }
-    setValues((prevValues) => ({
+  const onDateChange = (key: any, newValue: any) => {
+    newValue = newValue ? dayjs(newValue).format(dateFormate) : null;
+    setDates((prevValues) => ({
       ...prevValues,
       [key]: newValue,
     }));
   };
 
-  useEffect(() => {
+  const loadReport = async () => {
     if (!isDatesValid) {
       setMetaText('Invalid Dates');
-    } else {
-      setMetaText('Loading');
+      setError('Invalid Dates');
+      return;
     }
-  }, [values, tab]);
+    try {
+      const { fromDate, toDate } = dates;
+      const currentTab = tabs[tab];
+      setError('');
+      setLoading(true);
+      setMetaText('Loading');
+      if (currentTab === 'support') {
+        const { data } = await getSupportReport(fromDate, toDate);
+        const totalPosition = data.data?.reduce((sum, report) => {
+          return sum + (report.totalPositions || 0);
+        }, 0);
+        setReport(data.data);
+        setMetaText(`Total Position: ${totalPosition || 0}`);
+      } else if (currentTab === 'marketing') {
+        const { data } = await getMarketingReport(fromDate, toDate);
+        setReport(data.data);
+        const totalAssigned = data.data?.reduce((sum, report) => {
+          return sum + (report.totalAssigned || 0);
+        }, 0);
+        setMetaText(`Total Assigned: ${totalAssigned || 0} `);
+      } else if (currentTab === 'interview') {
+        const { data } = await getInterviewReport(fromDate, toDate);
+        setReport(data.data?.report);
+        setMetaText(`Total Interviews: ${data.data?.totalInterviews || 0}`);
+      }
+    } catch (error) {
+      setError('Failed to load');
+      setMetaText('Failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    addValue('fromDate', new Date());
-    addValue('toDate', new Date());
-  }, []);
+    loadReport();
+  }, [dates, tab]);
+
   return (
     <>
       <div style={{ marginRight: 25 }}>
@@ -63,25 +106,44 @@ export default function Reports() {
               <CustomTabPanel key={i} value={tab} index={i}>
                 <DateBar
                   metaText={!isDatesValid ? '___-__-___' : metaText}
-                  {...values}
-                  addValue={addValue}
+                  {...dates}
+                  loading={loading}
+                  onDateChange={onDateChange}
+                  reload={isDatesValid ? loadReport : undefined}
                 />
-                {isDatesValid ? (
+                {!error ? (
                   <>
                     {t === 'support' && (
-                      <SupportReports setMetaText={setMetaText} {...values} />
+                      <SupportReports
+                        report={report}
+                        {...dates}
+                        loading={loading}
+                      />
                     )}
                     {t === 'interview' && (
-                      <InterviewReports setMetaText={setMetaText} {...values} />
+                      <InterviewReports
+                        report={report}
+                        {...dates}
+                        loading={loading}
+                      />
                     )}
                     {t === 'marketing' && (
-                      <MarketingReports setMetaText={setMetaText} {...values} />
+                      <MarketingReports
+                        report={report}
+                        {...dates}
+                        loading={loading}
+                      />
                     )}
                   </>
                 ) : (
                   <>
-                    <Box sx={{ textAlign: 'center', color: 'red', py: 10 }}>
-                      <p>Please ensure that dates are valid</p>
+                    <Box sx={{ textAlign: 'center', py: 10 }}>
+                      <Typography color="error">{error}</Typography>
+                      {isDatesValid && (
+                        <IconButton onClick={loadReport}>
+                          <SyncIcon color="primary" />
+                        </IconButton>
+                      )}
                     </Box>
                   </>
                 )}

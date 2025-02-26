@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Box from '@mui/material/Box';
 import {
   DataGrid,
@@ -9,15 +9,97 @@ import {
   GridToolbarDensitySelector,
   GridOverlay,
   GridPaginationModel,
+  GridToolbarQuickFilter,
 } from '@mui/x-data-grid';
 import Switch from '@mui/material/Switch';
 import {
-  Button,
   FormControlLabel,
   IconButton,
+  MenuItem,
+  Pagination,
+  Select,
+  Stack,
   Typography,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
+interface CustomPaginationProps {
+  paginateState: PaginateState;
+  loading: boolean;
+  currentRowLength: number;
+}
+function CustomPagination({
+  paginateState,
+  loading,
+  currentRowLength,
+}: CustomPaginationProps) {
+  const { model, totalRows, onChange } = paginateState;
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={2}
+      sx={{
+        fontSize: '0.875rem',
+        color: 'rgba(0, 0, 0, 0.87)',
+        padding: '0 16px',
+        height: '56px',
+        borderTop: '1px solid rgba(224, 224, 224, 1)',
+      }}
+    >
+      <Stack direction="row" alignItems="center">
+        <Typography sx={{ fontSize: 'inherit', color: 'inherit' }}>
+          Rows per page:
+        </Typography>
+        <Select
+          disabled={loading}
+          value={model.pageSize}
+          onChange={({ target }) =>
+            onChange({ ...model, pageSize: parseInt(target.value as string) })
+          }
+          size="small"
+          sx={{
+            fontSize: 'inherit',
+            color: 'inherit',
+            border: 'none',
+            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+            '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
+            '& .MuiSelect-select': { padding: '4px 24px 4px 8px' },
+          }}
+        >
+          {[25, 50, 100].map((l) => (
+            <MenuItem key={l} value={l}>
+              {l}
+            </MenuItem>
+          ))}
+        </Select>
+      </Stack>
+
+      <Typography sx={{ fontSize: 'inherit', color: 'inherit' }}>
+        {(model.page - 1) * model.pageSize + 1}–
+        {(model.page - 1) * model.pageSize + currentRowLength} of {totalRows}
+      </Typography>
+
+      <Pagination
+        disabled={loading}
+        count={Math.ceil(totalRows / model.pageSize)}
+        page={model.page}
+        onChange={(e, page) =>
+          page !== model.page && onChange({ ...model, page })
+        }
+        showFirstButton
+        showLastButton
+        color="primary"
+        size="small"
+        sx={{
+          '& .MuiPaginationItem-root': {
+            fontSize: 'inherit',
+          },
+        }}
+      />
+    </Stack>
+  );
+}
+
 interface CustomToolbarProps {
   archiveState?: ArchiveState;
 }
@@ -48,14 +130,9 @@ function CustomToolbar({ archiveState }: CustomToolbarProps) {
           }}
         />
       )}
-
+      <GridToolbarExport />
       <Box sx={{ flexGrow: 1 }} />
-      <GridToolbarExport
-        slotProps={{
-          tooltip: { title: 'Export data' },
-          button: { variant: 'outlined' },
-        }}
-      />
+      <GridToolbarQuickFilter />
     </GridToolbarContainer>
   );
 }
@@ -107,7 +184,6 @@ export default function CustomDataGrid(props: Iprops) {
             columns={props.columns}
             paginationMode="server"
             rowCount={paginateState.totalRows}
-            onPaginationModelChange={paginateState.onChange}
             getRowId={(row: any) => row._id}
             slots={{
               toolbar: () => <CustomToolbar archiveState={archiveState} />,
@@ -123,7 +199,14 @@ export default function CustomDataGrid(props: Iprops) {
                 showQuickFilter: true,
               },
               pagination: {
-                disabled:props.loading
+                component: () => (
+                  <CustomPagination
+                    paginateState={paginateState}
+                    loading={props.loading}
+                    currentRowLength={props.rows.length}
+                  />
+                ),
+                disabled: props.loading,
               },
             }}
             sx={{
@@ -142,16 +225,17 @@ export default function CustomDataGrid(props: Iprops) {
 interface Iprops {
   loading: boolean;
   error: string;
-  header: JSX.Element|string;
+  header: JSX.Element | string;
   rows: any[];
   columns: any[];
   archiveState?: ArchiveState;
   retry: () => void;
-  paginateState: {
-    totalRows: number;
-    model: GridPaginationModel;
-    onChange: (e: GridPaginationModel) => void;
-  };
+  paginateState: PaginateState;
+}
+interface PaginateState {
+  totalRows: number;
+  model: GridPaginationModel;
+  onChange: (e: GridPaginationModel) => void;
 }
 type ArchiveState = [
   boolean,

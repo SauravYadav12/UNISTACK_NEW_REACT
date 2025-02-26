@@ -1,7 +1,6 @@
 import {
   Box,
   CircularProgress,
-  IconButton,
   Link,
   Table,
   TableBody,
@@ -10,45 +9,22 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
 import CustomAccordion from '../accordion/CustomAccordion';
 import { SupportReport } from '../../Interfaces/reports';
-import { getSupportReport } from '../../services/reportsApi';
-import SyncIcon from '@mui/icons-material/Sync';
-export interface MyReportsProps {
+export interface MyReportsProps<T> {
+  report?: T[];
+  loading?: boolean;
   fromDate?: string;
   toDate?: string;
-  setMetaText: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export const SupportReports = ({
+  report,
+  loading,
   fromDate,
   toDate,
-  setMetaText,
-}: MyReportsProps) => {
-  const [report, setReport] = useState<SupportReport[]>();
-  const [error, setError] = useState('');
-  const getReport = async () => {
-    try {
-      setError('');
-      const { data } = await getSupportReport(fromDate, toDate);
-      const totalPosition = data.data?.reduce((sum, report) => {
-        return sum + (report.totalPositions || 0);
-      }, 0);
-      setReport(data.data);
-      setMetaText(`Total Position: ${totalPosition || 0}`);
-    } catch (error) {
-      setError('Failed to load');
-      setMetaText('Failed');
-    }
-  };
-
-  useEffect(() => {
-    setReport(undefined);
-    getReport();
-  }, [fromDate, toDate]);
-
-  if (!report && !error)
+}: MyReportsProps<SupportReport>) => {
+  if (loading)
     return (
       <Box className="loader" sx={{ py: 10 }}>
         <CircularProgress />
@@ -90,17 +66,9 @@ export const SupportReports = ({
           </Box>
         );
       })}
-      {!report?.length && !error && (
+      {!report?.length && !loading && (
         <Box sx={{ textAlign: 'center', py: 10 }}>
           <p>Not found</p>
-        </Box>
-      )}
-      {error && (
-        <Box sx={{ textAlign: 'center', py: 10 }}>
-          <Typography color="error">{error}</Typography>
-          <IconButton onClick={getReport}>
-            <SyncIcon color="primary" />
-          </IconButton>
         </Box>
       )}
     </div>
