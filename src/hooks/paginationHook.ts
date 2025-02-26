@@ -5,7 +5,7 @@ import { AxiosResponse } from 'axios';
 
 export function usePagination(para: ApiQuery, dependencies: any[]) {
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
+    page: 1,
     pageSize: 100,
   });
   const [gridData, setGridData] = useState<PaginationResult>();
@@ -20,7 +20,6 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   const loadData = async () => {
     if (loading) return;
     let { page, pageSize } = paginationModel;
-    page = page + 1;
     console.log('loading');
     try {
       setError('');

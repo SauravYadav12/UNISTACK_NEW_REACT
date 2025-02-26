@@ -1,15 +1,26 @@
-import { Box, Grid, Typography, TextField } from '@mui/material';
+import { Box, Grid, Typography, TextField, IconButton } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import SyncIcon from '@mui/icons-material/Sync';
 import { dateFormate } from '../constants';
+
 interface DateBarProps {
   fromDate?: string;
   toDate?: string;
   metaText: string;
-  addValue: (key: any, newValue: any) => void;
+  loading: boolean;
+  onDateChange: (key: any, newValue: any) => void;
+  reload?: () => void;
 }
-const DateBar = ({ fromDate, toDate, metaText, addValue }: DateBarProps) => {
+const DateBar = ({
+  fromDate,
+  toDate,
+  metaText,
+  loading,
+  onDateChange,
+  reload,
+}: DateBarProps) => {
   return (
     <div>
       <Box mt={1} mb={5}>
@@ -51,7 +62,7 @@ const DateBar = ({ fromDate, toDate, metaText, addValue }: DateBarProps) => {
                   maxDate={toDate}
                   label="From Date"
                   value={fromDate ? dayjs(fromDate) : null}
-                  onChange={(newValue) => addValue('fromDate', newValue)}
+                  onChange={(newValue) => onDateChange('fromDate', newValue)}
                   renderInput={(params) => (
                     <TextField
                       size="small"
@@ -78,7 +89,7 @@ const DateBar = ({ fromDate, toDate, metaText, addValue }: DateBarProps) => {
                   minDate={fromDate}
                   label="To Date"
                   value={toDate ? dayjs(toDate) : null}
-                  onChange={(newValue) => addValue('toDate', newValue)}
+                  onChange={(newValue) => onDateChange('toDate', newValue)}
                   renderInput={(params) => (
                     <TextField
                       size="small"
@@ -89,6 +100,14 @@ const DateBar = ({ fromDate, toDate, metaText, addValue }: DateBarProps) => {
                 />
               </LocalizationProvider>
             </Grid>
+            {!!reload && (
+              <IconButton onClick={reload} disabled={loading}>
+                <SyncIcon
+                  className={loading ? 'sync-icon-loading' : ''}
+                  color="primary"
+                />
+              </IconButton>
+            )}
           </Grid>
         </Grid>
       </Box>
