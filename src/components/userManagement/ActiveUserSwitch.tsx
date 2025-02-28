@@ -2,6 +2,7 @@ import * as React from 'react';
 import Switch from '@mui/material/Switch';
 import { updateUser } from '../../services/authApi';
 import { createProfile } from '../../services/userProfileApi';
+import { toast } from 'react-toastify';
 
 export default function ActiveUserSwitch({
   active,
@@ -16,22 +17,22 @@ export default function ActiveUserSwitch({
     const newActiveStatus = event.target.checked;
     setChecked(newActiveStatus);
     const payload = { active: newActiveStatus };
-    const response: any = await updateUser(userId, payload);
-    if (response.status === 200) {
+    try {
+      const response: any = await updateUser(userId, payload);
       if (newActiveStatus) {
         try {
           const name = `${user.firstName} ${user.lastName}`;
           await createProfile(userId, user.email, name);
-        } catch (error) {
-          console.log(error);
-        }
+        } catch (error) {}
         setAlertMessage('User Activated successfully');
       } else {
         setAlertMessage('User Deactivated');
       }
       setOpen(true);
+    } catch (error) {
+      toast.error('Failed to update!');
+      setChecked(!newActiveStatus);
     }
-    console.log('response', response);
   };
 
   return (

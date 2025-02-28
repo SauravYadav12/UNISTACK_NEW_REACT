@@ -53,7 +53,7 @@ function UserManagement() {
     setSelectedUser(row);
     setDrawerOpen(true);
   }
-  
+
   const getUsersList = async () => {
     try {
       const { data } = await usersList();
@@ -291,7 +291,6 @@ function UserManagement() {
           Manage Users
         </Typography>
         <DataGrid
-          sx={{ flex: 1 }}
           loading={!users}
           rows={users || []}
           columns={Columns}
@@ -300,6 +299,16 @@ function UserManagement() {
           slotProps={{
             toolbar: {
               showQuickFilter: true,
+            },
+          }}
+          sx={{
+            flex: 1,
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 'bold',
+              color: '#504e4e',
+            },
+            '& .MuiDataGrid-scrollbar': {
+              scrollbarWidth: 'thin',
             },
           }}
         />
@@ -340,6 +349,15 @@ function UserManagement() {
                   slotProps={{
                     toolbar: {
                       showQuickFilter: true,
+                    },
+                  }}
+                  sx={{
+                    '& .MuiDataGrid-columnHeaderTitle': {
+                      fontWeight: 'bold',
+                      color: '#504e4e',
+                    },
+                    '& .MuiDataGrid-scrollbar': {
+                      scrollbarWidth: 'thin',
                     },
                   }}
                 />

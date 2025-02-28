@@ -3,11 +3,16 @@ import { GridPaginationModel } from '@mui/x-data-grid';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import { AxiosResponse } from 'axios';
 
+export const pageSizeList = [100, 500, 1000, 5000];
+export const initialPaginationModel: GridPaginationModel = {
+  page: 1,
+  pageSize: pageSizeList[0] || 100,
+};
+
 export function usePagination(para: ApiQuery, dependencies: any[]) {
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 1,
-    pageSize: 100,
-  });
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(
+    initialPaginationModel
+  );
   const [gridData, setGridData] = useState<PaginationResult>();
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -20,7 +25,6 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   const loadData = async () => {
     if (loading) return;
     let { page, pageSize } = paginationModel;
-    console.log('loading');
     try {
       setError('');
       setLoading(true);
@@ -29,6 +33,7 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
       const { data } = await para.queryFunction(query);
       setGridData(data.data);
     } catch (error) {
+      setGridData({});
       console.error('Error fetching requirements:', error);
       setError('Failed to load');
     } finally {
@@ -38,7 +43,11 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
 
   useEffect(() => {
     loadData();
-  }, [...dependencies, paginationModel]);
+  }, [paginationModel]);
+
+  useEffect(() => {
+    setPaginationModel({ page: 1, pageSize: pageSizeList[0] });
+  }, [...dependencies]);
 
   return {
     error,

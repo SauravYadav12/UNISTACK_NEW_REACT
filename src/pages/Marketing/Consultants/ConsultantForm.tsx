@@ -240,7 +240,10 @@ export default function ConsultantForm(props: any) {
               variant="contained"
               color="primary"
               type="button"
-              onClick={() => onEdit(false)}
+              onClick={() => {
+                // setValues(viewData)
+                onEdit(false)
+              }}
               size="small"
               sx={{ borderRadius: '10px' }}
             >

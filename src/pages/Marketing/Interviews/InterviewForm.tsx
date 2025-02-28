@@ -246,7 +246,10 @@ export default function InterviewForm(props: any) {
                 variant="contained"
                 color="primary"
                 type="button"
-                onClick={() => onEdit(false)}
+                onClick={() => {
+                  setValues(viewData)
+                  onEdit(false)
+                }}
                 size="small"
                 sx={{ borderRadius: '10px' }}
               >
@@ -265,6 +268,16 @@ export default function InterviewForm(props: any) {
             </>
           ) : (
             <>
+              <Button
+                variant="contained"
+                color="primary"
+                type="button"
+                onClick={() => {}}
+                size="small"
+                sx={{ borderRadius: '10px' }}
+              >
+                Generate script
+              </Button>
               <Button
                 variant="contained"
                 color="primary"
