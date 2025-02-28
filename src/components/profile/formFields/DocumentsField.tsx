@@ -222,6 +222,7 @@ export const SelectedFile = ({
   disabled,
   file,
   hideDeleteIcon,
+  previewType = 'file',
   onClickDelete,
   onClickUpload,
 }: SelectedFileProps) => {
@@ -278,44 +279,57 @@ export const SelectedFile = ({
   }
   return (
     <>
-      <Card variant="outlined" className="selected-file-card" sx={{ p: 0.2 }}>
-        {isPDF(selectedFile || file) && !failedToloadPdf ? (
-          <Document
-            file={selectedFile || file}
-            onLoadError={() => setFailedToloadPdf(true)}
-          >
-            <Page pageNumber={1} width={38} />
-          </Document>
-        ) : (
-          <>
-            {isImage(selectedFile || file) ? (
-              <>
-                <img
-                  className="img-preview"
-                  src={imgSrc(selectedFile || file)}
-                  alt="preview"
-                />
-              </>
-            ) : (
-              <embed
-                width={38}
-                height={40}
-                className="embed-other-files"
-                src={
-                  typeof file === 'string' ? file : URL.createObjectURL(file)
-                }
-              ></embed>
-            )}
-          </>
-        )}
-      </Card>
+      {previewType === 'file' ? (
+        <Card variant="outlined" className="selected-file-card" sx={{ p: 0.2 }}>
+          {isPDF(selectedFile || file) && !failedToloadPdf ? (
+            <Document
+              file={selectedFile || file}
+              onLoadError={() => setFailedToloadPdf(true)}
+            >
+              <Page pageNumber={1} width={38} />
+            </Document>
+          ) : (
+            <>
+              {isImage(selectedFile || file) ? (
+                <>
+                  <img
+                    className="img-preview"
+                    src={imgSrc(selectedFile || file)}
+                    alt="preview"
+                  />
+                </>
+              ) : (
+                <embed
+                  width={38}
+                  height={40}
+                  className="embed-other-files"
+                  src={
+                    typeof file === 'string' ? file : URL.createObjectURL(file)
+                  }
+                ></embed>
+              )}
+            </>
+          )}
+        </Card>
+      ) : (
+        <img
+          src={`${getMaterialFileIcon(
+            typeof file === 'string' ? file : file.type
+          )}`}
+          alt="icon"
+          style={{
+            width: '48px',
+            height: '48px',
+          }}
+        />
+      )}
       <div className="file-details">
         <p
           className="myDetail-label"
           style={{
             textTransform: 'capitalize',
             margin: 0,
-            marginTop: '5px',
+            marginTop: previewType==='icon'?'6px': '5px',
           }}
         >
           {name.slice(0, 20)}
@@ -326,10 +340,10 @@ export const SelectedFile = ({
           style={{
             margin: 0,
             fontSize: 'small',
-            marginBottom: '5px',
+            marginBottom:  previewType==='icon'?'6px': '5px',
           }}
         >
-          {size ? (size / 1024).toFixed(2) + ' KB' : 'NA'}
+          {size ? (size / 1024).toFixed(2) + ' KB' : ''}
         </p>
       </div>
       <div className="action-buttons">
@@ -374,6 +388,7 @@ interface SelectedFileProps {
   file: File | string;
   disabled: boolean;
   hideDeleteIcon?: boolean;
+  previewType?: 'icon' | 'file';
   onClickDelete: () => void;
   onClickUpload: () => void;
 }

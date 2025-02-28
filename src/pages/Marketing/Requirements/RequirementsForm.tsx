@@ -1,9 +1,18 @@
-import { Box, Button, Card, Grid, Stack, TextField } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  Grid,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useEffect, useState } from 'react';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import dayjs from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   appliedForOptions,
   duration,
@@ -28,6 +37,7 @@ import AlertBox from '../../../components/alert/AlertBox';
 import { useNavigate } from 'react-router-dom';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { urlValidator } from '../../../utils/validators';
+import { getMaterialFileIcon } from 'file-extension-icon-js';
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
@@ -51,7 +61,7 @@ export default function RequirementsForm(props: any) {
   } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const currentFile =
-    file || urlValidator(values.resumeUpload) ? values.resumeUpload : '';
+    file || (urlValidator(values.resumeUpload) ? values.resumeUpload : '');
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
   const navigate = useNavigate();
 
@@ -108,7 +118,7 @@ export default function RequirementsForm(props: any) {
       }));
       return;
     }
-
+    
     setFile(file);
     setErrors((pre: any) => ({
       ...pre,
@@ -350,24 +360,48 @@ export default function RequirementsForm(props: any) {
           }}
         >
           <Box>
-            <h4 style={{ margin: 0 }}>Resume for</h4>
+            {mode === 'edit' && <h4 style={{ margin: 0 }}>Resume</h4>}
             <Card
               variant="outlined"
               className="document-container"
               sx={{
                 borderRadius: '10px',
-                justifyContent: 'center',
-                width: '275px',
+                justifyContent: mode === 'view' ? 'space-between' : 'center',
+                width: mode === 'view' ? '210px' : '275px',
+                padding: 0,
               }}
             >
               {!!currentFile ? (
-                <SelectedFile
-                  disabled={isSubmitting}
-                  hideDeleteIcon={mode === 'view'}
-                  file={currentFile}
-                  onClickDelete={removeFile}
-                  onClickUpload={() => file && handleFileUpload(file)}
-                />
+                mode === 'view' ? (
+                  <>
+                    <Stack py={'6px'} pl={2} direction={'row'} alignItems={'center'}>
+                      <img
+                        src={`${getMaterialFileIcon(values.resumeUpload)}`}
+                        alt="icon"
+                        style={{
+                          width: '17px',
+                          height: '17px',
+                        }}
+                      />
+                      <Typography variant={'subtitle2'} pl={'3px'}>
+                        Resume
+                      </Typography>
+                    </Stack>
+                    <Button target="_blank" href={currentFile} size="small">
+                      <OpenInNewIcon
+                        style={{ color: '#1976d2', width: '16px' }}
+                      />
+                    </Button>
+                  </>
+                ) : (
+                  <SelectedFile
+                    previewType='icon'
+                    disabled={isSubmitting}
+                    file={currentFile}
+                    onClickDelete={removeFile}
+                    onClickUpload={() => file && handleFileUpload(file)}
+                  />
+                )
               ) : (
                 <>
                   <div
@@ -376,28 +410,39 @@ export default function RequirementsForm(props: any) {
                       justifyContent: 'center',
                       columnGap: '5px',
                       alignItems: 'center',
+                      width: '100%',
                     }}
                   >
-                    <Button
-                      disabled={fileCardButtonDisabled}
-                      variant="contained"
-                      component="label"
-                      startIcon={<AttachFile />}
-                      size="small"
-                      sx={{
-                        borderRadius: '10px',
-                        backgroundColor: '#1976d2',
-                        '&:hover': { backgroundColor: '#1565c0' },
-                      }}
-                    >
-                      {mode === 'view' ? 'Not found' : 'Choose File'}
-                      <input
-                        type="file"
-                        accept={'.pdf'}
-                        hidden
-                        onChange={handleFileChange}
-                      />
-                    </Button>
+                    {mode === 'view' ? (
+                      <Box p={1}>
+                        <Typography variant={'subtitle2'}>
+                          No resume uploaded
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Button
+                        
+                        disabled={fileCardButtonDisabled}
+                        variant="contained"
+                        component="label"
+                        startIcon={<AttachFile />}
+                        size="small"
+                        sx={{
+                          m:'6px 0px',
+                          borderRadius: '10px',
+                          backgroundColor: '#1976d2',
+                          '&:hover': { backgroundColor: '#1565c0' },
+                        }}
+                      >
+                        Choose File
+                        <input
+                          type="file"
+                          accept={'.doc,.docx'}
+                          hidden
+                          onChange={handleFileChange}
+                        />
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
@@ -437,7 +482,10 @@ export default function RequirementsForm(props: any) {
                     variant="contained"
                     color="primary"
                     type="button"
-                    onClick={() => onEdit(false)}
+                    onClick={() => {
+                      setValues(viewData);
+                      onEdit(false)
+                    }}
                     size="small"
                     sx={{ borderRadius: '10px' }}
                   >

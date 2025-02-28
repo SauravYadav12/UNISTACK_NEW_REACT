@@ -110,7 +110,7 @@ export default function InterviewForm(props: any) {
     if (mode === 'view') {
       setValues(viewData);
     }
-  }, []);
+  }, [mode]);
 
   const addValue = (key: any, newValue: any) => {
     setErrors(initialValues);
@@ -236,7 +236,10 @@ export default function InterviewForm(props: any) {
               variant="contained"
               color="primary"
               type="button"
-              onClick={() => onEdit(false)}
+              onClick={() => {
+                setValues(viewData)
+                onEdit(false)
+              }}
               size="small"
               sx={{ borderRadius: '10px' }}
             >

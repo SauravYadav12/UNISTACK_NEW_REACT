@@ -14,12 +14,12 @@ export default function CanEditSwitch({
   const [checked, setChecked] = React.useState(active);
 
   const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const status = event.target.checked;
     try {
-      const status = event.target.checked;
+      setChecked(!!status);
       const payload = { canEdit: status };
-      const { data } = await updateUser(iUser.id, payload);
+      const { data } = await updateUser(iUser._id, payload);
       const { user } = data;
-      setChecked(!!user.canEdit);
       setOpen(true);
       if (user.canEdit) {
         setAlertMessage('Profile edit permission granted');
@@ -27,6 +27,7 @@ export default function CanEditSwitch({
         setAlertMessage('Profile edit permission revoked');
       }
     } catch (error) {
+      setChecked(!status);
       console.log(error);
       toast.error('Failed to update!');
     }
@@ -34,9 +35,7 @@ export default function CanEditSwitch({
   const disabled = iUser.role === 'super-admin';
   return (
     <>
-      <Tooltip
-        title={disabled ? 'Change role from super-admin to edit' : ''}
-      >
+      <Tooltip title={disabled ? 'Change role from super-admin to edit' : ''}>
         <span>
           <Switch
             disabled={disabled}
@@ -52,7 +51,9 @@ export default function CanEditSwitch({
 
 interface CanEditSwitchProps {
   active: boolean;
-  iUser: iUser;
+  iUser: Omit<iUser, 'id'> & {
+    _id: string;
+  };
   setOpen: (s: boolean) => void;
   setAlertMessage: (m: string) => void;
 }

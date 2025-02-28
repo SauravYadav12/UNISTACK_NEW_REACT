@@ -22,6 +22,10 @@ import {
   Typography,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
+
+
+export const  pageSizeList=[100,500,1000,5000]
+
 interface CustomPaginationProps {
   paginateState: PaginateState;
   loading: boolean;
@@ -66,7 +70,7 @@ function CustomPagination({
             '& .MuiSelect-select': { padding: '4px 24px 4px 8px' },
           }}
         >
-          {[25, 50, 100].map((l) => (
+          {pageSizeList.map((l) => (
             <MenuItem key={l} value={l}>
               {l}
             </MenuItem>
@@ -213,6 +217,9 @@ export default function CustomDataGrid(props: Iprops) {
               '& .MuiDataGrid-columnHeaderTitle': {
                 fontWeight: 'bold',
                 color: '#504e4e',
+              },
+              '& .MuiDataGrid-scrollbar': {
+                scrollbarWidth: 'thin',
               },
             }}
           />
