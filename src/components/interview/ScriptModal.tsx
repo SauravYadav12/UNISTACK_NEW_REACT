@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  CircularProgress,
   Divider,
   IconButton,
   List,
@@ -21,8 +22,17 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import './scriptModal.css';
 import { Margin, Options, usePDF } from 'react-to-pdf';
+import StarIcon from '@mui/icons-material/Star';
+import { useEffect, useState } from 'react';
+import { requirementsList } from '../../services/requirementApi';
+import { consultantsList } from '../../services/consultantApi';
+import { urlValidator } from '../../utils/validators';
+import dayjs from 'dayjs';
+import { dateFormate } from '../constants';
+const ScriptModal = ({ open, interview, onClose }: ScriptModalProps) => {
+  const [requirement, setRequirement] = useState<any>();
+  const [consultant, setConsultant] = useState<any>();
 
-const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
   const options: Options = {
     filename: 'script.pdf',
     page: {
@@ -31,7 +41,7 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
     overrides: {
       pdf: {
         compress: true,
-        unit:'mm'
+        unit: 'mm',
       },
       canvas: {
         useCORS: true,
@@ -40,6 +50,28 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
   };
 
   const { toPDF, targetRef } = usePDF(options);
+
+  const saveScript = () => {};
+
+  const getData = async () => {
+    try {
+      const [cons, req] = await Promise.all([
+        consultantsList(`_id=${interview.consultantRef}`),
+        requirementsList(`reqID=${interview.reqID}`),
+      ]);
+      if (!req.data.data?.results?.length || !cons.data.data?.results?.length) {
+        return;
+      }
+      setRequirement(req.data.data.results[0]);
+      setConsultant(cons.data.data.results[0]);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
 
   return (
     <Modal
@@ -55,7 +87,7 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
     >
       <Box
         sx={{
-          overflow:'auto',
+          overflow: 'auto',
           scrollbarWidth: 'thin',
           boxShadow: 24,
           borderRadius: '4px',
@@ -67,8 +99,16 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
           flexDirection: 'column',
         }}
       >
-        <Stack direction={'row'} justifyContent={'space-between'} py={1}  width= '210mm'>
-          <h2 style={{ margin: 0 }}>Script</h2>
+        <Stack
+          direction={'row'}
+          justifyContent={'space-between'}
+          py={1}
+          width="210mm"
+        >
+          <h2 style={{ margin: 0, fontSize: 'larger' }}>
+            {!!interview.script ? 'Updated Script' : 'Script'} :{' '}
+            {interview.intId}
+          </h2>
           <IconButton onClick={onClose} sx={{ height: 'fit-content' }}>
             <CloseIcon />
           </IconButton>
@@ -83,37 +123,52 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
             width: 'fit-content',
           }}
         >
-          <Box
-            ref={targetRef}
-            sx={{
-              p: 2,
-              py: 3,
-              width: '210mm',
-              minHeight: '297mm',
-              boxSizing: 'border-box',
-              pageBreakAfter: 'always',
-            }}
-          >
-            <Header />
-            <Divider />
-            <CondidateDetail />
-            <Divider />
-            <VisaDetail />
-            <Divider />
-            <Notes />
-            <Divider />
-            <OverAllExperience />
-            <Divider />
-            <ConsultantsExperience />
-            <Divider />
-            <InterviewDetails />
-            <Divider />
-            <JobDescription />
-            <Divider />
-          </Box>
+          {!!consultant && !!requirement ? (
+            <Box
+              ref={targetRef}
+              sx={{
+                p: 2,
+                py: 3,
+                width: '210mm',
+                minHeight: '297mm',
+                boxSizing: 'border-box',
+                pageBreakAfter: 'always',
+              }}
+            >
+              <Header interview={interview} />
+              <Divider />
+              <CondidateDetail consultant={consultant} />
+              <VisaDetail consultant={consultant} />
+              <Notes
+                note={interview.specialNote || ''}
+                poc={requirement.vendorPersonName || ''}
+              />
+              <OverAllExperience projects={consultant.projects || []} />
+              <ConsultantsExperience projects={consultant.projects || []} />
+              <InterviewDetails
+                interview={interview}
+                requirement={requirement}
+              />
+              <JobDescription
+                primaryTech={requirement.primaryTech}
+                secondaryTech={requirement.secondaryTech}
+                jobDescription={requirement.jobDescription}
+              />
+              <Divider />
+            </Box>
+          ) : (
+            <Box sx={{ py: 5, width: '210mm', textAlign: 'center' }}>
+              <CircularProgress size={30} />
+            </Box>
+          )}
         </Box>
 
-        <Stack direction={'row'} justifyContent={'space-between'} py={1} width= '210mm'>
+        <Stack
+          direction={'row'}
+          justifyContent={'space-between'}
+          py={1}
+          width="210mm"
+        >
           <Button
             variant="contained"
             // color="error"
@@ -129,7 +184,7 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
               variant="contained"
               color="primary"
               type="button"
-              // onClick={() => onEdit(true)}
+              onClick={() => saveScript()}
               size="small"
               sx={{ borderRadius: '10px' }}
             >
@@ -148,7 +203,6 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
           </Stack>
         </Stack>
       </Box>
-      {/* </div> */}
     </Modal>
   );
 };
@@ -156,11 +210,12 @@ const ScriptModal = ({ open, onClose }: ScriptModalProps) => {
 export default ScriptModal;
 
 interface ScriptModalProps {
+  interview: any;
   open: boolean;
   onClose: () => void;
 }
 
-function Header() {
+function Header({ interview }: { interview: any }) {
   return (
     <Stack
       direction={'row'}
@@ -177,48 +232,55 @@ function Header() {
       fontWeight={'bold'}
     >
       <Typography fontWeight={'bold'} color={'blue'}>
-        INT_ID:{' '}
+        INT ID:{' '}
       </Typography>
-      <Typography fontWeight={'bold'}> 2827673 </Typography>
+      <Typography fontWeight={'bold'}> {interview.intId} </Typography>
       <Typography fontWeight={'bold'} color={'white'} px={'5px'}>
-        | |
+        ||
       </Typography>
       <Typography fontWeight={'bold'} color={'blue'}>
         FULL NAME:{' '}
       </Typography>
-      <Typography fontWeight={'bold'}> {'Test name'.toUpperCase()} </Typography>
+      <Typography fontWeight={'bold'}>
+        {' '}
+        {interview.consultant?.toUpperCase()}{' '}
+      </Typography>
 
       <Typography fontWeight={'bold'} color={'white'} px={'5px'}>
-        | |
+        ||
       </Typography>
       <Typography fontWeight={'bold'} color={'blue'}>
         INT DATE:{' '}
       </Typography>
-      <Typography fontWeight={'bold'}> 2025/02/03 </Typography>
+      <Typography fontWeight={'bold'}> {interview.interviewDate} </Typography>
 
       <Typography fontWeight={'bold'} color={'white'} px={'5px'}>
-        | |
+        ||
       </Typography>
       <Typography fontWeight={'bold'} color={'blue'}>
         INT TIME:{' '}
       </Typography>
-      <Typography fontWeight={'bold'}> 10:34 PM EST </Typography>
+      <Typography fontWeight={'bold'}>
+        {' '}
+        {interview.interviewTime} {interview.timeZone}{' '}
+      </Typography>
     </Stack>
   );
 }
 
-function CondidateDetail() {
+function CondidateDetail({ consultant }: { consultant: any }) {
   const CandidateDetailsObj = {
-    'Candidate Name': 'Test name',
-    'Candidate Location': 'Test Location',
-    'Candidate Number': 'Test Number',
-    'Candidate Email': 'Test Email',
-    'Candidate Skyp id': 'Test Skype id',
-    Education: 'Test Education',
-    'Collage & passing year': 'Test passing year',
-    DOB: '2025/02/03',
-    'SSN (Last 4 digit)': '7263',
-    'Current visa status': 'US CITIZEN',
+    'Candidate Name': consultant.consultantName || '',
+    'Candidate Location': consultant.currentAddress || '',
+    'Candidate Number': consultant.phone || '',
+    'Candidate Email': consultant.email || '',
+    'Candidate Skyp id': consultant.skypeId || '',
+    Education: consultant.degree || '',
+    'Collage & passing year':
+      (consultant.university || '') + '-' + (consultant.yearPassing || ''),
+    DOB: dayjs(consultant.dob).format(dateFormate) || '',
+    'SSN (Last 4 digit)': consultant.ssn || '',
+    'Current visa status': consultant.visaStatus || '',
   };
   const CandidateDetails = Object.entries(CandidateDetailsObj);
   return (
@@ -271,7 +333,14 @@ function CondidateDetail() {
   );
 }
 
-function VisaDetail() {
+function VisaDetail({ consultant }: { consultant: any }) {
+  const details = {
+    'When did he came to US': consultant.cameToUsYear || '',
+    'How did you get the visa': consultant.getVisa || '',
+    'How are you looking for the change': consultant.lookingToChange || '',
+    'Basically from which country': consultant.originCountry || '',
+  };
+
   return (
     <List
       sx={{
@@ -284,93 +353,48 @@ function VisaDetail() {
         my: 1,
       }}
     >
-      <ListItem
-        sx={{
-          display: 'flex',
-          width: '100%',
-          p: 0,
-          borderBottom: '1px solid',
-          borderColor: 'grey.400',
-        }}
-      >
-        <Typography
-          sx={{
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          When did he came to US:
-        </Typography>
-        <Typography
-          sx={{
-            color: 'grey.600',
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          2013 on family sponserd visa
-        </Typography>
-      </ListItem>
-      <ListItem
-        sx={{
-          display: 'flex',
-          width: '100%',
-          p: 0,
-          borderBottom: '1px solid',
-          borderColor: 'grey.400',
-        }}
-      >
-        <Typography
-          sx={{
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          How did you get the visa:
-        </Typography>
-        <Typography
-          sx={{
-            color: 'grey.600',
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          family sponserd
-        </Typography>
-      </ListItem>
-      <ListItem
-        sx={{
-          display: 'flex',
-          width: '100%',
-          p: 0,
-          borderBottom: '1px solid',
-          borderColor: 'grey.400',
-          borderRadius: '5px',
-        }}
-      >
-        <Typography
-          sx={{
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          How are you looking for the change:
-        </Typography>
-        <Typography
-          sx={{
-            color: 'grey.600',
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          Current project is getting over due to budget issue
-        </Typography>
-      </ListItem>
+      {Object.entries(details).map(([key, val], i) => {
+        return (
+          <ListItem
+            key={i}
+            sx={{
+              display: 'flex',
+              width: '100%',
+              p: 0,
+              borderBottom: '1px solid',
+              borderColor: 'grey.400',
+            }}
+          >
+            <Typography
+              sx={{
+                padding: '8px 16px',
+              }}
+              variant="subtitle2"
+            >
+              {key}:
+            </Typography>
+            <Typography
+              sx={{
+                color: 'grey.600',
+                padding: '8px 16px',
+              }}
+              variant="subtitle2"
+            >
+              {val}
+            </Typography>
+          </ListItem>
+        );
+      })}
     </List>
   );
 }
 
-function Notes() {
+function Notes({ note, poc }: { note: string; poc: string }) {
+  const dataObj = {
+    'SPECIAL NOTE': note || '',
+    POC: poc || '',
+  };
+  const data = Object.entries(dataObj);
   return (
     <List
       sx={{
@@ -383,91 +407,45 @@ function Notes() {
         my: 1,
       }}
     >
-      <ListItem
-        sx={{
-          display: 'flex',
-          width: '100%',
-          p: 0,
-          borderBottom: '1px solid',
-          borderColor: 'grey.400',
-          backgroundColor: 'lightblue',
-        }}
-      >
-        <Typography
-          sx={{
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          SPECIAL NOTE:
-        </Typography>
-        <Typography
-          sx={{
-            color: 'grey.600',
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        ></Typography>
-      </ListItem>
-      <ListItem
-        sx={{
-          display: 'flex',
-          width: '100%',
-          p: 0,
-          borderBottom: '1px solid',
-          borderColor: 'grey.400',
-          borderRadius: '0px 0px 5px 5px',
-
-          backgroundColor: 'lightblue',
-        }}
-      >
-        <Typography
-          sx={{
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          POC:
-        </Typography>
-        <Typography
-          sx={{
-            color: 'grey.600',
-            padding: '8px 16px',
-          }}
-          variant="subtitle2"
-        >
-          Praveen
-        </Typography>
-      </ListItem>
+      {data.map(([key, val], i) => {
+        return (
+          <ListItem
+            key={key}
+            sx={{
+              display: 'flex',
+              width: '100%',
+              p: 0,
+              borderBottom: '1px solid',
+              borderColor: 'grey.400',
+              backgroundColor: 'lightblue',
+              borderRadius: i === data.length - 1 ? '0px 0px 5px 5px' : '',
+            }}
+          >
+            <Typography
+              sx={{
+                padding: '8px 16px',
+              }}
+              variant="subtitle2"
+            >
+              {key}:
+            </Typography>
+            <Typography
+              sx={{
+                color: 'grey.600',
+                padding: '8px 16px',
+              }}
+              variant="subtitle2"
+            >
+              {val}
+            </Typography>
+          </ListItem>
+        );
+      })}
     </List>
   );
 }
 
-function OverAllExperience() {
-  const projects = [
-    {
-      name: 'Capco',
-      city: 'bhopal',
-      state: 'MP',
-      startDate: '2024/03/04',
-      endDate: '2024/03/04',
-    },
-    {
-      name: 'Sisco',
-      city: 'bhopal',
-      state: 'MP',
-      startDate: '2024/03/04',
-      endDate: '2024/03/04',
-    },
-    {
-      name: 'test name',
-      city: 'bhopal',
-      state: 'MP',
-      startDate: '2024/03/04',
-      endDate: '2024/03/04',
-    },
-  ];
-
+function OverAllExperience({ projects }: { projects: any[] }) {
   return (
     <TableContainer component={Paper} sx={{ my: 1 }}>
       <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -480,14 +458,15 @@ function OverAllExperience() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {projects.map((row, i) => (
+          {projects?.map((row, i) => (
             <TableRow
               key={row.name}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
             >
               <TableCell>
-                {i + 1 < 10 && '0'}
-                {i + 1}
+                {/* {i + 1 < 10 && '0'}
+                {i + 1} */}
+                {row.projectNumber}
               </TableCell>
               <TableCell>
                 <Typography
@@ -496,7 +475,7 @@ function OverAllExperience() {
                   }}
                   variant="subtitle2"
                 >
-                  {row.name}
+                  {row.projectName}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -509,7 +488,7 @@ function OverAllExperience() {
                     }}
                     variant="subtitle2"
                   >
-                    {row.city}
+                    {row.projectCity}
                   </Typography>
                 </Stack>
                 <Stack direction={'row'}>
@@ -522,7 +501,7 @@ function OverAllExperience() {
                     }}
                     variant="subtitle2"
                   >
-                    {row.state}
+                    {row.projectState}
                   </Typography>
                 </Stack>
               </TableCell>
@@ -533,63 +512,28 @@ function OverAllExperience() {
                   }}
                   variant="subtitle2"
                 >
-                  {row.startDate} - {row.endDate}
+                  {row.projectStartDate} - {row.projectEndDate}
                 </Typography>
               </TableCell>
             </TableRow>
           ))}
+          {!projects.length && (
+            <TableRow>
+              <TableCell colSpan={4} align="center">
+                No experience provided
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </TableContainer>
   );
 }
 
-import StarIcon from '@mui/icons-material/Star';
-function ConsultantsExperience() {
-  const projects = [
-    {
-      name: 'Capco',
-      city: 'bhopal',
-      state: 'MP',
-      startDate: '2024/03/04',
-      endDate: '2024/03/04',
-      description: ` Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat placeat,
-      doloremque dolorum natus, corporis fugit in voluptate laborum rem iure
-      pariatur deleniti delectus vel, libero sapiente ipsa? Dolorum laudantium
-      doloribus aperiam mollitia sed voluptate quisquam architecto, laborum nam
-      sapiente! Ullam nobis nemo nostrum tempore necessitatibus quam inventore
-      ducimus laborum vel?`,
-    },
-    {
-      name: 'Sisco',
-      city: 'bhopal',
-      state: 'MP',
-      startDate: '2024/03/04',
-      endDate: '2024/03/04',
-      description: ` Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat placeat,
-      doloremque dolorum natus, corporis fugit in voluptate laborum rem iure
-      pariatur deleniti delectus vel, libero sapiente ipsa? Dolorum laudantium
-      doloribus aperiam mollitia sed voluptate quisquam architecto, laborum nam
-      sapiente! Ullam nobis nemo nostrum tempore necessitatibus quam inventore
-      ducimus laborum vel?`,
-    },
-    {
-      name: 'test name',
-      city: 'bhopal',
-      state: 'MP',
-      startDate: '2024/03/04',
-      endDate: '2024/03/04',
-      description: ` Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat placeat,
-      doloremque dolorum natus, corporis fugit in voluptate laborum rem iure
-      pariatur deleniti delectus vel, libero sapiente ipsa? Dolorum laudantium
-      doloribus aperiam mollitia sed voluptate quisquam architecto, laborum nam
-      sapiente! Ullam nobis nemo nostrum tempore necessitatibus quam inventore
-      ducimus laborum vel?`,
-    },
-  ];
-
+function ConsultantsExperience({ projects }: { projects: any[] }) {
   return (
     <Box
+      component={Paper}
       sx={{
         my: 1,
       }}
@@ -603,20 +547,21 @@ function ConsultantsExperience() {
       >
         <Typography fontWeight={'bold'}>CONSULTANT'S EXPERIENCE</Typography>
       </Stack>
-      {projects.map((e, i) => {
-        const { name, city, state, startDate, endDate, description } = e;
+      {projects?.map((e, i) => {
         const metaObj = {
-          'CLIENT NAME': name,
-          city,
-          state,
-          'Start Date': startDate,
-          'End Date': endDate,
+          'CLIENT NAME': e.projectName || '',
+          city: e.projectCity || '',
+          state: e.projectState || '',
+          'Start Date': e.projectStartDate,
+          'End Date': e.projectEndDate,
         };
         return (
           <Box sx={{ my: 1 }} key={i}>
             <Typography fontWeight={'500'} variant="inherit">
-              Project {i + 1 < 10 && '0'}
-              {i + 1}
+              Project
+              {/* {i + 1 < 10 && '0'}
+              {i + 1} */}
+              {e.projectNumber}
             </Typography>
             <Divider sx={{ width: '20%', my: 1 }} />
             <Stack direction={'row'} columnGap={1} flexWrap={'wrap'}>
@@ -649,26 +594,50 @@ function ConsultantsExperience() {
                 sx={{ width: 15, fontSize: '', pt: '2px', color: '#0000008a' }}
               />
               <span className="key">PROJECT DESCRIPTION:</span>
-              <span className="val">{description}</span>
+              <span className="val">{e.projectDescription || ''}</span>
             </ListItemText>
           </Box>
         );
       })}
+
+      {!projects.length && (
+        <ListItemText
+          sx={{
+            m: 0,
+            p: '16px',
+            textAlign: 'center',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '0.875rem',
+              lineHeight: 1.43,
+              letterSpacing: '0.01071em',
+            }}
+          >
+            No experience provided
+          </span>
+        </ListItemText>
+      )}
     </Box>
   );
 }
 
-function InterviewDetails() {
+function InterviewDetails({
+  interview,
+  requirement,
+}: {
+  interview: any;
+  requirement: any;
+}) {
   const meta = {
-    'ABOUT INTERVIEW': `Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat placeat, doloremque dolorum natus, corporis fugit in voluptate laborum rem iure pariatur deleniti delectus vel, libero sapiente ipsa? Dolorum laudantium doloribus aperiam mollitia sed voluptate quisquam architecto, laborum nam sapiente! Ullam nobis nemo nostrum tempore necessitatibus quam inventore ducimus laborum vel?`,
-    'INTERVIEW LINK':
-      'https://stackoverflow.com/questions/1871874/alternatives-for-using-in-href-attribute',
-    'INTERVIEW FOCUS': 'Javascript, python, react, django',
-    'INTERVIEWER DETAILS':
-      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat placeat, doloremque dolorum natus, corporis fugit in voluptate laborum rem iure pariatur deleniti delectus vel, libero sapiente ipsa? Dolorum laudantium doloribus aperiam mollitia sed voluptate quisquam architecto,',
-    'PRIME VENDER NAME': '',
-    'VENDER NAME': '',
-    'CLIENT NAME': '',
+    'ABOUT INTERVIEW': interview.subjectLine || '',
+    'INTERVIEW LINK': interview.interviewLink || '',
+    'INTERVIEW FOCUS': interview.interviewFocus || '',
+    'INTERVIEWER DETAILS': interview.interviewMode || '',
+    'PRIME VENDER NAME': requirement.primeVendorCompany || '',
+    'VENDER NAME': requirement.vendorCompany || '',
+    'CLIENT NAME': requirement.clientCompany || '',
   };
   return (
     <Box
@@ -694,7 +663,7 @@ function InterviewDetails() {
               sx={{ width: 15, fontSize: '', pt: '2px', color: '#0000008a' }}
             />
             <span className="key">{key}</span>
-            {key === 'INTERVIEW LINK' ? (
+            {urlValidator(val) ? (
               <a
                 href={val}
                 target="_blank"
@@ -713,24 +682,15 @@ function InterviewDetails() {
   );
 }
 
-function JobDescription() {
-  const description = `Role:- GCP Engineer
-Location:- Remote
-
-Job Description:-
-
-
-Candidates must be certified in GKE and/or AKS.
-
-The GCP/GKE Engineer enables cloud resources to provide optimal performance, continuity and efficiency in virtualized, on-demand environments.
-The GCP/GKE Engineer work assignments are varied and frequently require interpretation and independent determination of the appropriate courses of action.
-The GCP/GKE Engineer utilizes software that manages and monitors networks, systems and applications not only to guarantee performance to cloud software environments but also to better orchestrate and automate provisioning of resources.
-Understands department, segment, and organizational strategy and operating objectives, including their linkages to related areas.
-Makes decisions regarding own work methods, occasionally in ambiguous situations, and requires minimal direction and receives guidance where needed.
-Follows established guidelines/procedures.
-
-
-Best Regards,`;
+function JobDescription({
+  jobDescription,
+  primaryTech,
+  secondaryTech,
+}: {
+  jobDescription: any;
+  primaryTech: any;
+  secondaryTech: any;
+}) {
   return (
     <Box
       sx={{
@@ -749,7 +709,7 @@ Best Regards,`;
         </Typography>
       </Stack>
       <span className="val" style={{ whiteSpace: 'pre-line' }}>
-        {description}
+        {jobDescription || ''}
       </span>
       <Box sx={{ my: 1 }}>
         <ListItemText>
@@ -757,14 +717,14 @@ Best Regards,`;
             sx={{ width: 15, fontSize: '', pt: '2px', color: '#0000008a' }}
           />
           <span className="key">PRIMARY SKILLS:</span>
-          <span className="val">Java, python, django, rust, react, vue</span>
+          <span className="val">{primaryTech || ''}</span>
         </ListItemText>
         <ListItemText>
           <StarIcon
             sx={{ width: 15, fontSize: '', pt: '2px', color: '#0000008a' }}
           />
           <span className="key">SECONDARY SKILLS:</span>
-          <span className="val">Angular, node, springboot</span>
+          <span className="val">{secondaryTech || ''}</span>
         </ListItemText>
       </Box>
     </Box>

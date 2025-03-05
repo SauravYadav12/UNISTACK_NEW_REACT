@@ -242,7 +242,7 @@ export default function ConsultantForm(props: any) {
               type="button"
               onClick={() => {
                 // setValues(viewData)
-                onEdit(false)
+                onEdit(false);
               }}
               size="small"
               sx={{ borderRadius: '10px' }}
@@ -577,6 +577,9 @@ export default function ConsultantForm(props: any) {
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           borderRadius: '10px',
+                          backgroundColor: !isEditing
+                            ? '#f0f0f0'
+                            : 'transparent',
                         },
                         '& .MuiInputBase-input.Mui-disabled': {
                           WebkitTextFillColor: 'black',
@@ -613,6 +616,9 @@ export default function ConsultantForm(props: any) {
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           borderRadius: '10px',
+                          backgroundColor: !isEditing
+                            ? '#f0f0f0'
+                            : 'transparent',
                         },
                         '& .MuiInputBase-input.Mui-disabled': {
                           WebkitTextFillColor: 'black',

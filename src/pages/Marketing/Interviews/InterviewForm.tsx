@@ -1,12 +1,16 @@
 import {
+  Box,
   Button,
+  Card,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   Grid,
+  Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
@@ -37,7 +41,9 @@ import {
 } from '../../../services/interviewApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import ScriptModal from '../../../components/interview/ScriptModal';
-
+import { getMaterialFileIcon } from 'file-extension-icon-js';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { urlValidator } from '../../../utils/validators';
 const initialValues = {
   timeShift: '',
   timeZone: '',
@@ -73,6 +79,7 @@ const initialValues = {
   rateForInterview: '',
   paymentStatus: '',
   jobDescription: '',
+  script: '',
 };
 
 export default function InterviewForm(props: any) {
@@ -97,6 +104,7 @@ export default function InterviewForm(props: any) {
       setValues((prevValues: any) => ({
         ...prevValues,
         consultant: selectedRecord.consultant,
+        consultantRef: selectedRecord.consultantRef,
         reqID: selectedRecord.id,
         clientName: selectedRecord.name,
         vendorCompany: selectedRecord.company,
@@ -219,121 +227,162 @@ export default function InterviewForm(props: any) {
     setOpenAlert(false);
   };
 
+  const scriptFileElements = (
+    <>
+      {!!values.script && urlValidator(values.script) && (
+        <Card variant="outlined">
+          <Stack py={'6px'} pl={2} direction={'row'} alignItems={'center'}>
+            <img
+              src={`${getMaterialFileIcon(values.script)}`}
+              alt="icon"
+              style={{
+                width: '17px',
+                height: '17px',
+              }}
+            />
+            <Typography variant={'subtitle2'} pl={'3px'}>
+              Script
+            </Typography>
+          </Stack>
+          <Button target="_blank" href={values.script} size="small">
+            <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
+          </Button>
+        </Card>
+      )}
+    </>
+  );
+
   return (
     <>
       <form style={{ margin: '0 20px' }}>
-        {!hideButtons && (
-          <Grid
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              flexWrap:'wrap',
-              gap: 1,
-              marginRight: 10,
-            }}
-          >
-            {mode === 'add' ? (
-              <Button
-                variant="contained"
-                color="primary"
-                type="submit"
-                onClick={handleSubmitForm}
-                size="small"
-                sx={{ borderRadius: '10px' }}
-              >
-                Submit
-              </Button>
-            ) : isEditing ? (
-              <>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="button"
-                  onClick={() => {
-                    setValues(viewData);
-                    onEdit(false);
-                  }}
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  Cancel
-                </Button>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            rowGap: '20px',
+          }}
+        >
+          <Box>{scriptFileElements}</Box>
+
+          {!hideButtons && (
+            <Grid
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                flexWrap: 'wrap',
+                gap: 1,
+                marginRight: 10,
+              }}
+            >
+              {mode === 'add' ? (
                 <Button
                   variant="contained"
                   color="primary"
                   type="submit"
-                  onClick={handleEditSubmitForm}
+                  onClick={handleSubmitForm}
                   size="small"
                   sx={{ borderRadius: '10px' }}
                 >
                   Submit
                 </Button>
-              </>
-            ) : (
-              <>
-                {values.interviewStatus === 'Interview Confirm' && (
+              ) : isEditing ? (
+                <>
                   <Button
                     variant="contained"
                     color="primary"
                     type="button"
-                    onClick={() => setScriptModal(true)}
+                    onClick={() => {
+                      setValues(viewData);
+                      onEdit(false);
+                    }}
                     size="small"
                     sx={{ borderRadius: '10px' }}
                   >
-                    Generate script
+                    Cancel
                   </Button>
-                )}
-
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="button"
-                  onClick={() => onEdit(true)}
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  Edit
-                </Button>
-                {user.role === 'super-admin' && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="submit"
+                    onClick={handleEditSubmitForm}
+                    size="small"
+                    sx={{ borderRadius: '10px' }}
+                  >
+                    Submit
+                  </Button>
+                </>
+              ) : (
+                <>
                   <Button
                     variant="contained"
                     color="primary"
                     type="button"
+                    onClick={() => onEdit(true)}
                     size="small"
                     sx={{ borderRadius: '10px' }}
-                    onClick={handleClickOpenAlert}
                   >
-                    Delete
+                    Edit
                   </Button>
-                )}
-                <Dialog
-                  open={openAlert}
-                  onClose={handleClickCloseAlert}
-                  aria-labelledby="alert-dialog-title"
-                  aria-describedby="alert-dialog-description"
-                >
-                  <DialogTitle id="alert-dialog-title">
-                    {'Delete Interview?'}
-                  </DialogTitle>
-                  <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                      Are you sure you want to delete this Interview? This
-                      action cannot be undone.
-                    </DialogContentText>
-                  </DialogContent>
-                  <DialogActions>
-                    <Button onClick={handleClickCloseAlert}>Disagree</Button>
-                    <Button onClick={handleDeleteInterview} autoFocus>
-                      Agree
-                    </Button>
-                  </DialogActions>
-                </Dialog>
-              </>
-            )}
-          </Grid>
-        )}
-
+                  {values.interviewStatus === 'Interview Confirm' && (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="button"
+                        onClick={() => setScriptModal(true)}
+                        size="small"
+                        sx={{ borderRadius: '10px' }}
+                      >
+                        Generate script
+                      </Button>
+                    </>
+                  )}
+                  {user.role === 'super-admin' && (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="button"
+                        size="small"
+                        sx={{ borderRadius: '10px' }}
+                        onClick={handleClickOpenAlert}
+                      >
+                        Delete
+                      </Button>
+                      <Dialog
+                        open={openAlert}
+                        onClose={handleClickCloseAlert}
+                        aria-labelledby="alert-dialog-title"
+                        aria-describedby="alert-dialog-description"
+                      >
+                        <DialogTitle id="alert-dialog-title">
+                          {'Delete Interview?'}
+                        </DialogTitle>
+                        <DialogContent>
+                          <DialogContentText id="alert-dialog-description">
+                            Are you sure you want to delete this Interview? This
+                            action cannot be undone.
+                          </DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button onClick={handleClickCloseAlert}>
+                            Disagree
+                          </Button>
+                          <Button onClick={handleDeleteInterview} autoFocus>
+                            Agree
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
+                    </>
+                  )}
+                </>
+              )}
+            </Grid>
+          )}
+        </Box>
         <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
           {/* Section 1: Interview Details */}
           <Grid item xs={12}>
@@ -725,8 +774,9 @@ export default function InterviewForm(props: any) {
           />
         </Grid>
       </form>
-      {values.interviewStatus === 'Interview Confirm' && (
+      {scriptModal && (
         <ScriptModal
+          interview={{ ...viewData, ...values }}
           open={scriptModal}
           onClose={() => setScriptModal(!scriptModal)}
         />

@@ -156,8 +156,8 @@ export default function Interviews(props: Iprops) {
   const handleClose = () => {
     setOpenDialog(false);
   };
-  const handleEdit = (editMode: any) => {
-    setIsEditing(editMode);
+  const handleEdit = (editMode: boolean) => {
+    setIsEditing(()=>editMode);
     setMode(editMode ? 'edit' : 'view');
   };
 
