@@ -10,6 +10,7 @@ import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
 import { usePagination } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
+import { consultantsList } from '../../../services/consultantApi';
 export default function Requirements() {
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -19,6 +20,7 @@ export default function Requirements() {
   const [mode, setMode] = useState('view');
   const [archive, setArchive] = useState(false);
   const [accounts, setAccounts] = useState<any[]>();
+  const [consultants, setConsultants] = useState<any[]>();
 
   const columns = [
     {
@@ -138,9 +140,20 @@ export default function Requirements() {
       console.log(error);
     }
   }
+  async function getConsultantsList() {
+    try {
+      const { data } = await consultantsList(
+        `consultantStatus=Active&limit=5000`
+      );
+      setConsultants(data.data?.results || []);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
     getAccountList();
+    getConsultantsList();
   }, []);
 
   const header = (
@@ -205,6 +218,7 @@ export default function Requirements() {
           setResults={setResults}
           hideButtons={archive}
           accounts={accounts}
+          consultants={consultants}
           viewData={viewData}
           mode={mode}
           setDrawerOpen={setDrawerOpen}

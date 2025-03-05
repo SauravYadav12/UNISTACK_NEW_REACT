@@ -14,7 +14,6 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
-  appliedForOptions,
   duration,
   gotRequirementForm,
   requirementFormInitialValues,
@@ -58,6 +57,7 @@ export default function RequirementsForm(props: any) {
     hideButtons = false,
     accounts,
     setResults,
+    consultants,
   } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const currentFile =
@@ -118,7 +118,7 @@ export default function RequirementsForm(props: any) {
       }));
       return;
     }
-    
+
     setFile(file);
     setErrors((pre: any) => ({
       ...pre,
@@ -285,9 +285,38 @@ export default function RequirementsForm(props: any) {
       taxType: val.taxType,
       duration: val.duration,
       consultant: val.appliedFor,
+      consultantRef: val.appliedForRef,
     };
     return record;
   };
+
+  const appliedForField = (
+    <>
+      {mode === 'view' ? (
+        <CustomTextField
+          label="Applied For"
+          width={230}
+          disabled={!isEditing}
+          selectedValue={values.appliedFor}
+        />
+      ) : (
+        <CustomSelectField
+          label="Applied For"
+          valueOptions={consultants?.map((c: any) => c.consultantName)||[]}
+          disabled={!isEditing}
+          selectedValue={values.appliedFor}
+          onChange={(value: any) => {
+            const _id = consultants?.find(
+              (c: any) => c.consultantName === value
+            );
+            handleChange({ target: { value } }, 'appliedFor');
+            handleChange({ target: { value: _id } }, 'appliedForRef');
+          }}
+          width={230}
+        />
+      )}
+    </>
+  );
 
   const AssignedToField = (
     <>
@@ -374,7 +403,12 @@ export default function RequirementsForm(props: any) {
               {!!currentFile ? (
                 mode === 'view' ? (
                   <>
-                    <Stack py={'6px'} pl={2} direction={'row'} alignItems={'center'}>
+                    <Stack
+                      py={'6px'}
+                      pl={2}
+                      direction={'row'}
+                      alignItems={'center'}
+                    >
                       <img
                         src={`${getMaterialFileIcon(values.resumeUpload)}`}
                         alt="icon"
@@ -395,7 +429,7 @@ export default function RequirementsForm(props: any) {
                   </>
                 ) : (
                   <SelectedFile
-                    previewType='icon'
+                    previewType="icon"
                     disabled={isSubmitting}
                     file={currentFile}
                     onClickDelete={removeFile}
@@ -421,14 +455,13 @@ export default function RequirementsForm(props: any) {
                       </Box>
                     ) : (
                       <Button
-                        
                         disabled={fileCardButtonDisabled}
                         variant="contained"
                         component="label"
                         startIcon={<AttachFile />}
                         size="small"
                         sx={{
-                          m:'6px 0px',
+                          m: '6px 0px',
                           borderRadius: '10px',
                           backgroundColor: '#1976d2',
                           '&:hover': { backgroundColor: '#1565c0' },
@@ -484,7 +517,7 @@ export default function RequirementsForm(props: any) {
                     type="button"
                     onClick={() => {
                       setValues(viewData);
-                      onEdit(false)
+                      onEdit(false);
                     }}
                     size="small"
                     sx={{ borderRadius: '10px' }}
@@ -603,17 +636,7 @@ export default function RequirementsForm(props: any) {
             selectedValue={values.nextStep}
             onChange={(event: any) => addValue('nextStep', event.target.value)}
           />
-          <CustomSelectField
-            label="Applied For"
-            valueOptions={appliedForOptions}
-            disabled={!isEditing}
-            selectedValue={values.appliedFor}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'appliedFor')
-            }
-            width={230}
-          />
-
+          {appliedForField}
           <CustomTextField
             label={'Rate'}
             width={230}
