@@ -3,7 +3,10 @@ import { getJwtToken } from '../utils/utils';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
-export async function uploadFile(file: File, storageType: 'gcp' | '' = '') {
+export async function uploadFile(
+  file: File,
+  storageType: 'gcp' | 'docn' = 'docn'
+) {
   const formData = new FormData();
   formData.append('file', file);
   const token = await getJwtToken();

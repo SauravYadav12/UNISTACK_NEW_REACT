@@ -19,6 +19,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import jsPDF from 'jspdf';
 import CloseIcon from '@mui/icons-material/Close';
 import './scriptModal.css';
 import { Margin, Options, usePDF } from 'react-to-pdf';
@@ -29,7 +30,16 @@ import { consultantsList } from '../../services/consultantApi';
 import { urlValidator } from '../../utils/validators';
 import dayjs from 'dayjs';
 import { dateFormate } from '../constants';
-const ScriptModal = ({ open, interview, onClose }: ScriptModalProps) => {
+import { uploadFile } from '../../services/storageApi';
+import { toast } from 'react-toastify';
+import { downloadFile } from '../../utils/utils';
+const ScriptModal = ({
+  open,
+  interview,
+  onSave,
+  onClose,
+}: ScriptModalProps) => {
+  const [saving, setSaving] = useState<boolean>(false);
   const [requirement, setRequirement] = useState<any>();
   const [consultant, setConsultant] = useState<any>();
 
@@ -49,9 +59,42 @@ const ScriptModal = ({ open, interview, onClose }: ScriptModalProps) => {
     },
   };
 
-  const { toPDF, targetRef } = usePDF(options);
+  const { toPDF, targetRef } = usePDF({ ...options, method: 'build' });
 
-  const saveScript = () => {};
+  const fileInstance = async () => {
+    const d: InstanceType<typeof jsPDF> = (await toPDF()) as any;
+    const pdfBlob = d.output('blob');
+    return new File([pdfBlob], `Script-${interview.intId || ''}.pdf`, {
+      type: 'application/pdf',
+    });
+  };
+
+  const saveScript = async () => {
+    if (saving) return;
+    try {
+      setSaving(true);
+      const pdfFile = await fileInstance();
+      const { data } = await uploadFile(pdfFile, 'gcp');
+      await onSave(data.data.url);
+      toast.success('Script: saved successfully');
+    } catch (error) {
+      toast.error('Script: Faild to save');
+      console.log(error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const downloadScript = async () => {
+    if (saving) return;
+    const pdfFile = await fileInstance();
+    downloadFile(pdfFile);
+  };
+
+  const saveAndDownloadScript = async () => {
+    await saveScript();
+    await downloadScript();
+  };
 
   const getData = async () => {
     try {
@@ -171,7 +214,6 @@ const ScriptModal = ({ open, interview, onClose }: ScriptModalProps) => {
         >
           <Button
             variant="contained"
-            // color="error"
             type="button"
             onClick={onClose}
             size="small"
@@ -180,26 +222,61 @@ const ScriptModal = ({ open, interview, onClose }: ScriptModalProps) => {
             Close
           </Button>
           <Stack direction={'row'} justifyContent={'center'} columnGap={2}>
-            <Button
-              variant="contained"
-              color="primary"
-              type="button"
-              onClick={() => saveScript()}
-              size="small"
-              sx={{ borderRadius: '10px' }}
-            >
-              Save
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              type="button"
-              onClick={() => toPDF()}
-              size="small"
-              sx={{ borderRadius: '10px' }}
-            >
-              Save and download
-            </Button>
+            {!saving ? (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="button"
+                  onClick={() => saveScript()}
+                  size="small"
+                  sx={{ borderRadius: '10px' }}
+                  disabled={saving}
+                >
+                  Save
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="button"
+                  onClick={() => downloadScript()}
+                  size="small"
+                  sx={{ borderRadius: '10px' }}
+                  disabled={saving}
+                >
+                  Download
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="button"
+                  onClick={() => saveAndDownloadScript()}
+                  size="small"
+                  sx={{ borderRadius: '10px' }}
+                  disabled={saving}
+                >
+                  Save and download
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="contained"
+                color="primary"
+                type="button"
+                size="small"
+                sx={{ borderRadius: '10px' }}
+                disabled
+              >
+                <CircularProgress
+                  style={{
+                    color: '#1976d2',
+                    width: '14px',
+                    height: '14px',
+                  }}
+                />
+                <span style={{ paddingLeft: '5px' }}> Saving</span>
+              </Button>
+            )}
           </Stack>
         </Stack>
       </Box>
@@ -212,6 +289,7 @@ export default ScriptModal;
 interface ScriptModalProps {
   interview: any;
   open: boolean;
+  onSave: (scriptUrl: string) => Promise<void> | void;
   onClose: () => void;
 }
 

@@ -8,6 +8,7 @@ import {
   DialogContentText,
   DialogTitle,
   Grid,
+  IconButton,
   Stack,
   TextField,
   Typography,
@@ -15,6 +16,7 @@ import {
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
 import { useEffect, useState } from 'react';
+import DownloadIcon from '@mui/icons-material/Download';
 import {
   DatePicker,
   LocalizationProvider,
@@ -44,6 +46,7 @@ import ScriptModal from '../../../components/interview/ScriptModal';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { urlValidator } from '../../../utils/validators';
+import { downloadFile } from '../../../utils/utils';
 const initialValues = {
   timeShift: '',
   timeZone: '',
@@ -203,6 +206,22 @@ export default function InterviewForm(props: any) {
     }
   }
 
+  const handleSaveScript = async (script: string) => {
+    try {
+      const { data } = await updateInterview(values._id, { script });
+      setValues({ ...values, script });
+      setResults((pre: any) => {
+        pre = pre.map((d: any) => {
+          if (d._id === data.data._id) return data.data;
+          return d;
+        });
+        return [...pre];
+      });
+    } catch (error) {
+      console.log('An error occurred while updating script field:', error);
+    }
+  };
+
   async function handleDeleteInterview(_id: any) {
     // console.log('Delete button clicked');
     try {
@@ -229,8 +248,12 @@ export default function InterviewForm(props: any) {
 
   const scriptFileElements = (
     <>
-      {!!values.script && urlValidator(values.script) && (
-        <Card variant="outlined">
+      {!!values.script && urlValidator(values.script) && mode === 'view' && (
+        <Card
+          variant="outlined"
+          className="document-container"
+          sx={{ borderRadius: '10px', p: 0, width: '210px' }}
+        >
           <Stack py={'6px'} pl={2} direction={'row'} alignItems={'center'}>
             <img
               src={`${getMaterialFileIcon(values.script)}`}
@@ -244,9 +267,14 @@ export default function InterviewForm(props: any) {
               Script
             </Typography>
           </Stack>
-          <Button target="_blank" href={values.script} size="small">
-            <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
-          </Button>
+          <Box pr={1}>
+            <IconButton target="_blank" href={values.script} sx={{height:'30px'}}>
+              <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
+            </IconButton>
+            <IconButton onClick={() => downloadFile(values.script)} sx={{height:'30px'}}>
+              <DownloadIcon style={{ color: '#1976d2', width: '16px' }} />
+            </IconButton>
+          </Box>
         </Card>
       )}
     </>
@@ -260,7 +288,7 @@ export default function InterviewForm(props: any) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            flexWrap: 'wrap',
+            flexWrap: 'wrap-reverse',
             rowGap: '20px',
           }}
         >
@@ -336,7 +364,9 @@ export default function InterviewForm(props: any) {
                         size="small"
                         sx={{ borderRadius: '10px' }}
                       >
-                        Generate script
+                        {values.script
+                          ? 'Re-generate scirpt'
+                          : 'Generate script'}
                       </Button>
                     </>
                   )}
@@ -779,6 +809,7 @@ export default function InterviewForm(props: any) {
           interview={{ ...viewData, ...values }}
           open={scriptModal}
           onClose={() => setScriptModal(!scriptModal)}
+          onSave={handleSaveScript}
         />
       )}
     </>

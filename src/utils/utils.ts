@@ -124,10 +124,28 @@ export const myIp = async () => {
 };
 
 export const myIpGeoLocation = async () => {
-    const position = await myGeoLocation();
-    const location = position? JSON.stringify({ ...position?.coords }):null;
-    const ip = (await myIp()) || '';
-    const data = { ip, location };
-    return data;
-  
+  const position = await myGeoLocation();
+  const location = position ? JSON.stringify({ ...position?.coords }) : null;
+  const ip = (await myIp()) || '';
+  const data = { ip, location };
+  return data;
+};
+
+export const downloadFile = async (file: File | string) => {
+  if (typeof file === 'string') {
+    const f = await getBlobFileByUrl(file);
+    if (!f) {
+      return false;
+    }
+    file = f;
+  }
+  const url = URL.createObjectURL(file);
+  const name =
+    typeof file === 'string' ? getFileMetaData(file).name : file.name;
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
+  return true;
 };
