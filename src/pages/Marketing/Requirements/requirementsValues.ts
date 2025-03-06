@@ -1,11 +1,14 @@
+import dayjs from 'dayjs';
+import { dateFormate } from '../../../components/constants';
 import { RequirementStatus } from '../../../Interfaces/reports';
+import { validateEmail, ValidationMeta } from '../../../utils/validators';
 
 export const requirementFormInitialValues = {
   reqStatus: '',
   assignedTo: '',
   assignedToRef: '',
   appliedFor: '',
-  appliedForRef:'',
+  appliedForRef: '',
   reqForm: '',
   primaryTechStack: '',
   resumeUpload: '',
@@ -41,7 +44,6 @@ export const requirementFormInitialValues = {
   secondaryTech: '',
   jobDescription: '',
 };
-
 export const requestStatusOptions: RequirementStatus[] = [
   'New Working',
   'Submitted',
@@ -96,6 +98,23 @@ export const techStack = [
 ];
 
 export const duration = ['03 Months', '06 Months', '12 Months', '12+ Months'];
+
+export const requirementValidationMeta: ValidationMeta[] = [
+  { field: 'reqStatus', required: true },
+  { field: 'assignedTo', required: true },
+  { field: 'jobDescription', required: true },
+  { field: 'vendorCompany', required: true },
+  { field: 'vendorPersonName', required: true },
+  { field: 'clientEmail', validate: validateEmail },
+  { field: 'primeVendorEmail', validate: validateEmail },
+  { field: 'vendorEmail', validate: validateEmail },
+  {
+    field: 'createdAt',
+    transform(value: any) {
+      return value ? dayjs(value).format(dateFormate) : null;
+    },
+  },
+];
 
 type ReqirementStatusColors = {
   [key in RequirementStatus]: string;

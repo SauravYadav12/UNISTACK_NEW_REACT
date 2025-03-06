@@ -4,6 +4,7 @@ export default function CustomTextField({
   label,
   width = 350,
   onChange,
+  onBlur,
   disabled,
   selectedValue,
   type,
@@ -19,6 +20,7 @@ export default function CustomTextField({
           type={type}
           value={selectedValue}
           onChange={onChange}
+          onBlur={onBlur}
           disabled={disabled}
           fullWidth
           error={Boolean(error)}

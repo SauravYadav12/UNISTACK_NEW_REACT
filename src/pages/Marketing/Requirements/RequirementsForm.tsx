@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Grid,
+  IconButton,
   Stack,
   TextField,
   Typography,
@@ -12,7 +13,7 @@ import CustomTextField from '../../../components/text_field/CustomTextField';
 import dayjs from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import DownloadIcon from '@mui/icons-material/Download';
 import {
   duration,
   gotRequirementForm,
@@ -20,6 +21,7 @@ import {
   requestStatusOptions,
   taxTypeOptions,
   techStack,
+  requirementValidationMeta,
 } from './requirementsValues';
 import {
   createRequirement,
@@ -35,15 +37,20 @@ import { toast } from 'react-toastify';
 import AlertBox from '../../../components/alert/AlertBox';
 import { useNavigate } from 'react-router-dom';
 import { dateFormate, timeFormate } from '../../../components/constants';
-import { urlValidator } from '../../../utils/validators';
+import {
+  isFieldValid,
+  urlValidator,
+  validateAllFields,
+} from '../../../utils/validators';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
   const [file, setFile] = useState<File>();
-  const [errors, setErrors] = useState(requirementFormInitialValues);
-  const [comments, setComments] = useState<any>('');
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const [errors, setErrors] = useState<{ [key: string]: any }>(
+    requirementFormInitialValues
+  );
+  const [comment, setComment] = useState<any>('');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [deleteAlert, setDeleteAlert] = useState(false);
   const [copyAlert, setCopyAlert] = useState(false);
@@ -145,33 +152,25 @@ export default function RequirementsForm(props: any) {
     setFile(undefined);
     setValues((pre: any) => ({ ...pre, resumeUpload: '' }));
   };
+
   async function handleSubmitForm(event: any) {
     event.preventDefault();
     if (isSubmitting) return;
-    setIsSubmitting(true);
-    const newErrors: any = {};
-    if (!values.reqStatus) newErrors.reqStatus = 'Req Status is required';
-    if (!values.assignedTo) newErrors.assignedTo = 'Assigned To is required';
-    if (!values.jobDescription)
-      newErrors.jobDescription = 'Job Description is required';
-    if (!values.vendorCompany)
-      newErrors.vendorCompany = 'Vendor Company is required';
-    if (!values.vendorPersonName)
-      newErrors.vendorPersonName = 'Vendor Person Name is required';
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setIsSubmitting(false);
-      return; // Stop the form submission
-    }
+    const isValid = validateAllFields(
+      requirementValidationMeta,
+      values,
+      setErrors
+    );
+    if (!isValid) return;
     const commentsPayload = {
       username: `${user.firstName} ${user.lastName}`,
       date: new Date(),
-      comment: comments,
+      comment: comment,
     };
-    values.mComment = values.mComment
-      ? [...values.mComment, commentsPayload]
-      : [commentsPayload];
+    values.mComment = [commentsPayload];
+
+    setIsSubmitting(true);
 
     if (file) {
       const url = await handleFileUpload(file);
@@ -193,19 +192,26 @@ export default function RequirementsForm(props: any) {
 
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
-    if (!comments.trim()) {
+    if (isSubmitting) return;
+    const isValid = validateAllFields(
+      requirementValidationMeta,
+      values,
+      setErrors as any
+    );
+    if (!comment.trim()) {
       toast.warning('Comment is required');
       return;
     }
+    if (!isValid) return;
     const commentsPayload = {
       username: `${user.firstName} ${user.lastName}`,
       date: new Date(),
-      comment: comments,
+      comment: comment,
     };
     const updatedComments = values.mComment
       ? [...values.mComment, commentsPayload]
       : [commentsPayload];
-
+    setIsSubmitting(true);
     try {
       const payload = { ...values, mComment: updatedComments };
       if (file) {
@@ -225,6 +231,8 @@ export default function RequirementsForm(props: any) {
       setDrawerOpen(false); // Close the drawer after successful update
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -239,39 +247,36 @@ export default function RequirementsForm(props: any) {
   }
 
   const handleChange = (event: any, key: string) => {
-    setErrors(requirementFormInitialValues);
-    setValues((prev: any) => ({ ...prev, [key]: event.target.value }));
+    const val = event.target.value;
+    addValue(key, val);
   };
 
   const addValue = (key: any, newValue: any) => {
-    setErrors(requirementFormInitialValues);
-    if (key === 'createdAt') {
-      const formattedDate = newValue
-        ? dayjs(newValue).format(dateFormate)
-        : null;
-      setValues((prevValues: any) => ({
-        ...prevValues,
-        [key]: formattedDate,
-      }));
-    } else
-      setValues((prevValues: any) => ({
-        ...prevValues,
-        [key]: newValue,
-      }));
+    const meta = requirementValidationMeta.find((m) => m.field === key);
+    if (meta) {
+      if (errors[key] && isFieldValid(meta, newValue)) {
+        setErrors((pre) => ({ ...pre, [key]: '' }));
+      }
+      if (meta.transform) {
+        newValue = meta.transform(newValue);
+      }
+    }
+    setValues((prevValues: any) => ({
+      ...prevValues,
+      [key]: newValue,
+    }));
   };
 
   const handleEmail = (event: any, field: any) => {
     const value = event.target.value;
-    if (!emailRegex.test(value)) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        [field]: 'Invalid email format',
-      }));
-    } else {
-      setErrors((prevErrors) => ({ ...prevErrors, [field]: null }));
-      addValue(field, value);
-    }
+    addValue(field, value);
   };
+
+  const onBlur = (key: string) => {
+    const meta = requirementValidationMeta.find((m) => m.field === key);
+    meta && isFieldValid(meta, values[key], setErrors);
+  };
+
   const reqFields = () => {
     const val = viewData;
     const record = {
@@ -302,7 +307,7 @@ export default function RequirementsForm(props: any) {
       ) : (
         <CustomSelectField
           label="Applied For"
-          valueOptions={consultants?.map((c: any) => c.consultantName)||[]}
+          valueOptions={consultants?.map((c: any) => c.consultantName) || []}
           disabled={!isEditing}
           selectedValue={values.appliedFor}
           onChange={(value: any) => {
@@ -335,6 +340,7 @@ export default function RequirementsForm(props: any) {
           }
           selectedValue={values.assignedTo}
           disabled={!isEditing}
+          onBlur={() => onBlur('assignedTo')}
           onChange={(value: any) => {
             handleChange({ target: { value } }, 'assignedTo');
             const id = accounts?.find(
@@ -358,9 +364,6 @@ export default function RequirementsForm(props: any) {
           selectedValue={values.gotReqFrom || ''}
           width={230}
           disabled={!isEditing}
-          onChange={(value: any) =>
-            handleChange({ target: { value } }, 'gotReqFrom')
-          }
         />
       ) : (
         <CustomSelectField
@@ -368,7 +371,9 @@ export default function RequirementsForm(props: any) {
           valueOptions={gotRequirementForm}
           selectedValue={values.gotReqFrom || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('gotReqFrom', event.target.value)}
+          onChange={(value: any) =>
+            handleChange({ target: { value } }, 'gotReqFrom')
+          }
           width={315}
         />
       )}
@@ -421,11 +426,18 @@ export default function RequirementsForm(props: any) {
                         Resume
                       </Typography>
                     </Stack>
-                    <Button target="_blank" href={currentFile} size="small">
-                      <OpenInNewIcon
-                        style={{ color: '#1976d2', width: '16px' }}
-                      />
-                    </Button>
+                    <Box pr={1}>
+                      <IconButton
+                        download
+                        href={currentFile}
+                        size="small"
+                        sx={{ height: '30px' }}
+                      >
+                        <DownloadIcon
+                          style={{ color: '#1976d2', width: '16px' }}
+                        />
+                      </IconButton>
+                    </Box>
                   </>
                 ) : (
                   <SelectedFile
@@ -520,6 +532,7 @@ export default function RequirementsForm(props: any) {
                       onEdit(false);
                     }}
                     size="small"
+                    disabled={isSubmitting}
                     sx={{ borderRadius: '10px' }}
                   >
                     Cancel
@@ -531,6 +544,7 @@ export default function RequirementsForm(props: any) {
                     onClick={handleEditSubmitForm}
                     size="small"
                     sx={{ borderRadius: '10px' }}
+                    disabled={isSubmitting}
                   >
                     Submit
                   </Button>
@@ -551,6 +565,7 @@ export default function RequirementsForm(props: any) {
                       }
                       size="small"
                       sx={{ borderRadius: '10px', width: 'max-content' }}
+                      disabled={isSubmitting}
                     >
                       Create interview
                     </Button>
@@ -591,6 +606,7 @@ export default function RequirementsForm(props: any) {
                         size="small"
                         sx={{ borderRadius: '10px' }}
                         onClick={() => setDeleteAlert(true)}
+                        disabled={isSubmitting}
                       >
                         Delete
                       </Button>
@@ -621,6 +637,7 @@ export default function RequirementsForm(props: any) {
             valueOptions={requestStatusOptions}
             selectedValue={values.reqStatus}
             disabled={!isEditing}
+            onBlur={() => onBlur('reqStatus')}
             onChange={(value: any) =>
               handleChange({ target: { value } }, 'reqStatus')
             }
@@ -681,12 +698,13 @@ export default function RequirementsForm(props: any) {
               ? values?.mComment
                   ?.filter((comment: any) => comment.comment.trim())
                   .map((comment: any, i: number) => {
+                    const label=`${comment.username} . ${dayjs(comment.date).format(dateFormate+' '+timeFormate)}`
                     return (
                       <CustomTextField
                         key={i}
-                        label={"Marketing Person's Comment"}
+                        label={label}
                         width={970}
-                        disabled={true}
+                        disabled
                         selectedValue={comment.comment}
                       />
                     );
@@ -698,8 +716,8 @@ export default function RequirementsForm(props: any) {
                 label={"Marketing Person's Comment"}
                 width={970}
                 disabled={!isEditing}
-                selectedValue={comments}
-                onChange={(event: any) => setComments(event.target.value)}
+                selectedValue={comment}
+                onChange={(event: any) => setComment(event.target.value)}
               />
             )}
           </Stack>
@@ -762,6 +780,7 @@ export default function RequirementsForm(props: any) {
             width={315}
             selectedValue={values.clientEmail}
             disabled={!isEditing}
+            onBlur={() => onBlur('clientEmail')}
             onChange={(event: any) => handleEmail(event, 'clientEmail')}
             helperText={errors.clientEmail}
             error={errors.clientEmail}
@@ -816,6 +835,7 @@ export default function RequirementsForm(props: any) {
             width={315}
             selectedValue={values.primeVendorEmail}
             disabled={!isEditing}
+            onBlur={() => onBlur('primeVendorEmail')}
             onChange={(event: any) => handleEmail(event, 'primeVendorEmail')}
             helperText={errors.primeVendorEmail}
             error={errors.primeVendorEmail}
@@ -832,6 +852,7 @@ export default function RequirementsForm(props: any) {
             width={315}
             selectedValue={values.vendorCompany}
             disabled={!isEditing}
+            onBlur={() => onBlur('vendorCompany')}
             onChange={(event: any) =>
               addValue('vendorCompany', event.target.value)
             }
@@ -852,6 +873,7 @@ export default function RequirementsForm(props: any) {
             width={315}
             selectedValue={values.vendorPersonName}
             disabled={!isEditing}
+            onBlur={() => onBlur('vendorPersonName')}
             onChange={(event: any) =>
               addValue('vendorPersonName', event.target.value)
             }
@@ -874,6 +896,7 @@ export default function RequirementsForm(props: any) {
             width={315}
             selectedValue={values.vendorEmail}
             disabled={!isEditing}
+            onBlur={() => onBlur('vendorEmail')}
             onChange={(event: any) => handleEmail(event, 'vendorEmail')}
             helperText={errors.vendorEmail}
             error={errors.vendorEmail}
@@ -987,6 +1010,7 @@ export default function RequirementsForm(props: any) {
             width={980}
             disabled={!isEditing}
             selectedValue={values.jobDescription}
+            onBlur={() => onBlur('jobDescription')}
             onChange={(event: any) =>
               addValue('jobDescription', event.target.value)
             }
