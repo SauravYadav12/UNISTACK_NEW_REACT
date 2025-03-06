@@ -4,6 +4,7 @@ import {
   CircularProgress,
   Divider,
   IconButton,
+  Link,
   List,
   ListItem,
   ListItemIcon,
@@ -176,11 +177,16 @@ const ScriptModal = ({
                 minHeight: '297mm',
                 boxSizing: 'border-box',
                 pageBreakAfter: 'always',
+                display: 'flex',
+                flexDirection: 'column',
+                rowGap: '10px',
               }}
             >
+              <Box>
               <Header interview={interview} />
               <Divider />
               <CondidateDetail consultant={consultant} />
+              </Box>
               <VisaDetail consultant={consultant} />
               <Notes
                 note={interview.specialNote || ''}
@@ -307,7 +313,6 @@ function Header({ interview }: { interview: any }) {
         fontSize: '20px',
         borderRadius: '5px',
       }}
-      fontWeight={'bold'}
     >
       <Typography fontWeight={'bold'} color={'blue'}>
         INT ID:{' '}
@@ -348,17 +353,17 @@ function Header({ interview }: { interview: any }) {
 
 function CondidateDetail({ consultant }: { consultant: any }) {
   const CandidateDetailsObj = {
-    'Candidate Name': consultant.consultantName || '',
-    'Candidate Location': consultant.currentAddress || '',
-    'Candidate Number': consultant.phone || '',
-    'Candidate Email': consultant.email || '',
-    'Candidate Skyp id': consultant.skypeId || '',
-    Education: consultant.degree || '',
+    'Candidate Name': consultant.consultantName || 'NA',
+    'Candidate Location': consultant.currentAddress || 'NA',
+    'Candidate Number': consultant.phone || 'NA',
+    'Candidate Email': consultant.email || 'NA',
+    'Candidate Skyp id': consultant.skypeId || 'NA',
+    Education: consultant.degree || 'NA',
     'Collage & passing year':
       (consultant.university || '') + '-' + (consultant.yearPassing || ''),
-    DOB: dayjs(consultant.dob).format(dateFormate) || '',
-    'SSN (Last 4 digit)': consultant.ssn || '',
-    'Current visa status': consultant.visaStatus || '',
+    DOB: dayjs(consultant.dob).format(dateFormate) || 'NA',
+    'SSN (Last 4 digit)': consultant.ssn || 'NA',
+    'Current visa status': consultant.visaStatus || 'NA',
   };
   const CandidateDetails = Object.entries(CandidateDetailsObj);
   return (
@@ -413,10 +418,10 @@ function CondidateDetail({ consultant }: { consultant: any }) {
 
 function VisaDetail({ consultant }: { consultant: any }) {
   const details = {
-    'When did he came to US': consultant.cameToUsYear || '',
-    'How did you get the visa': consultant.getVisa || '',
-    'How are you looking for the change': consultant.lookingToChange || '',
-    'Basically from which country': consultant.originCountry || '',
+    'When did he came to US': consultant.cameToUsYear || 'NA',
+    'How did you get the visa': consultant.getVisa || 'NA',
+    'How are you looking for the change': consultant.lookingToChange || 'NA',
+    'Basically from which country': consultant.originCountry || 'NA',
   };
 
   return (
@@ -469,8 +474,8 @@ function VisaDetail({ consultant }: { consultant: any }) {
 
 function Notes({ note, poc }: { note: string; poc: string }) {
   const dataObj = {
-    'SPECIAL NOTE': note || '',
-    POC: poc || '',
+    'SPECIAL NOTE': note || 'NA',
+    POC: poc || 'NA',
   };
   const data = Object.entries(dataObj);
   return (
@@ -541,11 +546,7 @@ function OverAllExperience({ projects }: { projects: any[] }) {
               key={row.name}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
             >
-              <TableCell>
-                {/* {i + 1 < 10 && '0'}
-                {i + 1} */}
-                {row.projectNumber}
-              </TableCell>
+              <TableCell>{row.projectNumber}</TableCell>
               <TableCell>
                 <Typography
                   sx={{
@@ -590,7 +591,8 @@ function OverAllExperience({ projects }: { projects: any[] }) {
                   }}
                   variant="subtitle2"
                 >
-                  {row.projectStartDate} - {row.projectEndDate}
+                  {dayjs(row.projectStartDate).format(dateFormate)} -{' '}
+                  {dayjs(row.projectEndDate).format(dateFormate)}
                 </Typography>
               </TableCell>
             </TableRow>
@@ -611,7 +613,7 @@ function OverAllExperience({ projects }: { projects: any[] }) {
 function ConsultantsExperience({ projects }: { projects: any[] }) {
   return (
     <Box
-      component={Paper}
+      component={!projects.length ? Paper : undefined}
       sx={{
         my: 1,
       }}
@@ -627,11 +629,11 @@ function ConsultantsExperience({ projects }: { projects: any[] }) {
       </Stack>
       {projects?.map((e, i) => {
         const metaObj = {
-          'CLIENT NAME': e.projectName || '',
-          city: e.projectCity || '',
-          state: e.projectState || '',
-          'Start Date': e.projectStartDate,
-          'End Date': e.projectEndDate,
+          'CLIENT NAME': e.projectName || 'NA',
+          city: e.projectCity || 'NA',
+          state: e.projectState || 'NA',
+          'Start Date': dayjs(e.projectStartDate).format(dateFormate) || 'NA',
+          'End Date': dayjs(e.projectEndDate).format(dateFormate) || 'NA',
         };
         return (
           <Box sx={{ my: 1 }} key={i}>
@@ -709,13 +711,13 @@ function InterviewDetails({
   requirement: any;
 }) {
   const meta = {
-    'ABOUT INTERVIEW': interview.subjectLine || '',
-    'INTERVIEW LINK': interview.interviewLink || '',
-    'INTERVIEW FOCUS': interview.interviewFocus || '',
-    'INTERVIEWER DETAILS': interview.interviewMode || '',
-    'PRIME VENDER NAME': requirement.primeVendorCompany || '',
-    'VENDER NAME': requirement.vendorCompany || '',
-    'CLIENT NAME': requirement.clientCompany || '',
+    'ABOUT INTERVIEW': interview.subjectLine || 'NA',
+    'INTERVIEW LINK': interview.interviewLink || 'NA',
+    'INTERVIEW FOCUS': interview.interviewFocus || 'NA',
+    'INTERVIEWER DETAILS': interview.interviewMode || 'NA',
+    'PRIME VENDER NAME': requirement.primeVendorCompany || 'NA',
+    'VENDER NAME': requirement.vendorCompany || 'NA',
+    'CLIENT NAME': requirement.clientCompany || 'NA',
   };
   return (
     <Box
@@ -736,11 +738,14 @@ function InterviewDetails({
       </Stack>
       {Object.entries(meta).map(([key, val], i) => {
         return (
-          <ListItemText key={i}>
+          <ListItemText
+            key={i}
+            style={{ width: '100%', overflowWrap: 'break-word' }}
+          >
             <StarIcon
               sx={{ width: 15, fontSize: '', pt: '2px', color: '#0000008a' }}
             />
-            <span className="key">{key}</span>
+            <span className="key">{key}:</span>
             {urlValidator(val) ? (
               <a
                 href={val}
@@ -748,10 +753,10 @@ function InterviewDetails({
                 className="val"
                 style={{ color: '#4040e6' }}
               >
-                {val}:
+                {val}
               </a>
             ) : (
-              <span className="val">{val}:</span>
+              <span className="val">{val}</span>
             )}
           </ListItemText>
         );
