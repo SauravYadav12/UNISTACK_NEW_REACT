@@ -3,11 +3,12 @@ import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import SendIcon from '@mui/icons-material/Send';
 import { SalesLeadComment } from '../../Interfaces/salesLeads';
+import { dateFormate, timeFormate } from '../constants';
 const Comment = ({ onAdd, comment, disabled, createMode }: Iprops) => {
   const [commentMessage, setCommentMessage] = useState('');
   const [savingNewComment, setSavingNewComment] = useState(false);
   const label = `${comment?.name} . ${moment(comment?.date).format(
-    'YYYY-MM-DD hh:mm A'
+   dateFormate+' '+timeFormate
   )}`;
 
   const handleOnChange = (val: string) => {

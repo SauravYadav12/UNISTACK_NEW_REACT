@@ -149,3 +149,11 @@ export const downloadFile = async (file: File | string) => {
   URL.revokeObjectURL(url);
   return true;
 };
+
+export const labelizeKey = (key: string) =>
+  key
+    .split(/(?=[A-Z])/)
+    .map((word, i) =>
+      i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
+    )
+    .join(' ');

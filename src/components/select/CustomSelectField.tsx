@@ -11,6 +11,7 @@ export default function CustomSelectField({
   valueOptions,
   selectedValue,
   onChange,
+  onBlur,
   width = 300,
   disabled,
   error,
@@ -36,6 +37,7 @@ export default function CustomSelectField({
         </InputLabel>
         <Select
           value={selectedValue}
+          onBlur={onBlur}
           onChange={handleChange}
           label={label}
           disabled={disabled}
