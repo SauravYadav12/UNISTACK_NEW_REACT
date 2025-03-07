@@ -1,5 +1,5 @@
 import { Button, IconButton } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -12,13 +12,15 @@ import { Country } from 'country-state-city';
 import './salesLead.css';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
+import SalesLeadAssignedToSelect from '../../../components/salesLead/SalesLeadAssignedToSelect';
+import { usersList } from '../../../services/authApi';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
   const [viewData, setViewData] = useState({});
-
+  const [accounts, setAccounts] = useState<any[]>();
   const {
     gridData,
     paginationModel,
@@ -66,6 +68,20 @@ const SalesLeads = () => {
       valueFormatter: (v: any) => v || 'NA',
     },
     {
+      field: 'assignedTo',
+      headerName: 'Assigned To',
+      width: 200,
+
+      type: 'actions',
+      renderCell: (params: any) => (
+        <SalesLeadAssignedToSelect
+          selectOptions={accounts || []}
+          row={params.row}
+          setRows={setResults}
+        />
+      ),
+    },
+    {
       field: 'status',
       headerName: 'Status',
       width: 150,
@@ -94,7 +110,6 @@ const SalesLeads = () => {
   const handleViewDetails = (row: iSalesLead) => {
     const data = gridData?.results?.filter((r) => r._id === row._id);
     if (!data?.length) return;
-    console.log('viewRecord', data);
     setViewData(data[0]);
     setFormTitle(`Sales Lead : ${row.firstName + ' ' + row.lastName}`);
     setMode('view');
@@ -118,6 +133,20 @@ const SalesLeads = () => {
       return [...pre];
     });
   };
+
+  async function getAccountList() {
+    try {
+      const { data } = await usersList();
+      const { users } = data;
+      setAccounts(users.filter((u: any) => u.active) || []);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    getAccountList();
+  }, []);
 
   const dataGridHeader = (
     <>

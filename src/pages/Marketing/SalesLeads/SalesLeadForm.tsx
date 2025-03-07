@@ -40,7 +40,7 @@ const SalesLeadForm = (props: any) => {
       setDrawerOpen(false);
       onDelete(_id);
     } catch (error) {
-      toast.error('Failed to delete')
+      toast.error('Failed to delete');
       console.error('An error occurred while deleting the requirement:', error);
     }
   }
@@ -61,7 +61,7 @@ const SalesLeadForm = (props: any) => {
       setValues(data.data);
       onEdit(data.data);
     } catch (error) {
-      toast.error('Something went wrong')
+      toast.error('Something went wrong');
       console.log(error);
     }
   };
@@ -163,6 +163,12 @@ const SalesLeadForm = (props: any) => {
           selectedValue={values.status}
           onChange={(value: any) => addValue('status', value)}
           width={220}
+        />
+        <CustomTextField
+          label="Assigned To"
+          width={220}
+          selectedValue={values.assignedTo}
+          disabled
         />
 
         {mode === 'view' && (

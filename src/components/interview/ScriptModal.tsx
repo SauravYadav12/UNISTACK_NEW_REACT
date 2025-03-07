@@ -4,7 +4,6 @@ import {
   CircularProgress,
   Divider,
   IconButton,
-  Link,
   List,
   ListItem,
   ListItemIcon,
@@ -183,9 +182,9 @@ const ScriptModal = ({
               }}
             >
               <Box>
-              <Header interview={interview} />
-              <Divider />
-              <CondidateDetail consultant={consultant} />
+                <Header interview={interview} />
+                <Divider />
+                <CondidateDetail consultant={consultant} />
               </Box>
               <VisaDetail consultant={consultant} />
               <Notes

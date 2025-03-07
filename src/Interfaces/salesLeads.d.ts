@@ -8,6 +8,8 @@ export interface iSalesLead {
   city: string;
   message: string;
   status: iSalesLeadStatus;
+  assignedTo:string;
+  assignedToRef:string;
   comments: SalesLeadComment[];
   createdAt: string;
   updatedAt: string;
