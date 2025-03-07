@@ -13,6 +13,8 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Build the Vite app
 RUN npm run build
 
