@@ -8,6 +8,7 @@ import {
   Grid,
   TextField,
 } from '@mui/material';
+import examples from 'libphonenumber-js/examples.mobile.json';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
 import { useEffect, useState } from 'react';
@@ -28,6 +29,8 @@ import {
 import { dateFormate } from '../../../components/constants';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
+import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
+import { getExampleNumber } from 'libphonenumber-js';
 
 const initialValues = {
   timeZone: '',
@@ -128,8 +131,6 @@ export default function ConsultantForm(props: any) {
   };
 
   function handleChange(event: any, key: string) {
-    // setErrors(initialValues);
-    // setValues((prev: any) => ({ ...prev, [key]: event.target.value }));
     addValue(key, event.target.value);
   }
 
@@ -443,10 +444,12 @@ export default function ConsultantForm(props: any) {
           error={errors.email}
           helperText={errors.email}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('email', event.target.value?.toLowerCase())}
+          onChange={(event: any) =>
+            addValue('email', event.target.value?.toLowerCase())
+          }
           onBlur={() => onBlur('email')}
         />
-        <CustomTextField
+        {/* <CustomTextField
           onBlur={() => onBlur('phone')}
           label="Phone"
           width={230}
@@ -456,7 +459,16 @@ export default function ConsultantForm(props: any) {
           helperText={errors.phone}
           disabled={!isEditing}
           onChange={(event: any) => addValue('phone', event.target.value)}
+        /> */}
+        <PhoneField
+          onBlur={() => onBlur('phone')}
+          label="Phone"
+          value={values.phone}
+          errorText={errors.phone}
+          disabled={!isEditing}
+          onChange={(event: any) => addValue('phone', event.target.value)}
         />
+
         <CustomSelectField
           label="Consultant Timezone"
           valueOptions={timeZoneOptions}
@@ -697,4 +709,67 @@ export default function ConsultantForm(props: any) {
       </Grid>
     </form>
   );
+}
+
+function PhoneField({
+  disabled,
+  onChange,
+  onBlur,
+  label,
+  value,
+  errorText,
+}: PhoneFieldProps) {
+  const [maxPhoneLength, setMaxPhoneLength] = useState(15);
+  const [muiTelInputInfo, setMuiTelInputInfo] = useState<MuiTelInputInfo>();
+
+  const onPhoneChange = (value: string, info: MuiTelInputInfo) => {
+    if (info.countryCode && info.countryCode !== muiTelInputInfo?.countryCode) {
+      const exampleNumberLength = getExampleNumber(
+        info.countryCode,
+        examples
+      )?.formatInternational().length;
+      exampleNumberLength && setMaxPhoneLength(exampleNumberLength);
+      setMuiTelInputInfo(info);
+    }
+    onChange({ target: { value } } as any);
+  };
+
+  return (
+   <div>
+     <Grid item sx={{ width: 230, m: 1 }}>
+      <MuiTelInput
+        disabled={disabled}
+        inputProps={{ maxLength: maxPhoneLength }}
+        defaultCountry={disabled ? undefined : 'IN'}
+        onChange={onPhoneChange}
+        onBlur={() => onBlur && onBlur()}
+        label={label}
+        value={value}
+        fullWidth
+        error={!!errorText}
+        helperText={errorText}
+        size="small"
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '10px',
+            backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+          },
+          '& .MuiInputBase-input.Mui-disabled': {
+            WebkitTextFillColor: 'black',
+            backgroundColor: '#f0f0f0',
+          },
+        }}
+      />
+    </Grid>
+   </div>
+  );
+}
+
+interface PhoneFieldProps {
+  disabled: boolean;
+  label: string;
+  value: string;
+  errorText: string;
+  onChange: (e: any) => void;
+  onBlur: () => void;
 }

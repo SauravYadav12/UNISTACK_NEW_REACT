@@ -146,9 +146,16 @@ export default function Interviews(props: Iprops) {
     setMode('add');
     setIsEditing(true);
   };
+  const clearReqFromParams = () => {
+    setSearchParams((pre) => {
+      pre.delete('createInterviewByReq');
+      return pre;
+    });
+  };
 
   const handleCloseForm = () => {
     setDrawerOpen(false);
+    clearReqFromParams();
   };
   const handleClickOpen = () => {
     setOpenDialog(true);
@@ -181,13 +188,6 @@ export default function Interviews(props: Iprops) {
     setArchive(true);
     return res;
   }
-
-  const clearReqFromParams = () => {
-    setSearchParams((pre) => {
-      pre.delete('createInterviewByReq');
-      return pre;
-    });
-  };
 
   useEffect(() => {
     const req = searchParams.get('createInterviewByReq');

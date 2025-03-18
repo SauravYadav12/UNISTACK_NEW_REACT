@@ -1,4 +1,8 @@
-import { validateEmail, ValidationMeta } from '../../../utils/validators';
+import {
+  validateEmail,
+  validatePhone,
+  ValidationMeta,
+} from '../../../utils/validators';
 
 export const timeZoneOptions = ['EST', 'CST', 'MST', 'PST'];
 
@@ -30,6 +34,7 @@ export const consultantValidationMeta: ValidationMeta[] = [
   {
     field: 'phone',
     required: true,
+    validate: validatePhone,
   },
   {
     field: 'email',
