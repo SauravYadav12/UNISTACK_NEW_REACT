@@ -245,45 +245,51 @@ export default function TeamsForm(props: any) {
           disabled={!isEditing}
           onChange={(event: any) => addValue('phone', event.target.value)}
         />
-        <CustomTextField
-          label="Created by"
-          width={320}
-          selectedValue={values.createdBy}
-          error={!!errors.createdBy}
-          helperText={errors.createdBy}
-          disabled={!isEditing}
-          onChange={(event: any) => addValue('createdBy', event.target.value)}
-        />
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DatePicker
-            inputFormat={dateFormate}
-            label="Created at"
-            value={values.createdAt ? dayjs(values.createdAt) : null}
-            disabled={!isEditing}
-            onChange={(newValue) => addValue('createdAt', newValue)}
-            renderInput={(params: any) => (
-              <TextField
-                size="small"
-                {...params}
-                sx={{
-                  width: 320,
-                  mr: 1,
-                  mt: 1,
-                  ml: 1,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '10px',
-                    backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
-                  },
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    WebkitTextFillColor: 'black',
-                    backgroundColor: '#f0f0f0',
-                    borderRadius: '10px',
-                  },
-                }}
+        {mode === 'view' && (
+          <>
+            <CustomTextField
+              label="Created by"
+              width={320}
+              selectedValue={values.createdBy}
+              error={!!errors.createdBy}
+              helperText={errors.createdBy}
+              disabled
+              onChange={(event: any) =>
+                addValue('createdBy', event.target.value)
+              }
+            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                inputFormat={dateFormate}
+                label="Created at"
+                value={values.createdAt ? dayjs(values.createdAt) : null}
+                disabled
+                onChange={(newValue) => addValue('createdAt', newValue)}
+                renderInput={(params: any) => (
+                  <TextField
+                    size="small"
+                    {...params}
+                    sx={{
+                      width: 320,
+                      mr: 1,
+                      mt: 1,
+                      ml: 1,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
+                      },
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        WebkitTextFillColor: 'black',
+                        backgroundColor: '#f0f0f0',
+                        borderRadius: '10px',
+                      },
+                    }}
+                  />
+                )}
               />
-            )}
-          />
-        </LocalizationProvider>
+            </LocalizationProvider>
+          </>
+        )}
       </Grid>
     </form>
   );

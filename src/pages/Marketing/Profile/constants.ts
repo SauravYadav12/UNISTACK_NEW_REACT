@@ -17,7 +17,7 @@ import {
 import dayjs from 'dayjs';
 
 export function getProfileFormInitialValues(val?: Partial<UserProfile>) {
-  const template:UserProfile = {
+  const template: UserProfile = {
     _id: val?._id || '',
     employeeId: val?.employeeId || '',
     user: val?.user || '',
@@ -61,21 +61,6 @@ export function getProfileFormInitialValues(val?: Partial<UserProfile>) {
     },
   };
   return { ...template };
-}
-
-export function convertValuesToEmptyString(obj: any) {
-  obj = JSON.parse(JSON.stringify(obj));
-  const isObject = (value: any): boolean =>
-    value && typeof value === 'object' && !Array.isArray(value);
-  for (const key in obj) {
-    if (isObject(obj[key])) {
-      obj[key] = convertValuesToEmptyString(obj[key]);
-    } else {
-      obj[key] = '';
-    }
-  }
-
-  return obj;
 }
 
 const addresssectionFields: SectionField[] = [

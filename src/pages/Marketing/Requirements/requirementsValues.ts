@@ -3,8 +3,17 @@ import { dateFormate } from '../../../components/constants';
 import { RequirementStatus } from '../../../Interfaces/reports';
 import { validateEmail, ValidationMeta } from '../../../utils/validators';
 
+export const requestStatusOptions: RequirementStatus[] = [
+  'New Working',
+  'Submitted',
+  'Interviewed',
+  'Cancelled',
+  'Project Active',
+  'Project Inactive',
+];
+
 export const requirementFormInitialValues = {
-  reqStatus: '',
+  reqStatus: requestStatusOptions[0] || '',
   assignedTo: '',
   assignedToRef: '',
   appliedFor: '',
@@ -44,14 +53,7 @@ export const requirementFormInitialValues = {
   secondaryTech: '',
   jobDescription: '',
 };
-export const requestStatusOptions: RequirementStatus[] = [
-  'New Working',
-  'Submitted',
-  'Interviewed',
-  'Cancelled',
-  'Project Active',
-  'Project Inactive',
-];
+
 export const reqirementStatusColors: ReqirementStatusColors = {
   'New Working': '#1976D2',
   Submitted: '#4CAF50',

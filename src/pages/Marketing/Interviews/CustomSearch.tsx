@@ -17,6 +17,7 @@ type Record = {
   name: string;
   company: string;
   title: string;
+  [key: string]: any;
 };
 
 export default function CustomSearch(props: any) {
@@ -27,31 +28,31 @@ export default function CustomSearch(props: any) {
   const handleSearch = async () => {
     try {
       const query = searchRecord.trim();
-      const validSearchId = /^REQ-\d{13}$/.test(query);
       if (!query) {
-        setError('Search field cannot be empty. Please enter a search ID.');
+        setError('Please enter a search ID');
         return;
       }
-      if (!validSearchId) {
+      if (!query.includes('REQ-')) {
         setError(
-          'Invalid search ID format. Please enter a valid ID (e.g., REQ-XXXXXXXXXXXXX)'
+          'Invalid search ID format. Please enter a valid ID (e.g., REQ-XX)'
         );
         return;
       }
-      const {data} = await requirementsList(`reqID=${query}`);
-      const fetchedRecords = data.data?.results?.map((val: any) => ({
-        id: val.reqID,
-        name: val.clientPerson,
-        company: val.vendorCompany,
-        title: val.jobTitle,
-        primeVendorCompany: val.primeVendorCompany,
-        jobDescription: val.jobDescription,
-        jobTitle: val.jobTitle,
-        taxType: val.taxType,
-        duration: val.duration,
-        consultant: val.appliedFor,
-        consultantRef: val.appliedForRef,
-      }))||[];
+      const { data } = await requirementsList(`reqID=${query}`);
+      const fetchedRecords =
+        data.data?.results?.map((val: any) => ({
+          id: val.reqID,
+          name: val.clientPerson,
+          company: val.vendorCompany,
+          title: val.jobTitle,
+          primeVendorCompany: val.primeVendorCompany,
+          jobDescription: val.jobDescription,
+          jobTitle: val.jobTitle,
+          taxType: val.taxType,
+          duration: val.duration,
+          consultant: val.appliedFor,
+          consultantRef: val.appliedForRef,
+        })) || [];
       setRecords(fetchedRecords);
       setError('');
     } catch (error) {
@@ -60,14 +61,12 @@ export default function CustomSearch(props: any) {
   };
 
   const handleRecordSelect = (record: Record) => {
-    console.log('button hit--', record);
     props.onClick(record);
     props.setDrawerOpen(true);
   };
 
   return (
     <DialogContent>
-      {/* Search Section */}
       <DialogActions>
         <TextField
           label="Search Record"

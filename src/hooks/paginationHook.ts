@@ -3,7 +3,8 @@ import { GridPaginationModel } from '@mui/x-data-grid';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import { AxiosResponse } from 'axios';
 
-export const pageSizeList = [100, 500, 1000, 5000];
+export const allDoc = 100000000;
+export const pageSizeList = [100, 500, 1000, 5000, allDoc];
 export const initialPaginationModel: GridPaginationModel = {
   page: 1,
   pageSize: pageSizeList[0] || 100,
