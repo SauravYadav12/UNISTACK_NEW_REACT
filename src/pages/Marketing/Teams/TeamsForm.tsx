@@ -15,7 +15,27 @@ import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { dateFormate } from '../../../components/constants';
+import {
+  isFieldValid,
+  validateAllFields,
+  ValidationMeta,
+} from '../../../utils/validators';
+import { convertValuesToEmptyString } from '../../../utils/utils';
 
+const teamValidationMeta: ValidationMeta[] = [
+  {
+    field: 'teamName',
+    required: true,
+  },
+  {
+    field: 'contactPerson',
+    required: true,
+  },
+  {
+    field: 'phone',
+    required: true,
+  },
+];
 const initialValues = {
   teamName: '',
   contactPerson: '',
@@ -27,7 +47,10 @@ export default function TeamsForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [errors, setErrors] = useState(initialValues);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: any }>(
+    convertValuesToEmptyString(initialValues)
+  );
   const { viewData, mode, setDrawerOpen, isEditing, onEdit, setResults } =
     props;
 
@@ -40,6 +63,7 @@ export default function TeamsForm(props: any) {
         createdBy: user.firstName || '',
       }));
     }
+    setErrors(convertValuesToEmptyString(initialValues))
   }, [mode, viewData]);
 
   const handleClickOpenAlert = () => {
@@ -51,45 +75,49 @@ export default function TeamsForm(props: any) {
   };
 
   const addValue = (key: any, newValue: any) => {
-    if (key === 'createdAt') {
-      const formattedDate = newValue
-        ? dayjs(newValue).format(dateFormate)
-        : null;
-      setValues((prevValues: any) => ({
-        ...prevValues,
-        [key]: formattedDate,
-      }));
-    } else {
-      setValues((prevValues: any) => ({
-        ...prevValues,
-        [key]: newValue,
-      }));
+    const meta = teamValidationMeta.find((m) => m.field === key);
+    if (meta) {
+      if (errors[key] && isFieldValid(meta, newValue)) {
+        setErrors((pre) => ({ ...pre, [key]: '' }));
+      }
+      if (meta.transform) {
+        newValue = meta.transform(newValue);
+      }
     }
+    setValues((prevValues: any) => ({
+      ...prevValues,
+      [key]: newValue,
+    }));
   };
 
   async function handleSubmitForm(event: any) {
     event.preventDefault();
-    const newErrors: any = {};
-    if (!values.teamName) newErrors.teamName = 'Team Name is required';
-    if (!values.contactPerson)
-      newErrors.contactPerson = 'Consultant Name is required';
-    if (!values.phone) newErrors.phone = 'Phone Number is required';
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (isSubmitting) return;
+
+    const isValid = validateAllFields(teamValidationMeta, values, setErrors);
+    if (!isValid) return;
+
+    setIsSubmitting(true);
     try {
       const { data } = await createTeam(values);
       setResults((pre: any) => [data.data, ...pre]);
       setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
+    if (isSubmitting) return;
+
+    const isValid = validateAllFields(teamValidationMeta, values, setErrors);
+    if (!isValid) return;
+
+    setIsSubmitting(true);
     try {
       const { data } = await updateTeam(values._id, values);
       setResults((pre: any) => {
@@ -102,6 +130,8 @@ export default function TeamsForm(props: any) {
       setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
   async function handleDeleteTeam(_id: any) {
@@ -113,6 +143,11 @@ export default function TeamsForm(props: any) {
       console.error('An error occurred while deleting the requirement:', error);
     }
   }
+
+  const onBlur = (key: string) => {
+    const meta = teamValidationMeta.find((m) => m.field === key);
+    meta && isFieldValid(meta, values[key], setErrors);
+  };
 
   return (
     <form style={{ margin: '0 20px' }}>
@@ -222,9 +257,11 @@ export default function TeamsForm(props: any) {
           error={!!errors.teamName}
           helperText={errors.teamName}
           disabled={!isEditing}
+          onBlur={() => onBlur('teamName')}
           onChange={(event: any) => addValue('teamName', event.target.value)}
         />
         <CustomTextField
+          onBlur={() => onBlur('contactPerson')}
           label="Contact Person Name"
           width={320}
           selectedValue={values.contactPerson}
@@ -236,6 +273,7 @@ export default function TeamsForm(props: any) {
           }
         />
         <CustomTextField
+          onBlur={() => onBlur('phone')}
           label="Phone"
           width={320}
           selectedValue={values.phone}

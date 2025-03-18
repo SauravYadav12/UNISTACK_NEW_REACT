@@ -92,7 +92,6 @@ export default function CustomSearch(props: any) {
       {/* Table Section */}
       {records.length > 0 && (
         <DialogContent>
-          {/* <TableContainer component={Paper}> */}
           <Table>
             <TableHead>
               <TableRow>
@@ -113,7 +112,6 @@ export default function CustomSearch(props: any) {
                   <TableCell>
                     <Button
                       variant="contained"
-                      // onClick={props.onClick}
                       onClick={() => handleRecordSelect(record)}
                       size="small"
                       sx={{ borderRadius: '10px' }}
@@ -125,7 +123,6 @@ export default function CustomSearch(props: any) {
               ))}
             </TableBody>
           </Table>
-          {/* </TableContainer> */}
         </DialogContent>
       )}
     </DialogContent>

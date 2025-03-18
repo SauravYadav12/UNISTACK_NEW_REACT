@@ -1,7 +1,7 @@
 import { phone } from 'phone';
 import { labelizeKey } from './utils';
 export const validateEmail = (email: any) => {
-  const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 };
 export const validatePhone = (number: any) => {

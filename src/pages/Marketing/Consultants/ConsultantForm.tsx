@@ -16,6 +16,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {
   consultantStatusOptions,
+  consultantValidationMeta,
   timeZoneOptions,
   visaStatusOptions,
 } from './consultantValues';
@@ -25,6 +26,8 @@ import {
   updateConsultant,
 } from '../../../services/consultantApi';
 import { dateFormate } from '../../../components/constants';
+import { isFieldValid, validateAllFields } from '../../../utils/validators';
+import { convertValuesToEmptyString } from '../../../utils/utils';
 
 const initialValues = {
   timeZone: '',
@@ -54,12 +57,14 @@ const initialValues = {
 export default function ConsultantForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { viewData, mode, setDrawerOpen, isEditing, onEdit, setResults } =
     props;
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [projects, setProjects] = useState<any[]>([]);
-  const [errors, setErrors] = useState(initialValues);
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const [errors, setErrors] = useState<{ [key: string]: any }>(
+    convertValuesToEmptyString(initialValues)
+  );
 
   useEffect(() => {
     if (mode === 'view' && viewData) {
@@ -79,6 +84,7 @@ export default function ConsultantForm(props: any) {
         },
       ]);
     }
+    setErrors(convertValuesToEmptyString(initialValues));
   }, [viewData, mode]);
 
   const handleAddProject = () => {
@@ -97,7 +103,16 @@ export default function ConsultantForm(props: any) {
   };
 
   const addValue = (key: any, newValue: any, index?: number) => {
-    setErrors(initialValues);
+    const meta = consultantValidationMeta.find((m) => m.field === key);
+    if (meta) {
+      if (errors[key] && isFieldValid(meta, newValue)) {
+        setErrors((pre) => ({ ...pre, [key]: '' }));
+      }
+      if (meta.transform) {
+        newValue = meta.transform(newValue);
+      }
+    }
+
     if (index !== undefined) {
       setProjects((prevProjects: any) => {
         const updatedProjects = [...prevProjects];
@@ -113,33 +128,25 @@ export default function ConsultantForm(props: any) {
   };
 
   function handleChange(event: any, key: string) {
-    setErrors(initialValues);
-    setValues((prev: any) => ({ ...prev, [key]: event.target.value }));
+    // setErrors(initialValues);
+    // setValues((prev: any) => ({ ...prev, [key]: event.target.value }));
+    addValue(key, event.target.value);
   }
 
   async function handleSubmitForm(event: any) {
     event.preventDefault();
-    const newErrors: any = {};
-    if (!values.consultantStatus)
-      newErrors.consultantStatus = 'Consultant Status is required';
-    if (!values.consultantName)
-      newErrors.consultantName = 'Consultant Name is required';
-    if (!values.visaStatus) newErrors.visaStatus = 'Visa Status is required';
-    if (!values.dob) newErrors.dob = 'Date of Birth is required';
-    if (!values.currentAddress)
-      newErrors.currentAddress = 'Address is required';
-    if (!values.phone) newErrors.phone = 'Phone Number is required';
-    if (!values.email) {
-      newErrors.email = 'Email is required';
-    } else if (!emailRegex.test(values.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-    if (!values.dlNo) newErrors.dlNo = 'Driving License No is required';
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (isSubmitting) return;
+
+    const isValid = validateAllFields(
+      consultantValidationMeta,
+      values,
+      setErrors
+    );
+    if (!isValid) return;
+
+    setIsSubmitting(true);
+
     const filteredProjects = projects.filter(
       (project) =>
         project.projectName ||
@@ -160,11 +167,23 @@ export default function ConsultantForm(props: any) {
       setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
+
+    if (isSubmitting) return;
+    const isValid = validateAllFields(
+      consultantValidationMeta,
+      values,
+      setErrors
+    );
+    if (!isValid) return;
+    setIsSubmitting(true);
+
     const filteredProjects = projects.filter(
       (project) =>
         project.projectName ||
@@ -191,6 +210,8 @@ export default function ConsultantForm(props: any) {
       setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -210,6 +231,11 @@ export default function ConsultantForm(props: any) {
 
   const handleClickCloseAlert = () => {
     setOpenAlert(false);
+  };
+
+  const onBlur = (key: string) => {
+    const meta = consultantValidationMeta.find((m) => m.field === key);
+    meta && isFieldValid(meta, values[key], setErrors);
   };
 
   return (
@@ -327,6 +353,7 @@ export default function ConsultantForm(props: any) {
           onChange={(value: any) =>
             handleChange({ target: { value } }, 'consultantStatus')
           }
+          onBlur={() => onBlur('consultantStatus')}
           width={230}
         />
         <CustomTextField
@@ -339,8 +366,10 @@ export default function ConsultantForm(props: any) {
           onChange={(event: any) =>
             addValue('consultantName', event.target.value)
           }
+          onBlur={() => onBlur('consultantName')}
         />
         <CustomSelectField
+          onBlur={() => onBlur('visaStatus')}
           label="Visa Status"
           valueOptions={visaStatusOptions}
           selectedValue={values.visaStatus}
@@ -362,6 +391,7 @@ export default function ConsultantForm(props: any) {
               onChange={(newValue) => addValue('dob', newValue)}
               renderInput={(params) => (
                 <TextField
+                  onBlur={() => onBlur('dob')}
                   size="small"
                   {...params}
                   error={!!errors.dob}
@@ -395,6 +425,7 @@ export default function ConsultantForm(props: any) {
           onChange={(event: any) =>
             addValue('currentAddress', event.target.value)
           }
+          onBlur={() => onBlur('currentAddress')}
         />
         <CustomTextField
           label="Previous Address"
@@ -412,9 +443,11 @@ export default function ConsultantForm(props: any) {
           error={errors.email}
           helperText={errors.email}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('email', event.target.value)}
+          onChange={(event: any) => addValue('email', event.target.value?.toLowerCase())}
+          onBlur={() => onBlur('email')}
         />
         <CustomTextField
+          onBlur={() => onBlur('phone')}
           label="Phone"
           width={230}
           type="number"
@@ -469,6 +502,7 @@ export default function ConsultantForm(props: any) {
           error={!!errors.dlNo}
           helperText={errors.dlNo}
           disabled={!isEditing}
+          onBlur={() => onBlur('dlNo')}
           onChange={(event: any) => addValue('dlNo', event.target.value)}
         />
         <CustomTextField

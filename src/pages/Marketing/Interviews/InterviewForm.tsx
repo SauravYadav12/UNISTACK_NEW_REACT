@@ -64,6 +64,7 @@ export default function InterviewForm(props: any) {
     setDrawerOpen,
     hideButtons = false,
     setResults,
+    onCreate,
   } = props;
   const [values, setValues] = useState<any>(interviewFormInitialValues);
   const [errors, setErrors] = useState<{ [key: string]: any }>(
@@ -100,13 +101,15 @@ export default function InterviewForm(props: any) {
     }
   }, []);
 
+  useEffect(() => {
+    setErrors(convertValuesToEmptyString(interviewFormInitialValues));
+  }, [mode]);
+
   const addValue = (key: any, newValue: any) => {
-    // setErrors(interviewFormInitialValues);
     const meta = interviewValidationMeta.find((m) => m.field === key);
     if (meta) {
       if (errors[key] && isFieldValid(meta, newValue)) {
         setErrors((pre) => ({ ...pre, [key]: '' }));
-        console.log(meta, { newValue, key });
       }
       if (meta.transform) {
         newValue = meta.transform(newValue);
@@ -114,15 +117,6 @@ export default function InterviewForm(props: any) {
     }
 
     const updatedValues: any = { ...values, [key]: newValue };
-    // if (key === 'interviewDate') {
-    //   updatedValues.interviewDate = newValue
-    //     ? dayjs(newValue).format('YYYY-MM-DD')
-    //     : null;
-    // } else if (key === 'interviewTime') {
-    //   updatedValues.interviewTime = newValue
-    //     ? dayjs(newValue).format('hh:mm:ss A')
-    //     : null;
-    // }
 
     const {
       interviewWith,
@@ -156,21 +150,6 @@ export default function InterviewForm(props: any) {
 
   async function handleSubmitForm(event: any) {
     event.preventDefault();
-    // const newErrors: any = {};
-    // if (!values.interviewDate) newErrors.interviewDate = 'Date is required';
-    // if (!values.interviewTime) newErrors.interviewTime = 'Time is required';
-    // if (!values.interviewType) newErrors.interviewType = 'Type is required';
-    // if (!values.interviewWith)
-    //   newErrors.interviewWith = 'Interview with is required';
-    // if (!values.interviewViaMode)
-    //   newErrors.interviewViaMode = 'Mode is required';
-    // if (!values.interviewDuration)
-    //   newErrors.interviewDuration = 'Duration is required';
-
-    // if (Object.keys(newErrors).length > 0) {
-    //   setErrors(newErrors);
-    //   return;
-    // }
 
     if (isSubmitting) return;
 
@@ -186,6 +165,7 @@ export default function InterviewForm(props: any) {
       const { data } = await createInterview(values);
       setResults((pre: any) => [data.data, ...pre]);
       setDrawerOpen(false);
+      onCreate();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {

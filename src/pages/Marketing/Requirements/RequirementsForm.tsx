@@ -84,6 +84,7 @@ export default function RequirementsForm(props: any) {
 
   useEffect(() => {
     setFile(undefined);
+    setErrors(convertValuesToEmptyString(requirementFormInitialValues));
   }, [mode]);
 
   const handleCopyRequirement = () => {
@@ -106,7 +107,7 @@ export default function RequirementsForm(props: any) {
     delete copy._id;
     delete copy.__v;
     setValues({ ...copy });
-    setErrors(requirementFormInitialValues);
+    setErrors(convertValuesToEmptyString(requirementFormInitialValues));
   };
 
   function handleFileChange(e?: React.ChangeEvent<HTMLInputElement>) {
@@ -268,7 +269,7 @@ export default function RequirementsForm(props: any) {
   };
 
   const handleEmail = (event: any, field: any) => {
-    const value = event.target.value;
+    const value: string = event.target.value?.toLowerCase();
     addValue(field, value);
   };
 

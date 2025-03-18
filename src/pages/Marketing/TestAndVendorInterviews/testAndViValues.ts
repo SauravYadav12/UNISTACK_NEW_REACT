@@ -1,4 +1,7 @@
+import dayjs from 'dayjs';
+import { dateFormate, timeFormate } from '../../../components/constants';
 import { InterviewStatus } from '../../../Interfaces/reports';
+import { ValidationMeta } from '../../../utils/validators';
 
 export const timeZoneOptions = ['EST', 'CST', 'MST', 'PST'];
 
@@ -10,8 +13,8 @@ export const intTypeOptions = [
 ];
 
 export const intStatusOptions: InterviewStatus[] = [
-  'Interview Confirm',
   'Interview Tentative',
+  'Interview Confirm',
   'Interview Cancelled',
   'Interview Completed',
   'Interview Re-Scheduled',
@@ -72,3 +75,36 @@ export const paymentStatusOptions = ['Paid', 'Not Paid'];
 type InterviewStatusColors = {
   [key in InterviewStatus]: string;
 };
+
+export const vendorInterviewValidationMeta: ValidationMeta[] = [
+  {
+    field: 'interviewDate',
+    required: true,
+    transform(value: any) {
+      return value ? dayjs(value).format(dateFormate) : null;
+    },
+  },
+  {
+    field: 'interviewTime',
+    required: true,
+    transform(value: any) {
+      return value ? dayjs(value).format(timeFormate) : null;
+    },
+  },
+  {
+    field: 'interviewType',
+    required: true,
+  },
+  {
+    field: 'interviewWith',
+    required: true,
+  },
+  {
+    field: 'interviewViaMode',
+    required: true,
+  },
+  {
+    field: 'interviewDuration',
+    required: true,
+  },
+];
