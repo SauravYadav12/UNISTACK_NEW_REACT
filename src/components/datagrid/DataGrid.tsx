@@ -22,9 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
-
-
-export const  pageSizeList=[100,500,1000,5000]
+import { allDoc, pageSizeList } from '../../hooks/paginationHook';
 
 interface CustomPaginationProps {
   paginateState: PaginateState;
@@ -72,7 +70,7 @@ function CustomPagination({
         >
           {pageSizeList.map((l) => (
             <MenuItem key={l} value={l}>
-              {l}
+              {l >= allDoc ? 'All' : l}
             </MenuItem>
           ))}
         </Select>

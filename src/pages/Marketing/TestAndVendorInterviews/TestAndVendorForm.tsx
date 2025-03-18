@@ -28,6 +28,7 @@ import {
   paymentStatusOptions,
   resultOptions,
   timeZoneOptions,
+  vendorInterviewValidationMeta,
 } from './testAndViValues';
 import {
   createVendorInterview,
@@ -35,12 +36,14 @@ import {
   updateVendorInterview,
 } from '../../../services/vendorInterviewApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { convertValuesToEmptyString } from '../../../utils/utils';
+import { isFieldValid, validateAllFields } from '../../../utils/validators';
 
 const initialValues = {
   timeShift: '',
   timeZone: '',
   interviewType: '',
-  interviewStatus: '',
+  interviewStatus: intStatusOptions[0] || '',
   interviewWith: '',
   intResult: '',
   interviewRound: '',
@@ -84,7 +87,10 @@ export default function InterviewForm(props: any) {
     setDrawerOpen,
     setResults,
   } = props;
-  const [errors, setErrors] = useState(initialValues);
+  const [errors, setErrors] = useState<{ [key: string]: any }>(
+    convertValuesToEmptyString(initialValues)
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -110,20 +116,20 @@ export default function InterviewForm(props: any) {
     if (mode === 'view') {
       setValues(viewData);
     }
+    setErrors(convertValuesToEmptyString(initialValues));
   }, [mode]);
 
   const addValue = (key: any, newValue: any) => {
-    setErrors(initialValues);
-    const updatedValues: any = { ...values, [key]: newValue };
-    if (key === 'interviewDate') {
-      updatedValues.interviewDate = newValue
-        ? dayjs(newValue).format(dateFormate)
-        : null;
-    } else if (key === 'interviewTime') {
-      updatedValues.interviewTime = newValue
-        ? dayjs(newValue).format(timeFormate)
-        : null;
+    const meta = vendorInterviewValidationMeta.find((m) => m.field === key);
+    if (meta) {
+      if (errors[key] && isFieldValid(meta, newValue)) {
+        setErrors((pre) => ({ ...pre, [key]: '' }));
+      }
+      if (meta.transform) {
+        newValue = meta.transform(newValue);
+      }
     }
+    const updatedValues: any = { ...values, [key]: newValue };
     const {
       interviewWith,
       interviewDuration,
@@ -133,42 +139,53 @@ export default function InterviewForm(props: any) {
       vendorCompany,
       primeVendorCompany,
     }: any = updatedValues;
-    if (interviewWith === 'Vendor/IMP/PV') {
-      updatedValues.subjectLine = `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}_Interview_With_Vendor/IMP/PV_${vendorCompany}`;
-    } else if (interviewWith === 'Vendor/IMP/PV') {
-      updatedValues.subjectLine = `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}_Interview_With_Vendor/IMP/PV_${primeVendorCompany}`;
-    }
+    const iSubLine = `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}`;
+    // if (interviewWith === 'Vendor/IMP/PV') {
+    updatedValues.subjectLine = `${iSubLine}_Interview_With_Vendor/IMP/PV_${
+      vendorCompany || ''
+    }`;
+    // } else if (interviewWith === 'Vendor/IMP/PV') {
+    //   updatedValues.subjectLine = `${iSubLine}_Interview_With_Vendor/IMP/PV_${primeVendorCompany}`;
+    // }
     setValues(updatedValues);
   };
 
   async function handleSubmitForm(event: any) {
     event.preventDefault();
-    const newErrors: any = {};
-    if (!values.interviewDate) newErrors.interviewDate = 'Date is required';
-    if (!values.interviewTime) newErrors.interviewTime = 'Time is required';
-    if (!values.interviewType) newErrors.interviewType = 'Type is required';
-    if (!values.interviewViaMode)
-      newErrors.interviewViaMode = 'Mode is required';
-    if (!values.interviewDuration)
-      newErrors.interviewDuration = 'Duration is required';
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (isSubmitting) return;
 
+    const isValid = validateAllFields(
+      vendorInterviewValidationMeta,
+      values,
+      setErrors
+    );
+    if (!isValid) return;
+
+    setIsSubmitting(true);
     try {
       const { data } = await createVendorInterview(values);
       setResults((pre: any) => [data.data, ...pre]);
       setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
     console.log('Interview Form submitted successfully', values);
   }
 
   async function handleEditSubmitForm(event: any) {
     event.preventDefault();
+
+    if (isSubmitting) return;
+    const isValid = validateAllFields(
+      vendorInterviewValidationMeta,
+      values,
+      setErrors
+    );
+    if (!isValid) return;
+    setIsSubmitting(true);
     console.log('Edit submit button clicked');
     try {
       const { data } = await updateVendorInterview(values._id, values);
@@ -182,6 +199,8 @@ export default function InterviewForm(props: any) {
       setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -196,8 +215,7 @@ export default function InterviewForm(props: any) {
   }
 
   function handleChange(event: any, key: string) {
-    setErrors(initialValues);
-    setValues((prev: any) => ({ ...prev, [key]: event.target.value }));
+    addValue(key, event.target.value);
   }
 
   const handleClickOpenAlert = () => {
@@ -206,6 +224,11 @@ export default function InterviewForm(props: any) {
 
   const handleClickCloseAlert = () => {
     setOpenAlert(false);
+  };
+
+  const onBlur = (key: string) => {
+    const meta = vendorInterviewValidationMeta.find((m) => m.field === key);
+    meta && isFieldValid(meta, values[key], setErrors);
   };
 
   return (
@@ -237,8 +260,8 @@ export default function InterviewForm(props: any) {
               color="primary"
               type="button"
               onClick={() => {
-                setValues(viewData)
-                onEdit(false)
+                setValues(viewData);
+                onEdit(false);
               }}
               size="small"
               sx={{ borderRadius: '10px' }}
@@ -322,6 +345,7 @@ export default function InterviewForm(props: any) {
               onChange={(newValue) => addValue('interviewDate', newValue)}
               renderInput={(params) => (
                 <TextField
+                  onBlur={() => onBlur('interviewDate')}
                   size="small"
                   {...params}
                   error={!!errors.interviewDate}
@@ -361,6 +385,7 @@ export default function InterviewForm(props: any) {
               onChange={(newValue) => addValue('interviewTime', newValue)}
               renderInput={(params) => (
                 <TextField
+                  onBlur={() => onBlur('interviewTime')}
                   size="small"
                   {...params}
                   error={!!errors.interviewTime}
@@ -398,6 +423,7 @@ export default function InterviewForm(props: any) {
         />
         <CustomSelectField
           label="Interview Type"
+          onBlur={() => onBlur('interviewType')}
           valueOptions={intTypeOptions}
           selectedValue={values.interviewType}
           error={errors.interviewType}
@@ -454,6 +480,7 @@ export default function InterviewForm(props: any) {
         />
         <CustomTextField
           label="Interview With"
+          // onBlur={() => onBlur('interviewWith')}
           // valueOptions={intWithOptions}
           selectedValue={values.interviewWith}
           // error={errors.interviewWith}
@@ -503,6 +530,7 @@ export default function InterviewForm(props: any) {
         />
         <CustomSelectField
           label="Interview via Mode"
+          onBlur={() => onBlur('interviewViaMode')}
           valueOptions={intModeOptions}
           selectedValue={values.interviewViaMode}
           error={errors.interviewViaMode}
@@ -524,6 +552,7 @@ export default function InterviewForm(props: any) {
           disabled={!isEditing}
         />
         <CustomSelectField
+          onBlur={() => onBlur('interviewDuration')}
           label="Interview Duration"
           valueOptions={intDurationOptions}
           selectedValue={values.interviewDuration}

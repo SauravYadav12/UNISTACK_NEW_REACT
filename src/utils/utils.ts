@@ -157,3 +157,18 @@ export const labelizeKey = (key: string) =>
       i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
     )
     .join(' ');
+
+export function convertValuesToEmptyString(obj: any) {
+  obj = JSON.parse(JSON.stringify(obj));
+  const isObject = (value: any): boolean =>
+    value && typeof value === 'object' && !Array.isArray(value);
+  for (const key in obj) {
+    if (isObject(obj[key])) {
+      obj[key] = convertValuesToEmptyString(obj[key]);
+    } else {
+      obj[key] = '';
+    }
+  }
+
+  return obj;
+}

@@ -32,7 +32,7 @@ interface Iprops {
   archiveState: [boolean, (s: boolean) => void];
 }
 export default function Interviews(props: Iprops) {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
@@ -49,7 +49,7 @@ export default function Interviews(props: Iprops) {
     setPaginationModel,
     setGridData,
     reload,
-    setResults
+    setResults,
   } = usePagination(
     {
       queryFunction: archive ? getArchiveInterviews : getInterviews,
@@ -146,9 +146,16 @@ export default function Interviews(props: Iprops) {
     setMode('add');
     setIsEditing(true);
   };
+  const clearReqFromParams = () => {
+    setSearchParams((pre) => {
+      pre.delete('createInterviewByReq');
+      return pre;
+    });
+  };
 
   const handleCloseForm = () => {
     setDrawerOpen(false);
+    clearReqFromParams();
   };
   const handleClickOpen = () => {
     setOpenDialog(true);
@@ -157,7 +164,7 @@ export default function Interviews(props: Iprops) {
     setOpenDialog(false);
   };
   const handleEdit = (editMode: boolean) => {
-    setIsEditing(()=>editMode);
+    setIsEditing(() => editMode);
     setMode(editMode ? 'edit' : 'view');
   };
 
@@ -266,6 +273,7 @@ export default function Interviews(props: Iprops) {
         title={formTitle}
       >
         <InterviewForm
+          onCreate={clearReqFromParams}
           setResults={setResults}
           hideButtons={archive}
           handleCloseForm={handleCloseForm}

@@ -10,7 +10,6 @@ import { UserProfile } from '../../../Interfaces/profile';
 import { toast } from 'react-toastify';
 import {
   Android12Switch,
-  convertValuesToEmptyString,
   DocumentSectionField,
   FormSections,
   SectionField,
@@ -20,6 +19,7 @@ import AddressField from '../../../components/profile/formFields/addressField/Ad
 import RenderFields from '../../../components/profile/formFields/RenderFields';
 import DocumentsField from '../../../components/profile/formFields/DocumentsField';
 import { uploadFile } from '../../../services/storageApi';
+import { convertValuesToEmptyString } from '../../../utils/utils';
 
 const ProfileForm = ({
   viewMode,
@@ -33,10 +33,9 @@ const ProfileForm = ({
 }: MyProps) => {
   const [myProfile, setMyProfile] = useState<UserProfile>(template);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState<UserProfile>(() => {
-    const templateCopy = convertValuesToEmptyString(template) as UserProfile;
-    return templateCopy;
-  });
+  const [formErrors, setFormErrors] = useState<UserProfile>(
+    convertValuesToEmptyString(template) as UserProfile
+  );
   const [selectedBlobFiles, setSelectedBlobFiles] = React.useState<
     SelectedBlobFiles[]
   >([]);

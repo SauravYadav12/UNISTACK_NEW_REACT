@@ -27,14 +27,13 @@ export default function CustomSearch(props: any) {
   const handleSearch = async () => {
     try {
       const query = searchRecord.trim();
-      const validSearchId = /^REQ-\d{13}$/.test(query);
       if (!query) {
-        setError('Search field cannot be empty. Please enter a search ID.');
+        setError('Please enter a search ID.');
         return;
       }
-      if (!validSearchId) {
+      if (!query.includes('REQ-')) {
         setError(
-          'Invalid search ID format. Please enter a valid ID (e.g., REQ-XXXXXXXXXXXXX)'
+          'Invalid search ID format. Please enter a valid ID (e.g., REQ-XX)'
         );
         return;
       }

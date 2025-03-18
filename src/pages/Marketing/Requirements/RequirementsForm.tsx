@@ -29,7 +29,7 @@ import {
   updateRequirement,
 } from '../../../services/requirementApi';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import { getIUser } from '../../../utils/utils';
+import { convertValuesToEmptyString, getIUser } from '../../../utils/utils';
 import { SelectedFile } from '../../../components/profile/formFields/DocumentsField';
 import { AttachFile } from '@mui/icons-material';
 import { uploadFile } from '../../../services/storageApi';
@@ -48,7 +48,7 @@ export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
   const [file, setFile] = useState<File>();
   const [errors, setErrors] = useState<{ [key: string]: any }>(
-    requirementFormInitialValues
+    convertValuesToEmptyString(requirementFormInitialValues)
   );
   const [comment, setComment] = useState<any>('');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -73,7 +73,7 @@ export default function RequirementsForm(props: any) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setValues(viewData);
+    mode === 'view' && setValues(viewData);
     mode === 'add' &&
       setValues((pre: any) => ({
         ...pre,
@@ -84,6 +84,7 @@ export default function RequirementsForm(props: any) {
 
   useEffect(() => {
     setFile(undefined);
+    setErrors(convertValuesToEmptyString(requirementFormInitialValues));
   }, [mode]);
 
   const handleCopyRequirement = () => {
@@ -106,7 +107,7 @@ export default function RequirementsForm(props: any) {
     delete copy._id;
     delete copy.__v;
     setValues({ ...copy });
-    setErrors(requirementFormInitialValues);
+    setErrors(convertValuesToEmptyString(requirementFormInitialValues));
   };
 
   function handleFileChange(e?: React.ChangeEvent<HTMLInputElement>) {
@@ -268,7 +269,7 @@ export default function RequirementsForm(props: any) {
   };
 
   const handleEmail = (event: any, field: any) => {
-    const value = event.target.value;
+    const value: string = event.target.value?.toLowerCase();
     addValue(field, value);
   };
 
@@ -698,7 +699,9 @@ export default function RequirementsForm(props: any) {
               ? values?.mComment
                   ?.filter((comment: any) => comment.comment.trim())
                   .map((comment: any, i: number) => {
-                    const label=`${comment.username} . ${dayjs(comment.date).format(dateFormate+' '+timeFormate)}`
+                    const label = `${comment.username} . ${dayjs(
+                      comment.date
+                    ).format(dateFormate + ' ' + timeFormate)}`;
                     return (
                       <CustomTextField
                         key={i}
