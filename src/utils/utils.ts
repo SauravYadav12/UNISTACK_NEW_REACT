@@ -1,5 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
-import { iUser } from '../Interfaces/iUser';
+import { iUser, jUser } from '../Interfaces/iUser';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -15,6 +15,12 @@ export const getIUser = () => {
   const json = localStorage.getItem('user');
   if (!json) return;
   return JSON.parse(json) as iUser;
+};
+export const getJUser = () => {
+  const i = getIUser();
+  if (!i) return;
+  const j: jUser = { ...i, _id: i.id };
+  return j;
 };
 
 export function isTokenExpired() {

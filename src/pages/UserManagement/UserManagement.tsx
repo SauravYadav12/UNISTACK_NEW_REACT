@@ -17,7 +17,7 @@ import { usersList } from '../../services/authApi';
 import ActiveUserSwitch from '../../components/userManagement/ActiveUserSwitch';
 import PositionedSnackbar from '../../components/snackbar/Snackbar';
 import moment from 'moment';
-import BasicSelect from '../../components/userManagement/UserRoleSelect';
+import UserRoleSelect from '../../components/userManagement/UserRoleSelect';
 import CanEditSwitch from '../../components/userManagement/canEditSwitch';
 import CustomDrawer from '../../components/drawer/CustomDrawer';
 import ProfileForm from '../Marketing/Profile/ProfileForm';
@@ -30,6 +30,7 @@ import { UserProfile } from '../../Interfaces/profile';
 import { getProfileByUser } from '../../services/userProfileApi';
 import { toast } from 'react-toastify';
 import { dateFormate, timeFormate } from '../../components/constants';
+import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
 
 interface CustomCard {
   color: string;
@@ -105,8 +106,22 @@ function UserManagement() {
         width: 100,
         type: 'actions',
         renderCell: (params: any) => (
-          <BasicSelect
+          <UserRoleSelect
             setRole={params.row.role}
+            userId={params.row._id}
+            setOpen={setOpen}
+            setAlertMessage={setAlertMessage}
+          />
+        ),
+      },
+      {
+        field: 'shift',
+        headerName: 'Shift',
+        width: 100,
+        type: 'actions',
+        renderCell: (params: any) => (
+          <UserShiftSelect
+            shift={params.row.shift}
             userId={params.row._id}
             setOpen={setOpen}
             setAlertMessage={setAlertMessage}

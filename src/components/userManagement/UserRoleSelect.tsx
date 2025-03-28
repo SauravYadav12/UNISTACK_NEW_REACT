@@ -5,7 +5,7 @@ import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { updateUser } from '../../services/authApi';
 
-export default function BasicSelect({
+export default function UserRoleSelect({
   setRole,
   userId,
   setAlertMessage,

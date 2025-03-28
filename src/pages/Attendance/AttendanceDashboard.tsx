@@ -1,0 +1,303 @@
+import { Box, Grid, IconButton, MenuItem, Select, Theme } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import AttendanceGridMonthly from '../../components/attendance/AttendanceGridMonthly';
+import AttendanceSummary from '../../components/attendance/AttendanceSummary';
+import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
+import { usersList } from '../../services/authApi';
+import { getJUser } from '../../utils/utils';
+import WeeklyAttendanceTable from '../../components/attendance/WeeklyAttendence';
+import MonthlyAttendanceTable from '../../components/attendance/MonthlyAttendanceTable';
+import DailyAttendanceTable from '../../components/attendance/DailyAttendanceTable';
+import ChartCardWrapper from '../../components/dashboard/ChartCardWrapper';
+import CheckInCheckOut from '../../components/attendance/CheckInCheckOut';
+import { iUseAttendance, useAttendance } from '../../hooks/attendanceHook';
+import dayjs, { OpUnitType } from 'dayjs';
+import { dateFormate, timeFormate } from '../../components/constants';
+import { useFetchData } from '../../hooks/fetchDataHook';
+import { Sync } from '@mui/icons-material';
+import { dateByUserShift } from '../../utils/dateUtil';
+import AttendanceExportModal from '../../components/attendance/AttendanceExportModal';
+
+const AttendanceDashboard = () => {
+  const [exportModal, setExportModal] = useState(false);
+  const usersListState = useFetchData<jUser>(fetchUsers, []);
+  const { data: users } = usersListState;
+  const [currentUser, setCurrentUser] = useState<jUser>(getJUser()!);
+
+  const currentUserTodaysAttendance = useAttendance(
+    {
+      users: [currentUser],
+    },
+    [currentUser]
+  );
+
+  const attendanceGridMonthlyDateState = useState(
+    new Date(dateByUserShift(getJUser()!.shift))
+  );
+  const currentUserMonthlyAttendance = useAttendance(
+    {
+      users: [currentUser],
+      fromDate: dayjs(attendanceGridMonthlyDateState[0])
+        .startOf('month')
+        .format(dateFormate),
+      toDate: dayjs(attendanceGridMonthlyDateState[0])
+        .endOf('month')
+        .format(dateFormate),
+    },
+    [currentUser, attendanceGridMonthlyDateState[0]]
+  );
+
+  const userWiseAttendanceOptions = Object.values(AttendanceOption);
+  const [userWiseAttendanceOption, setUserWiseAttendanceOption] = useState(
+    userWiseAttendanceOptions[0]
+  );
+
+  const optionBasedAttendanceDateState = useState(
+    new Date(dateByUserShift(getJUser()!.shift))
+  );
+
+  const { fromDate, toDate } = iDates(optionBasedAttendanceDateState[0]);
+
+  const usersWiseOptionBasedAttendance = useAttendance(
+    {
+      users: users || [],
+      fromDate,
+      toDate,
+    },
+    [users, optionBasedAttendanceDateState[0]]
+  );
+
+  function iDates(date: Date | string) {
+    if (userWiseAttendanceOption === AttendanceOption.Daily) {
+      const d = dayjs(date).toString();
+      return { fromDate: d, toDate: d };
+    }
+
+    let unit: OpUnitType = 'week';
+    if (userWiseAttendanceOption === AttendanceOption.Monthly) {
+      unit = 'month';
+    }
+
+    const fromDate = dayjs(date).startOf(unit).toString();
+    const toDate = dayjs(date).endOf(unit).toString();
+    return { fromDate, toDate };
+  }
+
+  function handleChangeAttendance(att: iAttendance) {
+    const updateState = (hook: iUseAttendance) => {
+      const { setResults } = hook;
+      setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
+    };
+    const hooks = [
+      currentUserMonthlyAttendance,
+      currentUserTodaysAttendance,
+      usersWiseOptionBasedAttendance,
+    ];
+    for (const hook of hooks) {
+      updateState(hook);
+    }
+  }
+
+  async function fetchUsers() {
+    const { data } = await usersList();
+    const { users } = data;
+    return users;
+  }
+
+  function reload() {
+    usersListState.loadData();
+    currentUserTodaysAttendance.loadData();
+    currentUserMonthlyAttendance.loadData();
+    usersWiseOptionBasedAttendance.loadData();
+  }
+
+  useEffect(() => {
+    optionBasedAttendanceDateState[1](
+      new Date(iDates(dateByUserShift(getJUser()!.shift)).fromDate)
+    );
+  }, [userWiseAttendanceOption]);
+
+  return (
+    <Box>
+      <Box
+        sx={{
+          py: 1,
+          my: 2,
+          display: 'flex',
+          rowGap: '15px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <Box>
+          {!usersListState.loading && (
+            <Select
+              // readOnly
+              labelId="month-dd"
+              id="month-dd"
+              value={currentUser?._id}
+              size="small"
+              onChange={(e) => {
+                const selected = users?.find((u) => u._id === e.target.value)!;
+                setCurrentUser(selected);
+              }}
+            >
+              {users?.map((o, i) => {
+                return (
+                  <MenuItem key={i} value={o._id}>
+                    {o.firstName + ' ' + o.lastName}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          )}
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              columnGap: 1,
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+            }}
+          >
+            <Box sx={{ height: 'fit-content', display: 'flex', columnGap: 2 }}>
+              {!currentUserTodaysAttendance.loading && (
+                <CheckInCheckOut
+                  user={currentUser}
+                  date={new Date(dateByUserShift(getJUser()!.shift))}
+                  attendance={currentUserTodaysAttendance.attendance[0]}
+                  onChange={handleChangeAttendance}
+                />
+              )}
+
+              <AttendanceExportModal
+                open={exportModal}
+                onOpen={() => setExportModal(true)}
+                onClose={() => setExportModal(false)}
+                users={users}
+              />
+            </Box>
+            <div>
+              <IconButton onClick={reload}>
+                <Sync color="primary" />
+              </IconButton>
+            </div>
+          </Box>
+        </Box>{' '}
+      </Box>
+      <Grid container spacing={3}>
+        <Grid item xs={12} lg={8}>
+          <AttendanceGridMonthly
+            user={currentUser}
+            attendanceState={currentUserMonthlyAttendance}
+            dateState={attendanceGridMonthlyDateState}
+          />
+        </Grid>
+        <Grid item xs={12} lg={4} pt={0}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <AttendanceSummary />
+            </Grid>
+            <Grid item xs={12}>
+              <AttendanceSummary />
+              {/* <MonthlyProgress /> */}
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+
+      {users?.length && (
+        <Box sx={{ py: 1, my: 2 }}>
+          <UserWiseAttendanceList
+            dateState={optionBasedAttendanceDateState}
+            users={users}
+            attendanceState={usersWiseOptionBasedAttendance}
+            onChangeAttendance={handleChangeAttendance}
+            onChangeOption={setUserWiseAttendanceOption}
+            options={userWiseAttendanceOptions}
+            selectedOption={userWiseAttendanceOption}
+          />
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+export default AttendanceDashboard;
+
+enum AttendanceOption {
+  Daily = 'Daily',
+  Weekly = 'Weekly',
+  Monthly = 'Monthly',
+}
+interface UserWiseAttendanceListProps {
+  dateState: [Date, React.Dispatch<React.SetStateAction<Date>>];
+  options: AttendanceOption[];
+  selectedOption: AttendanceOption;
+  onChangeOption: (option: AttendanceOption) => void;
+  users: jUser[];
+  attendanceState: iUseAttendance;
+  onChangeAttendance?: (a: iAttendance) => void;
+}
+
+function UserWiseAttendanceList({
+  dateState,
+  users,
+  attendanceState,
+  selectedOption,
+  options,
+  onChangeAttendance,
+  onChangeOption,
+}: UserWiseAttendanceListProps) {
+  return (
+    <ChartCardWrapper
+      title={selectedOption + ' ' + 'Attendance'}
+      action={
+        <Select
+          value={selectedOption}
+          size="small"
+          onChange={(e) => {
+            onChangeOption(e.target.value as any);
+          }}
+        >
+          {options.map((o, i) => {
+            return (
+              <MenuItem key={i} value={o}>
+                {o}
+              </MenuItem>
+            );
+          })}
+        </Select>
+      }
+    >
+      <>
+        {selectedOption === AttendanceOption.Daily && (
+          <DailyAttendanceTable
+            dateState={dateState}
+            users={users || []}
+            attendanceState={attendanceState}
+            onChange={onChangeAttendance}
+          />
+        )}
+        {selectedOption === AttendanceOption.Weekly && (
+          <WeeklyAttendanceTable
+            users={users}
+            attendanceState={attendanceState}
+            dateState={dateState}
+          />
+        )}
+        {selectedOption === AttendanceOption.Monthly && (
+          <MonthlyAttendanceTable
+            users={users}
+            attendanceState={attendanceState}
+            dateState={dateState}
+          />
+        )}
+      </>
+    </ChartCardWrapper>
+  );
+}
