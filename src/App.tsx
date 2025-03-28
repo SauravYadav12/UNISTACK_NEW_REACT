@@ -20,6 +20,9 @@ import UserManagement from './pages/UserManagement/UserManagement';
 import TestAndVendorInterviews from './pages/Marketing/TestAndVendorInterviews/TestAndVendorInterviews';
 import InterviewTabs from './components/interview/InterviewTabs';
 import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
+import AttendanceDashboard from './pages/Attendance/AttendanceDashboard';
+import MyAttendance from './pages/Attendance/MyAttendance';
+import { UserRole } from './Interfaces/iUser';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -37,6 +40,22 @@ function App() {
               </ProtectedRoute>
             }
           >
+            <Route
+              path="attendance/dashboard"
+              element={
+                <ProtectedRoute allow={[UserRole.hr, UserRole['super-admin']]}>
+                  <AttendanceDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="attendance/my-attendance"
+              element={
+                <ProtectedRoute>
+                  <MyAttendance />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="dashboard"
               element={

@@ -11,6 +11,8 @@ type Props = {
   headsubtitle?: string | JSX.Element;
   children?: JSX.Element;
   middlecontent?: string | JSX.Element;
+  boxShadow?: boolean;
+  p?: string;
 };
 
 const ChartCardWrapper = ({
@@ -23,9 +25,15 @@ const ChartCardWrapper = ({
   headtitle,
   headsubtitle,
   middlecontent,
+  boxShadow = true,
+  p = '30px',
 }: Props) => {
   return (
-    <Card sx={{ padding: 0 }} variant={undefined}>
+    <Card
+      sx={{ padding: 0 }}
+      variant={undefined}
+      style={{ height: '100%', ...(!boxShadow && { boxShadow: 'none' }) }}
+    >
       {cardheading ? (
         <CardContent>
           <Typography variant="h5">{headtitle}</Typography>
@@ -34,39 +42,37 @@ const ChartCardWrapper = ({
           </Typography>
         </CardContent>
       ) : (
-        <CardContent sx={{ p: '30px' }}>
-          {title ? (
-            <Stack
-              direction="row"
-              spacing={2}
-              justifyContent="space-between"
-              alignItems={'center'}
-              mb={'18px'}
-            >
-              <Box>
-                {title ? (
-                  <Typography
-                    variant="h6"
-                    fontWeight={600}
-                    fontFamily={`'Plus Jakarta Sans','Plus Jakarta Sans Fallback',Helvetica,Arial,sans-serif`}
-                  >
-                    {title}
-                  </Typography>
-                ) : (
-                  ''
-                )}
+        <CardContent sx={{ p }}>
+          <Stack
+            direction="row"
+            spacing={2}
+            justifyContent="space-between"
+            alignItems={'center'}
+            mb={'18px'}
+          >
+            <Box>
+              {title ? (
+                <Typography
+                  variant="h6"
+                  fontWeight={600}
+                  fontFamily={`'Plus Jakarta Sans','Plus Jakarta Sans Fallback',Helvetica,Arial,sans-serif`}
+                >
+                  {title}
+                </Typography>
+              ) : (
+                ''
+              )}
 
-                {subtitle ? (
-                  <Typography variant="subtitle2" color="textSecondary">
-                    {subtitle}
-                  </Typography>
-                ) : (
-                  ''
-                )}
-              </Box>
-              {action}
-            </Stack>
-          ) : null}
+              {subtitle ? (
+                <Typography variant="subtitle2" color="textSecondary">
+                  {subtitle}
+                </Typography>
+              ) : (
+                ''
+              )}
+            </Box>
+            {action}
+          </Stack>
 
           {children}
         </CardContent>

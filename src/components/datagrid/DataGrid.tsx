@@ -23,6 +23,8 @@ import {
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import { allDoc, pageSizeList } from '../../hooks/paginationHook';
+import { getJUser } from '../../utils/utils';
+import { UserRole } from '../../Interfaces/iUser';
 
 interface CustomPaginationProps {
   paginateState: PaginateState;
@@ -107,6 +109,7 @@ interface CustomToolbarProps {
 }
 function CustomToolbar({ archiveState }: CustomToolbarProps) {
   const [checked, cb, prop] = archiveState || [];
+  const archivePermission = [UserRole['super-admin'], UserRole.admin];
   return (
     <GridToolbarContainer>
       <GridToolbarColumnsButton />
@@ -114,7 +117,7 @@ function CustomToolbar({ archiveState }: CustomToolbarProps) {
         slotProps={{ tooltip: { title: 'Change density' } }}
       />
       <GridToolbarFilterButton />
-      {archiveState && (
+      {archivePermission.includes(getJUser()!.role) && archiveState && (
         <FormControlLabel
           control={<Switch checked={!!checked} disabled={prop?.disabled} />}
           label={`Archive`}

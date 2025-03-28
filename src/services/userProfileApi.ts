@@ -4,7 +4,7 @@ import { UserProfile } from '../Interfaces/profile';
 import { iUser } from '../Interfaces/iUser';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
-const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
+export const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
 export async function createProfile(
   userId: string,

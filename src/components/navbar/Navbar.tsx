@@ -16,21 +16,17 @@ import { drawerWidth, smallDrawerWidth } from '../constants';
 import './navbar.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { iUser } from '../../Interfaces/iUser';
+import { iUser, UserRole } from '../../Interfaces/iUser';
 import { logout } from '../../services/authApi';
-
-const pages = ['Attendance', 'Leaves'];
-const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
+import { getJUser } from '../../utils/utils';
 
 function Navbar({ sidebar, toggleSideBar }: any) {
+  const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
+  const pages = [{ title: 'Leaves', route: '/leaves' }];
   const [width, setWidth] = React.useState(drawerWidth);
   const navigate = useNavigate();
   const { myProfile, getMyProfile, validateLogout } = useAuth();
   const user: iUser = JSON.parse(localStorage.getItem('user') || '{}');
-
-  React.useEffect(() => {
-    toggleSideBar ? setWidth(smallDrawerWidth) : setWidth(drawerWidth);
-  }, [toggleSideBar]);
 
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
@@ -39,6 +35,10 @@ function Navbar({ sidebar, toggleSideBar }: any) {
     null
   );
   const open = Boolean(anchorElAdmin);
+
+  React.useEffect(() => {
+    toggleSideBar ? setWidth(smallDrawerWidth) : setWidth(drawerWidth);
+  }, [toggleSideBar]);
 
   const handleClickAdmin = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorElAdmin(event.currentTarget);
@@ -51,7 +51,7 @@ function Navbar({ sidebar, toggleSideBar }: any) {
     sidebar();
   };
 
-  const handleSetting = async(setting: String) => {
+  const handleSetting = async (setting: String) => {
     if (setting.toLowerCase() === 'logout') {
       validateLogout();
       navigate(`/`);
@@ -89,7 +89,7 @@ function Navbar({ sidebar, toggleSideBar }: any) {
         color="transparent"
         className="header"
       >
-        <Container maxWidth="xl" style={{background:'#ffffffde'}}>
+        <Container maxWidth="xl" style={{ background: '#ffffffde' }}>
           <Toolbar disableGutters>
             <Typography component={'span'} onClick={handleSidebar}>
               <ListItemButton>
@@ -97,14 +97,16 @@ function Navbar({ sidebar, toggleSideBar }: any) {
               </ListItemButton>
             </Typography>
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+              <AttendenceMenu />
+
               {pages.map((page) => (
                 <Button
-                  key={page}
-                  onClick={() => {}}
+                  key={page.title}
+                  onClick={() => navigate(page.route)}
                   sx={{ my: 2, color: 'black', display: 'block' }}
                   className="nav-heading"
                 >
-                  {page}
+                  {page.title}
                 </Button>
               ))}
               {user.role === 'super-admin' && (
@@ -138,16 +140,11 @@ function Navbar({ sidebar, toggleSideBar }: any) {
                 </Box>
               )}
             </Box>
-
             <Box sx={{ flexGrow: 0, marginRight: '10px' }}>
               <Typography textAlign="center">
                 Welcome, {user.firstName}{' '}
               </Typography>
             </Box>
-
-            {/* <Box sx={{ paddingTop: "8px" }}>
-              <NotificationsNoneIcon />
-            </Box> */}
 
             <Box sx={{ flexGrow: 0, marginLeft: '10px' }}>
               <Tooltip title="Open settings">
@@ -187,3 +184,72 @@ function Navbar({ sidebar, toggleSideBar }: any) {
   );
 }
 export default Navbar;
+
+function AttendenceMenu() {
+  const navigate = useNavigate();
+  const options = [
+    { title: 'My Attendance', route: '/attendance/my-attendance' },
+    {
+      title: 'Dashboard',
+      route: '/attendance/dashboard',
+      allow: [UserRole['super-admin'], UserRole.hr],
+    },
+  ];
+
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  return (
+    <>
+      <Button
+        id="attendance-button"
+        aria-controls={open ? 'attendance-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? 'true' : undefined}
+        sx={{ my: 2, color: 'black', display: 'block' }}
+        className="nav-heading"
+        onClick={handleClick}
+      >
+        Attendance
+      </Button>
+      <Menu
+        id="attendance-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          'aria-labelledby': 'attendance-button',
+        }}
+      >
+        {options.map((o, i) => {
+          const myRole = getJUser()?.role;
+          if (o.allow&&(
+            !myRole ||
+            !o.allow?.includes(myRole) ||
+            myRole !== UserRole['super-admin'])
+          )
+            return;
+          return (
+            <MenuItem
+              key={i}
+              onClick={() => {
+                handleClose();
+                navigate(o.route);
+              }}
+            >
+              {o.title}
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </>
+  );
+}
+
+

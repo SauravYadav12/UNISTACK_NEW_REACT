@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { getDashboardReport } from '../../services/reportsApi';
 import TodaysInterviews from '../../components/dashboard/TodaysInterviews';
 import ChartsGrid from './ChartsGrid';
+
 interface CustomCard {
   color: string;
   title: string;

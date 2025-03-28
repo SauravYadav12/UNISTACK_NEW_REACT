@@ -3,9 +3,12 @@ import { UserProfile } from '../Interfaces/profile';
 import { getIUser, isTokenExpired } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';
 import { toast } from 'react-toastify';
+import { syncUserOnLocalStorage} from '../services/authApi';
 
 const AuthContext = createContext({
   isAuthenticated: false,
+  isAttendanceMarked: false,
+  setIsAttendanceMarked(s) {},
   validateLogin: (token: string) => {},
   validateLogout: () => {},
   myProfile: undefined,
@@ -17,12 +20,14 @@ export const AuthContextProvider = ({ children }: any) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem('token') && !isTokenExpired()
   );
+  const [isAttendanceMarked, setIsAttendanceMarked] = useState(false);
   const [myProfile, setMyProfile] = useState<UserProfile>();
 
   const validateLogin = (token: string) => {
     localStorage.setItem('token', token);
     setIsAuthenticated(true);
   };
+
   function validateLogout() {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
@@ -30,6 +35,7 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const getMyProfile = async () => {
     try {
+      syncUserOnLocalStorage();
       const iUser = getIUser()!;
       const profile = await getProfileByUser(iUser);
       if (!profile) {
@@ -45,6 +51,8 @@ export const AuthContextProvider = ({ children }: any) => {
   return (
     <AuthContext.Provider
       value={{
+        isAttendanceMarked,
+        setIsAttendanceMarked,
         isAuthenticated,
         validateLogin,
         validateLogout,
@@ -61,6 +69,8 @@ export const AuthContextProvider = ({ children }: any) => {
 export const useAuth = () => useContext(AuthContext);
 
 interface DefaultContextValue {
+  isAttendanceMarked: boolean;
+  setIsAttendanceMarked: (s: boolean) => void;
   isAuthenticated: boolean;
   validateLogin: (token: string) => void;
   validateLogout: () => void;
