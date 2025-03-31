@@ -16,9 +16,12 @@ import { drawerWidth, smallDrawerWidth } from '../constants';
 import './navbar.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { iUser, UserRole } from '../../Interfaces/iUser';
+import { iAttendance, iUser, UserRole } from '../../Interfaces/iUser';
 import { logout } from '../../services/authApi';
 import { getJUser } from '../../utils/utils';
+import CheckInCheckOut from '../attendance/CheckInCheckOut';
+import { useAttendance } from '../../hooks/attendanceHook';
+import { dateByUserShift } from '../../utils/dateUtil';
 
 function Navbar({ sidebar, toggleSideBar }: any) {
   const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
@@ -140,6 +143,9 @@ function Navbar({ sidebar, toggleSideBar }: any) {
                 </Box>
               )}
             </Box>
+            <Box sx={{ flexGrow: 0, marginRight: '20px' }}>
+              <AttendancePopUp />
+            </Box>
             <Box sx={{ flexGrow: 0, marginRight: '10px' }}>
               <Typography textAlign="center">
                 Welcome, {user.firstName}{' '}
@@ -229,10 +235,11 @@ function AttendenceMenu() {
       >
         {options.map((o, i) => {
           const myRole = getJUser()?.role;
-          if (o.allow&&(
-            !myRole ||
-            !o.allow?.includes(myRole) ||
-            myRole !== UserRole['super-admin'])
+          if (
+            o.allow &&
+            (!myRole ||
+              !o.allow?.includes(myRole) ||
+              myRole !== UserRole['super-admin'])
           )
             return;
           return (
@@ -252,4 +259,28 @@ function AttendenceMenu() {
   );
 }
 
+function AttendancePopUp() {
+  const me = getJUser();
+  const { myAttendanceState } = useAuth();
+  if (!myAttendanceState || !me) return null;
+  const { loading, error, attendance, setResults } = myAttendanceState;
 
+  const dateState = React.useState(dateByUserShift(me.shift));
+
+  function handleChange(att: iAttendance) {
+    setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
+  }
+
+  if (loading || error) return null;
+
+  return (
+    <CheckInCheckOut
+      buttonSize="small"
+      allowAutomaticPopUp
+      user={me}
+      date={dateState[0]}
+      onChange={handleChange}
+      attendance={attendance[0]}
+    />
+  );
+}

@@ -7,12 +7,11 @@ import {
   DialogTitle,
 } from '@mui/material';
 import { toast } from 'react-toastify';
-import dayjs from 'dayjs';
 import { dateFormate } from '../constants';
 import { iAttendance, jUser } from '../../Interfaces/iUser';
 import { markAttendance, updateAttendance } from '../../services/attendanceApi';
 import { getJUser } from '../../utils/utils';
-import { handleAttendanceStatus } from '../../utils/dateUtil';
+import { dateByUserShift, handleAttendanceStatus } from '../../utils/dateUtil';
 export const autoOpenAttendanceModalKey =
   'automatically_open_mark_attendance_modal';
 
@@ -72,7 +71,7 @@ const MarkAttendanceModal = ({
               ? 'Start your day by quickly marking your attendance.'
               : `Mark Attendance for ${user.firstName + ' ' + user.lastName}`}
             <br />
-            Date: {dayjs(new Date()).format(dateFormate)}
+            Date: {dateByUserShift(getJUser()!.shift).format(dateFormate)}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -90,7 +89,7 @@ export default MarkAttendanceModal;
 
 interface MarkAttendanceModalProps {
   user: jUser;
-  date: Date;
+  date: string;
   state: [boolean, (s: boolean) => void];
   attendence?: iAttendance;
   onMark?: (a: iAttendance) => void;

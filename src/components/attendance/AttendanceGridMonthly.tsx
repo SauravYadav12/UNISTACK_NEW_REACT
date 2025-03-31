@@ -1,16 +1,17 @@
-import { Select, MenuItem, Box, CircularProgress} from '@mui/material';
+import { Select, MenuItem, Box, CircularProgress } from '@mui/material';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
 import React from 'react';
 import { Grid, Typography, IconButton } from '@mui/material';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { jUser } from '../../Interfaces/iUser';
-import dayjs from 'dayjs';
+// import dayjs from 'dayjs';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 
 import SyncIcon from '@mui/icons-material/Sync';
 import AttendanceStatusBox from './AttendanceStatusBox';
+import moment, { Moment } from 'moment';
 const AttendanceCalendarRoot = styled('div')(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   borderRadius: theme.shape.borderRadius,
@@ -53,7 +54,7 @@ const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 interface iProps {
   user: jUser;
   attendanceState: iUseAttendance;
-  dateState: [Date, React.Dispatch<React.SetStateAction<Date>>];
+  dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
 }
 
 const AttendanceGridMonthly = ({
@@ -64,27 +65,27 @@ const AttendanceGridMonthly = ({
   const { attendance, loading, error, loadData } = attendanceState;
   const [currentDate, setCurrentDate] = dateState;
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const year = currentDate.year();
+  const month = currentDate.month();
+  const daysInMonth = currentDate.daysInMonth();
+  const firstDayOfMonth = currentDate.clone().startOf('month').day(); // 0 for Sunday, 6 for Saturday
 
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
+    setCurrentDate(currentDate.clone().subtract(1, 'month').startOf('month'));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
+    setCurrentDate(currentDate.clone().add(1, 'month').startOf('month'));
   };
 
   const handleYear = (y: number) => {
-    setCurrentDate(new Date(new Date(currentDate).setFullYear(y)));
+    setCurrentDate(currentDate.clone().year(y));
   };
 
-  const getAttendance = (date: Date) => {
+  const getAttendance = (date: Moment) => {
     const att = attendance.find(
       (item) =>
-        dayjs(item.date).format(dateFormate) === dayjs(date).format(dateFormate)
+        moment(item.date).format(dateFormate) === moment(date).format(dateFormate)
     );
     return att;
   };
@@ -106,7 +107,7 @@ const AttendanceGridMonthly = ({
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
+      const date = currentDate.clone().date(day);
       days.push(
         <DateCell item key={date.toISOString()}>
           <AttendanceStatusBox
@@ -149,9 +150,9 @@ const AttendanceGridMonthly = ({
         <Select
           labelId="month-dd"
           id="month-dd"
-          value={currentDate.getFullYear()}
+          value={currentDate.year()}
           size="small"
-          onChange={(e) => handleYear(e.target.value as number)}
+          onChange={(e) => handleYear(Number(e.target.value))}
         >
           {getYearsList().map((o, i) => {
             return (
@@ -173,13 +174,17 @@ const AttendanceGridMonthly = ({
             <ArrowLeft />
           </IconButton>
           <Typography variant="h6">
-            {new Intl.DateTimeFormat('en-US', { month: 'long' }).format(
+            {/* {new Intl.DateTimeFormat('en-US', { month: 'long' }).format(
               currentDate
-            )}
+            )} */}
+             {currentDate.format('MMMM')}
           </Typography>
           <IconButton
-            disabled={dayjs(currentDate).isAfter(
-              new Date().setMonth(new Date().getMonth() - 1)
+            // disabled={dayjs(currentDate).isAfter(
+            //   new Date().setMonth(new Date().getMonth() - 1)
+            // )}
+            disabled={currentDate.isAfter(
+              moment().subtract(1, 'month').endOf('month')
             )}
             onClick={handleNextMonth}
           >

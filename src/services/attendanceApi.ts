@@ -24,7 +24,7 @@ export async function getAttendance(query = '') {
 }
 export async function markAttendance(
   user: jUser,
-  date: Date | string,
+  date:string,
   status: AttendanceStatus
 ) {
   const token = await getJwtToken();

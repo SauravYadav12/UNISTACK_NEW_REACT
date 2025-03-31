@@ -21,6 +21,8 @@ import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import Sync from '@mui/icons-material/Sync';
 import AttendanceStatusBox from './AttendanceStatusBox';
+import { Moment } from 'moment';
+import moment from 'moment';
 
 const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
   display: 'flex',
@@ -34,7 +36,7 @@ const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
 interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
-  dateState: [Date, React.Dispatch<React.SetStateAction<Date>>];
+  dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
 }
 const MonthlyAttendanceTable = ({
   users,
@@ -44,30 +46,31 @@ const MonthlyAttendanceTable = ({
   const theme = useTheme();
   const [currentDate, setCurrentDate] = dateState;
   const { attendance, loading, loadData, error } = attendanceState;
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
+  const year = currentDate.year();
+  const month = currentDate.month(); // 0-indexed
+  const daysInMonth = currentDate.daysInMonth();
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
+    setCurrentDate(currentDate.clone().subtract(1, 'month').startOf('month'));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
+    setCurrentDate(currentDate.clone().add(1, 'month').startOf('month'));
   };
 
   const getMonthDays = () => {
-    const days = [];
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
+    const days: Moment[] = [];
+    const startOfMonth = currentDate.clone().startOf('month');
+    for (let i = 0; i < daysInMonth; i++) {
+      days.push(startOfMonth.clone().add(i, 'day'));
     }
     return days;
   };
-  const getAttendance = (date: Date, userRef: string) => {
+
+  const getAttendance = (date: Moment, userRef: string) => {
     const att = attendance.find(
       (item) =>
-        dayjs(item.date).format(dateFormate) ===
-          dayjs(date).format(dateFormate) && userRef === item?.userRef
+        moment(item.date).format(dateFormate) === date.format(dateFormate) &&
+        userRef === item?.userRef
     );
     return att;
   };
@@ -115,7 +118,8 @@ const MonthlyAttendanceTable = ({
             {monthDays.map((date) => (
               <TableCell key={date.toISOString()} align="center" padding="none">
                 <Typography variant="caption">
-                  {String(date.getDate()).padStart(2, '0')}
+                  {/* {String(date.getDate()).padStart(2, '0')} */}
+                  {date.format('DD')}
                 </Typography>
               </TableCell>
             ))}
@@ -154,10 +158,11 @@ const MonthlyAttendanceTable = ({
       p={'0px'}
       boxShadow={false}
       //   title="Monthly Attendance"
-      subtitle={new Intl.DateTimeFormat('en-US', {
-        month: 'long',
-        year: 'numeric',
-      }).format(currentDate)}
+      subtitle={currentDate.format('MMMM YYYY')}
+      // subtitle={new Intl.DateTimeFormat('en-US', {
+      //   month: 'long',
+      //   year: 'numeric',
+      // }).format(currentDate)}
       action={
         <div>
           <IconButton onClick={handlePrevMonth} size="small">
@@ -166,9 +171,13 @@ const MonthlyAttendanceTable = ({
           <IconButton
             onClick={handleNextMonth}
             size="small"
-            disabled={dayjs(currentDate).isAfter(
-              new Date().setMonth(new Date().getMonth() - 1)
+            disabled={currentDate.isAfter(
+              moment().subtract(1, 'month').endOf('month'),
+              'month'
             )}
+            // disabled={dayjs(currentDate).isAfter(
+            //   new Date().setMonth(new Date().getMonth() - 1)
+            // )}
           >
             <ArrowRight />
           </IconButton>

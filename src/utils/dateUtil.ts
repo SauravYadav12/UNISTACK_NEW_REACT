@@ -1,6 +1,7 @@
 import { AttendanceStatus, UserShift } from './../Interfaces/iUser';
-import mz from 'moment-timezone';
-import { dateFormate, timeFormate } from '../components/constants';
+import mz, { Moment } from 'moment-timezone';
+import moment from 'moment';
+import { getJUser } from './utils';
 
 export enum TimeZone {
   PST = 'America/Los_Angeles',
@@ -10,7 +11,7 @@ export enum TimeZone {
   IST = 'Asia/Kolkata',
 }
 
-export function handleZone(shift: UserShift, date: Date | string = new Date()) {
+export function handleZone(shift: UserShift, date: Moment = moment()) {
   let tz = TimeZone.IST;
   if (shift === UserShift.US) {
     tz = TimeZone.EST;
@@ -18,26 +19,24 @@ export function handleZone(shift: UserShift, date: Date | string = new Date()) {
   return mz(date).tz(tz);
 }
 
-export function dateByUserShift(
-  shift: UserShift,
-  date: Date | string = new Date()
-) {
-  return handleZone(shift, date).format(dateFormate);
+export function dateByUserShift(shift: UserShift, date: Moment = moment()) {
+  return handleZone(shift, date);
 }
 
-export function timeByUserShift(
-  shift: UserShift,
-  date: Date | string = new Date()
-) {
-  return handleZone(shift, date).format(timeFormate);
+export function timeByUserShift(shift: UserShift, date: Moment = moment()) {
+  return handleZone(shift, date);
 }
 
-export function handleAttendanceStatus(shift: UserShift, date: Date=new Date()) {
-  const h = shift === UserShift.US ? 18 : 10;
-  const m = shift === UserShift.US ? 30 : 0;
-  const workingHourStart = new Date();
-  workingHourStart.setHours(h, m, 0, 0);
-  const delayInMilliseconds = date.getTime() - workingHourStart.getTime();
+export function handleAttendanceStatus(
+  shift: UserShift,
+  date: Moment = dateByUserShift(getJUser()!.shift)
+) {
+  const { h, m } = shift === UserShift.US ? { h: 9, m: 0 } : { h: 10, m: 0 };
+  const workingHourStart = date.clone();
+  workingHourStart.hour(h).minute(m).second(0).millisecond(0);
+
+  // Calculate the delay in milliseconds
+  const delayInMilliseconds = date.valueOf() - workingHourStart.valueOf();
   const delayInMinutes = Math.round(delayInMilliseconds / (1000 * 60));
 
   const presentThresholdMinutes = 15;
@@ -60,3 +59,8 @@ export function handleAttendanceStatus(shift: UserShift, date: Date=new Date()) 
   return;
 }
 
+export function getTimeZoneKey(zone: string) {
+  for (const [key, iZone] of Object.entries(TimeZone)) {
+    if (zone === iZone) return key;
+  }
+}

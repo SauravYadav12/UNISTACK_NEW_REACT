@@ -34,12 +34,24 @@ export async function login(data: any) {
   return response;
 }
 export async function logout() {
+  const clearSession = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  };
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
   };
-  const iuser = getIUser();
-  if (!iuser) return;
+  let json = localStorage.getItem('user');
+  if (!json) {
+    clearSession();
+    return;
+  }
+  const iuser = JSON.parse(json) as iUser;
+  if (!iuser.id) {
+    clearSession();
+    return;
+  }
   const { ip, location } = await myIpGeoLocation();
   const data = {
     location,
@@ -49,6 +61,7 @@ export async function logout() {
   const response = await axios.post(`${BASE_URL}/users/logout`, data, {
     headers,
   });
+  clearSession();
   return response;
 }
 

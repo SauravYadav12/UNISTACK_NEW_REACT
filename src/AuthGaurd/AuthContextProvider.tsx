@@ -1,14 +1,14 @@
 import { createContext, useContext, useState } from 'react';
 import { UserProfile } from '../Interfaces/profile';
-import { getIUser, isTokenExpired } from '../utils/utils';
+import { getIUser, getJUser, isTokenExpired } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';
 import { toast } from 'react-toastify';
-import { syncUserOnLocalStorage} from '../services/authApi';
+import { syncUserOnLocalStorage } from '../services/authApi';
+import { iUseAttendance, useAttendance } from '../hooks/attendanceHook';
 
 const AuthContext = createContext({
   isAuthenticated: false,
-  isAttendanceMarked: false,
-  setIsAttendanceMarked(s) {},
+  myAttendanceState: undefined,
   validateLogin: (token: string) => {},
   validateLogout: () => {},
   myProfile: undefined,
@@ -20,7 +20,12 @@ export const AuthContextProvider = ({ children }: any) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem('token') && !isTokenExpired()
   );
-  const [isAttendanceMarked, setIsAttendanceMarked] = useState(false);
+
+  const me = getJUser()!;
+  const myAttendanceState = useAttendance({
+    users: [me],
+  });
+
   const [myProfile, setMyProfile] = useState<UserProfile>();
 
   const validateLogin = (token: string) => {
@@ -51,8 +56,7 @@ export const AuthContextProvider = ({ children }: any) => {
   return (
     <AuthContext.Provider
       value={{
-        isAttendanceMarked,
-        setIsAttendanceMarked,
+        myAttendanceState,
         isAuthenticated,
         validateLogin,
         validateLogout,
@@ -69,8 +73,7 @@ export const AuthContextProvider = ({ children }: any) => {
 export const useAuth = () => useContext(AuthContext);
 
 interface DefaultContextValue {
-  isAttendanceMarked: boolean;
-  setIsAttendanceMarked: (s: boolean) => void;
+  myAttendanceState?: iUseAttendance;
   isAuthenticated: boolean;
   validateLogin: (token: string) => void;
   validateLogout: () => void;
