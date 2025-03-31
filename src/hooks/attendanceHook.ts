@@ -3,27 +3,37 @@ import { iAttendance, jUser } from '../Interfaces/iUser';
 import { getAttendance } from '../services/attendanceApi';
 import { dateByUserShift } from '../utils/dateUtil';
 import { getJUser } from '../utils/utils';
+import { dateFormate } from '../components/constants';
+import moment from 'moment';
 
 export function useAttendance(
   para: AttendancePara,
   dependencies?: any[]
 ): iUseAttendance {
-  const defaultDate = dateByUserShift(getJUser()!.shift);
-  const { users, fromDate = defaultDate, toDate = defaultDate } = para;
+  const me = getJUser();
+  const defaultDate = me
+    ? dateByUserShift(me.shift).format(dateFormate)
+    : moment().format(dateFormate);
+  const {
+    users,
+    fromDate = defaultDate,
+    toDate = defaultDate,
+    fetchDataIf = true,
+  } = para;
   const [attendance, setAttendance] = useState<iAttendance[]>([]);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   function makeQuery() {
     let q = `fromDate=${fromDate}&toDate=${toDate}`;
-    for (const { _id } of users) {
+    for (const { _id } of users || []) {
       q = q + `&userRef=${_id}`;
     }
     return q;
   }
 
   const loadData = async () => {
-    if (loading) return;
+    if (loading || !fetchDataIf || !me) return;
     try {
       setError('');
       setLoading(true);
@@ -57,7 +67,8 @@ export interface iUseAttendance {
   setResults: React.Dispatch<React.SetStateAction<iAttendance[]>>;
 }
 interface AttendancePara {
-  users: jUser[];
+  users?: jUser[];
   fromDate?: string;
   toDate?: string;
+  fetchDataIf?: boolean;
 }

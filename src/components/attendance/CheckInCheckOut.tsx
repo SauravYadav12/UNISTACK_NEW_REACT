@@ -7,8 +7,17 @@ import MarkAttendanceModal, {
 import MarkCheckoutTimeModal from '../dashboard/MarkCheckoutTimeModal';
 import { handleAttendanceStatus } from '../../utils/dateUtil';
 import { getJUser } from '../../utils/utils';
+import { Moment } from 'moment';
+import { dateFormate } from '../constants';
 
-const CheckInCheckOut = ({ user, attendance, date, onChange }: iProps) => {
+const CheckInCheckOut = ({
+  user,
+  attendance,
+  date,
+  allowAutomaticPopUp,
+  buttonSize = 'medium',
+  onChange,
+}: iProps) => {
   const [todaysAttendance, setTodaysAttendance] = React.useState<
     iAttendance | undefined
   >(attendance);
@@ -20,7 +29,8 @@ const CheckInCheckOut = ({ user, attendance, date, onChange }: iProps) => {
     todaysAttendance.status !== AttendanceStatus.Absent;
   const isTimeApplicable = !!handleAttendanceStatus(user.shift);
   const [openMarkAttendanceModal, setOpenMarkAttendanceModal] = React.useState(
-    !!localStorage.getItem(autoOpenAttendanceModalKey) &&
+    !!allowAutomaticPopUp &&
+      !!localStorage.getItem(autoOpenAttendanceModalKey) &&
       !todaysAttendance &&
       getJUser()!._id === user._id &&
       isTimeApplicable
@@ -37,7 +47,16 @@ const CheckInCheckOut = ({ user, attendance, date, onChange }: iProps) => {
   }, [attendance]);
 
   if (!isTimeApplicable) return null;
-
+  const bStyle = {
+    borderRadius: '10px',
+    ...(buttonSize === 'small' && {
+      '&.MuiButtonBase-root': {
+        padding: '2px 4px',
+        fontSize: 'xx-small',
+        borderRadius: '4px',
+      },
+    }),
+  };
   return (
     <>
       {ableToMarkAttendance && (
@@ -46,9 +65,7 @@ const CheckInCheckOut = ({ user, attendance, date, onChange }: iProps) => {
             variant="contained"
             color="primary"
             size="small"
-            sx={{
-              borderRadius: '10px',
-            }}
+            sx={bStyle}
             onClick={() => setOpenMarkAttendanceModal(true)}
           >
             Mark Attendance
@@ -56,7 +73,7 @@ const CheckInCheckOut = ({ user, attendance, date, onChange }: iProps) => {
 
           <MarkAttendanceModal
             user={user}
-            date={date}
+            date={date.format(dateFormate)}
             state={[openMarkAttendanceModal, setOpenMarkAttendanceModal]}
             onMark={handleChange}
             attendence={attendance}
@@ -70,9 +87,7 @@ const CheckInCheckOut = ({ user, attendance, date, onChange }: iProps) => {
             variant="contained"
             color="primary"
             size="small"
-            sx={{
-              borderRadius: '10px',
-            }}
+            sx={bStyle}
             onClick={() => setOpenCheckoutModal(true)}
           >
             Check out
@@ -92,7 +107,9 @@ export default CheckInCheckOut;
 
 interface iProps {
   user: jUser;
-  date: Date;
+  date: Moment;
   attendance: iAttendance;
+  allowAutomaticPopUp?: boolean;
+  buttonSize?: 'small' | 'medium';
   onChange?: (a: iAttendance) => void;
 }

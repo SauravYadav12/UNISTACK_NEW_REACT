@@ -3,6 +3,8 @@ import { useTheme } from '@mui/material/styles';
 import { Box, Tooltip, Typography } from '@mui/material';
 import { timeByUserShift } from '../../utils/dateUtil';
 import { getJUser } from '../../utils/utils';
+import { timeFormate } from '../constants';
+import moment from 'moment';
 interface iProps {
   attendance?: iAttendance;
   label?: string;
@@ -26,7 +28,7 @@ const AttendanceStatusBox = ({ attendance, label }: iProps) => {
         color: theme.palette.error.contrastText,
       }),
       ...(status === AttendanceStatus['Half-Day'] && {
-        backgroundColor: theme.palette.grey[400],
+        backgroundColor: theme.palette.secondary.light,
         color: theme.palette.error.contrastText,
       }),
     };
@@ -42,7 +44,10 @@ const AttendanceStatusBox = ({ attendance, label }: iProps) => {
           <>
             <br />
             <Typography variant="caption">
-              Check In: {timeByUserShift(getJUser()!.shift, checkIn)}
+              Check In:{' '}
+              {timeByUserShift(getJUser()!.shift, moment(checkIn)).format(
+                timeFormate + ' z'
+              )}
             </Typography>
           </>
         )}
@@ -50,7 +55,10 @@ const AttendanceStatusBox = ({ attendance, label }: iProps) => {
           <>
             <br />
             <Typography variant="caption">
-              Check Out: {timeByUserShift(getJUser()!.shift, checkOut)}
+              Check Out:{' '}
+              {timeByUserShift(getJUser()!.shift, moment(checkOut)).format(
+                timeFormate + ' z'
+              )}
             </Typography>
           </>
         )}

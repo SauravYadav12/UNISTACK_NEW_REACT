@@ -8,9 +8,10 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { dateFormate, timeFormate } from '../constants';
-import dayjs from 'dayjs';
 import { iAttendance } from '../../Interfaces/iUser';
 import { updateAttendance } from '../../services/attendanceApi';
+import { dateByUserShift } from '../../utils/dateUtil';
+import { getJUser } from '../../utils/utils';
 
 const MarkCheckoutTimeModal = ({
   state,
@@ -53,7 +54,10 @@ const MarkCheckoutTimeModal = ({
           <DialogContentText id="alert-dialog-description">
             Please mark your checkout time to complete your workday.
             <br />
-            Date: {dayjs(new Date()).format(dateFormate + ' ' + timeFormate)}
+            Date:{' '}
+            {dateByUserShift(getJUser()!.shift).format(
+              dateFormate + ' ' + timeFormate + ' z'
+            )}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

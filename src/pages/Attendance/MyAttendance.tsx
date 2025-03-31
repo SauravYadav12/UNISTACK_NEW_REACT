@@ -4,21 +4,20 @@ import ChartCardWrapper from '../../components/dashboard/ChartCardWrapper';
 import DailyAttendanceTable from '../../components/attendance/DailyAttendanceTable';
 import CheckInCheckOut from '../../components/attendance/CheckInCheckOut';
 import { iAttendance } from '../../Interfaces/iUser';
-import { useAttendance } from '../../hooks/attendanceHook';
 
 import SyncIcon from '@mui/icons-material/Sync';
 import { useState } from 'react';
 import { dateByUserShift } from '../../utils/dateUtil';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 const MyAttendance = () => {
   const me = getJUser()!;
-  const myAttendanceState = useAttendance({
-    users: [me],
-  });
+  const { myAttendanceState } = useAuth();
+  if (!myAttendanceState) return null;
   const { loading, error, attendance, setResults, loadData } =
     myAttendanceState;
 
-  const dateState = useState(new Date(dateByUserShift(me.shift)));
+  const dateState = useState(dateByUserShift(me.shift));
 
   function handleChange(att: iAttendance) {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
@@ -63,6 +62,9 @@ const MyAttendance = () => {
                 onChange={handleChange}
                 attendance={attendance[0]}
               />
+              <IconButton onClick={loadData} sx={{ml:1}}>
+                <SyncIcon color="primary" />
+              </IconButton>
             </Box>
           }
         >

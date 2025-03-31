@@ -2,6 +2,7 @@ import { jwtDecode } from 'jwt-decode';
 import { iUser, jUser } from '../Interfaces/iUser';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import { logout } from '../services/authApi';
 
 export const getJwtToken = async () => {
   if (isTokenExpired()) {
@@ -13,7 +14,10 @@ export const getJwtToken = async () => {
 
 export const getIUser = () => {
   const json = localStorage.getItem('user');
-  if (!json) return;
+  if (!json) {
+    logout();
+    return;
+  }
   return JSON.parse(json) as iUser;
 };
 export const getJUser = () => {

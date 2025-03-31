@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import {
   Table,
   TableBody,
@@ -12,6 +15,9 @@ import {
   CircularProgress,
   MenuItem,
   Select,
+  TextField,
+  Stack,
+  Popover,
 } from '@mui/material';
 
 import SyncIcon from '@mui/icons-material/Sync';
@@ -23,7 +29,7 @@ import {
   jUser,
   UserRole,
 } from '../../Interfaces/iUser';
-import dayjs from 'dayjs';
+// import dayjs from 'dayjs';
 import { markAttendance, updateAttendance } from '../../services/attendanceApi';
 import { toast } from 'react-toastify';
 import { getJUser } from '../../utils/utils';
@@ -35,11 +41,16 @@ import {
   timeByUserShift,
 } from '../../utils/dateUtil';
 import AttendanceStatusBox from './AttendanceStatusBox';
+import { dateFormate, timeFormate } from '../constants';
+import moment, { Moment } from 'moment';
+import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+// import moment from 'moment';
 
 interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
-  dateState: [Date, React.Dispatch<React.SetStateAction<Date>>];
+  dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   forEmployee?: boolean;
   onChange?: (a: iAttendance) => void;
 }
@@ -53,15 +64,11 @@ const DailyAttendanceTable = ({
   const [currentDate, setCurrentDate] = dateState;
   const { attendance, error, loading, loadData } = attendanceState;
   function nextDay() {
-    const newStartDate = new Date(currentDate);
-    newStartDate.setDate(newStartDate.getDate() + 1);
-    setCurrentDate(newStartDate);
+    setCurrentDate(currentDate.clone().add(1, 'day'));
   }
 
   function preDay() {
-    const newStartDate = new Date(currentDate);
-    newStartDate.setDate(newStartDate.getDate() - 1);
-    setCurrentDate(newStartDate);
+    setCurrentDate(currentDate.clone().subtract(1, 'day'));
   }
 
   function MyTableBody() {
@@ -125,7 +132,7 @@ const DailyAttendanceTable = ({
                     }}
                   >
                     <div>
-                    <AttendanceStatusBox  attendance={att} />
+                      <AttendanceStatusBox attendance={att} />
                     </div>
 
                     <AttendanceForm
@@ -139,16 +146,37 @@ const DailyAttendanceTable = ({
                 </Box>
               </TableCell>
               <TableCell align="center">
-                <Typography variant="subtitle2" color="textSecondary">
-                  {att?.checkIn && status !== AttendanceStatus.Absent
-                    ? timeByUserShift(getJUser()!.shift, att.checkIn)
-                    : 'NA'}
-                </Typography>
+                <Stack
+                  direction={'row'}
+                  display={'flex'}
+                  justifyContent={'center'}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    alignContent={'center'}
+                  >
+                    {att?.checkIn && status !== AttendanceStatus.Absent
+                      ? timeByUserShift(
+                          getJUser()!.shift,
+                          moment(att.checkIn)
+                        ).format(timeFormate + ' z')
+                      : 'NA'}
+                  </Typography>
+                  {/* <TimePickerButton
+                    value={moment(att?.checkIn)}
+                    label=""
+                    onChange={(t) => console.log(t)}
+                  /> */}
+                </Stack>
               </TableCell>
               <TableCell align="center">
                 <Typography variant="subtitle2" color="textSecondary">
                   {att?.checkOut && status !== AttendanceStatus.Absent
-                    ? timeByUserShift(getJUser()!.shift, att.checkOut)
+                    ? timeByUserShift(
+                        getJUser()!.shift,
+                        moment(att.checkOut)
+                      ).format(timeFormate + ' z')
                     : 'NA'}
                 </Typography>
               </TableCell>
@@ -163,12 +191,13 @@ const DailyAttendanceTable = ({
     <ChartCardWrapper
       p={'0px'}
       boxShadow={false}
-      subtitle={new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }).format(currentDate)}
+      // subtitle={new Intl.DateTimeFormat('en-US', {
+      //   weekday: 'long',
+      //   year: 'numeric',
+      //   month: 'long',
+      //   day: 'numeric',
+      // }).format(currentDate)}
+      subtitle={currentDate.format('dddd, YYYY MMMM DD')}
       action={
         <>
           {!forEmployee && (
@@ -179,10 +208,11 @@ const DailyAttendanceTable = ({
               <IconButton
                 onClick={nextDay}
                 size="small"
-                disabled={dayjs(currentDate).isAfter(
-                  new Date().setDate(
-                    new Date(dateByUserShift(getJUser()!.shift)).getDate() - 1
-                  )
+                // disabled={dayjs(currentDate).isAfter(
+                //   dayjs(currentDate)
+                // )}
+                disabled={currentDate.isAfter(
+                  dateByUserShift(getJUser()!.shift).subtract(1, 'day')
                 )}
               >
                 <ArrowRight />
@@ -218,7 +248,7 @@ const DailyAttendanceTable = ({
 export default DailyAttendanceTable;
 
 interface AttendanceFormProps {
-  date: Date;
+  date: Moment;
   attendance?: iAttendance;
   user: jUser;
   forEmployee?: boolean;
@@ -247,7 +277,7 @@ function AttendanceForm({
         ? updateAttendance(attendance._id, {
             status: newStatus,
           })
-        : markAttendance(user, date, newStatus));
+        : markAttendance(user, date.format(dateFormate), newStatus));
       data.data && onChange && onChange(data.data);
     } catch (error) {
       setStatus(preStatus);
@@ -311,12 +341,12 @@ function AttendanceSwitch({
   const canEditRoles = [UserRole['super-admin'], UserRole.hr];
   const isTimeApplicable = !!handleAttendanceStatus(user.shift);
   const disabled = forEmployee
-    ? status === AttendanceStatus.Present && isTimeApplicable
+    ? status !== AttendanceStatus.Absent && isTimeApplicable
     : !canEditRoles.includes(getJUser()!.role) &&
       status !== AttendanceStatus.Absent;
 
   function getStatus() {
-    if (status === AttendanceStatus.Present) return AttendanceStatus.Absent;
+    if (!!status&&status!=AttendanceStatus.Absent) return AttendanceStatus.Absent;
     if (forEmployee) {
       return handleAttendanceStatus(user.shift);
     }
@@ -343,3 +373,53 @@ function AttendanceSwitch({
     />
   );
 }
+
+interface TimePickerButtonProps {
+  value: Moment | null;
+  onChange: (newValue: Moment | null) => void;
+  label?: string;
+}
+
+const TimePickerButton: React.FC<TimePickerButtonProps> = ({
+  value,
+  onChange,
+  label,
+}) => {
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  return (
+    <LocalizationProvider dateAdapter={AdapterMoment}>
+      
+      <Box sx={{ mx: 1 }}>
+        <IconButton
+          onClick={handleClick}
+          aria-label={label || 'Open time picker'}
+        >
+          <AccessTimeIcon />
+        </IconButton>
+        {/* <div
+        
+        > */}
+          <TimePicker
+            open={open}
+            onClose={handleClose}
+            value={value}
+            onChange={onChange}
+            label={label}
+            // renderInput={() => <></>} // Don't render the input field
+            renderInput={(params) => <TextField {...params} sx={{visibility:'',h:0,w:0}} />}
+            inputFormat="HH:mm" // Optional: Set the format for internal handling
+          />
+        {/* </div> */}
+      </Box>
+    </LocalizationProvider>
+  );
+};

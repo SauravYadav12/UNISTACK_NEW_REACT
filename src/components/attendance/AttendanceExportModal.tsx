@@ -18,6 +18,9 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { getAttendance } from '../../services/attendanceApi';
 import { toast } from 'react-toastify';
+import moment from 'moment';
+import { timeByUserShift } from '../../utils/dateUtil';
+import { getJUser } from '../../utils/utils';
 interface iProps {
   filename?: string;
   open: boolean;
@@ -75,8 +78,16 @@ function AttendanceExportModal({
         username: user && user.firstName + ' ' + user.lastName,
         status: status,
         date: dayjs(date).format(dateFormate),
-        checkIn: checkIn && dayjs(checkIn).format(timeFormate),
-        checkOut: checkOut && dayjs(checkOut).format(timeFormate),
+        checkIn:
+          checkIn &&
+          timeByUserShift(getJUser()!.shift, moment(checkIn)).format(
+            timeFormate + ' z'
+          ),
+        checkOut:
+          checkOut &&
+          timeByUserShift(getJUser()!.shift, moment(checkOut)).format(
+            timeFormate + ' z'
+          ),
       });
     }
 

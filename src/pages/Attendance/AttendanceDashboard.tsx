@@ -1,8 +1,8 @@
-import { Box, Grid, IconButton, MenuItem, Select, Theme } from '@mui/material';
+import { Box, Grid, IconButton, MenuItem, Select } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import AttendanceGridMonthly from '../../components/attendance/AttendanceGridMonthly';
 import AttendanceSummary from '../../components/attendance/AttendanceSummary';
-import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, jUser } from '../../Interfaces/iUser';
 import { usersList } from '../../services/authApi';
 import { getJUser } from '../../utils/utils';
 import WeeklyAttendanceTable from '../../components/attendance/WeeklyAttendence';
@@ -11,19 +11,20 @@ import DailyAttendanceTable from '../../components/attendance/DailyAttendanceTab
 import ChartCardWrapper from '../../components/dashboard/ChartCardWrapper';
 import CheckInCheckOut from '../../components/attendance/CheckInCheckOut';
 import { iUseAttendance, useAttendance } from '../../hooks/attendanceHook';
-import dayjs, { OpUnitType } from 'dayjs';
-import { dateFormate, timeFormate } from '../../components/constants';
+import { dateFormate } from '../../components/constants';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import { Sync } from '@mui/icons-material';
 import { dateByUserShift } from '../../utils/dateUtil';
 import AttendanceExportModal from '../../components/attendance/AttendanceExportModal';
+import moment, { Moment, unitOfTime } from 'moment';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 const AttendanceDashboard = () => {
   const [exportModal, setExportModal] = useState(false);
   const usersListState = useFetchData<jUser>(fetchUsers, []);
   const { data: users } = usersListState;
   const [currentUser, setCurrentUser] = useState<jUser>(getJUser()!);
-
+  const { myAttendanceState } = useAuth();
   const currentUserTodaysAttendance = useAttendance(
     {
       users: [currentUser],
@@ -32,15 +33,15 @@ const AttendanceDashboard = () => {
   );
 
   const attendanceGridMonthlyDateState = useState(
-    new Date(dateByUserShift(getJUser()!.shift))
+    dateByUserShift(getJUser()!.shift)
   );
   const currentUserMonthlyAttendance = useAttendance(
     {
       users: [currentUser],
-      fromDate: dayjs(attendanceGridMonthlyDateState[0])
+      fromDate: moment(attendanceGridMonthlyDateState[0])
         .startOf('month')
         .format(dateFormate),
-      toDate: dayjs(attendanceGridMonthlyDateState[0])
+      toDate: moment(attendanceGridMonthlyDateState[0])
         .endOf('month')
         .format(dateFormate),
     },
@@ -53,33 +54,33 @@ const AttendanceDashboard = () => {
   );
 
   const optionBasedAttendanceDateState = useState(
-    new Date(dateByUserShift(getJUser()!.shift))
+    dateByUserShift(getJUser()!.shift)
   );
 
   const { fromDate, toDate } = iDates(optionBasedAttendanceDateState[0]);
 
   const usersWiseOptionBasedAttendance = useAttendance(
     {
-      users: users || [],
-      fromDate,
-      toDate,
+      // users: users || [],
+      fromDate: fromDate.format(dateFormate),
+      toDate: toDate.format(dateFormate),
     },
     [users, optionBasedAttendanceDateState[0]]
   );
 
-  function iDates(date: Date | string) {
+  function iDates(date: Moment) {
     if (userWiseAttendanceOption === AttendanceOption.Daily) {
-      const d = dayjs(date).toString();
+      const d = moment(date);
       return { fromDate: d, toDate: d };
     }
 
-    let unit: OpUnitType = 'week';
+    let unit: unitOfTime.Base = 'week';
     if (userWiseAttendanceOption === AttendanceOption.Monthly) {
       unit = 'month';
     }
 
-    const fromDate = dayjs(date).startOf(unit).toString();
-    const toDate = dayjs(date).endOf(unit).toString();
+    const fromDate = moment(date).startOf(unit);
+    const toDate = moment(date).endOf(unit);
     return { fromDate, toDate };
   }
 
@@ -88,12 +89,15 @@ const AttendanceDashboard = () => {
       const { setResults } = hook;
       setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
     };
-    const hooks = [
+    const states = [
       currentUserMonthlyAttendance,
       currentUserTodaysAttendance,
       usersWiseOptionBasedAttendance,
     ];
-    for (const hook of hooks) {
+    if (myAttendanceState && att.userRef === getJUser()?._id) {
+      states.push(myAttendanceState);
+    }
+    for (const hook of states) {
       updateState(hook);
     }
   }
@@ -113,7 +117,7 @@ const AttendanceDashboard = () => {
 
   useEffect(() => {
     optionBasedAttendanceDateState[1](
-      new Date(iDates(dateByUserShift(getJUser()!.shift)).fromDate)
+      iDates(dateByUserShift(getJUser()!.shift)).fromDate
     );
   }, [userWiseAttendanceOption]);
 
@@ -168,7 +172,7 @@ const AttendanceDashboard = () => {
               {!currentUserTodaysAttendance.loading && (
                 <CheckInCheckOut
                   user={currentUser}
-                  date={new Date(dateByUserShift(getJUser()!.shift))}
+                  date={dateByUserShift(getJUser()!.shift)}
                   attendance={currentUserTodaysAttendance.attendance[0]}
                   onChange={handleChangeAttendance}
                 />
@@ -235,7 +239,7 @@ enum AttendanceOption {
   Monthly = 'Monthly',
 }
 interface UserWiseAttendanceListProps {
-  dateState: [Date, React.Dispatch<React.SetStateAction<Date>>];
+  dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   options: AttendanceOption[];
   selectedOption: AttendanceOption;
   onChangeOption: (option: AttendanceOption) => void;

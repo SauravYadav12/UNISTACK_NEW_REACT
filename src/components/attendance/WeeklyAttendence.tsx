@@ -21,6 +21,8 @@ import dayjs from 'dayjs';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import AttendanceStatusBox from './AttendanceStatusBox';
+import { Moment } from 'moment';
+import moment from 'moment';
 
 const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
   display: 'flex',
@@ -31,7 +33,7 @@ const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
 interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
-  dateState: [Date, React.Dispatch<React.SetStateAction<Date>>];
+  dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
 }
 
 const WeeklyAttendanceTable = ({
@@ -44,42 +46,38 @@ const WeeklyAttendanceTable = ({
   const { attendance, loading, loadData, error } = attendanceState;
   const weekDates = getWeekDates(startDate);
 
-  function getWeekDates(start: any) {
-    const dates = [];
-    const currentDate = new Date(start);
+  function getWeekDates(start: Moment): Moment[] {
+    const dates: Moment[] = [];
+    const currentDate = start.clone();
     for (let i = 0; i < 5; i++) {
       // Assuming a 5-day work week (Mon-Fri)
-      const day = currentDate.getDay();
+      const day = currentDate.day(); // Moment.js day() returns 0 for Sunday, 1 for Monday, etc.
       // Skip Saturday (6) and Sunday (0)
       if (day !== 0 && day !== 6) {
-        dates.push(new Date(currentDate));
+        dates.push(currentDate.clone());
       } else {
         // If it's a weekend, move to the next Monday
-        currentDate.setDate(currentDate.getDate() + (day === 6 ? 2 : 1));
+        currentDate.add(day === 6 ? 2 : 1, 'day');
         i--; // Decrement to maintain the loop count
         continue;
       }
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.add(1, 'day');
     }
     return dates;
   }
 
   const handlePrevWeek = () => {
-    const newStartDate = new Date(startDate);
-    newStartDate.setDate(newStartDate.getDate() - 7);
-    setStartDate(newStartDate);
+    setStartDate(startDate.clone().subtract(7, 'days'));
   };
 
   const handleNextWeek = () => {
-    const newStartDate = new Date(startDate);
-    newStartDate.setDate(newStartDate.getDate() + 7);
-    setStartDate(newStartDate);
+    setStartDate(startDate.clone().add(7, 'days'));
   };
-  const getAttendance = (date: Date, userRef: string) => {
+  const getAttendance = (date: Moment, userRef: string) => {
     const att = attendance.find(
       (item) =>
-        dayjs(item.date).format(dateFormate) ===
-          dayjs(date).format(dateFormate) && userRef === item?.userRef
+        moment(item.date).format(dateFormate) === date.format(dateFormate) &&
+        userRef === item?.userRef
     );
     return att;
   };
@@ -149,9 +147,14 @@ const WeeklyAttendanceTable = ({
     <ChartCardWrapper
       p={'0px'}
       boxShadow={false}
-      subtitle={`Week of ${dayjs(weekDates[0]).format(dateFormate)} - ${dayjs(
-        weekDates[weekDates.length - 1]
-      ).format(dateFormate)}`}
+      // subtitle={`Week of ${dayjs(weekDates[0]).format(dateFormate)} - ${dayjs(
+      //   weekDates[weekDates.length - 1]
+      // ).format(dateFormate)}`}
+      subtitle={
+        `Week of ${weekDates[0]?.format(dateFormate)} - ${weekDates[
+        weekDates.length - 1
+      ]?.format(dateFormate)}`
+      }
       action={
         <div>
           <IconButton onClick={handlePrevWeek} size="small">
@@ -160,9 +163,11 @@ const WeeklyAttendanceTable = ({
           <IconButton
             onClick={handleNextWeek}
             size="small"
-            disabled={dayjs(weekDates[weekDates.length - 1]).isAfter(
-              new Date()
-            )}
+            // disabled={dayjs(weekDates[weekDates.length - 1]).isAfter(
+            //   new Date()
+            // )}
+            disabled={weekDates[weekDates.length - 1]?.isAfter(moment(), 'day')}
+         
           >
             <ArrowRight />
           </IconButton>
@@ -176,10 +181,11 @@ const WeeklyAttendanceTable = ({
               <TableCell>Employee</TableCell>
               {weekDates.map((date) => (
                 <TableCell key={date.toISOString()} align="center">
-                  {new Intl.DateTimeFormat('en-US', {
+                  {/* {new Intl.DateTimeFormat('en-US', {
                     weekday: 'short',
                     day: 'numeric',
-                  }).format(date)}
+                  }).format(date)} */}
+                   {date.format('ddd, DD')}
                 </TableCell>
               ))}
             </TableRow>
