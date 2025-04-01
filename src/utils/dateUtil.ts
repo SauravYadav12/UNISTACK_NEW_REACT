@@ -1,7 +1,6 @@
 import { AttendanceStatus, UserShift } from './../Interfaces/iUser';
 import mz, { Moment } from 'moment-timezone';
 import moment from 'moment';
-import { getJUser } from './utils';
 
 export enum TimeZone {
   PST = 'America/Los_Angeles',
@@ -29,7 +28,7 @@ export function timeByUserShift(shift: UserShift, date: Moment = moment()) {
 
 export function handleAttendanceStatus(
   shift: UserShift,
-  date: Moment = dateByUserShift(getJUser()!.shift)
+  date: Moment = dateByUserShift(shift)
 ) {
   const { h, m } = shift === UserShift.US ? { h: 9, m: 0 } : { h: 10, m: 0 };
   const workingHourStart = date.clone();

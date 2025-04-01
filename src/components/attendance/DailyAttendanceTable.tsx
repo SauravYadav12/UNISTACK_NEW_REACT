@@ -341,7 +341,7 @@ function AttendanceSwitch({
   const canEditRoles = [UserRole['super-admin'], UserRole.hr];
   const isTimeApplicable = !!handleAttendanceStatus(user.shift);
   const disabled = forEmployee
-    ? status !== AttendanceStatus.Absent && isTimeApplicable
+    ? status !== AttendanceStatus.Absent || isTimeApplicable
     : !canEditRoles.includes(getJUser()!.role) &&
       status !== AttendanceStatus.Absent;
 
