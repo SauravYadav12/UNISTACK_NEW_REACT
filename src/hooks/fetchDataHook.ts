@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
 export function useFetchData<T = any>(
-  queryFunction: () => Promise<T[]>,
+  queryFunction: () => Promise<T>,
   dependencies?: any[]
 ): iFetchData<T> {
-  const [data, setData] = useState<T[]>([]);
+  const [data, setData] = useState<T>();
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -36,9 +36,9 @@ export function useFetchData<T = any>(
   };
 }
 export interface iFetchData<T> {
-  data: T[];
+  data?: T;
   error: string;
   loading: boolean;
   loadData: () => Promise<void>;
-  setData: React.Dispatch<React.SetStateAction<T[]>>;
+  setData: React.Dispatch<React.SetStateAction<T|undefined>>;
 }

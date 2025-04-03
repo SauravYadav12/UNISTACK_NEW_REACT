@@ -5,6 +5,10 @@ import { getProfileByUser } from '../services/userProfileApi';
 import { toast } from 'react-toastify';
 import { syncUserOnLocalStorage } from '../services/authApi';
 import { iUseAttendance, useAttendance } from '../hooks/attendanceHook';
+import { useFetchData } from '../hooks/fetchDataHook';
+import { getAccessControl } from '../services/accessControlApi';
+import { iAccessControl } from '../utils/accessControlUtil';
+import { UserRole } from '../Interfaces/iUser';
 
 const AuthContext = createContext({
   isAuthenticated: false,
@@ -14,12 +18,18 @@ const AuthContext = createContext({
   myProfile: undefined,
   getMyProfile: () => {},
   setMyProfile: () => {},
+  isModuleAllowed: () => false,
 } as DefaultContextValue);
 
 export const AuthContextProvider = ({ children }: any) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem('token') && !isTokenExpired()
   );
+
+  const accessControlState = useFetchData<iAccessControl>(async () => {
+    const { data } = await getAccessControl();
+    return data.data!;
+  }, []);
 
   const me = getJUser()!;
   const myAttendanceState = useAttendance({
@@ -31,6 +41,9 @@ export const AuthContextProvider = ({ children }: any) => {
   const validateLogin = (token: string) => {
     localStorage.setItem('token', token);
     setIsAuthenticated(true);
+    accessControlState.loadData();
+    myAttendanceState.loadData();
+    getMyProfile();
   };
 
   function validateLogout() {
@@ -53,16 +66,29 @@ export const AuthContextProvider = ({ children }: any) => {
     }
   };
 
+  const isModuleAllowed = (key: string) => {
+    const me = getJUser();
+    const { loading, error, data } = accessControlState;
+    if (error) {
+      toast.error('Some thing went wrong, please reload page to fix');
+      return false;
+    }
+    if (loading || error || !data || !me?.role) return false;
+    if (me.role === UserRole['super-admin']) return true;
+    return data[me.role]?.includes(key) || false;
+  };
+
   return (
     <AuthContext.Provider
       value={{
         myAttendanceState,
         isAuthenticated,
+        myProfile,
         validateLogin,
         validateLogout,
         getMyProfile,
         setMyProfile,
-        myProfile,
+        isModuleAllowed,
       }}
     >
       {children}
@@ -80,4 +106,5 @@ interface DefaultContextValue {
   myProfile: undefined | UserProfile;
   getMyProfile: () => void;
   setMyProfile: (profile: UserProfile) => void;
+  isModuleAllowed: (key: string) => boolean;
 }

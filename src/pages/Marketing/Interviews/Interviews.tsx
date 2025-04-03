@@ -20,6 +20,12 @@ import { dateFormate, timeFormate } from '../../../components/constants';
 import { archiveInterviewsList } from '../../../services/archivesApi';
 import { usePagination } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import {
+  ArchiveModule,
+  ModuleGroup,
+  moduleKey,
+} from '../../../utils/accessControlUtil';
 type Record = {
   id: number;
   name: string;
@@ -32,6 +38,7 @@ interface Iprops {
   archiveState: [boolean, (s: boolean) => void];
 }
 export default function Interviews(props: Iprops) {
+  const { isModuleAllowed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
@@ -41,6 +48,10 @@ export default function Interviews(props: Iprops) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [archive, setArchive] = props.archiveState;
+  const isArchiveInterviewModuleAllowed = isModuleAllowed(
+    moduleKey(ModuleGroup.Archive, ArchiveModule.Interviews)
+  );
+
   const {
     gridData,
     paginationModel,
@@ -252,16 +263,20 @@ export default function Interviews(props: Iprops) {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        archiveState={[
-          archive,
-          (s) => {
-            setArchive(s);
-            setGridData(undefined);
-          },
-          {
-            disabled: loading,
-          },
-        ]}
+        archiveState={
+          isArchiveInterviewModuleAllowed
+            ? [
+                archive,
+                (s) => {
+                  setArchive(s);
+                  setGridData(undefined);
+                },
+                {
+                  disabled: loading,
+                },
+              ]
+            : undefined
+        }
         header={dataGridHeader}
         rows={gridData?.results || []}
         columns={columns}

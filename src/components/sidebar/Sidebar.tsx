@@ -22,21 +22,39 @@ import { drawerWidth, smallDrawerWidth } from '../constants';
 import './sidebar.css';
 import { PostAdd } from '@mui/icons-material';
 import { getIUser } from '../../utils/utils';
+import {
+  HomeModule,
+  MarketingModule,
+  ModuleGroup,
+  moduleKey,
+} from '../../utils/accessControlUtil';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 function Sidebar({ toggleSideBar }: any) {
   const navigate = useNavigate();
+  const { isModuleAllowed } = useAuth();
   const location = useLocation();
   const iuser = getIUser();
-  const homeMenuItems: any = [
+
+  const isMarketingGroupModulesAllowed = Object.values(MarketingModule).some(
+    (m) => isModuleAllowed(moduleKey(ModuleGroup.Marketing, m))
+  );
+  const isHomeGroupModulesAllowed = Object.values(HomeModule).some((m) =>
+    isModuleAllowed(moduleKey(ModuleGroup.Home, m))
+  );
+
+  const homeMenuItems = [
     {
       text: 'Dashboard',
       icon: <DashboardIcon className="icon-style" />,
       path: '/dashboard',
+      moduleName: HomeModule.Dashboard,
     },
     {
       text: 'Profile',
       icon: <BadgeIcon className="icon-style" />,
       path: '/profile',
+      moduleName: HomeModule.Profile,
     },
   ];
 
@@ -45,37 +63,43 @@ function Sidebar({ toggleSideBar }: any) {
       text: 'Requirements',
       icon: <LeaderboardIcon className="icon-style" />,
       path: '/requirements',
+      moduleName: MarketingModule.Requirements,
     },
     {
       text: 'Interviews',
       icon: <InterpreterModeIcon className="icon-style" />,
       path: '/interviews',
+      moduleName: MarketingModule.Interviews,
     },
     {
       text: 'Test And VI',
       icon: <PostAdd className="icon-style" />,
       path: '/testandvendorinterviews',
+      moduleName: MarketingModule['Test And VI'],
     },
     {
       text: 'Consultants',
       icon: <Face6Icon className="icon-style" />,
       path: '/consultants',
+      moduleName: MarketingModule.Consultants,
     },
     {
       text: 'Teams',
       icon: <Diversity1Icon className="icon-style" />,
       path: '/teams',
+      moduleName: MarketingModule.Teams,
     },
     {
       text: 'Reports',
       icon: <SummarizeIcon className="icon-style" />,
       path: '/reports',
+      moduleName: MarketingModule.Reports,
     },
     {
       text: 'Sales Leads',
       icon: <PointOfSaleIcon className="icon-style" />,
       path: '/sales-leads',
-      allow: ['admin'],
+      moduleName: MarketingModule['Sales Leads'],
     },
   ];
 
@@ -103,48 +127,57 @@ function Sidebar({ toggleSideBar }: any) {
         </Typography>
       </div>
 
-      <List>
-        {!toggleSideBar && <ListSubheader color="primary">HOME</ListSubheader>}
-        {homeMenuItems.map((item: any) => {
-          return (
-            <ListItemButton
-              key={item.text}
-              onClick={() => navigate(item.path)}
-              className={`ListItemButton ${
-                location.pathname === item.path ? 'active' : ''
-              }`}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          );
-        })}
-      </List>
+      {isHomeGroupModulesAllowed && (
+        <List>
+          {!toggleSideBar && (
+            <ListSubheader color="primary">HOME</ListSubheader>
+          )}
+          {homeMenuItems.map((item: any) => {
+            const isAllowed = isModuleAllowed(
+              moduleKey(ModuleGroup.Home, item.moduleName)
+            );
+            if (!isAllowed) return null;
+            return (
+              <ListItemButton
+                key={item.text}
+                onClick={() => navigate(item.path)}
+                className={`ListItemButton ${
+                  location.pathname === item.path ? 'active' : ''
+                }`}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            );
+          })}
+        </List>
+      )}
 
-      <List>
-        {!toggleSideBar && (
-          <ListSubheader color="primary">MARKETING</ListSubheader>
-        )}
-        {marketingMenuItems.map((item) => {
-          const isAllowed =
-            iuser?.role === 'super-admin' ||
-            !item.allow?.length ||
-            (iuser && item.allow.includes(iuser?.role));
-          if (!isAllowed) return null;
-          return (
-            <ListItemButton
-              key={item.text}
-              onClick={() => navigate(item.path)}
-              className={`ListItemButton ${
-                location.pathname === item.path ? 'active' : ''
-              }`}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          );
-        })}
-      </List>
+      {isMarketingGroupModulesAllowed && (
+        <List>
+          {!toggleSideBar && (
+            <ListSubheader color="primary">MARKETING</ListSubheader>
+          )}
+          {marketingMenuItems.map((item) => {
+            const isAllowed = isModuleAllowed(
+              moduleKey(ModuleGroup.Marketing, item.moduleName)
+            );
+            if (!isAllowed) return null;
+            return (
+              <ListItemButton
+                key={item.text}
+                onClick={() => navigate(item.path)}
+                className={`ListItemButton ${
+                  location.pathname === item.path ? 'active' : ''
+                }`}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            );
+          })}
+        </List>
+      )}
     </Drawer>
   );
 }

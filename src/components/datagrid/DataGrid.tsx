@@ -23,8 +23,12 @@ import {
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import { allDoc, pageSizeList } from '../../hooks/paginationHook';
-import { getJUser } from '../../utils/utils';
-import { UserRole } from '../../Interfaces/iUser';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import {
+  ArchiveModule,
+  ModuleGroup,
+  moduleKey,
+} from '../../utils/accessControlUtil';
 
 interface CustomPaginationProps {
   paginateState: PaginateState;
@@ -108,8 +112,13 @@ interface CustomToolbarProps {
   archiveState?: ArchiveState;
 }
 function CustomToolbar({ archiveState }: CustomToolbarProps) {
+  const { isModuleAllowed } = useAuth();
   const [checked, cb, prop] = archiveState || [];
-  const archivePermission = [UserRole['super-admin'], UserRole.admin];
+
+  const isArchiveModuleAllowed = Object.values(ArchiveModule).some((m) =>
+    isModuleAllowed(moduleKey(ModuleGroup.Archive, m))
+  );
+
   return (
     <GridToolbarContainer>
       <GridToolbarColumnsButton />
@@ -117,7 +126,7 @@ function CustomToolbar({ archiveState }: CustomToolbarProps) {
         slotProps={{ tooltip: { title: 'Change density' } }}
       />
       <GridToolbarFilterButton />
-      {archivePermission.includes(getJUser()!.role) && archiveState && (
+      {isArchiveModuleAllowed && archiveState && (
         <FormControlLabel
           control={<Switch checked={!!checked} disabled={prop?.disabled} />}
           label={`Archive`}

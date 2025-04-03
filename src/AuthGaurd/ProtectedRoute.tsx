@@ -1,14 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from './AuthContextProvider';
-import { getIUser } from '../utils/utils';
+import { ModuleGroup, moduleKey } from '../utils/accessControlUtil';
 
-const ProtectedRoute = ({ allow, children }: ProtectedRouteProps) => {
-  const { isAuthenticated } = useAuth();
-  const iuser = getIUser();
-  const isAllowed =
-    iuser?.role === 'super-admin' ||
-    !allow?.length ||
-    (iuser && allow.includes(iuser.role));
+const ProtectedRoute = ({ meta, children }: ProtectedRouteProps) => {
+  const { isAuthenticated, isModuleAllowed } = useAuth();
+  const isAllowed = meta
+    ? isModuleAllowed(moduleKey(meta.group, meta.module))
+    : true;
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
@@ -23,5 +21,5 @@ export default ProtectedRoute;
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allow?: string[];
+  meta?: { group: ModuleGroup; module: string };
 }

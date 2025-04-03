@@ -5,7 +5,10 @@ import MarkAttendanceModal, {
   autoOpenAttendanceModalKey,
 } from '../dashboard/MarkAttendanceModal';
 import MarkCheckoutTimeModal from '../dashboard/MarkCheckoutTimeModal';
-import { handleAttendanceStatus } from '../../utils/dateUtil';
+import {
+  handleAttendanceStatus,
+  timeRemainingUntilOfficeEnd,
+} from '../../utils/dateUtil';
 import { getJUser } from '../../utils/utils';
 import { Moment } from 'moment';
 import { dateFormate } from '../constants';
@@ -16,25 +19,31 @@ const CheckInCheckOut = ({
   date,
   allowAutomaticPopUp,
   buttonSize = 'medium',
+  forAdmin = false,
   onChange,
 }: iProps) => {
   const [todaysAttendance, setTodaysAttendance] = React.useState<
     iAttendance | undefined
   >(attendance);
+
   const ableToMarkAttendance =
-    !todaysAttendance || todaysAttendance.status === AttendanceStatus.Absent;
+    (!todaysAttendance ||
+      todaysAttendance.status === AttendanceStatus.Absent) &&
+    (!!handleAttendanceStatus(user.shift) || forAdmin);
+
   const ableToCheckout =
     todaysAttendance &&
     !todaysAttendance.checkOut &&
-    todaysAttendance.status !== AttendanceStatus.Absent;
-  const isTimeApplicable = !!handleAttendanceStatus(user.shift);
+    todaysAttendance.status !== AttendanceStatus.Absent &&
+    (timeRemainingUntilOfficeEnd(user.shift) > 0 || forAdmin);
+
   const [openMarkAttendanceModal, setOpenMarkAttendanceModal] = React.useState(
     !!allowAutomaticPopUp &&
       !!localStorage.getItem(autoOpenAttendanceModalKey) &&
-      !todaysAttendance &&
-      getJUser()!._id === user._id &&
-      isTimeApplicable
+      ableToMarkAttendance &&
+      getJUser()!._id === user._id
   );
+
   const [openCheckoutModal, setOpenCheckoutModal] = React.useState(false);
 
   function handleChange(a: iAttendance) {
@@ -46,7 +55,6 @@ const CheckInCheckOut = ({
     setTodaysAttendance(attendance);
   }, [attendance]);
 
-  if (!isTimeApplicable) return null;
   const bStyle = {
     borderRadius: '10px',
     ...(buttonSize === 'small' && {
@@ -57,6 +65,7 @@ const CheckInCheckOut = ({
       },
     }),
   };
+
   return (
     <>
       {ableToMarkAttendance && (
@@ -72,6 +81,7 @@ const CheckInCheckOut = ({
           </Button>
 
           <MarkAttendanceModal
+            forAdmin={forAdmin}
             user={user}
             date={date.format(dateFormate)}
             state={[openMarkAttendanceModal, setOpenMarkAttendanceModal]}
@@ -93,6 +103,8 @@ const CheckInCheckOut = ({
             Check out
           </Button>
           <MarkCheckoutTimeModal
+            user={user}
+            forAdmin={forAdmin}
             attendence={todaysAttendance}
             state={[openCheckoutModal, setOpenCheckoutModal]}
             onMark={handleChange}
@@ -111,5 +123,6 @@ interface iProps {
   attendance: iAttendance;
   allowAutomaticPopUp?: boolean;
   buttonSize?: 'small' | 'medium';
+  forAdmin?: boolean;
   onChange?: (a: iAttendance) => void;
 }
