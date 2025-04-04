@@ -21,7 +21,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { drawerWidth, smallDrawerWidth } from '../constants';
 import './sidebar.css';
 import { PostAdd } from '@mui/icons-material';
-import { getIUser } from '../../utils/utils';
 import {
   HomeModule,
   MarketingModule,
@@ -34,7 +33,6 @@ function Sidebar({ toggleSideBar }: any) {
   const navigate = useNavigate();
   const { isModuleAllowed } = useAuth();
   const location = useLocation();
-  const iuser = getIUser();
 
   const isMarketingGroupModulesAllowed = Object.values(MarketingModule).some(
     (m) => isModuleAllowed(moduleKey(ModuleGroup.Marketing, m))

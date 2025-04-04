@@ -1,12 +1,11 @@
 import { jwtDecode } from 'jwt-decode';
 import { iUser, jUser } from '../Interfaces/iUser';
-import { toast } from 'react-toastify';
 import axios from 'axios';
 import { logout } from '../services/authApi';
 
 export const getJwtToken = async () => {
   if (isTokenExpired()) {
-    toast.warning('Session expired, please login again');
+    // toast.warning('Session expired, please login again');
     return;
   }
   return localStorage.getItem('token');
