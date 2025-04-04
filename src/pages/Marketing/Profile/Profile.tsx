@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { Box, Button, Tab, Tabs, Typography } from '@mui/material';
-import { ModeEditOutline } from '@mui/icons-material';
+import { Box, Button, IconButton, Tab, Tabs, Typography } from '@mui/material';
+import { ModeEditOutline, Sync } from '@mui/icons-material';
 import ProfileForm from './ProfileForm';
 import MyAvatar from '../../../components/profile/myAvatar/MyAvatar';
 import ProfileDetails from '../../../components/profile/ProfileDetails';
@@ -26,22 +26,49 @@ function Profile() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePictureDrawer, setProfilePictureDrawer] = useState(false);
   const [value, setValue] = React.useState(0);
-  const { myProfile, getMyProfile, setMyProfile } = useAuth();
+  const { myProfileState } = useAuth();
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
   useEffect(() => {
-    getMyProfile();
+    myProfileState?.loadData();
   }, []);
 
-  if (!myProfile)
+  if (!myProfileState || myProfileState.loading) {
     return (
-      <Box className="loader">
+      <Box className="loader" sx={{ m: 0 }}>
         <CircularProgress />
       </Box>
     );
+  }
+
+  const {
+    error,
+    data: myProfile,
+    loadData: getMyProfile,
+    setData: setMyProfile,
+  } = myProfileState;
+
+  if (error) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          gap: 5,
+        }}
+      >
+        <IconButton onClick={getMyProfile}>
+          <Sync color="primary" />
+        </IconButton>
+        <Typography color="error">{error}</Typography>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getJUser } from '../utils/utils';
 
 export function useFetchData<T = any>(
   queryFunction: () => Promise<T>,
@@ -9,7 +10,7 @@ export function useFetchData<T = any>(
   const [loading, setLoading] = useState<boolean>(false);
 
   const loadData = async () => {
-    if (loading) return;
+    if (loading||!getJUser()) return;
     try {
       setError('');
       setLoading(true);

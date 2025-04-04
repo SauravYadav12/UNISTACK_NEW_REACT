@@ -98,7 +98,7 @@ const AccessControl = () => {
   ): boolean => {
     const key = moduleKey(moduleGroup, module);
     if (accessControl && Array.isArray(accessControl[role])) {
-      return accessControl[role].includes(key);
+      return accessControl[role]?.includes(key) || false;
     }
     return false;
   };

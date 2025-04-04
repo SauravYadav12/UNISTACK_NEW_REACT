@@ -32,8 +32,7 @@ import {
 function Navbar({ sidebar, toggleSideBar }: any) {
   const [width, setWidth] = React.useState(drawerWidth);
   const navigate = useNavigate();
-  const { myProfile, getMyProfile, isModuleAllowed } =
-    useAuth();
+  const { isModuleAllowed } = useAuth();
   const user: iUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   React.useEffect(() => {
@@ -43,10 +42,6 @@ function Navbar({ sidebar, toggleSideBar }: any) {
   const handleSidebar = () => {
     sidebar();
   };
-
-  React.useEffect(() => {
-    if (!myProfile) getMyProfile();
-  }, []);
 
   return (
     <div>
@@ -306,7 +301,7 @@ function UserMenu() {
       module: HomeModule.Dashboard,
     },
   ];
-  const { myProfile, validateLogout, isModuleAllowed } = useAuth();
+  const { myProfileState, validateLogout, isModuleAllowed } = useAuth();
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   );
@@ -323,7 +318,7 @@ function UserMenu() {
     <>
       <Tooltip title="Open settings">
         <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-          <Avatar alt="Remy Sharp" src={myProfile?.photo} />
+          <Avatar alt="Remy Sharp" src={myProfileState?.data?.photo} />
         </IconButton>
       </Tooltip>
       <Menu
