@@ -16,70 +16,32 @@ import { drawerWidth, smallDrawerWidth } from '../constants';
 import './navbar.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { iAttendance, iUser, UserRole } from '../../Interfaces/iUser';
+import { iAttendance, iUser } from '../../Interfaces/iUser';
 import { logout } from '../../services/authApi';
 import { getJUser } from '../../utils/utils';
 import CheckInCheckOut from '../attendance/CheckInCheckOut';
-import { useAttendance } from '../../hooks/attendanceHook';
 import { dateByUserShift } from '../../utils/dateUtil';
+import {
+  EmployeeModule,
+  HomeModule,
+  ModuleGroup,
+  moduleKey,
+  SuperAdminModule,
+} from '../../utils/accessControlUtil';
 
 function Navbar({ sidebar, toggleSideBar }: any) {
-  const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
-  const pages = [{ title: 'Leaves', route: '/leaves' }];
   const [width, setWidth] = React.useState(drawerWidth);
   const navigate = useNavigate();
-  const { myProfile, getMyProfile, validateLogout } = useAuth();
+  const { isModuleAllowed } = useAuth();
   const user: iUser = JSON.parse(localStorage.getItem('user') || '{}');
-
-  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
-    null
-  );
-  const [anchorElAdmin, setAnchorElAdmin] = React.useState<null | HTMLElement>(
-    null
-  );
-  const open = Boolean(anchorElAdmin);
 
   React.useEffect(() => {
     toggleSideBar ? setWidth(smallDrawerWidth) : setWidth(drawerWidth);
   }, [toggleSideBar]);
 
-  const handleClickAdmin = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorElAdmin(event.currentTarget);
-  };
-  const handleCloseAdmin = () => {
-    setAnchorElAdmin(null);
-  };
-
   const handleSidebar = () => {
     sidebar();
   };
-
-  const handleSetting = async (setting: String) => {
-    if (setting.toLowerCase() === 'logout') {
-      validateLogout();
-      navigate(`/`);
-      await logout();
-    } else {
-      navigate(`/${setting.toLowerCase()}`);
-    }
-  };
-
-  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-
-  const handleUserManagement = () => {
-    navigate('/user-management');
-    handleCloseAdmin();
-  };
-
-  React.useEffect(() => {
-    if (!myProfile) getMyProfile();
-  }, []);
 
   return (
     <div>
@@ -102,50 +64,33 @@ function Navbar({ sidebar, toggleSideBar }: any) {
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
               <AttendenceMenu />
 
-              {pages.map((page) => (
+              {isModuleAllowed(
+                moduleKey(
+                  ModuleGroup['Presence & Leave'],
+                  EmployeeModule.Leaves
+                )
+              ) && (
                 <Button
-                  key={page.title}
-                  onClick={() => navigate(page.route)}
+                  key={'Leaves'}
+                  onClick={() => navigate('/leaves')}
                   sx={{ my: 2, color: 'black', display: 'block' }}
                   className="nav-heading"
                 >
-                  {page.title}
+                  {'Leaves'}
                 </Button>
-              ))}
-              {user.role === 'super-admin' && (
-                <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-                  <Button
-                    sx={{ my: 2, color: 'black', display: 'block' }}
-                    className="nav-heading"
-                    onClick={handleClickAdmin}
-                  >
-                    Super-Admin
-                  </Button>
-                  <Menu
-                    id="basic-menu"
-                    anchorEl={anchorElAdmin}
-                    open={open}
-                    onClose={handleCloseAdmin}
-                    MenuListProps={{
-                      'aria-labelledby': 'basic-button',
-                    }}
-                  >
-                    <MenuItem onClick={handleUserManagement}>
-                      User Management
-                    </MenuItem>
-                    <MenuItem onClick={handleCloseAdmin}>
-                      Access Control
-                    </MenuItem>
-                    <MenuItem onClick={handleCloseAdmin}>
-                      Leaves Management
-                    </MenuItem>
-                  </Menu>
-                </Box>
               )}
+              <SuperAdminMenu />
             </Box>
-            <Box sx={{ flexGrow: 0, marginRight: '20px' }}>
-              <AttendancePopUp />
-            </Box>
+            {isModuleAllowed(
+              moduleKey(
+                ModuleGroup['Presence & Leave'],
+                EmployeeModule.Attendance
+              )
+            ) && (
+              <Box sx={{ flexGrow: 0, marginRight: '20px' }}>
+                <AttendancePopUp />
+              </Box>
+            )}
             <Box sx={{ flexGrow: 0, marginRight: '10px' }}>
               <Typography textAlign="center">
                 Welcome, {user.firstName}{' '}
@@ -153,35 +98,7 @@ function Navbar({ sidebar, toggleSideBar }: any) {
             </Box>
 
             <Box sx={{ flexGrow: 0, marginLeft: '10px' }}>
-              <Tooltip title="Open settings">
-                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                  <Avatar alt="Remy Sharp" src={myProfile?.photo} />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                sx={{ mt: '45px' }}
-                id="menu-appbar"
-                anchorEl={anchorElUser}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorElUser)}
-                onClose={handleCloseUserMenu}
-              >
-                {settings.map((setting) => (
-                  <div key={setting} onClick={() => handleSetting(setting)}>
-                    <MenuItem onClick={handleCloseUserMenu}>
-                      <Typography textAlign="center">{setting}</Typography>
-                    </MenuItem>
-                  </div>
-                ))}
-              </Menu>
+              <UserMenu />
             </Box>
           </Toolbar>
         </Container>
@@ -193,15 +110,24 @@ export default Navbar;
 
 function AttendenceMenu() {
   const navigate = useNavigate();
+  const { isModuleAllowed } = useAuth();
   const options = [
-    { title: 'My Attendance', route: '/attendance/my-attendance' },
+    {
+      title: 'My Attendance',
+      route: '/attendance/my-attendance',
+      group: ModuleGroup['Presence & Leave'],
+      module: EmployeeModule.Attendance,
+    },
     {
       title: 'Dashboard',
       route: '/attendance/dashboard',
-      allow: [UserRole['super-admin'], UserRole.hr],
+      group: ModuleGroup['Super Admin Modules'],
+      module: SuperAdminModule['Attendance Dashboard'],
     },
   ];
-
+  const isAllowed = options.some((o) =>
+    isModuleAllowed(moduleKey(o.group, o.module))
+  );
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -211,6 +137,7 @@ function AttendenceMenu() {
     setAnchorEl(null);
   };
 
+  if (!isAllowed) return null;
   return (
     <>
       <Button
@@ -234,14 +161,7 @@ function AttendenceMenu() {
         }}
       >
         {options.map((o, i) => {
-          const myRole = getJUser()?.role;
-          if (
-            o.allow &&
-            (!myRole ||
-              !o.allow?.includes(myRole) ||
-              myRole !== UserRole['super-admin'])
-          )
-            return;
+          if (!isModuleAllowed(moduleKey(o.group, o.module))) return;
           return (
             <MenuItem
               key={i}
@@ -282,5 +202,163 @@ function AttendancePopUp() {
       onChange={handleChange}
       attendance={attendance[0]}
     />
+  );
+}
+
+function SuperAdminMenu() {
+  const navigate = useNavigate();
+  const { isModuleAllowed } = useAuth();
+  const pages = [
+    {
+      title: 'User Management',
+      route: '/user-management',
+      group: ModuleGroup['Super Admin Modules'],
+      module: SuperAdminModule['User Management'],
+    },
+    {
+      title: 'Access Control',
+      route: '/access-control',
+      group: ModuleGroup['Super Admin Modules'],
+      module: SuperAdminModule['Access Control'],
+    },
+    {
+      title: 'Leaves Management',
+      route: '/leaves-management',
+      group: ModuleGroup['Super Admin Modules'],
+      module: SuperAdminModule['Leaves Management'],
+    },
+  ];
+  const isAllowed = pages.some((o) =>
+    isModuleAllowed(moduleKey(o.group, o.module))
+  );
+  const [anchorElAdmin, setAnchorElAdmin] = React.useState<null | HTMLElement>(
+    null
+  );
+  const open = Boolean(anchorElAdmin);
+  const handleClickAdmin = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorElAdmin(event.currentTarget);
+  };
+  const handleCloseAdmin = () => {
+    setAnchorElAdmin(null);
+  };
+
+  if (!isAllowed) return null;
+
+  return (
+    <>
+      {
+        <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+          <Button
+            sx={{ my: 2, color: 'black', display: 'block' }}
+            className="nav-heading"
+            onClick={handleClickAdmin}
+          >
+            Super-Admin
+          </Button>
+          <Menu
+            id="basic-menu"
+            anchorEl={anchorElAdmin}
+            open={open}
+            onClose={handleCloseAdmin}
+            MenuListProps={{
+              'aria-labelledby': 'basic-button',
+            }}
+          >
+            {pages.map((item, i) => {
+              if (!isModuleAllowed(moduleKey(item.group, item.module))) return;
+              return (
+                <MenuItem
+                  key={i}
+                  onClick={() => {
+                    item.route && navigate(item.route);
+                    handleCloseAdmin();
+                  }}
+                >
+                  {item.title}
+                </MenuItem>
+              );
+            })}
+          </Menu>
+        </Box>
+      }
+    </>
+  );
+}
+
+function UserMenu() {
+  const navigate = useNavigate();
+  const options = [
+    {
+      title: 'Profile',
+      route: '/profile',
+      group: ModuleGroup.Home,
+      module: HomeModule.Profile,
+    },
+    {
+      title: 'Dashboard',
+      route: '/dashboard',
+      group: ModuleGroup.Home,
+      module: HomeModule.Dashboard,
+    },
+  ];
+  const { myProfileState, validateLogout, isModuleAllowed } = useAuth();
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null
+  );
+
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElUser(event.currentTarget);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  return (
+    <>
+      <Tooltip title="Open settings">
+        <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+          <Avatar alt="Remy Sharp" src={myProfileState?.data?.photo} />
+        </IconButton>
+      </Tooltip>
+      <Menu
+        sx={{ mt: '45px' }}
+        id="menu-appbar"
+        anchorEl={anchorElUser}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        open={Boolean(anchorElUser)}
+        onClose={handleCloseUserMenu}
+      >
+        {options.map((o) => {
+          if (!isModuleAllowed(moduleKey(o.group, o.module))) return;
+          return (
+            <div key={o.route} onClick={() => navigate(o.route)}>
+              <MenuItem onClick={handleCloseUserMenu}>
+                <Typography textAlign="center">{o.title}</Typography>
+              </MenuItem>
+            </div>
+          );
+        })}
+        <div
+          onClick={async () => {
+            validateLogout();
+            navigate(`/`);
+            await logout();
+          }}
+        >
+          <MenuItem onClick={handleCloseUserMenu}>
+            <Typography textAlign="center">Logout</Typography>
+          </MenuItem>
+        </div>
+      </Menu>
+    </>
   );
 }

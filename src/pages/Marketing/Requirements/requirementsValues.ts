@@ -15,9 +15,9 @@ export const requestStatusOptions: RequirementStatus[] = [
 export const requirementFormInitialValues = {
   reqStatus: requestStatusOptions[0] || '',
   assignedTo: '',
-  assignedToRef: '',
+  // assignedToRef: '',
   appliedFor: '',
-  appliedForRef: '',
+  // appliedForRef: '',
   reqForm: '',
   primaryTechStack: '',
   resumeUpload: '',

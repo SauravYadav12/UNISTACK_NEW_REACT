@@ -13,22 +13,19 @@ import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 const MyAttendance = () => {
   const me = getJUser()!;
   const { myAttendanceState } = useAuth();
-  if (!myAttendanceState) return null;
-  const { loading, error, attendance, setResults, loadData } =
-    myAttendanceState;
-
   const dateState = useState(dateByUserShift(me.shift));
-
   function handleChange(att: iAttendance) {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
 
-  if (loading)
+  if (!myAttendanceState || myAttendanceState?.loading)
     return (
       <Box height={100} className="loader" sx={{ py: 10 }}>
         <CircularProgress />
       </Box>
     );
+
+  const { error, attendance, setResults, loadData } = myAttendanceState;
 
   if (error) {
     return (
@@ -62,7 +59,7 @@ const MyAttendance = () => {
                 onChange={handleChange}
                 attendance={attendance[0]}
               />
-              <IconButton onClick={loadData} sx={{ml:1}}>
+              <IconButton onClick={loadData} sx={{ ml: 1 }}>
                 <SyncIcon color="primary" />
               </IconButton>
             </Box>

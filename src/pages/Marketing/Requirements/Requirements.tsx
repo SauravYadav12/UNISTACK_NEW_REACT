@@ -1,4 +1,11 @@
-import { Button, IconButton, Link } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  Link,
+  Typography,
+} from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useEffect, useState } from 'react';
@@ -11,7 +18,17 @@ import { usersList } from '../../../services/authApi';
 import { usePagination } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
 import { consultantsList } from '../../../services/consultantApi';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import {
+  ArchiveModule,
+  ModuleGroup,
+  moduleKey,
+} from '../../../utils/accessControlUtil';
+import { useFetchData } from '../../../hooks/fetchDataHook';
+import { jUser } from '../../../Interfaces/iUser';
+import { Sync } from '@mui/icons-material';
 export default function Requirements() {
+  const { isModuleAllowed } = useAuth();
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -19,8 +36,16 @@ export default function Requirements() {
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState('view');
   const [archive, setArchive] = useState(false);
-  const [accounts, setAccounts] = useState<any[]>();
-  const [consultants, setConsultants] = useState<any[]>();
+  const accountsState = useFetchData<jUser[]>(getAccountList, []);
+  const { data: accounts } = accountsState;
+  const consultantsState = useFetchData(getConsultantsList, []);
+  const { data: consultants } = consultantsState;
+  const isViewDataDuplicate =
+    Boolean(viewData.isDuplicate) && Boolean(viewData.duplicateWith?.trim());
+
+  const isArchiveRequirementModuleAllowed = isModuleAllowed(
+    moduleKey(ModuleGroup.Archive, ArchiveModule.Requirements)
+  );
 
   const columns = [
     {
@@ -132,29 +157,17 @@ export default function Requirements() {
   };
 
   async function getAccountList() {
-    try {
-      const { data } = await usersList();
-      const { users } = data;
-      setAccounts(users.filter((u: any) => u.active) || []);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  async function getConsultantsList() {
-    try {
-      const { data } = await consultantsList(
-        `consultantStatus=Active&limit=5000`
-      );
-      setConsultants(data.data?.results || []);
-    } catch (error) {
-      console.log(error);
-    }
+    const { data } = await usersList();
+    const { users } = data;
+    return users;
   }
 
-  useEffect(() => {
-    getAccountList();
-    getConsultantsList();
-  }, []);
+  async function getConsultantsList() {
+    const { data } = await consultantsList(
+      `consultantStatus=Active&limit=5000`
+    );
+    return data.data?.results || [];
+  }
 
   const header = (
     <>
@@ -180,8 +193,48 @@ export default function Requirements() {
     </>
   );
 
-  const isViewDataDuplicate =
-    Boolean(viewData.isDuplicate) && Boolean(viewData.duplicateWith?.trim());
+  function MyForm() {
+    const formLoading = accountsState.loading || consultantsState.loading;
+    const formError = accountsState.error || consultantsState.error;
+
+    const reload = () => {
+      accountsState.loadData();
+      consultantsState.loadData;
+    };
+
+    if (formLoading)
+      return (
+        <Box className="loader" sx={{ py: 10, height: '300px', pr: 0, m: 0 }}>
+          <CircularProgress />
+        </Box>
+      );
+
+    if (formError) {
+      return (
+        <Box textAlign={'center'}>
+          <Typography color="error">{error}</Typography>
+          <IconButton onClick={reload}>
+            <Sync color="primary" />
+          </IconButton>
+        </Box>
+      );
+    }
+
+    return (
+      <RequirementsForm
+        setResults={setResults}
+        hideButtons={archive}
+        accounts={accounts}
+        consultants={consultants}
+        viewData={viewData}
+        mode={mode}
+        setDrawerOpen={setDrawerOpen}
+        isEditing={isEditing}
+        onEdit={handleEdit}
+        onCopy={handleCopy}
+      />
+    );
+  }
 
   return (
     <>
@@ -193,7 +246,11 @@ export default function Requirements() {
         }}
         error={error}
         retry={reload}
-        archiveState={[archive, onChangeArchiveButton, { disabled: loading }]}
+        archiveState={
+          isArchiveRequirementModuleAllowed
+            ? [archive, onChangeArchiveButton, { disabled: loading }]
+            : undefined
+        }
         header={header}
         rows={gridData?.results || []}
         columns={columns}
@@ -214,18 +271,7 @@ export default function Requirements() {
           ) : null
         }
       >
-        <RequirementsForm
-          setResults={setResults}
-          hideButtons={archive}
-          accounts={accounts}
-          consultants={consultants}
-          viewData={viewData}
-          mode={mode}
-          setDrawerOpen={setDrawerOpen}
-          isEditing={isEditing}
-          onEdit={handleEdit}
-          onCopy={handleCopy}
-        />
+        <MyForm />
       </CustomDrawer>
     </>
   );

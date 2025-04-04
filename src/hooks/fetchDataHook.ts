@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
+import { getJUser } from '../utils/utils';
 
 export function useFetchData<T = any>(
-  queryFunction: () => Promise<T[]>,
+  queryFunction: () => Promise<T>,
   dependencies?: any[]
 ): iFetchData<T> {
-  const [data, setData] = useState<T[]>([]);
+  const [data, setData] = useState<T>();
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   const loadData = async () => {
-    if (loading) return;
+    if (loading||!getJUser()) return;
     try {
       setError('');
       setLoading(true);
@@ -36,9 +37,9 @@ export function useFetchData<T = any>(
   };
 }
 export interface iFetchData<T> {
-  data: T[];
+  data?: T;
   error: string;
   loading: boolean;
   loadData: () => Promise<void>;
-  setData: React.Dispatch<React.SetStateAction<T[]>>;
+  setData: React.Dispatch<React.SetStateAction<T|undefined>>;
 }

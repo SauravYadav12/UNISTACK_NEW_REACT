@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { dateFormate } from '../constants';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
 import { markAttendance, updateAttendance } from '../../services/attendanceApi';
 import { getJUser } from '../../utils/utils';
 import { dateByUserShift, handleAttendanceStatus } from '../../utils/dateUtil';
@@ -20,14 +20,17 @@ const MarkAttendanceModal = ({
   date,
   attendence,
   state,
+  forAdmin = false,
   onCancel,
   onMark,
 }: MarkAttendanceModalProps) => {
   const [open, setOpen] = state;
   const isUserHasSession = user._id === getJUser()?._id;
-  let status = handleAttendanceStatus(user.shift);
   async function onMarkAttendance() {
-     status = handleAttendanceStatus(user.shift);
+    let status = handleAttendanceStatus(user.shift);
+    if (forAdmin && !status) {
+      status = AttendanceStatus.Present;
+    }
     if (!status) {
       toast.error('Inapplicable time');
       return;
@@ -92,6 +95,7 @@ interface MarkAttendanceModalProps {
   date: string;
   state: [boolean, (s: boolean) => void];
   attendence?: iAttendance;
+  forAdmin?: boolean;
   onMark?: (a: iAttendance) => void;
   onCancel?: () => void;
 }

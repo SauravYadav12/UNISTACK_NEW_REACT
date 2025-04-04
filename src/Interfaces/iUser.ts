@@ -41,7 +41,7 @@ export enum UserRole {
   'super-admin' = 'super-admin',
   'admin' = 'admin',
   'hr' = 'hr',
+  marketing = 'marketing',
   'support' = 'support',
   'user' = 'user',
-  marketing = 'marketing',
 }

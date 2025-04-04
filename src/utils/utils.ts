@@ -134,10 +134,10 @@ export const myIp = async () => {
 };
 
 export const myIpGeoLocation = async () => {
-  const position = await myGeoLocation();
-  const location = position ? JSON.stringify({ ...position?.coords }) : null;
+  // const position = await myGeoLocation();
+  // const location = position ? JSON.stringify({ ...position?.coords }) : null;
   const ip = (await myIp()) || '';
-  const data = { ip, location };
+  const data = { ip, location: undefined };
   return data;
 };
 

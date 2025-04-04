@@ -22,7 +22,15 @@ import InterviewTabs from './components/interview/InterviewTabs';
 import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
 import AttendanceDashboard from './pages/Attendance/AttendanceDashboard';
 import MyAttendance from './pages/Attendance/MyAttendance';
-import { UserRole } from './Interfaces/iUser';
+import AccessControl from './pages/AccessControl/AccessControl';
+import Leaves from './pages/Leaves/Leaves';
+import {
+  EmployeeModule,
+  HomeModule,
+  MarketingModule,
+  ModuleGroup,
+  SuperAdminModule,
+} from './utils/accessControlUtil';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -41,33 +49,67 @@ function App() {
             }
           >
             <Route
-              path="attendance/dashboard"
+              path="dashboard"
               element={
-                <ProtectedRoute allow={[UserRole.hr, UserRole['super-admin']]}>
-                  <AttendanceDashboard />
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Home,
+                    module: HomeModule.Dashboard,
+                  }}
+                >
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />
             <Route
+              path="profile"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Home,
+                    module: HomeModule.Profile,
+                  }}
+                >
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="attendance/my-attendance"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Presence & Leave'],
+                    module: EmployeeModule.Attendance,
+                  }}
+                >
                   <MyAttendance />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="dashboard"
+              path="leaves"
               element={
-                <ProtectedRoute>
-                  <Dashboard />
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Presence & Leave'],
+                    module: EmployeeModule.Leaves,
+                  }}
+                >
+                  <Leaves />
                 </ProtectedRoute>
               }
             />
             <Route
               path="requirements"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Requirements,
+                  }}
+                >
                   <Requirements />
                 </ProtectedRoute>
               }
@@ -75,7 +117,12 @@ function App() {
             <Route
               path="interviews"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Interviews,
+                  }}
+                >
                   <InterviewTabs />
                 </ProtectedRoute>
               }
@@ -83,7 +130,12 @@ function App() {
             <Route
               path="testandvendorinterviews"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule['Test And VI'],
+                  }}
+                >
                   <TestAndVendorInterviews />
                 </ProtectedRoute>
               }
@@ -91,7 +143,12 @@ function App() {
             <Route
               path="consultants"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Consultants,
+                  }}
+                >
                   <Consultants />
                 </ProtectedRoute>
               }
@@ -99,7 +156,12 @@ function App() {
             <Route
               path="teams"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Teams,
+                  }}
+                >
                   <Teams />
                 </ProtectedRoute>
               }
@@ -107,7 +169,12 @@ function App() {
             <Route
               path="reports"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Reports,
+                  }}
+                >
                   <Reports />
                 </ProtectedRoute>
               }
@@ -115,28 +182,71 @@ function App() {
             <Route
               path="sales-leads"
               element={
-                <ProtectedRoute allow={['admin']}>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule['Sales Leads'],
+                  }}
+                >
                   <SalesLead />
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
+
             <Route
               path="user-management"
               element={
-                <ProtectedRoute allow={['super-admin']}>
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['User Management'],
+                  }}
+                >
                   <UserManagement />
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="access-control"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Access Control'],
+                  }}
+                >
+                  <AccessControl />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="attendance/dashboard"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Attendance Dashboard'],
+                  }}
+                >
+                  <AttendanceDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="leaves-management"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Leaves Management'],
+                  }}
+                >
+                  <div>Comming soon</div>
+                </ProtectedRoute>
+              }
+            />
           </Route>
+
           {isAuthenticated ? (
             <Route
               path="dashboard"

@@ -14,13 +14,15 @@ import { dateFormate, timeFormate } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
 import SalesLeadAssignedToSelect from '../../../components/salesLead/SalesLeadAssignedToSelect';
 import { usersList } from '../../../services/authApi';
+import { useFetchData } from '../../../hooks/fetchDataHook';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
   const [viewData, setViewData] = useState({});
-  const [accounts, setAccounts] = useState<any[]>();
+  const accountsState = useFetchData(getAccountList, []);
+  const { data: accounts } = accountsState;
   const {
     gridData,
     paginationModel,
@@ -135,23 +137,20 @@ const SalesLeads = () => {
   };
 
   async function getAccountList() {
-    try {
-      const { data } = await usersList();
-      const { users } = data;
-      setAccounts(users.filter((u: any) => u.active) || []);
-    } catch (error) {
-      console.log(error);
-    }
+    const { data } = await usersList();
+    const { users } = data;
+    return users.filter((u: any) => u.active) || [];
   }
 
-  useEffect(() => {
-    getAccountList();
-  }, []);
+  function onReload() {
+    reload();
+    accountsState.loadData();
+  }
 
   const dataGridHeader = (
     <>
       <h3>Sales Leads</h3>
-      <IconButton onClick={reload} disabled={loading}>
+      <IconButton onClick={onReload} disabled={loading}>
         <SyncIcon
           className={loading ? 'sync-icon-loading' : ''}
           color="primary"
@@ -168,10 +167,10 @@ const SalesLeads = () => {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        error={error}
-        retry={reload}
+        error={error || accountsState.error}
+        retry={onReload}
         header={dataGridHeader}
-        loading={loading}
+        loading={loading || accountsState.loading}
         columns={columns}
         rows={gridData?.results || []}
       />

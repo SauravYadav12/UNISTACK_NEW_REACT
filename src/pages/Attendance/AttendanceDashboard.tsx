@@ -1,8 +1,16 @@
-import { Box, Grid, IconButton, MenuItem, Select } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  Grid,
+  IconButton,
+  MenuItem,
+  Select,
+  Typography,
+} from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import AttendanceGridMonthly from '../../components/attendance/AttendanceGridMonthly';
 import AttendanceSummary from '../../components/attendance/AttendanceSummary';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, jUser, UserRole } from '../../Interfaces/iUser';
 import { usersList } from '../../services/authApi';
 import { getJUser } from '../../utils/utils';
 import WeeklyAttendanceTable from '../../components/attendance/WeeklyAttendence';
@@ -20,11 +28,58 @@ import moment, { Moment, unitOfTime } from 'moment';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 const AttendanceDashboard = () => {
-  const [exportModal, setExportModal] = useState(false);
-  const usersListState = useFetchData<jUser>(fetchUsers, []);
-  const { data: users } = usersListState;
-  const [currentUser, setCurrentUser] = useState<jUser>(getJUser()!);
+  const usersListState = useFetchData<jUser[]>(fetchUsers, []);
+
+  const { data: users, loading, error, loadData } = usersListState;
+
+  async function fetchUsers() {
+    const { data } = await usersList();
+    const { users } = data;
+    return (users as jUser[])?.filter(
+      (u) => u.role !== UserRole['super-admin']
+    );
+  }
+
+  if (loading)
+    return (
+      <Box className="loader" sx={{ py: 10, height: '300px', pr: 0, m: 0 }}>
+        <CircularProgress />
+      </Box>
+    );
+  if (error) {
+    return (
+      <Box textAlign={'center'}>
+        <Typography color="error">{error}</Typography>
+        <IconButton onClick={loadData}>
+          <Sync color="primary" />
+        </IconButton>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      {users?.length && (
+        <MyDashBoardComponent
+          users={users}
+          onReload={() => usersListState.loadData()}
+        />
+      )}
+    </Box>
+  );
+};
+
+export default AttendanceDashboard;
+
+interface MyDashBoardComponentProp {
+  users: jUser[];
+  onReload: () => void;
+}
+
+function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
   const { myAttendanceState } = useAuth();
+  const [exportModal, setExportModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState<jUser>(users[0]);
   const currentUserTodaysAttendance = useAttendance(
     {
       users: [currentUser],
@@ -61,7 +116,6 @@ const AttendanceDashboard = () => {
 
   const usersWiseOptionBasedAttendance = useAttendance(
     {
-      // users: users || [],
       fromDate: fromDate.format(dateFormate),
       toDate: toDate.format(dateFormate),
     },
@@ -102,17 +156,12 @@ const AttendanceDashboard = () => {
     }
   }
 
-  async function fetchUsers() {
-    const { data } = await usersList();
-    const { users } = data;
-    return users;
-  }
-
   function reload() {
-    usersListState.loadData();
+    onReload();
     currentUserTodaysAttendance.loadData();
     currentUserMonthlyAttendance.loadData();
     usersWiseOptionBasedAttendance.loadData();
+    myAttendanceState?.loadData();
   }
 
   useEffect(() => {
@@ -121,8 +170,12 @@ const AttendanceDashboard = () => {
     );
   }, [userWiseAttendanceOption]);
 
+  useEffect(() => {
+    setCurrentUser(users[0]);
+  }, [users]);
+
   return (
-    <Box>
+    <>
       <Box
         sx={{
           py: 1,
@@ -133,9 +186,8 @@ const AttendanceDashboard = () => {
         }}
       >
         <Box>
-          {!usersListState.loading && (
+          {
             <Select
-              // readOnly
               labelId="month-dd"
               id="month-dd"
               value={currentUser?._id}
@@ -153,7 +205,7 @@ const AttendanceDashboard = () => {
                 );
               })}
             </Select>
-          )}
+          }
         </Box>
         <Box
           sx={{
@@ -171,6 +223,7 @@ const AttendanceDashboard = () => {
             <Box sx={{ height: 'fit-content', display: 'flex', columnGap: 2 }}>
               {!currentUserTodaysAttendance.loading && (
                 <CheckInCheckOut
+                  forAdmin
                   user={currentUser}
                   date={dateByUserShift(getJUser()!.shift)}
                   attendance={currentUserTodaysAttendance.attendance[0]}
@@ -182,7 +235,7 @@ const AttendanceDashboard = () => {
                 open={exportModal}
                 onOpen={() => setExportModal(true)}
                 onClose={() => setExportModal(false)}
-                users={users}
+                users={users || []}
               />
             </Box>
             <div>
@@ -227,11 +280,9 @@ const AttendanceDashboard = () => {
           />
         </Box>
       )}
-    </Box>
+    </>
   );
-};
-
-export default AttendanceDashboard;
+}
 
 enum AttendanceOption {
   Daily = 'Daily',

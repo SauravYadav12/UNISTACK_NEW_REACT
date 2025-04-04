@@ -8,20 +8,29 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { dateFormate, timeFormate } from '../constants';
-import { iAttendance } from '../../Interfaces/iUser';
+import { iAttendance, jUser } from '../../Interfaces/iUser';
 import { updateAttendance } from '../../services/attendanceApi';
-import { dateByUserShift } from '../../utils/dateUtil';
+import {
+  dateByUserShift,
+  // timeRemainingUntilOfficeEnd,
+} from '../../utils/dateUtil';
 import { getJUser } from '../../utils/utils';
 
 const MarkCheckoutTimeModal = ({
+  user,
   state,
   attendence,
+  forAdmin = false,
   onCancel,
   onMark,
 }: MarkCheckoutTimeModalProps) => {
   const [open, setOpen] = state;
 
   async function onMarkCheckoutTime() {
+    // if (timeRemainingUntilOfficeEnd(user.shift) <= 0 && !forAdmin) {
+    //   toast.error('In-applicable check-out time');
+    //   return;
+    // }
     try {
       const { data } = await updateAttendance(attendence._id, {
         checkOut: new Date().toUTCString(),
@@ -74,8 +83,10 @@ const MarkCheckoutTimeModal = ({
 export default MarkCheckoutTimeModal;
 
 interface MarkCheckoutTimeModalProps {
+  user: jUser;
   attendence: iAttendance;
   state: [boolean, (s: boolean) => void];
+  forAdmin?: boolean;
   onMark?: (a: iAttendance) => void;
   onCancel?: () => void;
 }

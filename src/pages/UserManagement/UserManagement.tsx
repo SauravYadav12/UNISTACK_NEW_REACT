@@ -1,10 +1,16 @@
-import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
+  IconButton,
+  Typography,
+} from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import {
   Dispatch,
   ReactElement,
   SetStateAction,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -28,9 +34,11 @@ import {
 } from '../Marketing/Profile/constants';
 import { UserProfile } from '../../Interfaces/profile';
 import { getProfileByUser } from '../../services/userProfileApi';
-import { toast } from 'react-toastify';
 import { dateFormate, timeFormate } from '../../components/constants';
 import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
+import { Sync } from '@mui/icons-material';
+import { useFetchData } from '../../hooks/fetchDataHook';
+import { jUser } from '../../Interfaces/iUser';
 
 interface CustomCard {
   color: string;
@@ -41,7 +49,12 @@ interface CustomCard {
 }
 
 function UserManagement() {
-  const [users, setUsers] = useState<any[]>();
+  const {
+    data: users,
+    loading,
+    error,
+    loadData,
+  } = useFetchData<jUser[]>(getUsersList, []);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [selectedUser, setSelectedUser] = useState<any>();
@@ -55,19 +68,10 @@ function UserManagement() {
     setDrawerOpen(true);
   }
 
-  const getUsersList = async () => {
-    try {
-      const { data } = await usersList();
-      setUsers(data.users || []);
-    } catch (error) {
-      toast.error('Failed to fetch users');
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    getUsersList();
-  }, []);
+  async function getUsersList() {
+    const { data } = await usersList();
+    return data.users || [];
+  }
 
   const Columns: any = useMemo(
     () => [
@@ -275,6 +279,44 @@ function UserManagement() {
     },
   ];
 
+  function MyUserTable() {
+    if (error) {
+      return (
+        <Box textAlign={'center'}>
+          <Typography color="error">{error}</Typography>
+          <IconButton onClick={loadData}>
+            <Sync color="primary" />
+          </IconButton>
+        </Box>
+      );
+    }
+
+    return (
+      <DataGrid
+        loading={loading}
+        rows={users || []}
+        columns={Columns}
+        getRowId={(row: any) => row._id}
+        slots={{ toolbar: GridToolbar }}
+        slotProps={{
+          toolbar: {
+            showQuickFilter: true,
+          },
+        }}
+        sx={{
+          flex: 1,
+          '& .MuiDataGrid-columnHeaderTitle': {
+            fontWeight: 'bold',
+            color: '#504e4e',
+          },
+          '& .MuiDataGrid-scrollbar': {
+            scrollbarWidth: 'thin',
+          },
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <PositionedSnackbar
@@ -298,35 +340,20 @@ function UserManagement() {
             );
           })}
         </Grid>
-        <Typography
-          variant="h4"
-          component="h4"
-          sx={{ textAlign: 'center', my: 2, width: '100%' }}
+        <Box
+          display={'flex'}
+          justifyContent={'space-between'}
+          alignItems={'center'}
         >
-          Manage Users
-        </Typography>
-        <DataGrid
-          loading={!users}
-          rows={users || []}
-          columns={Columns}
-          getRowId={(row: any) => row._id}
-          slots={{ toolbar: GridToolbar }}
-          slotProps={{
-            toolbar: {
-              showQuickFilter: true,
-            },
-          }}
-          sx={{
-            flex: 1,
-            '& .MuiDataGrid-columnHeaderTitle': {
-              fontWeight: 'bold',
-              color: '#504e4e',
-            },
-            '& .MuiDataGrid-scrollbar': {
-              scrollbarWidth: 'thin',
-            },
-          }}
-        />
+          <Typography variant="h5" sx={{ textAlign: 'center', my: 2 }}>
+            Manage Users
+          </Typography>
+          <IconButton onClick={loadData}>
+            <Sync color="primary" />
+          </IconButton>
+        </Box>
+
+        <MyUserTable />
       </Box>
 
       {!!selectedUser && (
@@ -389,29 +416,32 @@ export default UserManagement;
 
 const MyForm = ({ user, modeState }: MyFormqProps) => {
   const [mode, setMode] = modeState;
-  const [myProfile, setMyProfile] = useState<UserProfile>();
-  const getProfile = async () => {
-    try {
-      const res = await getProfileByUser({ ...user, id: user._id });
-      if (res) {
-        setMyProfile(res);
-      }
-    } catch (error) {
-      toast.error('Failed to fetch profile');
-      console.log(error);
-    }
-  };
-  useEffect(() => {
-    getProfile();
-  }, [user]);
-
-  if (!myProfile)
+  const {
+    data: myProfile,
+    setData: setMyProfile,
+    loadData,
+    loading,
+    error,
+  } = useFetchData(getProfile, [user]);
+  async function getProfile() {
+    return await getProfileByUser({ ...user, id: user._id });
+  }
+  if (loading)
     return (
       <Box className="loader">
         <CircularProgress />
       </Box>
     );
-
+  if (error) {
+    return (
+      <Box textAlign={'center'}>
+        <Typography color="error">{error}</Typography>
+        <IconButton onClick={loadData}>
+          <Sync color="primary" />
+        </IconButton>
+      </Box>
+    );
+  }
   return (
     <ProfileForm
       template={getProfileFormInitialValues(myProfile)}

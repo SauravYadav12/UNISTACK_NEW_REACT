@@ -26,7 +26,7 @@ export function timeByUserShift(shift: UserShift, date: Moment = moment()) {
   return handleZone(shift, date);
 }
 
-export function handleAttendanceStatus(
+function timeElapsedSinceOfficeStart(
   shift: UserShift,
   date: Moment = dateByUserShift(shift)
 ) {
@@ -34,13 +34,30 @@ export function handleAttendanceStatus(
   const workingHourStart = date.clone();
   workingHourStart.hour(h).minute(m).second(0).millisecond(0);
 
-  // Calculate the delay in milliseconds
   const delayInMilliseconds = date.valueOf() - workingHourStart.valueOf();
-  const delayInMinutes = Math.round(delayInMilliseconds / (1000 * 60));
+  // returns elapsed time in minutes
+  return Math.round(delayInMilliseconds / (1000 * 60));
+}
 
+export function timeRemainingUntilOfficeEnd(
+  shift: UserShift,
+  date: Moment = dateByUserShift(shift)
+) {
+  const workingTimeThresholdMinutes = 9 * 60;
+  const timeElapsedInMinutes = timeElapsedSinceOfficeStart(shift, date);
+  // returns remaining time in minutes
+  const timeremaining = workingTimeThresholdMinutes - timeElapsedInMinutes;
+  return timeremaining >= 0 ? timeremaining : 0;
+}
+
+export function handleAttendanceStatus(
+  shift: UserShift,
+  date: Moment = dateByUserShift(shift)
+) {
+  const delayInMinutes = timeElapsedSinceOfficeStart(shift, date);
   const presentThresholdMinutes = 15;
   const lateThresholdMinutes = 1.5 * 60;
-  const notApplicableThresholdMinutes = 8 * 60;
+  const notApplicableThresholdMinutes = 4 * 60;
 
   if (delayInMinutes <= presentThresholdMinutes) {
     return AttendanceStatus.Present;
