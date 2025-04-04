@@ -24,24 +24,26 @@ export const AuthContextProvider = ({ children }: any) => {
     !!localStorage.getItem('token') && !isTokenExpired()
   );
 
-  const accessControlState = useFetchData<iAccessControl>(async () => {
+  const accessControlState = useFetchData(async () => {
+    if (!isAuthenticated) return;
     const { data } = await getAccessControl();
-    return data.data!;
-  }, []);
+    return data.data;
+  }, [isAuthenticated]);
 
   const me = getJUser()!;
-  const myAttendanceState = useAttendance({
-    users: [me],
-  });
+  const myAttendanceState = useAttendance(
+    {
+      users: [me],
+      fetchDataIf: isAuthenticated,
+    },
+    [isAuthenticated]
+  );
 
-  const myProfileState = useFetchData(getMyProfile, []);
+  const myProfileState = useFetchData(getMyProfile, [isAuthenticated]);
 
   const validateLogin = (token: string) => {
     localStorage.setItem('token', token);
     setIsAuthenticated(true);
-    accessControlState.loadData();
-    myAttendanceState.loadData();
-    getMyProfile();
   };
 
   function validateLogout() {
@@ -50,6 +52,7 @@ export const AuthContextProvider = ({ children }: any) => {
   }
 
   async function getMyProfile() {
+    if (!isAuthenticated) return;
     syncUserOnLocalStorage();
     const iUser = getIUser()!;
     const profile = await getProfileByUser(iUser);
@@ -59,7 +62,8 @@ export const AuthContextProvider = ({ children }: any) => {
   const isModuleAllowed = (key: string) => {
     const me = getJUser();
     const { loading, error, data } = accessControlState;
-    if (loading || error || !data || !me?.role) return false;
+    if (loading || error || !data || !me?.role || isTokenExpired())
+      return false;
     if (me.role === UserRole['super-admin']) return true;
     return data[me.role]?.includes(key) || false;
   };
@@ -89,7 +93,7 @@ interface DefaultContextValue {
   myProfileState?: iFetchData<UserProfile | undefined>;
   myProfile?: UserProfile;
   myAttendanceState?: iUseAttendance;
-  accessControlState?: iFetchData<iAccessControl>;
+  accessControlState?: iFetchData<iAccessControl | undefined>;
   isAuthenticated: boolean;
   validateLogin: (token: string) => void;
   validateLogout: () => void;
