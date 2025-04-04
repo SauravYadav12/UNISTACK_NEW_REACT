@@ -733,35 +733,34 @@ function PhoneField({
     }
     onChange({ target: { value } } as any);
   };
-
   return (
-   <div>
-     <Grid item sx={{ width: 230, m: 1 }}>
-      <MuiTelInput
-        disabled={disabled}
-        inputProps={{ maxLength: maxPhoneLength }}
-        defaultCountry={disabled ? undefined : 'IN'}
-        onChange={onPhoneChange}
-        onBlur={() => onBlur && onBlur()}
-        label={label}
-        value={value}
-        fullWidth
-        error={!!errorText}
-        helperText={errorText}
-        size="small"
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '10px',
-            backgroundColor: disabled ? '#f0f0f0' : 'transparent',
-          },
-          '& .MuiInputBase-input.Mui-disabled': {
-            WebkitTextFillColor: 'black',
-            backgroundColor: '#f0f0f0',
-          },
-        }}
-      />
-    </Grid>
-   </div>
+    <div>
+      <Grid item sx={{ width: 230, m: 1 }}>
+        <MuiTelInput
+          disabled={disabled}
+          inputProps={{ maxLength: maxPhoneLength }}
+          defaultCountry={'US'}
+          onChange={onPhoneChange}
+          onBlur={() => onBlur && onBlur()}
+          label={label}
+          value={value}
+          fullWidth
+          error={!!errorText}
+          helperText={errorText}
+          size="small"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '10px',
+              backgroundColor: disabled ? '#f0f0f0' : 'transparent',
+            },
+            '& .MuiInputBase-input.Mui-disabled': {
+              WebkitTextFillColor: 'black',
+              backgroundColor: '#f0f0f0',
+            },
+          }}
+        />
+      </Grid>
+    </div>
   );
 }
 
