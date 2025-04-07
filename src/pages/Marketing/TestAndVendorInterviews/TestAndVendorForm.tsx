@@ -38,6 +38,7 @@ import {
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
+import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 
 const initialValues = {
   timeShift: '',
@@ -94,6 +95,16 @@ export default function InterviewForm(props: any) {
   const [openAlert, setOpenAlert] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  useHardKeySubmit(
+    {
+      onSubmit: (e) => {
+        mode === 'add' && handleSubmitForm(e);
+        mode === 'edit' && handleEditSubmitForm(e);
+      },
+    },
+    [values, mode]
+  );
+  
   useEffect(() => {
     if (selectedRecord) {
       setValues((prevValues: any) => ({

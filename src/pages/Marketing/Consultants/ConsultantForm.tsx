@@ -33,6 +33,7 @@ import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
 import { getExampleNumber } from 'libphonenumber-js';
+import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 
 const initialValues = {
   timeZone: '',
@@ -69,6 +70,16 @@ export default function ConsultantForm(props: any) {
   const [projects, setProjects] = useState<any[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: any }>(
     convertValuesToEmptyString(initialValues)
+  );
+
+  useHardKeySubmit(
+    {
+      onSubmit: (e) => {
+        mode === 'add' && handleSubmitForm(e);
+        mode === 'edit' && handleEditSubmitForm(e);
+      },
+    },
+    [values, mode]
   );
 
   useEffect(() => {
@@ -151,14 +162,8 @@ export default function ConsultantForm(props: any) {
 
     setIsSubmitting(true);
 
-    const filteredProjects = projects.filter(
-      (project) =>
-        project.projectName ||
-        project.projectCity ||
-        project.projectState ||
-        project.projectStartDate ||
-        project.projectEndDate ||
-        project.projectDescription
+    const filteredProjects = projects.filter((project) =>
+      Object.values(project).some((val) => !!val)
     );
     const payload = {
       ...values,

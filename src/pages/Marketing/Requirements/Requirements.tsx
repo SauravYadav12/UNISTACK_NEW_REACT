@@ -260,6 +260,7 @@ export default function Requirements() {
         open={drawerOpen}
         onClose={handleDrawerClose}
         title={formTitle}
+        closeOnOutSideClick={mode === 'view'}
         subTitle={
           isViewDataDuplicate ? (
             <>

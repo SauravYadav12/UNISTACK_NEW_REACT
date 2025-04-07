@@ -127,6 +127,7 @@ export default function Teams() {
         open={drawerOpen}
         onClose={handleCloseForm}
         title={formTitle}
+        closeOnOutSideClick={mode === 'view'}
       >
         <TeamsForm
           setResults={setResults}

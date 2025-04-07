@@ -20,6 +20,7 @@ import RenderFields from '../../../components/profile/formFields/RenderFields';
 import DocumentsField from '../../../components/profile/formFields/DocumentsField';
 import { uploadFile } from '../../../services/storageApi';
 import { convertValuesToEmptyString } from '../../../utils/utils';
+import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 
 const ProfileForm = ({
   viewMode,
@@ -244,6 +245,15 @@ const ProfileForm = ({
       return !pre;
     });
   };
+
+  useHardKeySubmit(
+    {
+      onSubmit: (e) => {
+        submitForm();
+      },
+    },
+    [myProfile]
+  );
 
   useEffect(() => {
     const templateCopy: UserProfile = { ...template };
