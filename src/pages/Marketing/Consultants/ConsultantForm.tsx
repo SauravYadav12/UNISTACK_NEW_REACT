@@ -576,6 +576,15 @@ export default function ConsultantForm(props: any) {
               }
             />
             <CustomTextField
+              label="Project Domain"
+              width={230}
+              selectedValue={project.projectDomain}
+              disabled={!isEditing}
+              onChange={(event: any) =>
+                addValue('projectDomain', event.target.value, index)
+              }
+            />
+            <CustomTextField
               label="Project City"
               width={230}
               selectedValue={project.projectCity}
@@ -642,7 +651,7 @@ export default function ConsultantForm(props: any) {
                   control={<Switch checked={!!project.isCurrent} />}
                   label={`Current project`}
                   onChange={() => {
-                    if(isSubmitting || !isEditing)return
+                    if (isSubmitting || !isEditing) return;
                     addValue('isCurrent', !project.isCurrent, index);
                     // addValue('projectEndDate', '', index);
                   }}
