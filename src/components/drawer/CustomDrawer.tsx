@@ -10,6 +10,7 @@ export default function CustomDrawer({
 }: any) {
   return (
     <Drawer
+      onClose={onClose}
       anchor="right"
       open={open}
       sx={{
