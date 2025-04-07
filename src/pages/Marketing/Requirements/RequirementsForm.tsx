@@ -824,7 +824,6 @@ export default function RequirementsForm(props: any) {
           <CustomTextField
             label="Prime Vendor Phone number"
             width={315}
-            type="number"
             selectedValue={values.primeVendorPhone}
             disabled={!isEditing}
             onChange={(event: any) =>
@@ -886,7 +885,6 @@ export default function RequirementsForm(props: any) {
             label="Vendor Phone number"
             width={315}
             selectedValue={values.vendorPhone}
-            type="number"
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('vendorPhone', event.target.value)
