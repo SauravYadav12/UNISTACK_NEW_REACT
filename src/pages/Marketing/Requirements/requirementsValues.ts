@@ -99,7 +99,13 @@ export const techStack = [
   'Other Frontend',
 ];
 
-export const duration = ['03 Months', '06 Months', '12 Months', '12+ Months'];
+export const duration = [
+  '03 Months',
+  '06 Months',
+  '12 Months',
+  '12+ Months',
+  'Full time',
+];
 
 export const requirementValidationMeta: ValidationMeta[] = [
   { field: 'reqStatus', required: true },

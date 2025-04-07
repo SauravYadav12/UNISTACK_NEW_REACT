@@ -33,7 +33,6 @@ import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
 import { getExampleNumber } from 'libphonenumber-js';
-import { Android12Switch } from '../Profile/constants';
 
 const initialValues = {
   timeZone: '',
@@ -597,7 +596,8 @@ export default function ConsultantForm(props: any) {
             <Grid item>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  inputFormat={dateFormate}
+                  views={['month', 'year']}
+                  // inputFormat={dateFormate}
                   disabled={!isEditing}
                   label="Project Start Date"
                   value={
@@ -605,9 +605,10 @@ export default function ConsultantForm(props: any) {
                       ? dayjs(project.projectStartDate)
                       : null
                   }
-                  onChange={(newValue) =>
-                    addValue('projectStartDate', newValue, index)
-                  }
+                  onChange={(newValue) => {
+                    addValue('projectStartDate', newValue, index);
+                    console.log(newValue);
+                  }}
                   renderInput={(params) => (
                     <TextField
                       size="small"
@@ -633,22 +634,27 @@ export default function ConsultantForm(props: any) {
                 />
               </LocalizationProvider>
             </Grid>
-            <Grid item>
-              <FormControlLabel
-                disabled={isSubmitting}
-                control={<Switch checked={!!project.isCurrent} />}
-                label={`Is Current`}
-                onChange={() => {
-                  addValue('isCurrent', !project.isCurrent, index);
-                  addValue('projectEndDate', '', index);
-                }}
-              />
-            </Grid>
+            {(isEditing || project.isCurrent) && (
+              <Grid sx={{ m: 1 }}>
+                <FormControlLabel
+                  sx={{ minWidth: 230 }}
+                  // disabled={isSubmitting || !isEditing}
+                  control={<Switch checked={!!project.isCurrent} />}
+                  label={`Current project`}
+                  onChange={() => {
+                    if(isSubmitting || !isEditing)return
+                    addValue('isCurrent', !project.isCurrent, index);
+                    // addValue('projectEndDate', '', index);
+                  }}
+                />
+              </Grid>
+            )}
             {!project.isCurrent && (
               <Grid item>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
-                    inputFormat={dateFormate}
+                    // inputFormat={dateFormate}
+                    views={['month', 'year']}
                     disabled={!isEditing}
                     label="Project End Date"
                     value={
@@ -686,6 +692,7 @@ export default function ConsultantForm(props: any) {
                 </LocalizationProvider>
               </Grid>
             )}
+
             <CustomTextField
               label="Project Description"
               multiline
