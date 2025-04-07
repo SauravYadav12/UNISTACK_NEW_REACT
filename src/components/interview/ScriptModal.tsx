@@ -29,10 +29,12 @@ import { requirementsList } from '../../services/requirementApi';
 import { consultantsList } from '../../services/consultantApi';
 import { urlValidator } from '../../utils/validators';
 import dayjs from 'dayjs';
-import { dateFormate } from '../constants';
 import { uploadFile } from '../../services/storageApi';
 import { toast } from 'react-toastify';
 import { downloadFile } from '../../utils/utils';
+
+const dateFormate = 'MMM YYYY';
+
 const ScriptModal = ({
   open,
   interview,
@@ -98,13 +100,19 @@ const ScriptModal = ({
 
   const getData = async () => {
     try {
+      if (!interview.consultantRef) {
+        toast.error('Consultant is required');
+        return;
+      }
       const [cons, req] = await Promise.all([
         consultantsList(`_id=${interview.consultantRef}`),
         requirementsList(`reqID=${interview.reqID}`),
       ]);
       if (!req.data.data?.results?.length || !cons.data.data?.results?.length) {
+        toast.error('Something is missing');
         return;
       }
+
       setRequirement(req.data.data.results[0]);
       setConsultant(cons.data.data.results[0]);
     } catch (error) {
