@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import RequirementsForm from './RequirementsForm';
 import { requirementsList } from '../../../services/requirementApi';
 import { useSearchParams } from 'react-router-dom';

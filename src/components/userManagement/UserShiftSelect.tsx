@@ -4,7 +4,7 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { updateUser } from '../../services/authApi';
-import { UserShift } from '../../Interfaces/iUser';
+import { jUser, UserShift } from '../../Interfaces/iUser';
 import { toast } from 'react-toastify';
 
 interface iProps {
@@ -12,6 +12,7 @@ interface iProps {
   userId: string;
   setAlertMessage: any;
   setOpen: (s: boolean) => void;
+  onChangeUser(usr: jUser): void;
 }
 
 export default function UserShiftSelect({
@@ -19,16 +20,19 @@ export default function UserShiftSelect({
   userId,
   setAlertMessage,
   setOpen,
+  onChangeUser,
 }: iProps) {
   const shifts: UserShift[] = [...Object.values(UserShift)];
-  const [userShift, setUserShift] = React.useState(shift||'');
+  const [userShift, setUserShift] = React.useState(shift || '');
 
   const handleChange = async (event: SelectChangeEvent) => {
     const newShift = event.target.value as UserShift;
     setUserShift(newShift);
     const payload = { shift: newShift };
     try {
-      await updateUser(userId, payload);
+      const { data } = await updateUser(userId, payload);
+      const { user } = data;
+      onChangeUser(user);
       setAlertMessage(`Shift updated to ${newShift}`);
       setOpen(true);
     } catch (error) {

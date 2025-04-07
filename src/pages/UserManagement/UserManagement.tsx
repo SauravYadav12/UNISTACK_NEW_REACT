@@ -32,13 +32,12 @@ import {
   getProfileFormInitialValues,
   profileFormSections,
 } from '../Marketing/Profile/constants';
-import { UserProfile } from '../../Interfaces/profile';
 import { getProfileByUser } from '../../services/userProfileApi';
 import { dateFormate, timeFormate } from '../../components/constants';
 import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
 import { Sync } from '@mui/icons-material';
 import { useFetchData } from '../../hooks/fetchDataHook';
-import { jUser } from '../../Interfaces/iUser';
+import { jUser, UserRole } from '../../Interfaces/iUser';
 
 interface CustomCard {
   color: string;
@@ -53,6 +52,7 @@ function UserManagement() {
     data: users,
     loading,
     error,
+    setData: setUsers,
     loadData,
   } = useFetchData<jUser[]>(getUsersList, []);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -71,6 +71,17 @@ function UserManagement() {
   async function getUsersList() {
     const { data } = await usersList();
     return data.users || [];
+  }
+
+  function HandleChangeUser(usr: jUser) {
+    setUsers((pre) => {
+      pre =
+        pre?.map((u) => {
+          if (u._id === usr._id) return usr;
+          return u;
+        }) || [];
+      return [...pre];
+    });
   }
 
   const Columns: any = useMemo(
@@ -111,7 +122,8 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params: any) => (
           <UserRoleSelect
-            setRole={params.row.role}
+            onChangeUser={HandleChangeUser}
+            role={params.row.role as UserRole}
             userId={params.row._id}
             setOpen={setOpen}
             setAlertMessage={setAlertMessage}
@@ -125,6 +137,7 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params: any) => (
           <UserShiftSelect
+            onChangeUser={HandleChangeUser}
             shift={params.row.shift}
             userId={params.row._id}
             setOpen={setOpen}
@@ -139,6 +152,7 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params: any) => (
           <ActiveUserSwitch
+            onChangeUser={HandleChangeUser}
             active={params.row.active}
             userId={params.row._id}
             user={params.row}
@@ -154,6 +168,7 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params: any) => (
           <CanEditSwitch
+            onChangeUser={HandleChangeUser}
             active={!!params.row.canEdit}
             iUser={params.row}
             setOpen={setOpen}
