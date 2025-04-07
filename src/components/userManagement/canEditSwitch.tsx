@@ -22,7 +22,7 @@ export default function CanEditSwitch({
       const { data } = await updateUser(iUser._id, payload);
       const { user } = data;
       setOpen(true);
-      onChangeUser(user)
+      onChangeUser(user);
       if (user.canEdit) {
         setAlertMessage('Profile edit permission granted');
       } else {
@@ -34,14 +34,16 @@ export default function CanEditSwitch({
       toast.error('Failed to update!');
     }
   };
-  const disabled = iUser.role === 'super-admin';
+  const isSuperAdmin = iUser.role === 'super-admin';
   return (
     <>
-      <Tooltip title={disabled ? 'Change role from super-admin to edit' : ''}>
+      <Tooltip
+        title={isSuperAdmin ? 'Change role from super-admin to edit' : ''}
+      >
         <span>
           <Switch
-            disabled={disabled}
-            checked={checked}
+            disabled={isSuperAdmin}
+            checked={isSuperAdmin ? true : checked}
             onChange={handleChange}
             inputProps={{ 'aria-label': 'controlled' }}
           />
