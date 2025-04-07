@@ -188,6 +188,7 @@ const TodaysInterviews = () => {
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
           title={'Interview ID : ' + viewData.intId}
+          closeOnOutSideClick
         >
           <InterviewForm
             handleCloseForm={() => setDrawerOpen(false)}

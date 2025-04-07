@@ -286,6 +286,7 @@ export default function Interviews(props: Iprops) {
         open={drawerOpen}
         onClose={handleCloseForm}
         title={formTitle}
+        closeOnOutSideClick={mode === 'view'}
       >
         <InterviewForm
           onCreate={clearReqFromParams}

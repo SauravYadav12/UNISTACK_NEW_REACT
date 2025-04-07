@@ -178,6 +178,7 @@ function Profile() {
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
           title={'Edit Profile'}
+          closeOnOutSideClick={false}
         >
           <ProfileForm
             onSubmitSuccessfully={(p) => {
@@ -196,6 +197,7 @@ function Profile() {
           open={profilePictureDrawer}
           onClose={() => setProfilePictureDrawer(false)}
           title={'Edit Profile'}
+          closeOnOutSideClick={false}
         >
           <ProfileForm
             onSubmitSuccessfully={(p) => {

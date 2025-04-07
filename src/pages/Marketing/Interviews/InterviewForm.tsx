@@ -53,6 +53,7 @@ import {
   validateAllFields,
 } from '../../../utils/validators';
 import { convertValuesToEmptyString, downloadFile } from '../../../utils/utils';
+import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 
 export default function InterviewForm(props: any) {
   const {
@@ -75,6 +76,15 @@ export default function InterviewForm(props: any) {
   const [scriptModal, setScriptModal] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  useHardKeySubmit(
+    {
+      onSubmit: (e) => {
+        mode === 'add' && handleSubmitForm(e);
+        mode === 'edit' && handleEditSubmitForm(e);
+      },
+    },
+    [values, mode]
+  );
   useEffect(() => {
     if (selectedRecord) {
       setValues((prevValues: any) => ({

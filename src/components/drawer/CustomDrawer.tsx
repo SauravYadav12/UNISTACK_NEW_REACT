@@ -1,16 +1,26 @@
-import { Drawer, Box, IconButton, Link } from '@mui/material';
+import { Drawer, Box, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+
+interface iProps {
+  open: boolean;
+  title: string | JSX.Element | null;
+  subTitle?: string | JSX.Element | null;
+  closeOnOutSideClick: boolean;
+  children: any;
+  onClose: () => void;
+}
 
 export default function CustomDrawer({
   open,
-  onClose,
   title,
   subTitle,
+  closeOnOutSideClick,
   children,
-}: any) {
+  onClose,
+}: iProps) {
   return (
     <Drawer
-      onClose={onClose}
+      onClose={closeOnOutSideClick ? onClose : undefined}
       anchor="right"
       open={open}
       sx={{

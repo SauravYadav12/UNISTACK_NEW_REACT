@@ -152,6 +152,7 @@ export default function Consultants() {
         open={drawerOpen}
         onClose={handleCloseForm}
         title={formTitle}
+        closeOnOutSideClick={mode === 'view'}
       >
         <ConsultantForm
           setResults={setResults}

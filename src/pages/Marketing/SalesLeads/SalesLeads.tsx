@@ -178,6 +178,7 @@ const SalesLeads = () => {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         title={formTitle}
+        closeOnOutSideClick
       >
         <SalesLeadForm
           viewData={viewData}

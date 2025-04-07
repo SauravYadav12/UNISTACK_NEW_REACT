@@ -43,6 +43,7 @@ import {
   validateAllFields,
 } from '../../../utils/validators';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
+import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 
 export default function RequirementsForm(props: any) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
@@ -71,6 +72,16 @@ export default function RequirementsForm(props: any) {
     file || (urlValidator(values.resumeUpload) ? values.resumeUpload : '');
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
   const navigate = useNavigate();
+
+  useHardKeySubmit(
+    {
+      onSubmit: (e) => {
+        mode === 'add' && handleSubmitForm(e);
+        mode === 'edit' && handleEditSubmitForm(e);
+      },
+    },
+    [values, mode]
+  );
 
   useEffect(() => {
     (mode === 'view' || mode === 'edit') && setValues(viewData);

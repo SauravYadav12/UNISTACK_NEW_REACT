@@ -21,6 +21,7 @@ import {
   ValidationMeta,
 } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
+import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 
 const teamValidationMeta: ValidationMeta[] = [
   {
@@ -54,6 +55,16 @@ export default function TeamsForm(props: any) {
   const { viewData, mode, setDrawerOpen, isEditing, onEdit, setResults } =
     props;
 
+  useHardKeySubmit(
+    {
+      onSubmit: (e) => {
+        mode === 'add' && handleSubmitForm(e);
+        mode === 'edit' && handleEditSubmitForm(e);
+      },
+    },
+    [values, mode]
+  );
+
   useEffect(() => {
     if (mode === 'view') {
       setValues(viewData);
@@ -63,7 +74,7 @@ export default function TeamsForm(props: any) {
         createdBy: user.firstName || '',
       }));
     }
-    setErrors(convertValuesToEmptyString(initialValues))
+    setErrors(convertValuesToEmptyString(initialValues));
   }, [mode, viewData]);
 
   const handleClickOpenAlert = () => {

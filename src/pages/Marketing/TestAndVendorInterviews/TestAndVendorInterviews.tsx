@@ -41,7 +41,7 @@ export default function TestAndVendorInterviews() {
     loading,
     setPaginationModel,
     reload,
-    setResults
+    setResults,
   } = usePagination(
     {
       queryFunction: interviewsList,
@@ -200,6 +200,7 @@ export default function TestAndVendorInterviews() {
         open={drawerOpen}
         onClose={handleCloseForm}
         title={formTitle}
+        closeOnOutSideClick={mode === 'view'}
       >
         <TestAndVendorForm
           setResults={setResults}

@@ -383,6 +383,7 @@ function UserManagement() {
             ' Profile: ' +
             `${selectedUser.firstName} ${selectedUser.lastName}`
           }
+          closeOnOutSideClick={mode === 'view'}
         >
           <MyForm modeState={[mode, setMode]} user={selectedUser} />
           {mode === 'view' && (
