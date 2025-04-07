@@ -40,9 +40,5 @@ export const consultantValidationMeta: ValidationMeta[] = [
     field: 'email',
     required: true,
     validate: validateEmail,
-  },
-  {
-    field: 'dlNo',
-    required: true,
-  },
+  }
 ];

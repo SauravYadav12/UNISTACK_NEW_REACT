@@ -4,24 +4,41 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { updateUser } from '../../services/authApi';
+import { toast } from 'react-toastify';
+import { jUser, UserRole } from '../../Interfaces/iUser';
+
+interface iProps {
+  role: UserRole;
+  userId: string;
+  setAlertMessage: any;
+  setOpen: (s: boolean) => void;
+  onChangeUser(usr: jUser): void;
+}
 
 export default function UserRoleSelect({
-  setRole,
+  role,
   userId,
   setAlertMessage,
   setOpen,
-}: any) {
-  const [userRole, setUserRole] = React.useState(setRole);
+  onChangeUser,
+}: iProps) {
+  const [userRole, setUserRole] = React.useState(role);
 
   const handleChange = async (event: SelectChangeEvent) => {
-    const newRole = event.target.value as string;
-    setUserRole(newRole);
-    const payload = { role: newRole };
-    const response: any = await updateUser(userId, payload);
-    console.log('roleUpdateresponse', response.data);
-    if (response.status === 200) {
+    const preRole = userRole;
+    const newRole = event.target.value as UserRole;
+    try {
+      setUserRole(newRole);
+      const payload = { role: newRole };
+      const { data } = await updateUser(userId, payload);
+      const { user } = data;
+      onChangeUser(user);
       setAlertMessage(`Role updated to ${newRole}`);
       setOpen(true);
+    } catch (error) {
+      setUserRole(preRole);
+      console.log(error);
+      toast.error('failed to update');
     }
   };
   return (

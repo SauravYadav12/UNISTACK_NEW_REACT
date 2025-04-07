@@ -5,7 +5,9 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControlLabel,
   Grid,
+  Switch,
   TextField,
 } from '@mui/material';
 import examples from 'libphonenumber-js/examples.mobile.json';
@@ -31,6 +33,7 @@ import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
 import { getExampleNumber } from 'libphonenumber-js';
+import { Android12Switch } from '../Profile/constants';
 
 const initialValues = {
   timeZone: '',
@@ -84,6 +87,7 @@ export default function ConsultantForm(props: any) {
           projectStartDate: null,
           projectEndtDate: null,
           projectDescription: '',
+          isCurrent: true,
         },
       ]);
     }
@@ -449,17 +453,6 @@ export default function ConsultantForm(props: any) {
           }
           onBlur={() => onBlur('email')}
         />
-        {/* <CustomTextField
-          onBlur={() => onBlur('phone')}
-          label="Phone"
-          width={230}
-          type="number"
-          selectedValue={values.phone}
-          error={!!errors.phone}
-          helperText={errors.phone}
-          disabled={!isEditing}
-          onChange={(event: any) => addValue('phone', event.target.value)}
-        /> */}
         <PhoneField
           onBlur={() => onBlur('phone')}
           label="Phone"
@@ -641,45 +634,58 @@ export default function ConsultantForm(props: any) {
               </LocalizationProvider>
             </Grid>
             <Grid item>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  inputFormat={dateFormate}
-                  disabled={!isEditing}
-                  label="Project End Date"
-                  value={
-                    project.projectEndDate
-                      ? dayjs(project.projectEndDate)
-                      : null
-                  }
-                  onChange={(newValue) =>
-                    addValue('projectEndDate', newValue, index)
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      size="small"
-                      {...params}
-                      disabled={!isEditing}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '10px',
-                          backgroundColor: !isEditing
-                            ? '#f0f0f0'
-                            : 'transparent',
-                        },
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          WebkitTextFillColor: 'black',
-                          backgroundColor: '#f0f0f0',
-                          borderRadius: '10px',
-                        },
-                        width: 230,
-                        mr: 1,
-                        mb: 1,
-                      }}
-                    />
-                  )}
-                />
-              </LocalizationProvider>
+              <FormControlLabel
+                disabled={isSubmitting}
+                control={<Switch checked={!!project.isCurrent} />}
+                label={`Is Current`}
+                onChange={() => {
+                  addValue('isCurrent', !project.isCurrent, index);
+                  addValue('projectEndDate', '', index);
+                }}
+              />
             </Grid>
+            {!project.isCurrent && (
+              <Grid item>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    inputFormat={dateFormate}
+                    disabled={!isEditing}
+                    label="Project End Date"
+                    value={
+                      project.projectEndDate
+                        ? dayjs(project.projectEndDate)
+                        : null
+                    }
+                    onChange={(newValue) =>
+                      addValue('projectEndDate', newValue, index)
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        size="small"
+                        {...params}
+                        disabled={!isEditing}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '10px',
+                            backgroundColor: !isEditing
+                              ? '#f0f0f0'
+                              : 'transparent',
+                          },
+                          '& .MuiInputBase-input.Mui-disabled': {
+                            WebkitTextFillColor: 'black',
+                            backgroundColor: '#f0f0f0',
+                            borderRadius: '10px',
+                          },
+                          width: 230,
+                          mr: 1,
+                          mb: 1,
+                        }}
+                      />
+                    )}
+                  />
+                </LocalizationProvider>
+              </Grid>
+            )}
             <CustomTextField
               label="Project Description"
               multiline

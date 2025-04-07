@@ -8,6 +8,7 @@ export default function ActiveUserSwitch({
   active,
   userId,
   user,
+  onChangeUser,
   setOpen,
   setAlertMessage,
 }: any) {
@@ -18,7 +19,9 @@ export default function ActiveUserSwitch({
     setChecked(newActiveStatus);
     const payload = { active: newActiveStatus };
     try {
-      const response: any = await updateUser(userId, payload);
+      const { data } = await updateUser(userId, payload);
+      const { user } = data;
+      onChangeUser(user);
       if (newActiveStatus) {
         try {
           const name = `${user.firstName} ${user.lastName}`;

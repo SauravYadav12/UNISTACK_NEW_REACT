@@ -73,14 +73,14 @@ export default function RequirementsForm(props: any) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    mode === 'view' && setValues(viewData);
+    (mode === 'view' || mode === 'edit') && setValues(viewData);
     mode === 'add' &&
       setValues((pre: any) => ({
         ...pre,
         reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
         reqEnteredByRef: `${getIUser()?.id}`,
       }));
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     setFile(undefined);
