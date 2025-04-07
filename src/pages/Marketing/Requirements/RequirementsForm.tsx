@@ -50,7 +50,7 @@ export default function RequirementsForm(props: any) {
   const [errors, setErrors] = useState<{ [key: string]: any }>(
     convertValuesToEmptyString(requirementFormInitialValues)
   );
-  const [comment, setComment] = useState<any>('');
+  const [comment, setComment] = useState('');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [deleteAlert, setDeleteAlert] = useState(false);
   const [copyAlert, setCopyAlert] = useState(false);
@@ -164,12 +164,14 @@ export default function RequirementsForm(props: any) {
       setErrors
     );
     if (!isValid) return;
-    const commentsPayload = {
-      username: `${user.firstName} ${user.lastName}`,
-      date: new Date(),
-      comment: comment,
-    };
-    values.mComment = [commentsPayload];
+    if (comment.trim().length) {
+      const commentsPayload = {
+        username: `${user.firstName} ${user.lastName}`,
+        date: new Date(),
+        comment: comment,
+      };
+      values.mComment = [commentsPayload];
+    }
 
     setIsSubmitting(true);
 
@@ -199,22 +201,19 @@ export default function RequirementsForm(props: any) {
       values,
       setErrors as any
     );
-    if (!comment.trim()) {
-      toast.warning('Comment is required');
-      return;
-    }
+
     if (!isValid) return;
-    const commentsPayload = {
-      username: `${user.firstName} ${user.lastName}`,
-      date: new Date(),
-      comment: comment,
-    };
-    const updatedComments = values.mComment
-      ? [...values.mComment, commentsPayload]
-      : [commentsPayload];
+    const payload = { ...values };
+    if (comment.trim().length) {
+      const commentPayload = {
+        username: `${user.firstName} ${user.lastName}`,
+        date: new Date(),
+        comment: comment,
+      };
+      payload.mComment = [...(payload.mComment || []), commentPayload];
+    }
     setIsSubmitting(true);
     try {
-      const payload = { ...values, mComment: updatedComments };
       if (file) {
         const url = await handleFileUpload(file);
         if (url) {
