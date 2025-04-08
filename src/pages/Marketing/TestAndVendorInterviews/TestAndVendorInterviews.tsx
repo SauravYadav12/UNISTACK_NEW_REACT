@@ -15,7 +15,7 @@ import TestAndVendorForm from './TestAndVendorForm';
 import { interviewsList } from '../../../services/vendorInterviewApi';
 import CustomSearch from './CustomSearch';
 import { interviewStatusColors } from './testAndViValues';
-import { dateFormate, timeFormate } from '../../../components/constants';
+import { dateFormate2 } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
 
 type Record = {
@@ -85,8 +85,8 @@ export default function TestAndVendorInterviews() {
       field: 'interviewDate',
       headerName: 'Test Entered Date',
       width: 120,
-      valueFormatter: (params: any) => {
-        return moment(params).format(dateFormate);
+      valueGetter: (params: any) => {
+        return moment(params).format(dateFormate2);
       },
     },
     { field: 'interviewDuration', headerName: 'Test Duration', width: 100 },
@@ -99,8 +99,8 @@ export default function TestAndVendorInterviews() {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) => {
-        return moment(params).format(dateFormate + ' ' + timeFormate);
+      valueGetter: (params: any) => {
+        return moment(params).format(dateFormate2);
       },
     },
   ];

@@ -27,6 +27,8 @@ import {
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { jUser } from '../../../Interfaces/iUser';
 import { Sync } from '@mui/icons-material';
+import moment from 'moment';
+import { dateFormate2 } from '../../../components/constants';
 export default function Requirements() {
   const { isModuleAllowed } = useAuth();
   const [searchParams] = useSearchParams();
@@ -88,6 +90,14 @@ export default function Requirements() {
     { field: 'vendorPhone', headerName: 'Vendor Phone', width: 130 },
     { field: 'jobTitle', headerName: 'Requirement Title', width: 200 },
     { field: 'reqEnteredBy', headerName: 'Created by', width: 130 },
+    {
+      field: 'createdAt',
+      headerName: 'Created At',
+      width: 180,
+      valueGetter: (val: string) => {
+        return moment(val).format(dateFormate2);
+      },
+    },
   ];
   const {
     gridData,
