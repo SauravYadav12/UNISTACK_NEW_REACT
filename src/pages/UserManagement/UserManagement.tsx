@@ -33,7 +33,7 @@ import {
   profileFormSections,
 } from '../Marketing/Profile/constants';
 import { getProfileByUser } from '../../services/userProfileApi';
-import { dateFormate, timeFormate } from '../../components/constants';
+import { dateFormate2, timeFormate } from '../../components/constants';
 import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
 import { Sync } from '@mui/icons-material';
 import { useFetchData } from '../../hooks/fetchDataHook';
@@ -188,15 +188,15 @@ function UserManagement() {
         field: 'createdAt',
         headerName: 'Created At',
         width: 200,
-        renderCell: (params: any) =>
-          moment(params.row.createdAt).format(dateFormate + ' ' + timeFormate),
+        valueGetter: (params: any) =>
+          moment(params).format(dateFormate2 + ' ' + timeFormate),
       },
       {
         field: 'updatedAt',
         headerName: 'Updated At',
         width: 200,
-        renderCell: (params: any) =>
-          moment(params.row.updatedAt).format(dateFormate + ' ' + timeFormate),
+        valueGetter: (params: any) =>
+          moment(params).format(dateFormate2 + ' ' + timeFormate),
       },
     ],
     []
@@ -204,7 +204,7 @@ function UserManagement() {
 
   const dateFormater = (date?: string) => {
     if (!date) return;
-    return moment(date).format(dateFormate + ' ' + timeFormate);
+    return moment(date).format(dateFormate2 + ' ' + timeFormate);
   };
   const extractLocationField = (val: any, field: string) => {
     if (!val) return;

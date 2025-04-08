@@ -5,7 +5,7 @@ import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
-import { dateFormate, timeFormate } from '../../../components/constants';
+import { dateFormate2 } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
 
 import SyncIcon from '@mui/icons-material/Sync';
@@ -77,8 +77,7 @@ export default function Consultants() {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) =>
-        moment(params).format(dateFormate + ' ' + timeFormate),
+      valueGetter: (params: any) => moment(params).format(dateFormate2),
     },
   ];
 

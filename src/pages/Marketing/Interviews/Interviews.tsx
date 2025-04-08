@@ -16,7 +16,7 @@ import CustomSearch from './CustomSearch';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValues';
-import { dateFormate, timeFormate } from '../../../components/constants';
+import { dateFormate2, timeFormate } from '../../../components/constants';
 import { archiveInterviewsList } from '../../../services/archivesApi';
 import { usePagination } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -105,16 +105,16 @@ export default function Interviews(props: Iprops) {
     {
       field: 'interviewDate',
       headerName: 'Int date',
-      width: 100,
-      valueFormatter: (params: any) => {
-        return moment(params).format(dateFormate);
+      width: 130,
+      valueGetter: (params: any) => {
+        return moment(params).format(dateFormate2);
       },
     },
     {
       field: 'interviewTime',
       headerName: 'Int Time',
       width: 150,
-      valueFormatter: (params: any, r: any) => {
+      valueGetter: (params: any, r: any) => {
         return (
           moment(params, timeFormate).format(timeFormate) +
           ' ' +
@@ -132,8 +132,8 @@ export default function Interviews(props: Iprops) {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) => {
-        return moment(params).format(dateFormate + ' ' + timeFormate);
+      valueGetter: (val: string) => {
+        return moment(val).format(dateFormate2);
       },
     },
   ];

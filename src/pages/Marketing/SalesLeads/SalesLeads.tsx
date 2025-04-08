@@ -1,5 +1,5 @@
 import { Button, IconButton } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import moment from 'moment';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -10,7 +10,7 @@ import SalesLeadStatusSelect from '../../../components/salesLead/SalesLeadStatus
 import SyncIcon from '@mui/icons-material/Sync';
 import { Country } from 'country-state-city';
 import './salesLead.css';
-import { dateFormate, timeFormate } from '../../../components/constants';
+import { dateFormate2 } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
 import SalesLeadAssignedToSelect from '../../../components/salesLead/SalesLeadAssignedToSelect';
 import { usersList } from '../../../services/authApi';
@@ -59,7 +59,7 @@ const SalesLeads = () => {
       field: 'firstName',
       headerName: 'Name',
       width: 150,
-      valueFormatter: (v: string, row: iSalesLead) =>
+      valueGetter: (v: string, row: iSalesLead) =>
         `${row.firstName} ${row.lastName}`,
     },
     { field: 'email', headerName: 'Email', width: 250 },
@@ -67,7 +67,7 @@ const SalesLeads = () => {
       field: 'phone',
       headerName: 'Phone',
       width: 150,
-      valueFormatter: (v: any) => v || 'NA',
+      valueGetter: (v: any) => v || 'NA',
     },
     {
       field: 'assignedTo',
@@ -97,7 +97,7 @@ const SalesLeads = () => {
       field: 'country',
       headerName: 'Country',
       width: 150,
-      valueFormatter: (params: any) =>
+      valueGetter: (params: any) =>
         `${Country.getCountryByCode(params)?.name} (${params})`,
     },
     { field: 'city', headerName: 'City', width: 150 },
@@ -105,8 +105,7 @@ const SalesLeads = () => {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) =>
-        moment(params).format(dateFormate + ' ' + timeFormate),
+      valueGetter: (params: any) => moment(params).format(dateFormate2),
     },
   ];
   const handleViewDetails = (row: iSalesLead) => {

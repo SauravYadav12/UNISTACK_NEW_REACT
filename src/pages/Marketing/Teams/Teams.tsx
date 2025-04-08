@@ -5,7 +5,7 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import TeamsForm from './TeamsForm';
 import { useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
-import { dateFormate, timeFormate } from '../../../components/constants';
+import { dateFormate2 } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
 
@@ -57,8 +57,7 @@ export default function Teams() {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueFormatter: (params: any) =>
-        moment(params).format(dateFormate + ' ' + timeFormate),
+      valueGetter: (params: any) => moment(params).format(dateFormate2),
     },
   ];
 
