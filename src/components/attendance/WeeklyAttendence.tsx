@@ -8,7 +8,6 @@ import {
   TableRow,
   Typography,
   styled,
-  useTheme,
   IconButton,
   Box,
   CircularProgress,
@@ -16,8 +15,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
-import { jUser} from '../../Interfaces/iUser';
-import dayjs from 'dayjs';
+import { jUser } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import AttendanceStatusBox from './AttendanceStatusBox';
@@ -34,14 +32,15 @@ interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
+  tableContainerHeight?: number;
 }
 
 const WeeklyAttendanceTable = ({
   users,
   attendanceState,
   dateState,
+  tableContainerHeight = 430,
 }: iProps) => {
-  const theme = useTheme();
   const [startDate, setStartDate] = dateState; // Set your desired start date for the week
   const { attendance, loading, loadData, error } = attendanceState;
   const weekDates = getWeekDates(startDate);
@@ -87,7 +86,7 @@ const WeeklyAttendanceTable = ({
       return (
         <TableRow>
           <TableCell colSpan={weekDates.length + 1}>
-            <Box className="loader" sx={{ py: 10 }}>
+            <Box className="loader" sx={{ py: 1 }}>
               <CircularProgress size={25} />
             </Box>
           </TableCell>
@@ -119,10 +118,9 @@ const WeeklyAttendanceTable = ({
           >
             <EmployeeInfoCell>
               <div>
-                <Typography variant="subtitle2">
+                <Typography variant="subtitle2" sx={{minHeight:'24px'}}>
                   {employee.firstName + ' ' + employee.lastName}
                 </Typography>
-                
               </div>
             </EmployeeInfoCell>
             {weekDates.map((date) => {
@@ -133,7 +131,6 @@ const WeeklyAttendanceTable = ({
                       attendance={getAttendance(date, employee._id)}
                     />
                   </Box>
-
                 </TableCell>
               );
             })}
@@ -147,14 +144,9 @@ const WeeklyAttendanceTable = ({
     <ChartCardWrapper
       p={'0px'}
       boxShadow={false}
-      // subtitle={`Week of ${dayjs(weekDates[0]).format(dateFormate)} - ${dayjs(
-      //   weekDates[weekDates.length - 1]
-      // ).format(dateFormate)}`}
-      subtitle={
-        `Week of ${weekDates[0]?.format(dateFormate)} - ${weekDates[
+      subtitle={`Week of ${weekDates[0]?.format(dateFormate)} - ${weekDates[
         weekDates.length - 1
-      ]?.format(dateFormate)}`
-      }
+      ]?.format(dateFormate)}`}
       action={
         <div>
           <IconButton onClick={handlePrevWeek} size="small">
@@ -163,29 +155,23 @@ const WeeklyAttendanceTable = ({
           <IconButton
             onClick={handleNextWeek}
             size="small"
-            // disabled={dayjs(weekDates[weekDates.length - 1]).isAfter(
-            //   new Date()
-            // )}
             disabled={weekDates[weekDates.length - 1]?.isAfter(moment(), 'day')}
-         
           >
             <ArrowRight />
           </IconButton>
         </div>
       }
     >
-      <TableContainer sx={{ height: 480, scrollbarWidth: 'thin' }}>
+      <TableContainer
+        sx={{ height: tableContainerHeight, scrollbarWidth: 'thin' }}
+      >
         <Table aria-label="weekly attendance table" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Employee</TableCell>
               {weekDates.map((date) => (
                 <TableCell key={date.toISOString()} align="center">
-                  {/* {new Intl.DateTimeFormat('en-US', {
-                    weekday: 'short',
-                    day: 'numeric',
-                  }).format(date)} */}
-                   {date.format('ddd, DD')}
+                  {date.format('ddd, DD')}
                 </TableCell>
               ))}
             </TableRow>

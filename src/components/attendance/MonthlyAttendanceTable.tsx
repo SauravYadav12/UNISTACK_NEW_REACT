@@ -16,7 +16,6 @@ import {
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
 import { jUser } from '../../Interfaces/iUser';
-import dayjs from 'dayjs';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import Sync from '@mui/icons-material/Sync';
@@ -37,17 +36,17 @@ interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
+  tableContainerHeight?: number;
 }
 const MonthlyAttendanceTable = ({
   users,
   attendanceState,
   dateState,
+  tableContainerHeight = 430,
 }: iProps) => {
   const theme = useTheme();
   const [currentDate, setCurrentDate] = dateState;
   const { attendance, loading, loadData, error } = attendanceState;
-  const year = currentDate.year();
-  const month = currentDate.month(); // 0-indexed
   const daysInMonth = currentDate.daysInMonth();
   const handlePrevMonth = () => {
     setCurrentDate(currentDate.clone().subtract(1, 'month').startOf('month'));
@@ -117,10 +116,7 @@ const MonthlyAttendanceTable = ({
             </TableCell>
             {monthDays.map((date) => (
               <TableCell key={date.toISOString()} align="center" padding="none">
-                <Typography variant="caption">
-                  {/* {String(date.getDate()).padStart(2, '0')} */}
-                  {date.format('DD')}
-                </Typography>
+                <Typography variant="caption">{date.format('DD')}</Typography>
               </TableCell>
             ))}
           </TableRow>
@@ -159,10 +155,6 @@ const MonthlyAttendanceTable = ({
       boxShadow={false}
       //   title="Monthly Attendance"
       subtitle={currentDate.format('MMMM YYYY')}
-      // subtitle={new Intl.DateTimeFormat('en-US', {
-      //   month: 'long',
-      //   year: 'numeric',
-      // }).format(currentDate)}
       action={
         <div>
           <IconButton onClick={handlePrevMonth} size="small">
@@ -175,9 +167,6 @@ const MonthlyAttendanceTable = ({
               moment().subtract(1, 'month').endOf('month'),
               'month'
             )}
-            // disabled={dayjs(currentDate).isAfter(
-            //   new Date().setMonth(new Date().getMonth() - 1)
-            // )}
           >
             <ArrowRight />
           </IconButton>
@@ -186,7 +175,7 @@ const MonthlyAttendanceTable = ({
     >
       <TableContainer
         sx={{
-          height: 480,
+          height: tableContainerHeight,
           scrollbarWidth: 'thin',
         }}
       >

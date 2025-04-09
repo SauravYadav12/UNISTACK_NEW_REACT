@@ -17,7 +17,6 @@ import {
   Select,
   TextField,
   Stack,
-  Popover,
 } from '@mui/material';
 
 import SyncIcon from '@mui/icons-material/Sync';
@@ -29,7 +28,6 @@ import {
   jUser,
   UserRole,
 } from '../../Interfaces/iUser';
-// import dayjs from 'dayjs';
 import { markAttendance, updateAttendance } from '../../services/attendanceApi';
 import { toast } from 'react-toastify';
 import { getJUser } from '../../utils/utils';
@@ -44,14 +42,13 @@ import AttendanceStatusBox from './AttendanceStatusBox';
 import { dateFormate, timeFormate } from '../constants';
 import moment, { Moment } from 'moment';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-// import moment from 'moment';
 
 interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   forEmployee?: boolean;
+  tableContainerHeight?: number;
   onChange?: (a: iAttendance) => void;
 }
 const DailyAttendanceTable = ({
@@ -59,6 +56,7 @@ const DailyAttendanceTable = ({
   attendanceState,
   dateState,
   forEmployee,
+  tableContainerHeight = 480,
   onChange,
 }: iProps) => {
   const [currentDate, setCurrentDate] = dateState;
@@ -163,11 +161,6 @@ const DailyAttendanceTable = ({
                         ).format(timeFormate + ' z')
                       : 'NA'}
                   </Typography>
-                  {/* <TimePickerButton
-                    value={moment(att?.checkIn)}
-                    label=""
-                    onChange={(t) => console.log(t)}
-                  /> */}
                 </Stack>
               </TableCell>
               <TableCell align="center">
@@ -191,12 +184,6 @@ const DailyAttendanceTable = ({
     <ChartCardWrapper
       p={'0px'}
       boxShadow={false}
-      // subtitle={new Intl.DateTimeFormat('en-US', {
-      //   weekday: 'long',
-      //   year: 'numeric',
-      //   month: 'long',
-      //   day: 'numeric',
-      // }).format(currentDate)}
       subtitle={currentDate.format('dddd, YYYY MMMM DD')}
       action={
         <>
@@ -208,9 +195,6 @@ const DailyAttendanceTable = ({
               <IconButton
                 onClick={nextDay}
                 size="small"
-                // disabled={dayjs(currentDate).isAfter(
-                //   dayjs(currentDate)
-                // )}
                 disabled={currentDate.isAfter(
                   dateByUserShift(getJUser()!.shift).subtract(1, 'day')
                 )}
@@ -222,7 +206,9 @@ const DailyAttendanceTable = ({
         </>
       }
     >
-      <TableContainer sx={{ height: 480, scrollbarWidth: 'thin' }}>
+      <TableContainer
+        sx={{ height: tableContainerHeight, scrollbarWidth: 'thin' }}
+      >
         <Table
           sx={{ minWidth: 650 }}
           aria-label="daily attendance table"
@@ -346,7 +332,8 @@ function AttendanceSwitch({
       status !== AttendanceStatus.Absent;
 
   function getStatus() {
-    if (!!status&&status!=AttendanceStatus.Absent) return AttendanceStatus.Absent;
+    if (!!status && status != AttendanceStatus.Absent)
+      return AttendanceStatus.Absent;
     if (forEmployee) {
       return handleAttendanceStatus(user.shift);
     }
@@ -397,7 +384,6 @@ const TimePickerButton: React.FC<TimePickerButtonProps> = ({
   };
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
-      
       <Box sx={{ mx: 1 }}>
         <IconButton
           onClick={handleClick}
@@ -408,16 +394,18 @@ const TimePickerButton: React.FC<TimePickerButtonProps> = ({
         {/* <div
         
         > */}
-          <TimePicker
-            open={open}
-            onClose={handleClose}
-            value={value}
-            onChange={onChange}
-            label={label}
-            // renderInput={() => <></>} // Don't render the input field
-            renderInput={(params) => <TextField {...params} sx={{visibility:'',h:0,w:0}} />}
-            inputFormat="HH:mm" // Optional: Set the format for internal handling
-          />
+        <TimePicker
+          open={open}
+          onClose={handleClose}
+          value={value}
+          onChange={onChange}
+          label={label}
+          // renderInput={() => <></>} // Don't render the input field
+          renderInput={(params) => (
+            <TextField {...params} sx={{ visibility: '', h: 0, w: 0 }} />
+          )}
+          inputFormat="HH:mm" // Optional: Set the format for internal handling
+        />
         {/* </div> */}
       </Box>
     </LocalizationProvider>
