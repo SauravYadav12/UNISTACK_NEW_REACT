@@ -124,6 +124,7 @@ function MyAttendanceHistory({ users }: MyAttendanceHistoryProps) {
     {
       fromDate: fromDate.format(dateFormate),
       toDate: toDate.format(dateFormate),
+      users,
     },
     [users, dateState[0]]
   );
