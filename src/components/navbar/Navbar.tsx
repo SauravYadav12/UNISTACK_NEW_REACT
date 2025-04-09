@@ -16,7 +16,7 @@ import { drawerWidth, smallDrawerWidth } from '../constants';
 import './navbar.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { iAttendance, iUser } from '../../Interfaces/iUser';
+import { iAttendance, iUser, UserRole } from '../../Interfaces/iUser';
 import { logout } from '../../services/authApi';
 import { getJUser } from '../../utils/utils';
 import CheckInCheckOut from '../attendance/CheckInCheckOut';
@@ -86,11 +86,12 @@ function Navbar({ sidebar, toggleSideBar }: any) {
                 ModuleGroup['Presence & Leave'],
                 EmployeeModule.Attendance
               )
-            ) && (
-              <Box sx={{ flexGrow: 0, marginRight: '20px' }}>
-                <AttendancePopUp />
-              </Box>
-            )}
+            ) &&
+              user?.role !== UserRole['super-admin'] && (
+                <Box sx={{ flexGrow: 0, marginRight: '20px' }}>
+                  <AttendancePopUp />
+                </Box>
+              )}
             <Box sx={{ flexGrow: 0, marginRight: '10px' }}>
               <Typography textAlign="center">
                 Welcome, {user.firstName}{' '}
@@ -109,6 +110,7 @@ function Navbar({ sidebar, toggleSideBar }: any) {
 export default Navbar;
 
 function AttendenceMenu() {
+  const me = getJUser();
   const navigate = useNavigate();
   const { isModuleAllowed } = useAuth();
   const options = [
@@ -117,6 +119,9 @@ function AttendenceMenu() {
       route: '/attendance/my-attendance',
       group: ModuleGroup['Presence & Leave'],
       module: EmployeeModule.Attendance,
+      allow: () => {
+        return me?.role !== UserRole['super-admin'];
+      },
     },
     {
       title: 'Dashboard',
@@ -125,9 +130,10 @@ function AttendenceMenu() {
       module: SuperAdminModule['Attendance Dashboard'],
     },
   ];
-  const isAllowed = options.some((o) =>
-    isModuleAllowed(moduleKey(o.group, o.module))
-  );
+  const isAllowed = options.some((o) => {
+    if (o.allow && !o.allow()) return false;
+    return isModuleAllowed(moduleKey(o.group, o.module));
+  });
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -161,6 +167,7 @@ function AttendenceMenu() {
         }}
       >
         {options.map((o, i) => {
+          if (o.allow && !o.allow()) return;
           if (!isModuleAllowed(moduleKey(o.group, o.module))) return;
           return (
             <MenuItem
