@@ -24,13 +24,10 @@ import { Moment } from 'moment';
 import moment from 'moment';
 
 const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(1),
   position: 'sticky',
   left: 0,
   backgroundColor: theme.palette.background.paper,
-  zIndex: 1, // Ensure it stays on top of the scrolling content
+  zIndex: 1,
 }));
 interface iProps {
   users: jUser[];

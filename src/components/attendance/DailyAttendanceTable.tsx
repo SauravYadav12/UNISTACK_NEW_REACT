@@ -15,8 +15,8 @@ import {
   CircularProgress,
   MenuItem,
   Select,
-  TextField,
   Stack,
+  Popover,
 } from '@mui/material';
 
 import SyncIcon from '@mui/icons-material/Sync';
@@ -41,7 +41,11 @@ import {
 import AttendanceStatusBox from './AttendanceStatusBox';
 import { dateFormate, timeFormate } from '../constants';
 import moment, { Moment } from 'moment';
-import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import {
+  ClockPicker,
+  ClockPickerView,
+  LocalizationProvider,
+} from '@mui/x-date-pickers';
 
 interface iProps {
   users: jUser[];
@@ -161,17 +165,41 @@ const DailyAttendanceTable = ({
                         ).format(timeFormate + ' z')
                       : 'NA'}
                   </Typography>
+                  {att && onChange && (
+                    <TimePickerButton
+                      attendance={att}
+                      onChange={onChange}
+                      field="checkIn"
+                    />
+                  )}
                 </Stack>
               </TableCell>
               <TableCell align="center">
-                <Typography variant="subtitle2" color="textSecondary">
-                  {att?.checkOut && status !== AttendanceStatus.Absent
-                    ? timeByUserShift(
-                        getJUser()!.shift,
-                        moment(att.checkOut)
-                      ).format(timeFormate + ' z')
-                    : 'NA'}
-                </Typography>
+                <Stack
+                  direction={'row'}
+                  display={'flex'}
+                  justifyContent={'center'}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    alignContent={'center'}
+                  >
+                    {att?.checkOut && status !== AttendanceStatus.Absent
+                      ? timeByUserShift(
+                          getJUser()!.shift,
+                          moment(att.checkOut)
+                        ).format(timeFormate + ' z')
+                      : 'NA'}
+                  </Typography>
+                  {att && onChange && (
+                    <TimePickerButton
+                      attendance={att}
+                      onChange={onChange}
+                      field="checkOut"
+                    />
+                  )}
+                </Stack>
               </TableCell>
             </TableRow>
           );
@@ -362,52 +390,139 @@ function AttendanceSwitch({
 }
 
 interface TimePickerButtonProps {
-  value: Moment | null;
-  onChange: (newValue: Moment | null) => void;
+  attendance: iAttendance;
+  field: 'checkIn' | 'checkOut';
+  onChange: (att: iAttendance) => void;
   label?: string;
 }
 
-const TimePickerButton: React.FC<TimePickerButtonProps> = ({
-  value,
+function TimePickerButton({
+  attendance,
+  field,
   onChange,
   label,
-}) => {
+}: TimePickerButtonProps) {
+  const me = getJUser()!;
+  const [date, setDate] = useState<Moment | null>(iShiftDate());
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const open = Boolean(anchorEl);
-
+  const [view, setView] = useState<ClockPickerView>('hours');
+  const [loading, setLoading] = useState(false);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
+  function iShiftDate() {
+    return attendance[field]
+      ? dateByUserShift(me.shift, moment(attendance[field]))
+      : dateByUserShift(me.shift);
+  }
+
+  async function handleUpdateTimeApi(iTime: Moment) {
+    if (loading) return;
+    try {
+      setLoading(true);
+      const { data } = await updateAttendance(attendance._id, {
+        [field]: iTime.toISOString(true),
+      });
+      data.data && onChange(data.data);
+    } catch (error) {
+      toast.error('Failed');
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleChange(v: Moment | null) {
+    if (view === 'hours') {
+      setDate(v);
+      setView('minutes');
+    } else if (view === 'minutes') {
+      setDate(v);
+      v && handleUpdateTimeApi(v);
+      const t = setTimeout(() => {
+        handleClose();
+        setView('hours');
+        clearTimeout(t);
+      }, 100);
+    }
+  }
   const handleClose = () => {
     setAnchorEl(null);
   };
+  useEffect(() => {
+    setDate(iShiftDate());
+  }, [field, attendance[field]]);
+
+  if (
+    attendance.status === AttendanceStatus.Absent ||
+    me.role !== UserRole['super-admin']
+  )
+    return;
+
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
-      <Box sx={{ mx: 1 }}>
-        <IconButton
-          onClick={handleClick}
-          aria-label={label || 'Open time picker'}
-        >
-          <AccessTimeIcon />
-        </IconButton>
-        {/* <div
-        
-        > */}
-        <TimePicker
-          open={open}
-          onClose={handleClose}
-          value={value}
-          onChange={onChange}
-          label={label}
-          // renderInput={() => <></>} // Don't render the input field
-          renderInput={(params) => (
-            <TextField {...params} sx={{ visibility: '', h: 0, w: 0 }} />
-          )}
-          inputFormat="HH:mm" // Optional: Set the format for internal handling
-        />
-        {/* </div> */}
-      </Box>
-    </LocalizationProvider>
+    <Box sx={{ mx: 1 }}>
+      <IconButton
+        onClick={handleClick}
+        aria-label={label || 'Open time picker'}
+      >
+        <AccessTimeIcon />
+      </IconButton>
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        <LocalizationProvider dateAdapter={AdapterMoment}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
+            >
+              <IconButton
+                onClick={() => setView('hours')}
+                disabled={view === 'hours'}
+                aria-label="previous view"
+              >
+                <ArrowLeft />
+              </IconButton>
+              <IconButton
+                onClick={() => setView('minutes')}
+                disabled={view === 'minutes'}
+                aria-label="next view"
+              >
+                <ArrowRight />
+              </IconButton>
+            </Box>
+            <ClockPicker
+              date={moment(date)}
+              onChange={handleChange}
+              ampm
+              views={['hours', 'minutes']}
+              onViewChange={(newView) => setView(newView)}
+              view={view}
+            />
+          </Box>
+        </LocalizationProvider>
+      </Popover>
+    </Box>
   );
-};
+}

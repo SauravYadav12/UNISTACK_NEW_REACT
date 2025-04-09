@@ -7,7 +7,6 @@ import {
   TableHead,
   TableRow,
   Typography,
-  styled,
   IconButton,
   Box,
   CircularProgress,
@@ -22,11 +21,6 @@ import AttendanceStatusBox from './AttendanceStatusBox';
 import { Moment } from 'moment';
 import moment from 'moment';
 
-const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(1),
-}));
 
 interface iProps {
   users: jUser[];
@@ -116,13 +110,13 @@ const WeeklyAttendanceTable = ({
             key={employee._id}
             sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
           >
-            <EmployeeInfoCell>
+            <TableCell>
               <div>
                 <Typography variant="subtitle2" sx={{minHeight:'24px'}}>
                   {employee.firstName + ' ' + employee.lastName}
                 </Typography>
               </div>
-            </EmployeeInfoCell>
+            </TableCell>
             {weekDates.map((date) => {
               return (
                 <TableCell key={`${employee._id}-${date.toISOString()}`}>
