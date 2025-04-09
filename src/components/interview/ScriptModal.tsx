@@ -368,7 +368,7 @@ function CondidateDetail({ consultant }: { consultant: any }) {
     Education: consultant.degree || 'NA',
     'Collage & passing year':
       (consultant.university || '') + '-' + (consultant.yearPassing || ''),
-    DOB: dayjs(consultant.dob).format(dateFormate) || 'NA',
+    DOB: dayjs(consultant.dob).format('MMM DD YYYY') || 'NA',
     'SSN (Last 4 digit)': consultant.ssn || 'NA',
     'Current visa status': consultant.visaStatus || 'NA',
   };
@@ -637,6 +637,7 @@ function ConsultantsExperience({ projects }: { projects: any[] }) {
       {projects?.map((e, i) => {
         const metaObj = {
           'CLIENT NAME': e.projectName || 'NA',
+          'Project Domain': e.projectDomain || 'NA',
           city: e.projectCity || 'NA',
           state: e.projectState || 'NA',
           'Start Date': dayjs(e.projectStartDate).format(dateFormate) || 'NA',

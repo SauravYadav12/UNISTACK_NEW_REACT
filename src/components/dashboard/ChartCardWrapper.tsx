@@ -32,7 +32,11 @@ const ChartCardWrapper = ({
     <Card
       sx={{ padding: 0 }}
       variant={undefined}
-      style={{ height: '100%', ...(!boxShadow && { boxShadow: 'none' }) }}
+      style={{
+        height: '100%',
+        width: '100%',
+        ...(!boxShadow && { boxShadow: 'none' }),
+      }}
     >
       {cardheading ? (
         <CardContent>
