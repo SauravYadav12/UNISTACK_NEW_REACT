@@ -80,7 +80,7 @@ export default function RequirementsForm(props: any) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode]
+    []
   );
 
   useEffect(() => {

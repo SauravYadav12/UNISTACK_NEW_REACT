@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 
 interface iProps {
-  onSubmit: (e:KeyboardEvent) => void;
+  onSubmit: (e: KeyboardEvent) => void;
   submitIf?: boolean;
 }
 
-function useHardKeySubmit({ onSubmit, submitIf = true }: iProps,dependencies:any[]=[]) {
+function useHardKeySubmit(
+  { onSubmit, submitIf = true }: iProps,
+  dependencies: any[] = []
+) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 's' && submitIf) {
@@ -19,7 +22,7 @@ function useHardKeySubmit({ onSubmit, submitIf = true }: iProps,dependencies:any
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, dependencies);
+  }, [onSubmit, submitIf, ...dependencies]);
 
   return;
 }
