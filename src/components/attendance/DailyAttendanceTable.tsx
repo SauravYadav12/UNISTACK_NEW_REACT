@@ -422,6 +422,7 @@ function TimePickerButton({
     if (loading) return;
     try {
       setLoading(true);
+
       const { data } = await updateAttendance(attendance._id, {
         [field]: iTime.toISOString(true),
       });
@@ -435,12 +436,14 @@ function TimePickerButton({
   }
 
   function handleChange(v: Moment | null) {
+    if (!v) return;
+    v = dateByUserShift(me.shift, v);
     if (view === 'hours') {
       setDate(v);
       setView('minutes');
     } else if (view === 'minutes') {
       setDate(v);
-      v && handleUpdateTimeApi(v);
+      handleUpdateTimeApi(v);
       const t = setTimeout(() => {
         handleClose();
         setView('hours');
