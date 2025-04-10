@@ -114,8 +114,8 @@ export const requirementValidationMeta: ValidationMeta[] = [
   { field: 'vendorCompany', required: true },
   { field: 'vendorPersonName', required: true },
   { field: 'clientEmail', validate: validateEmail },
-  { field: 'primeVendorEmail', validate: validateEmail },
-  { field: 'vendorEmail', validate: validateEmail },
+  // { field: 'primeVendorEmail', validate: validateEmail },
+  // { field: 'vendorEmail', validate: validateEmail },
   {
     field: 'createdAt',
     transform(value: any) {
