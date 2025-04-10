@@ -3,7 +3,7 @@ import { useAuth } from './AuthContextProvider';
 import { ModuleGroup, moduleKey } from '../utils/accessControlUtil';
 
 const ProtectedRoute = ({ meta, children }: ProtectedRouteProps) => {
-  const { isAuthenticated, isModuleAllowed } = useAuth();
+  const { isAuthenticated, accessControlState, isModuleAllowed } = useAuth();
   const isAllowed = meta
     ? isModuleAllowed(moduleKey(meta.group, meta.module))
     : true;
@@ -11,7 +11,9 @@ const ProtectedRoute = ({ meta, children }: ProtectedRouteProps) => {
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-
+  if (!accessControlState?.data) {
+    return null;
+  }
   if (!isAllowed) {
     return <Navigate to="/dashboard" replace />;
   }

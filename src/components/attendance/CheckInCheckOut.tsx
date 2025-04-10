@@ -5,10 +5,7 @@ import MarkAttendanceModal, {
   autoOpenAttendanceModalKey,
 } from '../dashboard/MarkAttendanceModal';
 import MarkCheckoutTimeModal from '../dashboard/MarkCheckoutTimeModal';
-import {
-  handleAttendanceStatus,
-  timeRemainingUntilOfficeEnd,
-} from '../../utils/dateUtil';
+import { handleAttendanceStatus } from '../../utils/dateUtil';
 import { getJUser } from '../../utils/utils';
 import { Moment } from 'moment';
 import { dateFormate } from '../constants';
@@ -34,8 +31,7 @@ const CheckInCheckOut = ({
   const ableToCheckout =
     todaysAttendance &&
     !todaysAttendance.checkOut &&
-    todaysAttendance.status !== AttendanceStatus.Absent &&
-    (timeRemainingUntilOfficeEnd(user.shift) > 0 || forAdmin);
+    todaysAttendance.status !== AttendanceStatus.Absent;
 
   const [openMarkAttendanceModal, setOpenMarkAttendanceModal] = React.useState(
     !!allowAutomaticPopUp &&

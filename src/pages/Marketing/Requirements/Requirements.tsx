@@ -29,14 +29,17 @@ import { jUser } from '../../../Interfaces/iUser';
 import { Sync } from '@mui/icons-material';
 import moment from 'moment';
 import { dateFormate2 } from '../../../components/constants';
+import { getIUser } from '../../../utils/utils';
+
 export default function Requirements() {
   const { isModuleAllowed } = useAuth();
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [viewData, setViewData] = useState<any>({});
+  const [reqToCopy, setReqToCopy] = useState<any>();
   const [isEditing, setIsEditing] = useState(false);
-  const [mode, setMode] = useState('view');
+  const [mode, setMode] = useState<FormMode>('view');
   const [archive, setArchive] = useState(false);
   const accountsState = useFetchData<jUser[]>(getAccountList, []);
   const { data: accounts } = accountsState;
@@ -143,7 +146,7 @@ export default function Requirements() {
     setDrawerOpen(true);
   };
 
-  const handleEdit = (editMode: any) => {
+  const handleEdit = (editMode: boolean) => {
     setIsEditing(editMode);
     setMode(editMode ? 'edit' : 'view');
   };
@@ -157,13 +160,34 @@ export default function Requirements() {
   };
 
   const handleCopy = () => {
+    if (!viewData) return;
     setMode('add');
     setIsEditing(true);
     setFormTitle('Add New Requirement');
+
+    const copy = {
+      ...viewData,
+      reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
+      reqEnteredByRef: `${getIUser()?.id}`,
+      isDuplicate: true,
+      duplicateWith: viewData.reqID,
+      rate: '',
+      taxType: '',
+      remote: '',
+      duration: '',
+      mComment: [],
+      resumeUpload: '',
+    };
+    delete copy.createdAt;
+    delete copy.reqID;
+    delete copy._id;
+    delete copy.__v;
+    setReqToCopy({ ...copy });
   };
 
   const handleDrawerClose = () => {
     setDrawerOpen(false);
+    setReqToCopy(undefined);
   };
 
   async function getAccountList() {
@@ -234,14 +258,15 @@ export default function Requirements() {
       <RequirementsForm
         setResults={setResults}
         hideButtons={archive}
-        accounts={accounts}
-        consultants={consultants}
+        accounts={accounts || []}
+        consultants={consultants || []}
         viewData={viewData}
         mode={mode}
         setDrawerOpen={setDrawerOpen}
         isEditing={isEditing}
         onEdit={handleEdit}
         onCopy={handleCopy}
+        reqToCopy={reqToCopy}
       />
     );
   }
@@ -287,3 +312,5 @@ export default function Requirements() {
     </>
   );
 }
+
+export type FormMode = 'view' | 'edit' | 'add';
