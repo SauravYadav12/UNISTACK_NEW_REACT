@@ -44,8 +44,25 @@ import {
 } from '../../../utils/validators';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
+import { FormMode } from './Requirements';
+import { jUser } from '../../../Interfaces/iUser';
+import { SetResults } from '../../../hooks/paginationHook';
 
-export default function RequirementsForm(props: any) {
+interface iProps {
+  viewData: any;
+  mode: FormMode;
+  isEditing: boolean;
+  hideButtons: boolean;
+  accounts: jUser[];
+  consultants: any[];
+  reqToCopy?: any;
+  onEdit: (editMode: boolean) => void;
+  onCopy: () => void;
+  setDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setResults: SetResults;
+}
+
+export default function RequirementsForm(props: iProps) {
   const [values, setValues] = useState<any>(requirementFormInitialValues);
   const [file, setFile] = useState<File>();
   const [errors, setErrors] = useState<{ [key: string]: any }>(
@@ -58,14 +75,15 @@ export default function RequirementsForm(props: any) {
   const {
     viewData,
     mode,
-    setDrawerOpen,
     isEditing,
-    onEdit,
-    onCopy,
     hideButtons = false,
     accounts,
-    setResults,
     consultants,
+    reqToCopy,
+    onEdit,
+    setDrawerOpen,
+    onCopy: handleCopyRequirement,
+    setResults,
   } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const currentFile =
@@ -98,28 +116,11 @@ export default function RequirementsForm(props: any) {
     setErrors(convertValuesToEmptyString(requirementFormInitialValues));
   }, [mode]);
 
-  const handleCopyRequirement = () => {
-    onCopy();
-    const copy = {
-      ...values,
-      reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
-      reqEnteredByRef: `${getIUser()?.id}`,
-      isDuplicate: true,
-      duplicateWith: values.reqID,
-      rate: '',
-      taxType: '',
-      remote: '',
-      duration: '',
-      mComment: [],
-      resumeUpload: '',
-    };
-    delete copy.createdAt;
-    delete copy.reqID;
-    delete copy._id;
-    delete copy.__v;
-    setValues({ ...copy });
+  useEffect(() => {
+    if (!reqToCopy) return;
+    setValues({ ...reqToCopy });
     setErrors(convertValuesToEmptyString(requirementFormInitialValues));
-  };
+  }, [reqToCopy]);
 
   function handleFileChange(e?: React.ChangeEvent<HTMLInputElement>) {
     e?.preventDefault();
@@ -174,6 +175,7 @@ export default function RequirementsForm(props: any) {
       values,
       setErrors
     );
+    
     if (!isValid) return;
     if (comment.trim().length) {
       const commentsPayload = {
@@ -356,7 +358,7 @@ export default function RequirementsForm(props: any) {
             handleChange({ target: { value } }, 'assignedTo');
             const id = accounts?.find(
               (a: any) => `${a.firstName} ${a.lastName}` === value
-            )._id;
+            )?._id;
             handleChange({ target: { value: id } }, 'assignedToRef');
           }}
           width={230}

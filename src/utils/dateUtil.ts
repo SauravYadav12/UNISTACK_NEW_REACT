@@ -47,7 +47,7 @@ export function timeRemainingUntilOfficeEnd(
   const timeElapsedInMinutes = timeElapsedSinceOfficeStart(shift, date);
   // returns remaining time in minutes
   const timeremaining = workingTimeThresholdMinutes - timeElapsedInMinutes;
-  return timeremaining >= 0 ? timeremaining : 0;
+  return timeremaining > 0 ? timeremaining : 0;
 }
 
 export function handleAttendanceStatus(
