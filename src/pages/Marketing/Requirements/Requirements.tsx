@@ -3,7 +3,6 @@ import {
   Button,
   CircularProgress,
   IconButton,
-  Link,
   Typography,
 } from '@mui/material';
 import CustomDataGrid from '../../../components/datagrid/DataGrid';
@@ -30,6 +29,8 @@ import { Sync } from '@mui/icons-material';
 import moment from 'moment';
 import { dateFormate2 } from '../../../components/constants';
 import { getIUser } from '../../../utils/utils';
+import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
+import RequirementMeta from '../../../components/requirement/RequirementMeta';
 
 export default function Requirements() {
   const { isModuleAllowed } = useAuth();
@@ -40,6 +41,7 @@ export default function Requirements() {
   const [reqToCopy, setReqToCopy] = useState<any>();
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState<FormMode>('view');
+  const [duplicateReqDrawer, setDuplicateReqDrawer] = useState<string>();
   const [archive, setArchive] = useState(false);
   const accountsState = useFetchData<jUser[]>(getAccountList, []);
   const { data: accounts } = accountsState;
@@ -140,7 +142,7 @@ export default function Requirements() {
     const data = gridData?.results?.filter((r: any) => r.reqID === row.reqID);
     if (!data) return;
     setViewData(data[0]);
-    setFormTitle(`Requirement ID ${row.reqID}`);
+    setFormTitle(`Requirement ID: ${row.reqID}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
@@ -233,7 +235,7 @@ export default function Requirements() {
 
     const reload = () => {
       accountsState.loadData();
-      consultantsState.loadData;
+      consultantsState.loadData();
     };
 
     if (formLoading)
@@ -246,7 +248,7 @@ export default function Requirements() {
     if (formError) {
       return (
         <Box textAlign={'center'}>
-          <Typography color="error">{error}</Typography>
+          <Typography color="error">{error || formError}</Typography>
           <IconButton onClick={reload}>
             <Sync color="primary" />
           </IconButton>
@@ -297,18 +299,23 @@ export default function Requirements() {
         title={formTitle}
         closeOnOutSideClick={mode === 'view'}
         subTitle={
-          isViewDataDuplicate ? (
-            <>
-              Copied from :{' '}
-              <Link target="_blank" href={'?reqID=' + viewData.duplicateWith}>
-                {viewData.duplicateWith}
-              </Link>
-            </>
-          ) : null
+          <RequirementMeta
+            hideInterviews={mode !== 'view'}
+            requirement={viewData}
+            onOpenDuplicateReq={() =>
+              setDuplicateReqDrawer(viewData.duplicateWith)
+            }
+          />
         }
       >
         <MyForm />
       </CustomDrawer>
+
+      <RequirementDrawer
+        open={Boolean(duplicateReqDrawer)}
+        reqID={viewData.duplicateWith}
+        onClose={() => setDuplicateReqDrawer(undefined)}
+      />
     </>
   );
 }

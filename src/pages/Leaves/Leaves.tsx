@@ -1,12 +1,11 @@
 import React from 'react'
+import ApplyLeave from '../../components/leave/ApplyLeave'
 
 const Leaves = () => {
   return (
-    <div>
-      <h4>
-        Leaves : Coming soon
-      </h4>
-    </div>
+    <>
+    <ApplyLeave/>
+    </>
   )
 }
 

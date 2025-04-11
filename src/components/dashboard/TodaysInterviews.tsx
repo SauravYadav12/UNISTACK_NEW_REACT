@@ -9,8 +9,7 @@ import {
   Button,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import dayjs from 'dayjs';
-import { dateFormate, timeFormate } from '../constants';
+import { dateFormate, dateFormate2, timeFormate } from '../constants';
 import { toast } from 'react-toastify';
 import { interviewsList } from '../../services/interviewApi';
 import { interviewStatusColors } from '../../pages/Marketing/TestAndVendorInterviews/testAndViValues';
@@ -18,11 +17,14 @@ import moment from 'moment';
 import InterviewForm from '../../pages/Marketing/Interviews/InterviewForm';
 import CustomDrawer from '../drawer/CustomDrawer';
 import DashboardCard from './ChartCardWrapper';
+import { getJUser } from '../../utils/utils';
+import { dateByUserShift } from '../../utils/dateUtil';
 const TodaysInterviews = () => {
+  const user = getJUser()!;
   const [rows, setRows] = useState<any[]>();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewData, setViewData] = useState<any>();
-  const toDay = dayjs(new Date()).format(dateFormate);
+  const toDay = dateByUserShift(user.shift);
   const columns: {
     field: string;
     headerName: string;
@@ -61,13 +63,7 @@ const TodaysInterviews = () => {
       ),
     },
     { field: 'consultant', headerName: 'Consultant' },
-    // {
-    //   field: 'interviewDate',
-    //   headerName: 'Int date',
-    //   renderCell: (row: any) => {
-    //     return moment(row.interviewDate).format(dateFormate);
-    //   },
-    // },
+
     {
       field: 'interviewTime',
       headerName: 'Int Time',
@@ -79,7 +75,6 @@ const TodaysInterviews = () => {
         );
       },
     },
-    // { field: 'subjectLine', headerName: 'Subject Line' },
     { field: 'clientName', headerName: 'Client Name' },
     { field: 'jobTitle', headerName: 'Job Title' },
     { field: 'marketingPerson', headerName: 'Created by' },
@@ -87,14 +82,15 @@ const TodaysInterviews = () => {
       field: 'createdAt',
       headerName: 'Created At',
       renderCell: (row: any) => {
-        return moment(row.createdAt).format(dateFormate + ' ' + timeFormate);
+        return moment(row.createdAt).format(dateFormate2);
       },
     },
   ];
 
   const getInterviews = async () => {
     try {
-      const { data } = await interviewsList('interviewDate=' + toDay);
+      const date = toDay.format(dateFormate);
+      const { data } = await interviewsList('interviewDate=' + date);
       setRows(data.data?.results || []);
     } catch (error) {
       toast.error('Failed to load');
@@ -114,7 +110,7 @@ const TodaysInterviews = () => {
             width={'fit-content'}
             sx={{ fontSize: 'medium', color: '#535252' }}
           >
-            {toDay}
+            {toDay.format(dateFormate2)}
           </Typography>
         }
       >
@@ -183,23 +179,21 @@ const TodaysInterviews = () => {
           </Table>
         </TableContainer>
       </DashboardCard>
-      {!!viewData && (
-        <CustomDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          title={'Interview ID : ' + viewData.intId}
-          closeOnOutSideClick
-        >
+
+      <CustomDrawer
+        open={Boolean(drawerOpen && viewData)}
+        onClose={() => setDrawerOpen(false)}
+        title={'Interview ID : ' + viewData?.intId}
+        closeOnOutSideClick
+      >
+        {!!viewData && (
           <InterviewForm
-            handleCloseForm={() => setDrawerOpen(false)}
             viewData={viewData}
             setDrawerOpen={setDrawerOpen}
-            mode={'view'}
-            isEditing={false}
             hideButtons
           />
-        </CustomDrawer>
-      )}
+        )}
+      </CustomDrawer>
     </>
   );
 };

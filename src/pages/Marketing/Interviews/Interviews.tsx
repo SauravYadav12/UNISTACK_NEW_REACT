@@ -26,6 +26,7 @@ import {
   ModuleGroup,
   moduleKey,
 } from '../../../utils/accessControlUtil';
+import { FormMode } from '../Requirements/Requirements';
 type Record = {
   id: number;
   name: string;
@@ -44,7 +45,7 @@ export default function Interviews(props: Iprops) {
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [viewData, setViewData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const [mode, setMode] = useState('view');
+  const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [archive, setArchive] = props.archiveState;
@@ -292,7 +293,6 @@ export default function Interviews(props: Iprops) {
           onCreate={clearReqFromParams}
           setResults={setResults}
           hideButtons={archive}
-          handleCloseForm={handleCloseForm}
           selectedRecord={selectedRecord}
           viewData={viewData}
           setDrawerOpen={setDrawerOpen}

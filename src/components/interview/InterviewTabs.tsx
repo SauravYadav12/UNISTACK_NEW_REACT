@@ -16,12 +16,16 @@ export default function InterviewTabs() {
       status: 'Interview Confirm',
     },
     {
+      label: 'Completed',
+      status: 'Interview Completed',
+    },
+    {
       label: 'Tentative',
       status: 'Interview Tentative',
     },
     {
-      label: 'Completed',
-      status: 'Interview Completed',
+      label: 'Re-Scheduled',
+      status: 'Interview Re-Scheduled',
     },
     {
       label: 'Cancelled',

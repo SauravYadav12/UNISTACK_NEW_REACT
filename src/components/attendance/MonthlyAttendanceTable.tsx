@@ -113,7 +113,9 @@ const MonthlyAttendanceTable = ({
             </TableCell>
             {monthDays.map((date) => (
               <TableCell key={date.toISOString()} align="center" padding="none">
-                <Typography variant="caption">{date.format('DD')}</Typography>
+                <Typography variant="caption">
+                  {date.format('ddd, DD')}
+                </Typography>
               </TableCell>
             ))}
           </TableRow>
