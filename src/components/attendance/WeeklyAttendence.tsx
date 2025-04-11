@@ -21,7 +21,6 @@ import AttendanceStatusBox from './AttendanceStatusBox';
 import { Moment } from 'moment';
 import moment from 'moment';
 
-
 interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
@@ -112,7 +111,7 @@ const WeeklyAttendanceTable = ({
           >
             <TableCell>
               <div>
-                <Typography variant="subtitle2" sx={{minHeight:'24px'}}>
+                <Typography variant="subtitle2" sx={{ minHeight: '24px' }}>
                   {employee.firstName + ' ' + employee.lastName}
                 </Typography>
               </div>

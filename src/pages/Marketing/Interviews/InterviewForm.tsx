@@ -52,18 +52,38 @@ import {
   urlValidator,
   validateAllFields,
 } from '../../../utils/validators';
-import { convertValuesToEmptyString, downloadFile } from '../../../utils/utils';
+import {
+  convertValuesToEmptyString,
+  downloadFile,
+  getIUser,
+} from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
+import { UserRole } from '../../../Interfaces/iUser';
+import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
+import { SetResults } from '../../../hooks/paginationHook';
+import { FormMode } from '../Requirements/Requirements';
 
-export default function InterviewForm(props: any) {
+interface iProps {
+  viewData: any;
+  selectedRecord?: any;
+  isEditing?: boolean;
+  hideButtons?: boolean;
+  mode?: FormMode;
+  onCreate?: () => void;
+  onEdit?: (editMode: boolean) => void;
+  setDrawerOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+  setResults?: SetResults;
+}
+
+export default function InterviewForm(props: iProps) {
   const {
-    selectedRecord,
     viewData,
-    mode,
-    isEditing,
+    selectedRecord,
+    mode = 'view',
+    isEditing = false,
+    hideButtons = false,
     onEdit,
     setDrawerOpen,
-    hideButtons = false,
     setResults,
     onCreate,
   } = props;
@@ -74,7 +94,8 @@ export default function InterviewForm(props: any) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
   const [scriptModal, setScriptModal] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [reqDrawer, setReqDrawer] = useState<string>();
+  const user = getIUser();
 
   useHardKeySubmit(
     {
@@ -99,8 +120,8 @@ export default function InterviewForm(props: any) {
         jobDescription: selectedRecord.jobDescription,
         duration: selectedRecord.duration,
         taxType: selectedRecord.taxType,
-        marketingPerson: `${user.firstName} ${user.lastName}`,
-        marketingPersonRef: user.id,
+        marketingPerson: `${user?.firstName} ${user?.lastName}`,
+        marketingPersonRef: user?.id,
       }));
     }
   }, [selectedRecord]);
@@ -173,9 +194,9 @@ export default function InterviewForm(props: any) {
     setIsSubmitting(true);
     try {
       const { data } = await createInterview(values);
-      setResults((pre: any) => [data.data, ...pre]);
-      setDrawerOpen(false);
-      onCreate();
+      setResults?.((pre: any) => [data.data, ...pre]);
+      setDrawerOpen?.(false);
+      onCreate?.();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {
@@ -195,14 +216,14 @@ export default function InterviewForm(props: any) {
     setIsSubmitting(true);
     try {
       const { data } = await updateInterview(values._id, values);
-      setResults((pre: any) => {
+      setResults?.((pre: any) => {
         pre = pre.map((d: any) => {
           if (d._id === data.data._id) return data.data;
           return d;
         });
         return [...pre];
       });
-      setDrawerOpen(false);
+      setDrawerOpen?.(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     } finally {
@@ -214,7 +235,7 @@ export default function InterviewForm(props: any) {
     try {
       const { data } = await updateInterview(values._id, { script });
       setValues({ ...values, script });
-      setResults((pre: any) => {
+      setResults?.((pre: any) => {
         pre = pre.map((d: any) => {
           if (d._id === data.data._id) return data.data;
           return d;
@@ -229,8 +250,8 @@ export default function InterviewForm(props: any) {
   async function handleDeleteInterview(_id: any) {
     try {
       await deleteInterview(values._id);
-      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
-      setDrawerOpen(false);
+      setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen?.(false);
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
@@ -339,7 +360,7 @@ export default function InterviewForm(props: any) {
                     type="button"
                     onClick={() => {
                       setValues(viewData);
-                      onEdit(false);
+                      onEdit?.(false);
                     }}
                     size="small"
                     sx={{ borderRadius: '10px' }}
@@ -363,13 +384,15 @@ export default function InterviewForm(props: any) {
                     variant="contained"
                     color="primary"
                     type="button"
-                    onClick={() => onEdit(true)}
+                    onClick={() => onEdit?.(true)}
                     size="small"
                     sx={{ borderRadius: '10px' }}
                   >
                     Edit
                   </Button>
-                  {values.interviewStatus === 'Interview Confirm' && (
+                  {!['Interview Cancelled', 'Interview Tentative'].includes(
+                    values.interviewStatus
+                  ) && (
                     <>
                       <Button
                         variant="contained"
@@ -385,7 +408,7 @@ export default function InterviewForm(props: any) {
                       </Button>
                     </>
                   )}
-                  {user.role === 'super-admin' && (
+                  {user?.role === 'super-admin' && (
                     <>
                       <Button
                         variant="contained"
@@ -762,13 +785,36 @@ export default function InterviewForm(props: any) {
             selectedValue={values.jobTitle}
             onChange={(event: any) => addValue('jobTitle', event.target.value)}
           />
-          <CustomTextField
-            label="Req ID"
-            disabled
-            width={320}
-            selectedValue={values.reqID}
-            onChange={(event: any) => addValue('reqID', event.target.value)}
-          />
+
+          <div>
+            <Grid item sx={{ m: 1, width: 320, position: 'relative' }}>
+              <MyButtonLayer onClick={() => setReqDrawer(values.reqID)} />
+              <TextField
+                label={'Req ID'}
+                value={values.reqID}
+                disabled
+                fullWidth
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: '#f0f0f0',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '4px',
+                    color: '#1976d2',
+                  },
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    fontSize: 'small',
+                    fontWeight: 600,
+                    WebkitTextFillColor: '#1976d2',
+                    backgroundColor: '#f0f0f0',
+                  },
+                }}
+                multiline={true}
+              />
+            </Grid>
+          </div>
+
           <CustomTextField
             label="Client Name"
             width={300}
@@ -794,37 +840,42 @@ export default function InterviewForm(props: any) {
           />
 
           {/* Section 4: Interviewee Candidate Details */}
-          <Grid item xs={12}>
-            <h4>4. Interviewee Candidate Details</h4>
-          </Grid>
-          <CustomTextField
-            label="Candidate Name"
-            width={310}
-            disabled={!isEditing}
-            selectedValue={values.candidateName}
-            onChange={(event: any) =>
-              addValue('candidateName', event.target.value)
-            }
-          />
-          <CustomTextField
-            label="Rates For Interview"
-            width={310}
-            disabled={!isEditing}
-            selectedValue={values.rateForInterview}
-            onChange={(event: any) =>
-              addValue('rateForInterview', event.target.value)
-            }
-          />
-          <CustomSelectField
-            label="Payment Status"
-            valueOptions={paymentStatusOptions}
-            selectedValue={values.paymentStatus}
-            disabled={!isEditing}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'paymentStatus')
-            }
-            width={310}
-          />
+          {user &&
+            [UserRole.admin, UserRole['super-admin']].includes(user.role) && (
+              <>
+                <Grid item xs={12}>
+                  <h4>4. Interviewee Candidate Details</h4>
+                </Grid>
+                <CustomTextField
+                  label="Candidate Name"
+                  width={310}
+                  disabled={!isEditing}
+                  selectedValue={values.candidateName}
+                  onChange={(event: any) =>
+                    addValue('candidateName', event.target.value)
+                  }
+                />
+                <CustomTextField
+                  label="Rates For Interview"
+                  width={310}
+                  disabled={!isEditing}
+                  selectedValue={values.rateForInterview}
+                  onChange={(event: any) =>
+                    addValue('rateForInterview', event.target.value)
+                  }
+                />
+                <CustomSelectField
+                  label="Payment Status"
+                  valueOptions={paymentStatusOptions}
+                  selectedValue={values.paymentStatus}
+                  disabled={!isEditing}
+                  onChange={(value: any) =>
+                    handleChange({ target: { value } }, 'paymentStatus')
+                  }
+                  width={310}
+                />
+              </>
+            )}
         </Grid>
       </form>
       {scriptModal && (
@@ -835,6 +886,45 @@ export default function InterviewForm(props: any) {
           onSave={handleSaveScript}
         />
       )}
+
+      {values.reqID && (
+        <RequirementDrawer
+          open={Boolean(reqDrawer)}
+          onClose={() => setReqDrawer(undefined)}
+          reqID={values.reqID}
+        />
+      )}
     </>
+  );
+}
+
+interface MyButtonLayer {
+  onClick: () => void;
+}
+function MyButtonLayer({ onClick }: MyButtonLayer) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        top: 0,
+        left: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <span
+        onClick={onClick}
+        style={{
+          height: '23px',
+          background: 'transparent',
+          width: '95%',
+          zIndex: 1,
+          cursor: 'pointer',
+        }}
+      ></span>
+    </div>
   );
 }

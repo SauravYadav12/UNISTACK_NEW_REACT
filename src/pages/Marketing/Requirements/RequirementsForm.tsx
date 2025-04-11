@@ -50,16 +50,16 @@ import { SetResults } from '../../../hooks/paginationHook';
 
 interface iProps {
   viewData: any;
-  mode: FormMode;
-  isEditing: boolean;
-  hideButtons: boolean;
-  accounts: jUser[];
-  consultants: any[];
+  isEditing?: boolean;
+  hideButtons?: boolean;
+  mode?: FormMode;
+  accounts?: jUser[];
+  consultants?: any[];
   reqToCopy?: any;
-  onEdit: (editMode: boolean) => void;
-  onCopy: () => void;
-  setDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setResults: SetResults;
+  onEdit?: (editMode: boolean) => void;
+  onCopy?: () => void;
+  setDrawerOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+  setResults?: SetResults;
 }
 
 export default function RequirementsForm(props: iProps) {
@@ -74,12 +74,12 @@ export default function RequirementsForm(props: iProps) {
   const [copyAlert, setCopyAlert] = useState(false);
   const {
     viewData,
-    mode,
-    isEditing,
-    hideButtons = false,
     accounts,
     consultants,
     reqToCopy,
+    isEditing = false,
+    hideButtons = false,
+    mode = 'view',
     onEdit,
     setDrawerOpen,
     onCopy: handleCopyRequirement,
@@ -87,7 +87,10 @@ export default function RequirementsForm(props: iProps) {
   } = props;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const currentFile =
-    file || (urlValidator(values.resumeUpload) ? values.resumeUpload : '');
+    file ||
+    (values?.resumeUpload && urlValidator(values?.resumeUpload)
+      ? values.resumeUpload
+      : '');
   const fileCardButtonDisabled = mode === 'view' || isSubmitting;
   const navigate = useNavigate();
 
@@ -175,7 +178,7 @@ export default function RequirementsForm(props: iProps) {
       values,
       setErrors
     );
-    
+
     if (!isValid) return;
     if (comment.trim().length) {
       const commentsPayload = {
@@ -197,8 +200,8 @@ export default function RequirementsForm(props: iProps) {
 
     try {
       const { data } = await createRequirement(values);
-      setResults((pre: any) => [data.data, ...pre]);
-      setDrawerOpen(false);
+      setResults?.((pre: any) => [data.data, ...pre]);
+      setDrawerOpen?.(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {
@@ -234,14 +237,14 @@ export default function RequirementsForm(props: iProps) {
         }
       }
       const { data } = await updateRequirement(values._id, payload);
-      setResults((pre: any) => {
+      setResults?.((pre: any) => {
         pre = pre.map((d: any) => {
           if (d._id === data.mComment._id) return data.mComment;
           return d;
         });
         return [...pre];
       });
-      setDrawerOpen(false); // Close the drawer after successful update
+      setDrawerOpen?.(false); // Close the drawer after successful update
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
     } finally {
@@ -252,8 +255,8 @@ export default function RequirementsForm(props: iProps) {
   async function handleDeleteRequirement() {
     try {
       await deleteRequirement(values._id);
-      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
-      setDrawerOpen(false);
+      setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen?.(false);
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
@@ -542,7 +545,7 @@ export default function RequirementsForm(props: iProps) {
                     type="button"
                     onClick={() => {
                       setValues(viewData);
-                      onEdit(false);
+                      onEdit?.(false);
                     }}
                     size="small"
                     disabled={isSubmitting}
@@ -588,7 +591,7 @@ export default function RequirementsForm(props: iProps) {
                     title="Copy Requirement"
                     description="Are you sure you want to copy this requirement ?"
                     onClose={() => setCopyAlert(false)}
-                    onOk={handleCopyRequirement}
+                    onOk={() => handleCopyRequirement?.()}
                   />
                   <Button
                     variant="contained"
@@ -604,7 +607,7 @@ export default function RequirementsForm(props: iProps) {
                     variant="contained"
                     color="primary"
                     type="button"
-                    onClick={() => onEdit(true)}
+                    onClick={() => onEdit?.(true)}
                     size="small"
                     sx={{ borderRadius: '10px' }}
                   >

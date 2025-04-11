@@ -24,7 +24,7 @@ export const interviewStatusColors: InterviewStatusColors = {
   'Interview Tentative': '#9E9E9E',
   'Interview Cancelled': '#D32F2F',
   'Interview Completed': '#4CAF50',
-  'Interview Re-Scheduled': 'black',
+  'Interview Re-Scheduled': '#cab205',
 };
 
 export const intWithOptions = ['Client', 'IMP/PV', 'Vendor'];

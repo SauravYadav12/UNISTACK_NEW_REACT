@@ -61,6 +61,7 @@ const initialValues = {
 };
 
 export default function ConsultantForm(props: any) {
+  const dobFormate = 'MMM DD';
   const [values, setValues] = useState<any>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -393,11 +394,14 @@ export default function ConsultantForm(props: any) {
         <Grid item>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
-              inputFormat={dateFormate}
+              views={['month', 'day']}
+              inputFormat={dobFormate}
               disabled={!isEditing}
               label="Date of Birth"
               value={values.dob ? dayjs(values.dob) : null}
-              onChange={(newValue) => addValue('dob', newValue)}
+              onChange={(newValue) =>
+                addValue('dob', newValue?.format(dobFormate))
+              }
               renderInput={(params) => (
                 <TextField
                   onBlur={() => onBlur('dob')}
@@ -563,9 +567,11 @@ export default function ConsultantForm(props: any) {
           }
         />
         {/* Section 2: Resume Info */}
-        <Grid item xs={12}>
-          <h4>2. Resume Info</h4>
-        </Grid>
+        {(isEditing || projects.length) && (
+          <Grid item xs={12}>
+            <h4>2. Resume Info</h4>
+          </Grid>
+        )}
         {projects.map((project, index) => (
           <Grid key={index} container spacing={1}>
             <Grid item xs={12}>
