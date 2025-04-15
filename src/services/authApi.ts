@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { getIUser, getJwtToken, myIpGeoLocation } from '../utils/utils';
 import { iUser, jUser } from '../Interfaces/iUser';
+import { BASE_URL } from './userProfileApi';
 // import { toast } from 'react-toastify';
 
 export async function signup(data: any) {
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
   };
@@ -14,20 +14,17 @@ export async function signup(data: any) {
   return response;
 }
 
-export async function login(data: any) {
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
+export async function login(email: string, password: string) {
   let headers: any = {
     'Content-Type': 'application/json',
   };
-
-  data = Object.fromEntries(data);
 
   const { ip, location } = await myIpGeoLocation();
   // if(!location){
   //   toast.warning('Please allow location permission to proceed!')
   //   return
   // }
-  data = { ...data, ip, location };
+  const data = { email, password, ip, location };
   const response = await axios.post(`${BASE_URL}/users/login`, data, {
     headers,
   });
@@ -38,7 +35,6 @@ export async function logout() {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
   };
@@ -67,7 +63,6 @@ export async function logout() {
 
 export async function usersList(query = '') {
   const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
@@ -80,7 +75,6 @@ export async function usersList(query = '') {
 
 export async function updateUser(id: any, payload: any) {
   const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
@@ -125,3 +119,44 @@ export const syncUserOnLocalStorage = async () => {
     console.warn('faild to sync');
   }
 };
+
+export async function sendOtp(email: string) {
+  let headers: any = {
+    'Content-Type': 'application/json',
+  };
+  const response = await axios.post(
+    `${BASE_URL}/users/send-otp/${email}`,
+    {},
+    {
+      headers,
+    }
+  );
+  return response;
+}
+
+export async function verifyOtp(otp: string) {
+  let headers: any = {
+    'Content-Type': 'application/json',
+  };
+  const response = await axios.post(
+    `${BASE_URL}/users/verify-otp/${otp}`,
+    {},
+    {
+      headers,
+    }
+  );
+  return response;
+}
+export async function resetPassword(password: string, otp: string) {
+  let headers: any = {
+    'Content-Type': 'application/json',
+  };
+  const response = await axios.post(
+    `${BASE_URL}/users/reset-password/${otp}`,
+    { password },
+    {
+      headers,
+    }
+  );
+  return response;
+}

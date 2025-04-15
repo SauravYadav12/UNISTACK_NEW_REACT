@@ -31,6 +31,7 @@ import {
   ModuleGroup,
   SuperAdminModule,
 } from './utils/accessControlUtil';
+import ForgotPassword from './pages/Auth/ForgotPassword';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -40,6 +41,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route
             path="/"
             element={

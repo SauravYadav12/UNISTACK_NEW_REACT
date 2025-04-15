@@ -8,6 +8,7 @@ import { iFetchData, useFetchData } from '../hooks/fetchDataHook';
 import { getAccessControl } from '../services/accessControlApi';
 import { iAccessControl } from '../utils/accessControlUtil';
 import { UserRole } from '../Interfaces/iUser';
+import { autoOpenAttendanceModalKey } from '../components/dashboard/MarkAttendanceModal';
 
 const AuthContext = createContext({
   isAuthenticated: false,
@@ -41,8 +42,10 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const myProfileState = useFetchData(getMyProfile, [isAuthenticated]);
 
-  const validateLogin = (token: string) => {
+  const validateLogin = (token: string, user: string) => {
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem(autoOpenAttendanceModalKey, 'true');
     setIsAuthenticated(true);
   };
 
@@ -95,7 +98,7 @@ interface DefaultContextValue {
   myAttendanceState?: iUseAttendance;
   accessControlState?: iFetchData<iAccessControl | undefined>;
   isAuthenticated: boolean;
-  validateLogin: (token: string) => void;
+  validateLogin: (token: string, user: string) => void;
   validateLogout: () => void;
   setMyProfile: (profile: UserProfile) => void;
   isModuleAllowed: (key: string) => boolean;
