@@ -1,51 +1,34 @@
-import * as React from "react";
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
-import Link from "@mui/material/Link";
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
-import StorageIcon from "@mui/icons-material/Storage";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-import Loader from "../../components/loader/Loader";
-import { signup } from "../../services/authApi";
-import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
-import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
-import { useAuth } from "../../AuthGaurd/AuthContextProvider";
-
-function Copyright(props: any) {
-  return (
-    <Typography
-      variant="body2"
-      color="text.secondary"
-      align="center"
-      {...props}
-    >
-      {"Copyright © "}
-      <Link color="inherit" href="https://mui.com/">
-        Unicodez Inc
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
-  );
-}
+import * as React from 'react';
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import CssBaseline from '@mui/material/CssBaseline';
+import TextField from '@mui/material/TextField';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import Link from '@mui/material/Link';
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
+import StorageIcon from '@mui/icons-material/Storage';
+import Typography from '@mui/material/Typography';
+import Container from '@mui/material/Container';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import Loader from '../../components/loader/Loader';
+import { signup } from '../../services/authApi';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import CopyRight from '../../components/auth/CopyRight';
 
 // TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
 
 const initalValues: any = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  password: "",
-  gender:"",
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  gender: '',
 };
 
 export default function SignUp() {
@@ -56,7 +39,7 @@ export default function SignUp() {
   const { isAuthenticated } = useAuth();
   React.useEffect((): any => {
     if (isAuthenticated) {
-      navigate("/dashboard");
+      navigate('/dashboard');
       return;
     }
   }, []);
@@ -68,11 +51,11 @@ export default function SignUp() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     try {
       event.preventDefault();
-      const checkNull = Object.values(values).filter(i=> i === "")
-      if (!checkNull.length){
-        const domain = values.email?.toString().split("@")[1];
-        if (domain?.toLowerCase() !== "unicodez.com") {
-          return toast.error("Invalid Email");
+      const checkNull = Object.values(values).filter((i) => i === '');
+      if (!checkNull.length) {
+        const domain = values.email?.toString().split('@')[1];
+        if (domain?.toLowerCase() !== 'unicodez.com') {
+          return toast.error('Invalid Email');
         }
         if (checked) {
           setLoading(true);
@@ -80,13 +63,13 @@ export default function SignUp() {
           if (res.status === 200) {
             toast.success(res?.data?.message);
             setLoading(false);
-            navigate("/");
+            navigate('/');
           }
         } else {
-          toast.error("Please accept the terms and condition");
+          toast.error('Please accept the terms and condition');
         }
       } else {
-        toast.error("Please fill all the fields");
+        toast.error('Please fill all the fields');
       }
     } catch (error: any) {
       const message: any = error?.response?.data?.message;
@@ -104,12 +87,12 @@ export default function SignUp() {
           <Box
             sx={{
               marginTop: 8,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "#EC4599", width: 56, height: 56 }}>
+            <Avatar sx={{ m: 1, bgcolor: '#EC4599', width: 56, height: 56 }}>
               <StorageIcon />
             </Avatar>
             <Typography component="h1" variant="h5">
@@ -131,7 +114,7 @@ export default function SignUp() {
                     id="firstName"
                     label="First Name"
                     autoFocus
-                    onChange={(e) => addValue("firstName", e.target.value)}
+                    onChange={(e) => addValue('firstName', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -142,22 +125,22 @@ export default function SignUp() {
                     label="Last Name"
                     name="lastName"
                     autoComplete="family-name"
-                    onChange={(e) => addValue("lastName", e.target.value)}
+                    onChange={(e) => addValue('lastName', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel required>Gender</InputLabel>
-                  <Select
-                    required
-                    value={values.gender}
-                    label="Gender"
-                    onChange={(e) => addValue("gender", e.target.value)}
-                  >
-                    <MenuItem value={"M"}>Male</MenuItem>
-                    <MenuItem value={"F"}>Female</MenuItem>
-                  </Select>
-                </FormControl>
+                  <FormControl fullWidth>
+                    <InputLabel required>Gender</InputLabel>
+                    <Select
+                      required
+                      value={values.gender}
+                      label="Gender"
+                      onChange={(e) => addValue('gender', e.target.value)}
+                    >
+                      <MenuItem value={'M'}>Male</MenuItem>
+                      <MenuItem value={'F'}>Female</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
@@ -167,7 +150,7 @@ export default function SignUp() {
                     label="Email Address"
                     name="email"
                     autoComplete="email"
-                    onChange={(e) => addValue("email", e.target.value)}
+                    onChange={(e) => addValue('email', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -179,7 +162,7 @@ export default function SignUp() {
                     type="password"
                     id="password"
                     autoComplete="new-password"
-                    onChange={(e) => addValue("password", e.target.value)}
+                    onChange={(e) => addValue('password', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -207,14 +190,18 @@ export default function SignUp() {
               </Button>
               <Grid container justifyContent="flex-end">
                 <Grid item>
-                  <Link href="/" variant="body2">
+                  <Link
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => navigate('/')}
+                    variant="body2"
+                  >
                     Already have an account? Sign in
                   </Link>
                 </Grid>
               </Grid>
             </Box>
           </Box>
-          <Copyright sx={{ mt: 5 }} />
+          <CopyRight />
         </Container>
       </ThemeProvider>
     </>

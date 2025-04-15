@@ -31,7 +31,10 @@ const RequirementMeta = ({
   const isDuplicate =
     Boolean(requirement.isDuplicate) &&
     Boolean(requirement.duplicateWith?.trim());
-
+  const hideMyInterviews =
+    hideInterviews ||
+    (!createdInterviews?.length &&
+      ['New Working', 'Cancelled'].includes(requirement.reqStatus));
   async function findCreatedInterviews() {
     const { data } = await interviewsList(`reqID=${requirement.reqID}`);
     return data.data?.results || [];
@@ -119,7 +122,7 @@ const RequirementMeta = ({
             </Button>
           </Stack>
         )}
-        {!hideInterviews && (
+        {!hideMyInterviews && (
           <Stack
             direction={'row'}
             alignItems={'center'}

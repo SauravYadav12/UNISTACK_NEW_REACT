@@ -17,7 +17,7 @@ import { login } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import Loader from '../../components/loader/Loader';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { autoOpenAttendanceModalKey } from '../../components/dashboard/MarkAttendanceModal';
+import CopyRight from '../../components/auth/CopyRight';
 
 function Copyright(props: any) {
   return (
@@ -28,11 +28,10 @@ function Copyright(props: any) {
       {...props}
     >
       {'Copyright © '}
-      <Link color="inherit" href="https://mui.com/">
+      <Link color="inherit" target="_blank" href="https://www.unicodez.com/">
         Unicodez Inc
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
+      </Link>
+      {' 2025.'}
     </Typography>
   );
 }
@@ -55,29 +54,21 @@ export default function Login() {
     event.preventDefault();
     try {
       const data = new FormData(event.currentTarget);
-
-      if (data.get('email') && data.get('password')) {
+      const email = data.get('email')?.toString();
+      const pass = data.get('password')?.toString();
+      if (email && pass) {
         setLoading(true);
-        const res: any = await login(data);
-        if (res.status === 200 && res.data?.token) {
-          localStorage.setItem('token', res.data?.token);
-          localStorage.setItem('user', JSON.stringify(res.data?.user));
-          localStorage.setItem(
-            autoOpenAttendanceModalKey,
-            'true'
-          );
-          validateLogin(res.data?.token);
-          toast.success('Login Successfull');
-          setLoading(false);
-          navigate('/dashboard');
-        }
+        const { data } = await login(email, pass);
+        validateLogin(data.token, data.user);
+        toast.success('Login Successfull');
+        navigate('/dashboard');
       } else {
         toast.error('Email or password missing');
-        setLoading(false);
       }
     } catch (error: any) {
       const message: any = error?.response?.data?.message;
       toast.error(message);
+    } finally {
       setLoading(false);
     }
   };
@@ -142,19 +133,27 @@ export default function Login() {
               </Button>
               <Grid container>
                 <Grid item xs>
-                  <Link href="#" variant="body2">
+                  <Link
+                    onClick={() => navigate('/forgot-password')}
+                    variant="body2"
+                    sx={{ cursor: 'pointer' }}
+                  >
                     Forgot password?
                   </Link>
                 </Grid>
                 <Grid item>
-                  <Link href="/signup" variant="body2">
+                  <Link
+                    onClick={() => navigate('/signup')}
+                    sx={{ cursor: 'pointer' }}
+                    variant="body2"
+                  >
                     {"Don't have an account? Sign Up"}
                   </Link>
                 </Grid>
               </Grid>
             </Box>
           </Box>
-          <Copyright sx={{ mt: 8, mb: 4 }} />
+          <CopyRight />
         </Container>
       </ThemeProvider>
     </>
