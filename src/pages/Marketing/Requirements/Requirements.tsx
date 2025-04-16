@@ -31,6 +31,7 @@ import { dateFormate2 } from '../../../components/constants';
 import { getIUser } from '../../../utils/utils';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
+import { syncDataById } from '../../../utils/syncDataById';
 
 export default function Requirements() {
   const { isModuleAllowed } = useAuth();
@@ -47,8 +48,6 @@ export default function Requirements() {
   const { data: accounts } = accountsState;
   const consultantsState = useFetchData(getConsultantsList, []);
   const { data: consultants } = consultantsState;
-  const isViewDataDuplicate =
-    Boolean(viewData.isDuplicate) && Boolean(viewData.duplicateWith?.trim());
 
   const isArchiveRequirementModuleAllowed = isModuleAllowed(
     moduleKey(ModuleGroup.Archive, ArchiveModule.Requirements)
@@ -139,13 +138,19 @@ export default function Requirements() {
   };
 
   const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.filter((r: any) => r.reqID === row.reqID);
+    const data = gridData?.results?.find((r: any) => r.reqID === row.reqID);
     if (!data) return;
-    setViewData(data[0]);
+    setViewData(data);
     setFormTitle(`Requirement ID: ${row.reqID}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
+    !archive &&
+      syncDataById(data, {
+        queryFunction: requirementsList,
+        viewDataState: [viewData, setViewData],
+        setResults,
+      });
   };
 
   const handleEdit = (editMode: boolean) => {

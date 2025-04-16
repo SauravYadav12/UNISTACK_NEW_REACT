@@ -3,7 +3,7 @@ import { dateFormate, timeFormate } from '../../../components/constants';
 import { ValidationMeta } from '../../../utils/validators';
 
 export const timeZoneOptions = ['EST', 'CST', 'MST', 'PST'];
-
+export const createInterviewQueryParam = 'createInterviewByReq';
 export const intTypeOptions = [
   'Technical',
   'Techno Managerial',

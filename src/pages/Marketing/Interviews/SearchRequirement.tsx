@@ -12,17 +12,13 @@ import {
 import { useState } from 'react';
 import { requirementsList } from '../../../services/requirementApi';
 
-type Record = {
-  id: number;
-  name: string;
-  company: string;
-  title: string;
-  [key: string]: any;
-};
-
-export default function CustomSearch(props: any) {
+interface iProps {
+  onSelect: (record: any) => void;
+}
+export default function SearchRequirement(props: iProps) {
+  const { onSelect } = props;
   const [searchRecord, setSearchRecord] = useState('');
-  const [records, setRecords] = useState<Record[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
   const [error, setError] = useState('');
 
   const handleSearch = async () => {
@@ -38,31 +34,16 @@ export default function CustomSearch(props: any) {
         );
         return;
       }
-      const { data } = await requirementsList(`reqID=${query}`);
-      const fetchedRecords =
-        data.data?.results?.map((val: any) => ({
-          id: val.reqID,
-          name: val.clientPerson,
-          company: val.vendorCompany,
-          title: val.jobTitle,
-          primeVendorCompany: val.primeVendorCompany,
-          jobDescription: val.jobDescription,
-          jobTitle: val.jobTitle,
-          taxType: val.taxType,
-          duration: val.duration,
-          consultant: val.appliedFor,
-          consultantRef: val.appliedForRef,
-        })) || [];
-      setRecords(fetchedRecords);
+      const res = await requirementsList(`reqID=${query}`);
+      const data = res.data.data?.results;
+      if (!data?.length) {
+        return setError('No records found for this ID');
+      }
+      setRecords(data);
       setError('');
     } catch (error) {
       console.error('Error fetching records:', error);
     }
-  };
-
-  const handleRecordSelect = (record: Record) => {
-    props.onClick(record);
-    props.setDrawerOpen(true);
   };
 
   return (
@@ -95,7 +76,7 @@ export default function CustomSearch(props: any) {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Requirement ID</TableCell>
+                <TableCell>ID</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Company</TableCell>
                 <TableCell>Title</TableCell>
@@ -104,15 +85,15 @@ export default function CustomSearch(props: any) {
             </TableHead>
             <TableBody>
               {records.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>{record.id}</TableCell>
-                  <TableCell>{record.name}</TableCell>
-                  <TableCell>{record.company}</TableCell>
-                  <TableCell>{record.title}</TableCell>
+                <TableRow key={record._id}>
+                  <TableCell>{record.reqID}</TableCell>
+                  <TableCell>{record.clientPerson}</TableCell>
+                  <TableCell>{record.vendorCompany}</TableCell>
+                  <TableCell>{record.jobTitle}</TableCell>
                   <TableCell>
                     <Button
                       variant="contained"
-                      onClick={() => handleRecordSelect(record)}
+                      onClick={() => onSelect(record)}
                       size="small"
                       sx={{ borderRadius: '10px' }}
                     >

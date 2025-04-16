@@ -80,7 +80,7 @@ export default function ConsultantForm(props: any) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode]
+    [values, mode, viewData]
   );
 
   useEffect(() => {

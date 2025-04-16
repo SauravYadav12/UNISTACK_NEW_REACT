@@ -244,7 +244,7 @@ function App() {
                     module: SuperAdminModule['Leaves Management'],
                   }}
                 >
-                  <LeavesManagement/>
+                  <LeavesManagement />
                 </ProtectedRoute>
               }
             />

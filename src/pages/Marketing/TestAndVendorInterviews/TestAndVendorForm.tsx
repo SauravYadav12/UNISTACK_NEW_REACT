@@ -27,6 +27,7 @@ import {
   meetingTypeOptions,
   paymentStatusOptions,
   resultOptions,
+  testAndVendorInterviewInitialValues,
   timeZoneOptions,
   vendorInterviewValidationMeta,
 } from './testAndViValues';
@@ -39,48 +40,26 @@ import { dateFormate, timeFormate } from '../../../components/constants';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
+import { SetResults } from '../../../hooks/paginationHook';
+import { FormMode } from '../Requirements/Requirements';
 
-const initialValues = {
-  timeShift: '',
-  timeZone: '',
-  interviewType: '',
-  interviewStatus: intStatusOptions[0] || '',
-  interviewWith: '',
-  intResult: '',
-  interviewRound: '',
-  interviewViaMode: '',
-  meetingType: '',
-  interviewDuration: '',
-  interviewDate: null,
-  interviewTime: null,
-  consultant: '',
-  marketingPerson: '',
-  vendorCompany: '',
-  primeVendorCompany: '',
-  codeLink: '',
-  tentativeReason: '',
-  remarks: '',
-  subjectLine: '',
-  interviewMode: '',
-  interviewLink: '',
-  interviewFocus: '',
-  specialNote: '',
-  interviewFeedback: '',
-  jobTitle: '',
-  reqID: '',
-  clientName: '',
-  taxType: '',
-  duration: '',
-  candidateName: '',
-  rateForInterview: '',
-  paymentStatus: '',
-  jobDescription: '',
-};
-
-export default function InterviewForm(props: any) {
-  const [values, setValues] = useState<any>(initialValues);
+interface iProps {
+  viewData: any;
+  requirement?: any;
+  isEditing?: boolean;
+  hideButtons?: boolean;
+  mode?: FormMode;
+  onCreate?: () => void;
+  onEdit?: (editMode: boolean) => void;
+  setDrawerOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+  setResults?: SetResults;
+}
+export default function InterviewForm(props: iProps) {
+  const [values, setValues] = useState<any>(
+    testAndVendorInterviewInitialValues
+  );
   const {
-    selectedRecord,
+    requirement,
     viewData,
     mode,
     isEditing,
@@ -89,7 +68,7 @@ export default function InterviewForm(props: any) {
     setResults,
   } = props;
   const [errors, setErrors] = useState<{ [key: string]: any }>(
-    convertValuesToEmptyString(initialValues)
+    convertValuesToEmptyString(testAndVendorInterviewInitialValues)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
@@ -102,33 +81,52 @@ export default function InterviewForm(props: any) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode]
+    [values, mode, requirement, viewData]
   );
-  
+
   useEffect(() => {
-    if (selectedRecord) {
-      setValues((prevValues: any) => ({
-        ...prevValues,
-        reqID: selectedRecord.id,
-        clientName: selectedRecord.name,
-        vendorCompany: selectedRecord.company,
-        jobTitle: selectedRecord.title,
-        primeVendorCompany: selectedRecord.primeVendorCompany,
-        jobDescription: selectedRecord.jobDescription,
-        duration: selectedRecord.duration,
-        taxType: selectedRecord.taxType,
-        marketingPerson: user.firstName,
-        interviewWith: 'Vendor/IMP/PV',
-      }));
-    }
-  }, [selectedRecord]);
+    requirement && initializeValuesToCreateInterview(requirement);
+  }, [requirement]);
 
   useEffect(() => {
     if (mode === 'view') {
       setValues(viewData);
     }
-    setErrors(convertValuesToEmptyString(initialValues));
+    setErrors(convertValuesToEmptyString(testAndVendorInterviewInitialValues));
   }, [mode]);
+
+  function initializeValuesToCreateInterview(requirement: any) {
+    if (!requirement) return;
+    const {
+      reqID,
+      appliedFor,
+      appliedForRef,
+      clientPerson,
+      duration,
+      taxType,
+      jobTitle,
+      vendorCompany,
+      primeVendorCompany,
+      jobDescription,
+    } = requirement;
+    setValues((prevValues: any) => ({
+      ...prevValues,
+      consultant: appliedFor,
+      consultantRef: appliedForRef,
+      clientName: clientPerson,
+      reqID,
+      vendorCompany,
+      primeVendorCompany,
+      jobDescription,
+      jobTitle,
+      duration,
+      taxType,
+      interviewWith: 'Vendor/IMP/PV',
+      interviewStatus: intStatusOptions[0] || '',
+      marketingPerson: `${user?.firstName} ${user?.lastName}`,
+      marketingPersonRef: user?.id,
+    }));
+  }
 
   const addValue = (key: any, newValue: any) => {
     const meta = vendorInterviewValidationMeta.find((m) => m.field === key);
@@ -140,24 +138,16 @@ export default function InterviewForm(props: any) {
         newValue = meta.transform(newValue);
       }
     }
-    const updatedValues: any = { ...values, [key]: newValue };
+    const updatedValues = { ...values, [key]: newValue };
     const {
-      interviewWith,
-      interviewDuration,
-      interviewType,
-      interviewViaMode,
-      meetingType,
-      vendorCompany,
-      primeVendorCompany,
-    }: any = updatedValues;
+      interviewDuration = '',
+      interviewType = '',
+      interviewViaMode = '',
+      meetingType = '',
+      vendorCompany = '',
+    } = updatedValues;
     const iSubLine = `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}`;
-    // if (interviewWith === 'Vendor/IMP/PV') {
-    updatedValues.subjectLine = `${iSubLine}_Interview_With_Vendor/IMP/PV_${
-      vendorCompany || ''
-    }`;
-    // } else if (interviewWith === 'Vendor/IMP/PV') {
-    //   updatedValues.subjectLine = `${iSubLine}_Interview_With_Vendor/IMP/PV_${primeVendorCompany}`;
-    // }
+    updatedValues.subjectLine = `${iSubLine}_Interview_With_Vendor/IMP/PV_${vendorCompany}`;
     setValues(updatedValues);
   };
 
@@ -176,8 +166,8 @@ export default function InterviewForm(props: any) {
     setIsSubmitting(true);
     try {
       const { data } = await createVendorInterview(values);
-      setResults((pre: any) => [data.data, ...pre]);
-      setDrawerOpen(false);
+      setResults?.((pre: any) => [data.data, ...pre]);
+      setDrawerOpen?.(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {
@@ -200,14 +190,14 @@ export default function InterviewForm(props: any) {
     console.log('Edit submit button clicked');
     try {
       const { data } = await updateVendorInterview(values._id, values);
-      setResults((pre: any) => {
+      setResults?.((pre: any) => {
         pre = pre.map((d: any) => {
           if (d._id === data.data._id) return data.data;
           return d;
         });
         return [...pre];
       });
-      setDrawerOpen(false);
+      setDrawerOpen?.(false);
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     } finally {
@@ -218,8 +208,8 @@ export default function InterviewForm(props: any) {
   async function handleDeleteInterview(_id: any) {
     try {
       await deleteVendorInterview(values._id);
-      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
-      setDrawerOpen(false);
+      setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setDrawerOpen?.(false);
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
@@ -272,7 +262,7 @@ export default function InterviewForm(props: any) {
               type="button"
               onClick={() => {
                 setValues(viewData);
-                onEdit(false);
+                onEdit?.(false);
               }}
               size="small"
               sx={{ borderRadius: '10px' }}
@@ -296,7 +286,7 @@ export default function InterviewForm(props: any) {
               variant="contained"
               color="primary"
               type="button"
-              onClick={() => onEdit(true)}
+              onClick={() => onEdit?.(true)}
               size="small"
               sx={{ borderRadius: '10px' }}
             >
@@ -593,7 +583,7 @@ export default function InterviewForm(props: any) {
           multiline
           disabled
           width={970}
-          selectedValue={values.subjectLine}
+          selectedValue={values.subjectLine || ' '}
           onChange={(event: any) => addValue('subjectLine', event.target.value)}
         />
         <CustomTextField

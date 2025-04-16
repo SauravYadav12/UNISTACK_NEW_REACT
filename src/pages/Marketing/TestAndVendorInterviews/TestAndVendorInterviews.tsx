@@ -12,25 +12,20 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { useState } from 'react';
 import moment from 'moment';
 import TestAndVendorForm from './TestAndVendorForm';
-import { interviewsList } from '../../../services/vendorInterviewApi';
-import CustomSearch from './CustomSearch';
+import { vendorInterviewsList } from '../../../services/vendorInterviewApi';
 import { interviewStatusColors } from './testAndViValues';
 import { dateFormate2 } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
-
-type Record = {
-  id: number;
-  name: string;
-  company: string;
-  title: string;
-};
+import { syncDataById } from '../../../utils/syncDataById';
+import { FormMode } from '../Requirements/Requirements';
+import SearchRequirement from '../Interviews/SearchRequirement';
 
 export default function TestAndVendorInterviews() {
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
-  const [viewData, setViewData] = useState({});
+  const [requirement, setRequirement] = useState<any>();
+  const [viewData, setViewData] = useState<any>();
   const [isEditing, setIsEditing] = useState(false);
-  const [mode, setMode] = useState('view');
+  const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
 
@@ -44,7 +39,7 @@ export default function TestAndVendorInterviews() {
     setResults,
   } = usePagination(
     {
-      queryFunction: interviewsList,
+      queryFunction: vendorInterviewsList,
     },
     []
   );
@@ -106,18 +101,22 @@ export default function TestAndVendorInterviews() {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.filter((r: any) => r.testID === row.testID);
+    const data = gridData?.results?.find((r: any) => r.testID === row.testID);
     if (!data) return;
-    setViewData(data[0]);
+    setViewData(data);
     setFormTitle(`Vendor Interview ID ${row.testID}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
+    syncDataById(data, {
+      queryFunction: vendorInterviewsList,
+      setResults,
+      viewDataState: [viewData, setViewData],
+    });
   };
 
-  const handleOpenForm = (record: Record) => {
-    console.log('record--', record);
-    setSelectedRecord(record);
+  const handleOpenForm = (record: any) => {
+    setRequirement(record);
     setFormTitle('Add New Vendor Interview');
     setDrawerOpen(true);
     setOpenDialog(false);
@@ -176,10 +175,7 @@ export default function TestAndVendorInterviews() {
           <DialogContentText>
             Select the Record ID for creating an Vendor interview
           </DialogContentText>
-          <CustomSearch
-            onClick={handleOpenForm}
-            setDrawerOpen={setDrawerOpen}
-          />
+          <SearchRequirement onSelect={handleOpenForm} />
         </DialogContent>
       </Dialog>
 
@@ -204,8 +200,7 @@ export default function TestAndVendorInterviews() {
       >
         <TestAndVendorForm
           setResults={setResults}
-          handleCloseForm={handleCloseForm}
-          selectedRecord={selectedRecord}
+          requirement={requirement}
           viewData={viewData}
           setDrawerOpen={setDrawerOpen}
           mode={mode}
