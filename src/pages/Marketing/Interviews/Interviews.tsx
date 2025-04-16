@@ -203,8 +203,13 @@ export default function Interviews(props: Iprops) {
 
   useEffect(() => {
     const req = searchParams.get('createInterviewByReq');
-    if (req) {
-      createInterview(JSON.parse(req));
+    try {
+      if (req) {
+        createInterview(JSON.parse(decodeURIComponent(req)));
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error('Something went wrong');
     }
   }, [searchParams]);
 
