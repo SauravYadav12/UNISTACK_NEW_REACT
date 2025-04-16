@@ -27,6 +27,7 @@ const VerifyOTP = ({
     e.preventDefault();
     if (!validateOtp(otp)) {
       setError('OTP should be 6 digits.');
+      return
     }
     setLoading(true);
     try {

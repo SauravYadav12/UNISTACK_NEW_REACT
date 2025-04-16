@@ -53,7 +53,7 @@ const sampleLeaveHistory = [
 ];
 
 interface iProps {
-  tableContainerHeight?: number;
+  tableContainerHeight?: number|string;
 }
 
 function LeaveHistoryTable({ tableContainerHeight = 480 }: iProps) {
@@ -74,7 +74,6 @@ function LeaveHistoryTable({ tableContainerHeight = 480 }: iProps) {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Dates</TableCell>
-              {/* <TableCell>End Date</TableCell> */}
               <TableCell>Leave Type</TableCell>
               <TableCell>Status</TableCell>
               {!isMobile && <TableCell>Reason</TableCell>}

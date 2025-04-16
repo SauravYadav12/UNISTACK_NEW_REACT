@@ -574,8 +574,8 @@ export default function RequirementsForm(props: iProps) {
                       type="button"
                       onClick={() =>
                         navigate(
-                          `/interviews?createInterviewByReq=${JSON.stringify(
-                            reqFields()
+                          `/interviews?createInterviewByReq=${encodeURIComponent(
+                            JSON.stringify(reqFields())
                           )}`
                         )
                       }

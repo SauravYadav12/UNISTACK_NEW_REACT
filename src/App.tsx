@@ -32,6 +32,7 @@ import {
   SuperAdminModule,
 } from './utils/accessControlUtil';
 import ForgotPassword from './pages/Auth/ForgotPassword';
+import LeavesManagement from './pages/Leaves/LeavesManagement';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -243,7 +244,7 @@ function App() {
                     module: SuperAdminModule['Leaves Management'],
                   }}
                 >
-                  <div>Comming soon</div>
+                  <LeavesManagement/>
                 </ProtectedRoute>
               }
             />
