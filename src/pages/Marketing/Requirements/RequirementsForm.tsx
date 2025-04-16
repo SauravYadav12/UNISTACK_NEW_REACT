@@ -47,6 +47,7 @@ import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { FormMode } from './Requirements';
 import { jUser } from '../../../Interfaces/iUser';
 import { SetResults } from '../../../hooks/paginationHook';
+import { createInterviewQueryParam } from '../Interviews/interviewValues';
 
 interface iProps {
   viewData: any;
@@ -101,7 +102,7 @@ export default function RequirementsForm(props: iProps) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    []
+    [mode, viewData, comment, accounts, consultants]
   );
 
   useEffect(() => {
@@ -112,7 +113,7 @@ export default function RequirementsForm(props: iProps) {
         reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
         reqEnteredByRef: `${getIUser()?.id}`,
       }));
-  }, [mode]);
+  }, [mode, viewData]);
 
   useEffect(() => {
     setFile(undefined);
@@ -293,24 +294,14 @@ export default function RequirementsForm(props: iProps) {
     meta && isFieldValid(meta, values[key], setErrors);
   };
 
-  const reqFields = () => {
-    const val = viewData;
-    const record = {
-      id: val.reqID,
-      name: val.clientPerson,
-      company: val.vendorCompany,
-      title: val.jobTitle,
-      primeVendorCompany: val.primeVendorCompany,
-      jobDescription: val.jobDescription,
-      jobTitle: val.jobTitle,
-      taxType: val.taxType,
-      duration: val.duration,
-      consultant: val.appliedFor,
-      consultantRef: val.appliedForRef,
-    };
-    return record;
-  };
-
+  function handlecreateInterview() {
+    try {
+      navigate(`/interviews?${createInterviewQueryParam}=${viewData.reqID}`);
+    } catch (error) {
+      toast.error('Failed to create interview');
+      console.error('An error occurred while creating the interview:', error);
+    }
+  }
   const appliedForField = (
     <>
       {mode === 'view' ? (
@@ -572,13 +563,7 @@ export default function RequirementsForm(props: iProps) {
                       variant="contained"
                       color="primary"
                       type="button"
-                      onClick={() =>
-                        navigate(
-                          `/interviews?createInterviewByReq=${encodeURIComponent(
-                            JSON.stringify(reqFields())
-                          )}`
-                        )
-                      }
+                      onClick={handlecreateInterview}
                       size="small"
                       sx={{ borderRadius: '10px', width: 'max-content' }}
                       disabled={isSubmitting}

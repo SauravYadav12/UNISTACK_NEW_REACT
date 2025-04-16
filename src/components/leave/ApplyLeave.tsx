@@ -5,7 +5,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 // import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
-import axios from 'axios';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
 import moment, { Moment } from 'moment';
 import { dateFormate2 } from '../constants';
@@ -54,19 +53,26 @@ const ApplyLeave = () => {
       setEndDate(null);
       setReason('');
     } catch (error) {
-      //   setErrorMessage(error.response?.data?.message || 'Failed to submit leave application.');
       console.error('Error applying for leave:', error);
     }
   };
 
+  function CardSubtitle() {
+    const start = startDate?.format(dateFormate2);
+    const end = endDate?.format(dateFormate2);
+    if (!start && !end) return '';
+    return (
+      <>
+        {start || (end && '____//____')}
+        {end && ' to ' + end}
+      </>
+    );
+  }
+
   return (
     <ChartCardWrapper
       title="Apply for Leave"
-      subtitle={
-        (startDate?.format(dateFormate2) || '____//____') +
-        ' to ' +
-        (endDate?.format(dateFormate2) || '____//____')
-      }
+      subtitle={<CardSubtitle />}
       action={
         <Select
           value={leaveType}
@@ -86,8 +92,14 @@ const ApplyLeave = () => {
       }
     >
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={1} alignItems="center" sx={{ mt: 3 }}>
-          <Grid item xs={12} sm={6}>
+        <Grid
+          container
+          columnSpacing={1}
+          rowSpacing={2}
+          alignItems="center"
+          sx={{ mt: 3 }}
+        >
+          <Grid item xs={12} sm={4}>
             <LocalizationProvider dateAdapter={AdapterMoment}>
               <DatePicker
                 maxDate={endDate}
@@ -99,7 +111,7 @@ const ApplyLeave = () => {
               />
             </LocalizationProvider>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={4}>
             <LocalizationProvider dateAdapter={AdapterMoment}>
               <DatePicker
                 minDate={startDate}

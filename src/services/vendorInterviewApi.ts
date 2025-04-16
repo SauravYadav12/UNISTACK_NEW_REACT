@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
-export async function interviewsList(query: string='') {
+export async function vendorInterviewsList(query: string='') {
   const token = await getJwtToken();
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {

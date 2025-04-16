@@ -3,7 +3,7 @@ import { Card, CardContent, Typography, Stack, Box } from '@mui/material';
 
 type Props = {
   title?: string;
-  subtitle?: string;
+  subtitle?: string|JSX.Element;
   action?: JSX.Element | any;
   footer?: JSX.Element;
   cardheading?: string | JSX.Element;

@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Card,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -65,7 +66,7 @@ import { FormMode } from '../Requirements/Requirements';
 
 interface iProps {
   viewData: any;
-  selectedRecord?: any;
+  requirement?: any;
   isEditing?: boolean;
   hideButtons?: boolean;
   mode?: FormMode;
@@ -78,7 +79,7 @@ interface iProps {
 export default function InterviewForm(props: iProps) {
   const {
     viewData,
-    selectedRecord,
+    requirement,
     mode = 'view',
     isEditing = false,
     hideButtons = false,
@@ -104,27 +105,11 @@ export default function InterviewForm(props: iProps) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode]
+    [values, mode, viewData, requirement]
   );
   useEffect(() => {
-    if (selectedRecord) {
-      setValues((prevValues: any) => ({
-        ...prevValues,
-        consultant: selectedRecord.consultant,
-        consultantRef: selectedRecord.consultantRef,
-        reqID: selectedRecord.id,
-        clientName: selectedRecord.name,
-        vendorCompany: selectedRecord.company,
-        jobTitle: selectedRecord.title,
-        primeVendorCompany: selectedRecord.primeVendorCompany,
-        jobDescription: selectedRecord.jobDescription,
-        duration: selectedRecord.duration,
-        taxType: selectedRecord.taxType,
-        marketingPerson: `${user?.firstName} ${user?.lastName}`,
-        marketingPersonRef: user?.id,
-      }));
-    }
-  }, [selectedRecord]);
+    requirement && initializeValuesToCreateInterview(requirement);
+  }, [requirement]);
 
   useEffect(() => {
     if (mode === 'view') {
@@ -135,6 +120,38 @@ export default function InterviewForm(props: iProps) {
   useEffect(() => {
     setErrors(convertValuesToEmptyString(interviewFormInitialValues));
   }, [mode]);
+
+  function initializeValuesToCreateInterview(requirement: any) {
+    if (!requirement) return;
+    const {
+      reqID,
+      appliedFor,
+      appliedForRef,
+      clientPerson,
+      duration,
+      taxType,
+      jobTitle,
+      vendorCompany,
+      primeVendorCompany,
+      jobDescription,
+    } = requirement;
+    setValues((prevValues: any) => ({
+      ...prevValues,
+      consultant: appliedFor,
+      consultantRef: appliedForRef,
+      clientName: clientPerson,
+      reqID,
+      vendorCompany,
+      primeVendorCompany,
+      jobDescription,
+      jobTitle,
+      duration,
+      taxType,
+      interviewStatus: intStatusOptions[0] || '',
+      marketingPerson: `${user?.firstName} ${user?.lastName}`,
+      marketingPersonRef: user?.id,
+    }));
+  }
 
   const addValue = (key: any, newValue: any) => {
     const meta = interviewValidationMeta.find((m) => m.field === key);
@@ -150,14 +167,14 @@ export default function InterviewForm(props: iProps) {
     const updatedValues: any = { ...values, [key]: newValue };
 
     const {
-      interviewWith,
-      interviewDuration,
-      interviewType,
-      interviewViaMode,
-      meetingType,
-      vendorCompany,
-      primeVendorCompany,
-      clientName,
+      interviewWith = '',
+      interviewDuration = '',
+      interviewType = '',
+      interviewViaMode = '',
+      meetingType = '',
+      vendorCompany = '',
+      primeVendorCompany = '',
+      clientName = '',
     }: any = updatedValues;
 
     const subjectLine = (type: string) =>
@@ -165,15 +182,15 @@ export default function InterviewForm(props: iProps) {
 
     if (interviewWith === 'Vendor') {
       updatedValues.subjectLine = subjectLine(
-        `Interview_With_Vendor_${vendorCompany || ''}`
+        `Interview_With_Vendor_${vendorCompany}`
       );
     } else if (interviewWith === 'IMP/PV') {
       updatedValues.subjectLine = subjectLine(
-        `Interview_With_IMP/PV_${primeVendorCompany || ''}`
+        `Interview_With_IMP/PV_${primeVendorCompany}`
       );
     } else if (interviewWith === 'Client') {
       updatedValues.subjectLine = subjectLine(
-        `Interview_With_Client_${clientName || ''}`
+        `Interview_With_Client_${clientName}`
       );
     }
     setValues(updatedValues);
@@ -275,9 +292,16 @@ export default function InterviewForm(props: iProps) {
     meta && isFieldValid(meta, values[key], setErrors);
   };
 
+  if (!values)
+    return (
+      <Box className="loader" sx={{ py: 10 }}>
+        <CircularProgress size={25} />
+      </Box>
+    );
+
   const scriptFileElements = (
     <>
-      {!!values.script && urlValidator(values.script) && mode === 'view' && (
+      {!!values?.script && urlValidator(values?.script) && mode === 'view' && (
         <Card
           variant="outlined"
           className="document-container"
@@ -285,7 +309,7 @@ export default function InterviewForm(props: iProps) {
         >
           <Stack py={'6px'} pl={2} direction={'row'} alignItems={'center'}>
             <img
-              src={`${getMaterialFileIcon(values.script)}`}
+              src={`${getMaterialFileIcon(values?.script)}`}
               alt="icon"
               style={{
                 width: '17px',
@@ -299,13 +323,13 @@ export default function InterviewForm(props: iProps) {
           <Box pr={1}>
             <IconButton
               target="_blank"
-              href={values.script}
+              href={values?.script}
               sx={{ height: '30px' }}
             >
               <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
             </IconButton>
             <IconButton
-              onClick={() => downloadFile(values.script)}
+              onClick={() => downloadFile(values?.script)}
               sx={{ height: '30px' }}
             >
               <DownloadIcon style={{ color: '#1976d2', width: '16px' }} />
@@ -708,7 +732,7 @@ export default function InterviewForm(props: iProps) {
             multiline
             disabled
             width={970}
-            selectedValue={values.subjectLine}
+            selectedValue={values.subjectLine || ' '}
             onChange={(event: any) =>
               addValue('subjectLine', event.target.value)
             }

@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Interviews from '../../pages/Marketing/Interviews/Interviews';
 import { useSearchParams } from 'react-router-dom';
 import { InterviewStatus } from '../../Interfaces/reports';
+import { createInterviewQueryParam } from '../../pages/Marketing/Interviews/interviewValues';
 
 export default function InterviewTabs() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,7 +68,7 @@ export default function InterviewTabs() {
       {tabs.map((t, i) => {
         if (value !== i) return null;
         const myParams = new URLSearchParams(searchParams);
-        myParams.delete('createInterviewByReq');
+        myParams.delete(createInterviewQueryParam);
         const p = myParams.toString();
         const query = p.length
           ? p

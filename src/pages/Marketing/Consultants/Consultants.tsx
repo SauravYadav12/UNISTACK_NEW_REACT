@@ -9,10 +9,11 @@ import { dateFormate2 } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
 
 import SyncIcon from '@mui/icons-material/Sync';
+import { syncDataById } from '../../../utils/syncDataById';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [viewData, setViewData] = useState({});
+  const [viewData, setViewData] = useState<any>();
   const [isEditing, setIsEditing] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
@@ -82,15 +83,20 @@ export default function Consultants() {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.filter(
+    const data = gridData?.results?.find(
       (r: any) => r.consultantId === row.consultantId
     );
     if (!data) return;
-    setViewData(data[0]);
+    setViewData(data);
     setFormTitle(`Consultant ID :- ${row.consultantId}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
+    syncDataById(data, {
+      queryFunction: consultantsList,
+      setResults,
+      viewDataState: [viewData, setViewData],
+    });
   };
 
   const handleAddNew = () => {

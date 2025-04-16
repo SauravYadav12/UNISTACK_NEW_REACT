@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import InterviewForm from './InterviewForm';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { interviewsList } from '../../../services/interviewApi';
-import CustomSearch from './CustomSearch';
+import SearchRequirement from './SearchRequirement';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValues';
@@ -27,12 +27,10 @@ import {
   moduleKey,
 } from '../../../utils/accessControlUtil';
 import { FormMode } from '../Requirements/Requirements';
-type Record = {
-  id: number;
-  name: string;
-  company: string;
-  title: string;
-};
+import { syncDataById } from '../../../utils/syncDataById';
+import { requirementsList } from '../../../services/requirementApi';
+import { createInterviewQueryParam } from './interviewValues';
+
 interface Iprops {
   label: string;
   query: string;
@@ -42,8 +40,8 @@ export default function Interviews(props: Iprops) {
   const { isModuleAllowed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
-  const [viewData, setViewData] = useState({});
+  const [requirement, setRequirement] = useState<any>();
+  const [viewData, setViewData] = useState<any>();
   const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -140,18 +138,23 @@ export default function Interviews(props: Iprops) {
   ];
 
   const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.filter((r: any) => r.intId === row.intId);
+    const data = gridData?.results?.find((r: any) => r.intId === row.intId);
     if (!data) return;
-    setViewData(data[0]);
+    setViewData(data);
     setFormTitle(`Interview ID ${row.intId}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
+    !archive &&
+      syncDataById(data, {
+        queryFunction: interviewsList,
+        viewDataState: [viewData, setViewData],
+        setResults,
+      });
   };
 
-  const handleOpenForm = (record: Record) => {
-    console.log('record--', record);
-    setSelectedRecord(record);
+  const handleOpenForm = (record: any) => {
+    setRequirement(record);
     setFormTitle('Add New Interview');
     setDrawerOpen(true);
     setOpenDialog(false);
@@ -160,7 +163,7 @@ export default function Interviews(props: Iprops) {
   };
   const clearReqFromParams = () => {
     setSearchParams((pre) => {
-      pre.delete('createInterviewByReq');
+      pre.delete(createInterviewQueryParam);
       return pre;
     });
   };
@@ -180,16 +183,6 @@ export default function Interviews(props: Iprops) {
     setMode(editMode ? 'edit' : 'view');
   };
 
-  const createInterview = async (record: any) => {
-    try {
-      setDrawerOpen(true);
-      handleOpenForm(record);
-    } catch (error) {
-      console.log('Error creating interview', error);
-      toast.error('Error creating interview');
-    }
-  };
-
   async function getInterviews(query?: string) {
     const res = await interviewsList(query);
     setArchive(false);
@@ -201,15 +194,26 @@ export default function Interviews(props: Iprops) {
     return res;
   }
 
-  useEffect(() => {
-    const req = searchParams.get('createInterviewByReq');
+  const createInterview = async (reqID: string) => {
     try {
-      if (req) {
-        createInterview(JSON.parse(decodeURIComponent(req)));
+      setDrawerOpen(true);
+      const res = await requirementsList(`reqID=${reqID}`);
+      const data = res.data.data?.results;
+      if (!data?.length) {
+        toast.error('No requirement found for this ID');
+        return;
       }
+      const requirement = data[0];
+      handleOpenForm(requirement);
     } catch (error) {
-      console.log(error);
-      toast.error('Something went wrong');
+      console.log('Error creating interview', error);
+      toast.error('Error creating interview');
+    }
+  };
+  useEffect(() => {
+    const reqID = searchParams.get(createInterviewQueryParam);
+    if (reqID?.length) {
+      createInterview(reqID);
     }
   }, [searchParams]);
 
@@ -255,10 +259,7 @@ export default function Interviews(props: Iprops) {
           <DialogContentText>
             Select the Record ID for creating an interview
           </DialogContentText>
-          <CustomSearch
-            onClick={handleOpenForm}
-            setDrawerOpen={setDrawerOpen}
-          />
+          <SearchRequirement onSelect={handleOpenForm} />
         </DialogContent>
       </Dialog>
       <CustomDataGrid
@@ -298,7 +299,7 @@ export default function Interviews(props: Iprops) {
           onCreate={clearReqFromParams}
           setResults={setResults}
           hideButtons={archive}
-          selectedRecord={selectedRecord}
+          requirement={requirement}
           viewData={viewData}
           setDrawerOpen={setDrawerOpen}
           mode={mode}
