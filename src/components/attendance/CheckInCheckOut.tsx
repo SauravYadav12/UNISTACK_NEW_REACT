@@ -1,14 +1,19 @@
 import React, { useEffect } from 'react';
 import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
-import { Button } from '@mui/material';
+import { Box, Button, Tooltip } from '@mui/material';
 import MarkAttendanceModal, {
   autoOpenAttendanceModalKey,
 } from '../dashboard/MarkAttendanceModal';
 import MarkCheckoutTimeModal from '../dashboard/MarkCheckoutTimeModal';
-import { handleAttendanceStatus } from '../../utils/dateUtil';
+import {
+  getOfficeStartTime,
+  handleAttendanceStatus,
+  notApplicableThresholdMinutes,
+  timeZoneKeyByUserShift,
+} from '../../utils/dateUtil';
 import { getJUser } from '../../utils/utils';
-import { Moment } from 'moment';
-import { dateFormate } from '../constants';
+import moment, { Moment } from 'moment';
+import { dateFormate, timeFormate } from '../constants';
 
 const CheckInCheckOut = ({
   user,
@@ -23,12 +28,13 @@ const CheckInCheckOut = ({
     iAttendance | undefined
   >(attendance);
 
-  const ableToMarkAttendance =
-    (!todaysAttendance ||
-      todaysAttendance.status === AttendanceStatus.Absent) &&
-    (!!handleAttendanceStatus(user.shift) || forAdmin);
+  const showMarkAttendance =
+    !todaysAttendance || todaysAttendance.status === AttendanceStatus.Absent;
 
-  const ableToCheckout =
+  const disableMarkAttendance =
+    !handleAttendanceStatus(user.shift) && !forAdmin;
+
+  const showCheckout =
     todaysAttendance &&
     !todaysAttendance.checkOut &&
     todaysAttendance.status !== AttendanceStatus.Absent;
@@ -36,7 +42,8 @@ const CheckInCheckOut = ({
   const [openMarkAttendanceModal, setOpenMarkAttendanceModal] = React.useState(
     !!allowAutomaticPopUp &&
       !!localStorage.getItem(autoOpenAttendanceModalKey) &&
-      ableToMarkAttendance &&
+      showMarkAttendance &&
+      !disableMarkAttendance &&
       getJUser()!._id === user._id
   );
 
@@ -45,6 +52,23 @@ const CheckInCheckOut = ({
   function handleChange(a: iAttendance) {
     setTodaysAttendance(a);
     onChange && onChange(a);
+  }
+
+  function timeTitle() {
+    const { h, m } = getOfficeStartTime(user.shift);
+    const notApplicableThresholdHours = h + notApplicableThresholdMinutes / 60;
+    const tz = timeZoneKeyByUserShift(user.shift);
+    const from =
+      moment().clone().hour(h).minute(m).format(timeFormate) + ' ' + tz;
+    const to =
+      moment()
+        .clone()
+        .hour(notApplicableThresholdHours)
+        .minute(m)
+        .format(timeFormate) +
+      ' ' +
+      tz;
+    return from + ` to ` + to;
   }
 
   useEffect(() => {
@@ -56,6 +80,7 @@ const CheckInCheckOut = ({
     ...(buttonSize === 'small' && {
       '&.MuiButtonBase-root': {
         padding: '2px 4px',
+        paddingTop: '3px',
         fontSize: 'xx-small',
         borderRadius: '4px',
       },
@@ -64,17 +89,30 @@ const CheckInCheckOut = ({
 
   return (
     <>
-      {ableToMarkAttendance && (
+      {showMarkAttendance && (
         <>
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            sx={bStyle}
-            onClick={() => setOpenMarkAttendanceModal(true)}
+          <Tooltip
+            title={
+              disableMarkAttendance && `You can mark between ${timeTitle()}.`
+            }
+            arrow
+            placement="top"
           >
-            Mark Attendance
-          </Button>
+            <Box>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                sx={bStyle}
+                onClick={() =>
+                  !disableMarkAttendance && setOpenMarkAttendanceModal(true)
+                }
+                disabled={disableMarkAttendance}
+              >
+                Mark Attendance
+              </Button>
+            </Box>
+          </Tooltip>
 
           <MarkAttendanceModal
             forAdmin={forAdmin}
@@ -87,7 +125,7 @@ const CheckInCheckOut = ({
         </>
       )}
 
-      {ableToCheckout && (
+      {showCheckout && (
         <>
           <Button
             variant="contained"

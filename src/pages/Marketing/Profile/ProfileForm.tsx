@@ -252,7 +252,15 @@ const ProfileForm = ({
         submitForm();
       },
     },
-    [myProfile]
+    [
+      myProfile,
+      formErrors,
+      isFormSubmitting,
+      selectedBlobFiles,
+      isBothAddressSame,
+      viewMode,
+      template,
+    ]
   );
 
   useEffect(() => {

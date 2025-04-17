@@ -102,7 +102,19 @@ export default function RequirementsForm(props: iProps) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [mode, viewData, comment, accounts, consultants]
+    [
+      values,
+      file,
+      errors,
+      reqToCopy,
+      isEditing,
+      hideButtons,
+      mode,
+      viewData,
+      comment,
+      accounts,
+      consultants,
+    ]
   );
 
   useEffect(() => {
@@ -187,7 +199,7 @@ export default function RequirementsForm(props: iProps) {
         date: new Date(),
         comment: comment,
       };
-      values.mComment = [commentsPayload];
+      values.mComment = [...(values?.mComment || []), commentsPayload];
     }
 
     setIsSubmitting(true);
@@ -227,7 +239,7 @@ export default function RequirementsForm(props: iProps) {
         date: new Date(),
         comment: comment,
       };
-      payload.mComment = [...(payload.mComment || []), commentPayload];
+      payload.mComment = [...(payload?.mComment || []), commentPayload];
     }
     setIsSubmitting(true);
     try {
@@ -694,31 +706,24 @@ export default function RequirementsForm(props: iProps) {
           />
 
           <Stack>
-            {values?.mComment?.filter((comment: any) => comment.comment?.trim())
-              .length
-              ? values?.mComment
-                  ?.filter((comment: any) => comment.comment.trim())
-                  .map((comment: any, i: number) => {
-                    const label = `${comment.username} . ${dayjs(
-                      comment.date
-                    ).format(dateFormate + ' ' + timeFormate)}`;
-                    return (
-                      <CustomTextField
-                        key={i}
-                        label={label}
-                        width={970}
-                        disabled
-                        selectedValue={comment.comment}
-                      />
-                    );
-                  })
-              : null}
-
-            {isEditing && (
+            {viewData?.mComment?.map((comment: any, i: number) => {
+              const label = `${comment.username} . ${dayjs(comment.date).format(
+                dateFormate + ' ' + timeFormate
+              )}`;
+              return (
+                <CustomTextField
+                  key={i}
+                  label={label}
+                  width={970}
+                  disabled
+                  selectedValue={comment.comment}
+                />
+              );
+            })}
+            {isEditing && mode !== 'view' && (
               <CustomTextField
                 label={"Marketing Person's Comment"}
                 width={970}
-                disabled={!isEditing}
                 selectedValue={comment}
                 onChange={(event: any) => setComment(event.target.value)}
               />
@@ -770,7 +775,6 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Client Phone number"
             width={315}
-            type="number"
             selectedValue={values.clientPhone}
             disabled={!isEditing}
             onChange={(event: any) =>

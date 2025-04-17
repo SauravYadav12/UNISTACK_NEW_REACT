@@ -28,7 +28,6 @@ import {
   deleteConsultant,
   updateConsultant,
 } from '../../../services/consultantApi';
-import { dateFormate } from '../../../components/constants';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
@@ -80,7 +79,7 @@ export default function ConsultantForm(props: any) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode, viewData]
+    [values, mode, viewData, isEditing, errors]
   );
 
   useEffect(() => {
