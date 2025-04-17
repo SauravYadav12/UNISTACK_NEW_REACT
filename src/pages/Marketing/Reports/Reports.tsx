@@ -95,6 +95,12 @@ export default function Reports() {
               value={tab}
               onChange={(v, t) => setTab(t)}
               aria-label="Reports tabs"
+              sx={{
+                '& .MuiTabs-scroller': {
+                  overflowX: 'auto !important',
+                  scrollbarWidth: 'thin',
+                },
+              }}
             >
               {tabs.map((t, i) => (
                 <Tab key={i} label={t} {...a11yProps(i)} />

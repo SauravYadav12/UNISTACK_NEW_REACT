@@ -70,9 +70,9 @@ interface iProps {
   isEditing?: boolean;
   hideButtons?: boolean;
   mode?: FormMode;
+  onDrawerClose?: () => void;
   onCreate?: () => void;
   onEdit?: (editMode: boolean) => void;
-  setDrawerOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   setResults?: SetResults;
 }
 
@@ -84,7 +84,7 @@ export default function InterviewForm(props: iProps) {
     isEditing = false,
     hideButtons = false,
     onEdit,
-    setDrawerOpen,
+    onDrawerClose,
     setResults,
     onCreate,
   } = props;
@@ -212,8 +212,8 @@ export default function InterviewForm(props: iProps) {
     try {
       const { data } = await createInterview(values);
       setResults?.((pre: any) => [data.data, ...pre]);
-      setDrawerOpen?.(false);
       onCreate?.();
+      onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {
@@ -240,7 +240,7 @@ export default function InterviewForm(props: iProps) {
         });
         return [...pre];
       });
-      setDrawerOpen?.(false);
+      onDrawerClose?.()
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     } finally {
@@ -268,7 +268,7 @@ export default function InterviewForm(props: iProps) {
     try {
       await deleteInterview(values._id);
       setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
-      setDrawerOpen?.(false);
+      onDrawerClose?.()
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }

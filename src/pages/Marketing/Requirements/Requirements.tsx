@@ -40,7 +40,6 @@ export default function Requirements() {
   const [formTitle, setFormTitle] = useState('');
   const [viewData, setViewData] = useState<any>({});
   const [reqToCopy, setReqToCopy] = useState<any>();
-  const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState<FormMode>('view');
   const [duplicateReqDrawer, setDuplicateReqDrawer] = useState<string>();
   const [archive, setArchive] = useState(false);
@@ -143,7 +142,6 @@ export default function Requirements() {
     setViewData(data);
     setFormTitle(`Requirement ID: ${row.reqID}`);
     setMode('view');
-    setIsEditing(false);
     setDrawerOpen(true);
     !archive &&
       syncDataById(data, {
@@ -154,7 +152,6 @@ export default function Requirements() {
   };
 
   const handleEdit = (editMode: boolean) => {
-    setIsEditing(editMode);
     setMode(editMode ? 'edit' : 'view');
   };
 
@@ -162,14 +159,12 @@ export default function Requirements() {
     setFormTitle('Add New Requirement');
     setViewData({});
     setMode('add');
-    setIsEditing(true);
     setDrawerOpen(true);
   };
 
   const handleCopy = () => {
     if (!viewData) return;
     setMode('add');
-    setIsEditing(true);
     setFormTitle('Add New Requirement');
 
     const copy = {
@@ -269,8 +264,8 @@ export default function Requirements() {
         consultants={consultants || []}
         viewData={viewData}
         mode={mode}
-        setDrawerOpen={setDrawerOpen}
-        isEditing={isEditing&&mode!=='view'}
+        onDrawerClose={handleDrawerClose}
+        isEditing={mode !== 'view'}
         onEdit={handleEdit}
         onCopy={handleCopy}
         reqToCopy={reqToCopy}

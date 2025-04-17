@@ -42,7 +42,6 @@ export default function Interviews(props: Iprops) {
   const [openDialog, setOpenDialog] = useState(false);
   const [requirement, setRequirement] = useState<any>();
   const [viewData, setViewData] = useState<any>();
-  const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -143,7 +142,6 @@ export default function Interviews(props: Iprops) {
     setViewData(data);
     setFormTitle(`Interview ID ${row.intId}`);
     setMode('view');
-    setIsEditing(false);
     setDrawerOpen(true);
     !archive &&
       syncDataById(data, {
@@ -159,7 +157,6 @@ export default function Interviews(props: Iprops) {
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
-    setIsEditing(true);
   };
   const clearReqFromParams = () => {
     setSearchParams((pre) => {
@@ -179,7 +176,6 @@ export default function Interviews(props: Iprops) {
     setOpenDialog(false);
   };
   const handleEdit = (editMode: boolean) => {
-    setIsEditing(() => editMode);
     setMode(editMode ? 'edit' : 'view');
   };
 
@@ -301,9 +297,9 @@ export default function Interviews(props: Iprops) {
           hideButtons={archive}
           requirement={requirement}
           viewData={viewData}
-          setDrawerOpen={setDrawerOpen}
+          onDrawerClose={handleCloseForm}
           mode={mode}
-          isEditing={isEditing}
+          isEditing={mode !== 'view'}
           onEdit={handleEdit}
         />
       </CustomDrawer>
