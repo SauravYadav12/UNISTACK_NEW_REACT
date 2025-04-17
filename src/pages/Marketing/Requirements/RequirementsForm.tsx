@@ -57,9 +57,9 @@ interface iProps {
   accounts?: jUser[];
   consultants?: any[];
   reqToCopy?: any;
+  onDrawerClose?: ()=>void;
   onEdit?: (editMode: boolean) => void;
   onCopy?: () => void;
-  setDrawerOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   setResults?: SetResults;
 }
 
@@ -82,7 +82,7 @@ export default function RequirementsForm(props: iProps) {
     hideButtons = false,
     mode = 'view',
     onEdit,
-    setDrawerOpen,
+    onDrawerClose,
     onCopy: handleCopyRequirement,
     setResults,
   } = props;
@@ -214,7 +214,7 @@ export default function RequirementsForm(props: iProps) {
     try {
       const { data } = await createRequirement(values);
       setResults?.((pre: any) => [data.data, ...pre]);
-      setDrawerOpen?.(false);
+      onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {
@@ -257,7 +257,7 @@ export default function RequirementsForm(props: iProps) {
         });
         return [...pre];
       });
-      setDrawerOpen?.(false); // Close the drawer after successful update
+      onDrawerClose?.(); // Close the drawer after successful update
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
     } finally {
@@ -269,7 +269,7 @@ export default function RequirementsForm(props: iProps) {
     try {
       await deleteRequirement(values._id);
       setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
-      setDrawerOpen?.(false);
+      onDrawerClose?.();
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
@@ -706,7 +706,7 @@ export default function RequirementsForm(props: iProps) {
           />
 
           <Stack>
-            {viewData?.mComment?.map((comment: any, i: number) => {
+            {values?.mComment?.map((comment: any, i: number) => {
               const label = `${comment.username} . ${dayjs(comment.date).format(
                 dateFormate + ' ' + timeFormate
               )}`;

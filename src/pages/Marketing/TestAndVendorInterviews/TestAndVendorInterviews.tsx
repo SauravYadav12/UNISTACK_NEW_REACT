@@ -24,7 +24,6 @@ export default function TestAndVendorInterviews() {
   const [openDialog, setOpenDialog] = useState(false);
   const [requirement, setRequirement] = useState<any>();
   const [viewData, setViewData] = useState<any>();
-  const [isEditing, setIsEditing] = useState(false);
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -106,7 +105,6 @@ export default function TestAndVendorInterviews() {
     setViewData(data);
     setFormTitle(`Vendor Interview ID ${row.testID}`);
     setMode('view');
-    setIsEditing(false);
     setDrawerOpen(true);
     syncDataById(data, {
       queryFunction: vendorInterviewsList,
@@ -121,7 +119,6 @@ export default function TestAndVendorInterviews() {
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
-    setIsEditing(true);
   };
 
   const handleCloseForm = () => {
@@ -134,7 +131,6 @@ export default function TestAndVendorInterviews() {
     setOpenDialog(false);
   };
   const handleEdit = (editMode: any) => {
-    setIsEditing(editMode);
     setMode(editMode ? 'edit' : 'view');
   };
   const header = (
@@ -202,9 +198,9 @@ export default function TestAndVendorInterviews() {
           setResults={setResults}
           requirement={requirement}
           viewData={viewData}
-          setDrawerOpen={setDrawerOpen}
+          onDrawerClose={handleCloseForm}
           mode={mode}
-          isEditing={isEditing}
+          isEditing={mode !== 'view'}
           onEdit={handleEdit}
         />
       </CustomDrawer>

@@ -33,6 +33,8 @@ import { convertValuesToEmptyString } from '../../../utils/utils';
 import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
 import { getExampleNumber } from 'libphonenumber-js';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
+import { SetResults } from '../../../hooks/paginationHook';
+import { FormMode } from '../Requirements/Requirements';
 
 const initialValues = {
   timeZone: '',
@@ -59,12 +61,20 @@ const initialValues = {
   createdBy: '',
 };
 
-export default function ConsultantForm(props: any) {
+interface iProps {
+  viewData: any;
+  mode?: FormMode;
+  isEditing?: boolean;
+  onDrawerClose: () => void;
+  onEdit?: (editMode: boolean) => void;
+  setResults?: SetResults;
+}
+export default function ConsultantForm(props: iProps) {
   const dobFormate = 'MMM DD';
   const [values, setValues] = useState<any>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { viewData, mode, setDrawerOpen, isEditing, onEdit, setResults } =
+  const { viewData, mode, isEditing, onDrawerClose, onEdit, setResults } =
     props;
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [projects, setProjects] = useState<any[]>([]);
@@ -172,8 +182,8 @@ export default function ConsultantForm(props: any) {
     };
     try {
       const { data } = await createConsultant(payload);
-      setResults((pre: any) => [data.data, ...pre]);
-      setDrawerOpen(false);
+      setResults?.((pre: any) => [data.data, ...pre]);
+      onDrawerClose();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
     } finally {
@@ -209,14 +219,14 @@ export default function ConsultantForm(props: any) {
     };
     try {
       const { data } = await updateConsultant(values._id, payload);
-      setResults((pre: any) => {
+      setResults?.((pre: any) => {
         pre = pre.map((d: any) => {
           if (d._id === data.data._id) return data.data;
           return d;
         });
         return [...pre];
       });
-      setDrawerOpen(false);
+      onDrawerClose();
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     } finally {
@@ -227,8 +237,8 @@ export default function ConsultantForm(props: any) {
   async function handleDeleteConsultant(_id: any) {
     try {
       await deleteConsultant(values._id);
-      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
-      setDrawerOpen(false);
+      setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      onDrawerClose();
     } catch (error) {
       console.error('An error occurred while deleting the Consultant:', error);
     }
@@ -276,8 +286,7 @@ export default function ConsultantForm(props: any) {
               color="primary"
               type="button"
               onClick={() => {
-                // setValues(viewData)
-                onEdit(false);
+                onEdit?.(false);
               }}
               size="small"
               sx={{ borderRadius: '10px' }}
@@ -301,7 +310,7 @@ export default function ConsultantForm(props: any) {
               variant="contained"
               color="primary"
               type="button"
-              onClick={() => onEdit(true)}
+              onClick={() => onEdit?.(true)}
               size="small"
               sx={{ borderRadius: '10px' }}
             >

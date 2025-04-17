@@ -189,7 +189,7 @@ const TodaysInterviews = () => {
         {!!viewData && (
           <InterviewForm
             viewData={viewData}
-            setDrawerOpen={setDrawerOpen}
+            onDrawerClose={() => setDrawerOpen(false)}
             hideButtons
           />
         )}

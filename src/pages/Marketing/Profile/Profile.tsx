@@ -76,6 +76,8 @@ function Profile() {
         <Box
           className="top-container"
           sx={{
+            border: '8px',
+            overflow: 'hidden',
             bgcolor: 'primary.main',
             '&:hover': {
               bgcolor: 'primary.dark',
@@ -85,7 +87,7 @@ function Profile() {
           <img
             src={coverImage}
             alt="profile cover image"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{ width: '100%', height: '100%', objectFit: 'fill' }}
           />
         </Box>
       </div>
@@ -143,6 +145,12 @@ function Profile() {
               value={value}
               onChange={handleChange}
               aria-label="basic tabs example"
+              sx={{
+                '& .MuiTabs-scroller': {
+                  overflowX: 'auto !important',
+                  scrollbarWidth: 'thin',
+                },
+              }}
             >
               <Tab label="Personal details" {...a11yProps(0)} />
               <Tab label="Bank details" {...a11yProps(1)} />

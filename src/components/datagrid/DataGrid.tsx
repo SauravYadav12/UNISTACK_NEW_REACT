@@ -45,6 +45,7 @@ function CustomPagination({
     <Stack
       direction="row"
       alignItems="center"
+      flexWrap={'wrap'}
       spacing={2}
       sx={{
         fontSize: '0.875rem',
@@ -54,7 +55,7 @@ function CustomPagination({
         borderTop: '1px solid rgba(224, 224, 224, 1)',
       }}
     >
-      <Stack direction="row" alignItems="center">
+      <Stack direction="row" alignItems="center" flexWrap={'wrap'}>
         <Typography sx={{ fontSize: 'inherit', color: 'inherit' }}>
           Rows per page:
         </Typography>

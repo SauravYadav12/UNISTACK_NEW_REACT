@@ -59,6 +59,12 @@ export default function InterviewTabs() {
           value={value}
           onChange={handleChange}
           aria-label="basic tabs example"
+          sx={{
+            '& .MuiTabs-scroller':{
+              overflowX:'auto !important',
+              scrollbarWidth:'thin'
+            }
+          }}
         >
           {tabs.map((t, i) => {
             return <Tab key={i} label={t.label} {...a11yProps(i)} />;

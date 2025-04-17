@@ -10,13 +10,13 @@ import { usePagination } from '../../../hooks/paginationHook';
 
 import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
+import { FormMode } from '../Requirements/Requirements';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewData, setViewData] = useState<any>();
-  const [isEditing, setIsEditing] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [mode, setMode] = useState('view');
+  const [mode, setMode] = useState<FormMode>('view');
 
   const {
     gridData,
@@ -90,7 +90,6 @@ export default function Consultants() {
     setViewData(data);
     setFormTitle(`Consultant ID :- ${row.consultantId}`);
     setMode('view');
-    setIsEditing(false);
     setDrawerOpen(true);
     syncDataById(data, {
       queryFunction: consultantsList,
@@ -103,7 +102,6 @@ export default function Consultants() {
     setFormTitle('Add New Consultant');
     setViewData({});
     setMode('add');
-    setIsEditing(true);
     setDrawerOpen(true);
   };
 
@@ -112,7 +110,6 @@ export default function Consultants() {
   };
 
   const handleEdit = (editMode: any) => {
-    setIsEditing(editMode);
     setMode(editMode ? 'edit' : 'view');
   };
 
@@ -163,8 +160,8 @@ export default function Consultants() {
           setResults={setResults}
           viewData={viewData}
           mode={mode}
-          setDrawerOpen={setDrawerOpen}
-          isEditing={isEditing}
+          onDrawerClose={handleCloseForm}
+          isEditing={mode !== 'view'}
           onEdit={handleEdit}
         />
       </CustomDrawer>
