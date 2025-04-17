@@ -17,6 +17,7 @@ import {
   Select,
   Stack,
   Popover,
+  TextField,
 } from '@mui/material';
 
 import SyncIcon from '@mui/icons-material/Sync';
@@ -43,10 +44,11 @@ import { dateFormate, timeFormate } from '../constants';
 import moment, { Moment } from 'moment';
 import {
   ClockPicker,
+  StaticDatePicker,
   ClockPickerView,
   LocalizationProvider,
 } from '@mui/x-date-pickers';
-
+import { InsertInvitation } from '@mui/icons-material';
 interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
@@ -212,7 +214,19 @@ const DailyAttendanceTable = ({
     <ChartCardWrapper
       p={'0px'}
       boxShadow={false}
-      subtitle={currentDate.format('dddd, YYYY MMMM DD')}
+      subtitle={
+        <>
+          <Stack
+            direction={'row'}
+            alignItems={'center'}
+            gap={1}
+            justifyContent={'center'}
+          >
+            {currentDate.format('dddd, YYYY MMMM DD')}
+            {!forEmployee && <DatePickerButton dateState={dateState} />}
+          </Stack>
+        </>
+      }
       action={
         <>
           {!forEmployee && (
@@ -524,6 +538,43 @@ function TimePickerButton({
               view={view}
             />
           </Box>
+        </LocalizationProvider>
+      </Popover>
+    </Box>
+  );
+}
+
+interface DatePickerButtonProps {
+  dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
+}
+function DatePickerButton({ dateState }: DatePickerButtonProps) {
+  const [currentDate, setCurrentDate] = dateState;
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  return (
+    <Box>
+      <IconButton onClick={handleClick} aria-label="change date">
+        <InsertInvitation sx={{ width: '18px', height: '18px' }} />
+      </IconButton>
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={() => setAnchorEl(null)}
+      >
+        <LocalizationProvider dateAdapter={AdapterMoment}>
+          <StaticDatePicker
+            displayStaticWrapperAs="desktop"
+            value={currentDate}
+            onChange={(d) => {
+              d && setCurrentDate(d);
+              setAnchorEl(null);
+            }}
+            renderInput={(params) => <TextField {...params} />}
+            maxDate={moment()}
+          />
         </LocalizationProvider>
       </Popover>
     </Box>

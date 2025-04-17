@@ -81,14 +81,18 @@ export const vendorInterviewValidationMeta: ValidationMeta[] = [
     field: 'interviewDate',
     required: true,
     transform(value: any) {
-      return value ? dayjs(value).format(dateFormate) : null;
+      return value && dayjs(value).isValid()
+        ? dayjs(value).format(dateFormate)
+        : null;
     },
   },
   {
     field: 'interviewTime',
     required: true,
     transform(value: any) {
-      return value ? dayjs(value).format(timeFormate) : null;
+      return value && dayjs(value).isValid()
+        ? dayjs(value).format(timeFormate)
+        : null;
     },
   },
   {
@@ -114,7 +118,7 @@ export const testAndVendorInterviewInitialValues = {
   timeZone: '',
   interviewType: '',
   interviewStatus: intStatusOptions[0] || '',
-  interviewWith: '',
+  interviewWith: 'Vendor/IMP/PV',
   intResult: '',
   interviewRound: '',
   interviewViaMode: '',

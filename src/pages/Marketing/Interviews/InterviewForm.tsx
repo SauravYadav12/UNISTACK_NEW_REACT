@@ -105,7 +105,7 @@ export default function InterviewForm(props: iProps) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode, viewData, requirement]
+    [values, errors, isEditing, hideButtons, mode, viewData, requirement]
   );
   useEffect(() => {
     requirement && initializeValuesToCreateInterview(requirement);

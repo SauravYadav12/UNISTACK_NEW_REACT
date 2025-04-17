@@ -270,7 +270,7 @@ export default function Requirements() {
         viewData={viewData}
         mode={mode}
         setDrawerOpen={setDrawerOpen}
-        isEditing={isEditing}
+        isEditing={isEditing&&mode!=='view'}
         onEdit={handleEdit}
         onCopy={handleCopy}
         reqToCopy={reqToCopy}

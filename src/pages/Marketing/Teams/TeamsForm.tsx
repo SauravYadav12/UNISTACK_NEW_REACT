@@ -62,7 +62,7 @@ export default function TeamsForm(props: any) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode]
+    [values, mode, errors, isEditing]
   );
 
   useEffect(() => {

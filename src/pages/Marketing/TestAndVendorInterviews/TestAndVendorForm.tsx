@@ -81,7 +81,7 @@ export default function InterviewForm(props: iProps) {
         mode === 'edit' && handleEditSubmitForm(e);
       },
     },
-    [values, mode, requirement, viewData]
+    [values, mode, isEditing, errors, requirement, viewData]
   );
 
   useEffect(() => {
