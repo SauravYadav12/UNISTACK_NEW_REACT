@@ -15,6 +15,7 @@ import { usePagination } from '../../../hooks/paginationHook';
 import SalesLeadAssignedToSelect from '../../../components/salesLead/SalesLeadAssignedToSelect';
 import { usersList } from '../../../services/authApi';
 import { useFetchData } from '../../../hooks/fetchDataHook';
+import { syncDataById } from '../../../utils/syncDataById';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -109,13 +110,18 @@ const SalesLeads = () => {
     },
   ];
   const handleViewDetails = (row: iSalesLead) => {
-    const data = gridData?.results?.filter((r) => r._id === row._id);
-    if (!data?.length) return;
-    setViewData(data[0]);
+    const data = gridData?.results?.find((r) => r._id === row._id);
+    if (!data) return;
+    setViewData(data);
     setFormTitle(`Sales Lead : ${row.firstName + ' ' + row.lastName}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
+    syncDataById(data, {
+      queryFunction: getSalesLeads,
+      setResults,
+      setViewData,
+    });
   };
 
   const handleEdit = (row: iSalesLead) => {

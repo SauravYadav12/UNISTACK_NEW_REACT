@@ -23,7 +23,7 @@ import SearchRequirement from '../Interviews/SearchRequirement';
 export default function TestAndVendorInterviews() {
   const [openDialog, setOpenDialog] = useState(false);
   const [requirement, setRequirement] = useState<any>();
-  const [viewData, setViewData] = useState<any>();
+  const [viewData, setViewData] = useState<any>({});
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -109,7 +109,7 @@ export default function TestAndVendorInterviews() {
     syncDataById(data, {
       queryFunction: vendorInterviewsList,
       setResults,
-      viewDataState: [viewData, setViewData],
+      setViewData,
     });
   };
 
@@ -119,10 +119,12 @@ export default function TestAndVendorInterviews() {
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
+    setViewData({});
   };
 
   const handleCloseForm = () => {
     setDrawerOpen(false);
+    setViewData({});
   };
   const handleClickOpen = () => {
     setOpenDialog(true);

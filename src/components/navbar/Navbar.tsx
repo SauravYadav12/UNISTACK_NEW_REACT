@@ -358,7 +358,11 @@ function UserMenu() {
           onClick={async () => {
             validateLogout();
             navigate(`/`);
-            await logout();
+            try {
+              await logout();
+            } catch (error) {
+              console.log(error);
+            }
           }}
         >
           <MenuItem onClick={handleCloseUserMenu}>

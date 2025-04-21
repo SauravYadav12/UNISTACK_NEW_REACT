@@ -3,15 +3,18 @@ import Switch from '@mui/material/Switch';
 import { updateUser } from '../../services/authApi';
 import { createProfile } from '../../services/userProfileApi';
 import { toast } from 'react-toastify';
+import { jUser } from '../../Interfaces/iUser';
 
+interface iProps {
+  active: boolean;
+  userId: string;
+  onSuccess: (usr: jUser) => void;
+}
 export default function ActiveUserSwitch({
   active,
   userId,
-  user,
-  onChangeUser,
-  setOpen,
-  setAlertMessage,
-}: any) {
+  onSuccess,
+}: iProps) {
   const [checked, setChecked] = React.useState(active);
 
   const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,17 +24,13 @@ export default function ActiveUserSwitch({
     try {
       const { data } = await updateUser(userId, payload);
       const { user } = data;
-      onChangeUser(user);
+      onSuccess(user);
       if (newActiveStatus) {
         try {
           const name = `${user.firstName} ${user.lastName}`;
           await createProfile(userId, user.email, name);
         } catch (error) {}
-        setAlertMessage('User Activated successfully');
-      } else {
-        setAlertMessage('User Deactivated');
       }
-      setOpen(true);
     } catch (error) {
       toast.error('Failed to update!');
       setChecked(!newActiveStatus);

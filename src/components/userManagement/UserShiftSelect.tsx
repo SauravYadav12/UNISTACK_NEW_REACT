@@ -10,32 +10,24 @@ import { toast } from 'react-toastify';
 interface iProps {
   shift: UserShift;
   userId: string;
-  setAlertMessage: any;
-  setOpen: (s: boolean) => void;
-  onChangeUser(usr: jUser): void;
+  onSuccess: (usr: jUser) => void;
 }
 
-export default function UserShiftSelect({
-  shift,
-  userId,
-  setAlertMessage,
-  setOpen,
-  onChangeUser,
-}: iProps) {
+export default function UserShiftSelect({ shift, userId, onSuccess }: iProps) {
   const shifts: UserShift[] = [...Object.values(UserShift)];
   const [userShift, setUserShift] = React.useState(shift || '');
 
   const handleChange = async (event: SelectChangeEvent) => {
+    const pre=userShift
     const newShift = event.target.value as UserShift;
     setUserShift(newShift);
     const payload = { shift: newShift };
     try {
       const { data } = await updateUser(userId, payload);
       const { user } = data;
-      onChangeUser(user);
-      setAlertMessage(`Shift updated to ${newShift}`);
-      setOpen(true);
+      onSuccess(user);
     } catch (error) {
+      setUserShift(pre);
       toast.error('Failed');
       console.log(error);
     }

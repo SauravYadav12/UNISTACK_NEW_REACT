@@ -9,6 +9,7 @@ export interface iUser {
   role: UserRole;
   canEdit: boolean;
   shift: UserShift;
+  workLocation: WorkLocation;
 }
 
 export interface iAttendance {
@@ -27,21 +28,26 @@ export interface jUser extends Omit<iUser, 'id'> {
 }
 
 export enum AttendanceStatus {
-  'Present' = 'Present',
-  'Absent' = 'Absent',
-  'Late' = 'Late',
+  Present = 'Present',
+  Absent = 'Absent',
+  Late = 'Late',
   'Half-Day' = 'Half-Day',
 }
 export enum UserShift {
-  'US' = 'US',
-  'India' = 'India',
+  US = 'US',
+  India = 'India',
 }
 
 export enum UserRole {
   'super-admin' = 'super-admin',
-  'admin' = 'admin',
-  'hr' = 'hr',
+  admin = 'admin',
+  hr = 'hr',
   marketing = 'marketing',
-  'support' = 'support',
-  'user' = 'user',
+  support = 'support',
+  user = 'user',
+}
+
+export enum WorkLocation {
+  Office = 'Office',
+  Home = 'Home',
 }

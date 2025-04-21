@@ -10,34 +10,41 @@ import {
   IconButton,
   Box,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
-import { jUser } from '../../Interfaces/iUser';
+import { iAttendance, jUser } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import AttendanceStatusBox from './AttendanceStatusBox';
 import { Moment } from 'moment';
 import moment from 'moment';
+import { AttendanceTableType } from '../../pages/Attendance/AttendanceDashboard';
+import DatePickerButton from './DatePickerButton';
 
 interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   tableContainerHeight?: number;
+  forEmployee: boolean;
 }
 
 const WeeklyAttendanceTable = ({
   users,
   attendanceState,
   dateState,
+  forEmployee,
   tableContainerHeight = 430,
 }: iProps) => {
   const [startDate, setStartDate] = dateState; // Set your desired start date for the week
-  const { attendance, loading, loadData, error } = attendanceState;
+  const { attendance, loading, loadData, setResults, error } = attendanceState;
   const weekDates = getWeekDates(startDate);
-
+  function handleChange(att: iAttendance) {
+    setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
+  }
   function getWeekDates(start: Moment): Moment[] {
     const dates: Moment[] = [];
     const currentDate = start.clone();
@@ -122,6 +129,10 @@ const WeeklyAttendanceTable = ({
                   <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                     <AttendanceStatusBox
                       attendance={getAttendance(date, employee._id)}
+                      forEmployee={forEmployee}
+                      date={date}
+                      onChange={handleChange}
+                      user={employee}
                     />
                   </Box>
                 </TableCell>
@@ -137,9 +148,24 @@ const WeeklyAttendanceTable = ({
     <ChartCardWrapper
       p={'0px'}
       boxShadow={false}
-      subtitle={`Week of ${weekDates[0]?.format(dateFormate)} - ${weekDates[
-        weekDates.length - 1
-      ]?.format(dateFormate)}`}
+      subtitle={
+        <>
+          <Stack
+            direction={'row'}
+            alignItems={'center'}
+            gap={1}
+            justifyContent={'center'}
+          >
+            {`Week of ${weekDates[0]?.format(dateFormate)} - ${weekDates[
+              weekDates.length - 1
+            ]?.format(dateFormate)}`}
+            <DatePickerButton
+              tableType={AttendanceTableType.Weekly}
+              dateState={dateState}
+            />
+          </Stack>
+        </>
+      }
       action={
         <div>
           <IconButton onClick={handlePrevWeek} size="small">

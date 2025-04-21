@@ -112,14 +112,11 @@ export default function InterviewForm(props: iProps) {
   }, [requirement]);
 
   useEffect(() => {
-    if (mode === 'view') {
+    if (mode === 'view' || mode === 'edit') {
       setValues(viewData);
     }
-  }, []);
-
-  useEffect(() => {
     setErrors(convertValuesToEmptyString(interviewFormInitialValues));
-  }, [mode]);
+  }, [mode, viewData]);
 
   function initializeValuesToCreateInterview(requirement: any) {
     if (!requirement) return;
@@ -240,7 +237,7 @@ export default function InterviewForm(props: iProps) {
         });
         return [...pre];
       });
-      onDrawerClose?.()
+      onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     } finally {
@@ -268,7 +265,7 @@ export default function InterviewForm(props: iProps) {
     try {
       await deleteInterview(values._id);
       setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
-      onDrawerClose?.()
+      onDrawerClose?.();
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }

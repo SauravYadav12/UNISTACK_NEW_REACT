@@ -103,7 +103,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
     [currentUser, attendanceGridMonthlyDateState[0]]
   );
 
-  const userWiseAttendanceOptions = Object.values(AttendanceOption);
+  const userWiseAttendanceOptions = Object.values(AttendanceTableType);
   const [userWiseAttendanceOption, setUserWiseAttendanceOption] = useState(
     userWiseAttendanceOptions[0]
   );
@@ -123,13 +123,13 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
   );
 
   function iDates(date: Moment) {
-    if (userWiseAttendanceOption === AttendanceOption.Daily) {
+    if (userWiseAttendanceOption === AttendanceTableType.Daily) {
       const d = moment(date);
       return { fromDate: d, toDate: d };
     }
 
     let unit: unitOfTime.Base = 'week';
-    if (userWiseAttendanceOption === AttendanceOption.Monthly) {
+    if (userWiseAttendanceOption === AttendanceTableType.Monthly) {
       unit = 'month';
     }
 
@@ -284,16 +284,11 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
   );
 }
 
-enum AttendanceOption {
-  Daily = 'Daily',
-  Weekly = 'Weekly',
-  Monthly = 'Monthly',
-}
 interface UserWiseAttendanceListProps {
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
-  options: AttendanceOption[];
-  selectedOption: AttendanceOption;
-  onChangeOption: (option: AttendanceOption) => void;
+  options: AttendanceTableType[];
+  selectedOption: AttendanceTableType;
+  onChangeOption: (option: AttendanceTableType) => void;
   users: jUser[];
   attendanceState: iUseAttendance;
   onChangeAttendance?: (a: iAttendance) => void;
@@ -330,29 +325,38 @@ function UserWiseAttendanceList({
       }
     >
       <>
-        {selectedOption === AttendanceOption.Daily && (
+        {selectedOption === AttendanceTableType.Daily && (
           <DailyAttendanceTable
             dateState={dateState}
             users={users || []}
             attendanceState={attendanceState}
             onChange={onChangeAttendance}
+            forEmployee={false}
           />
         )}
-        {selectedOption === AttendanceOption.Weekly && (
+        {selectedOption === AttendanceTableType.Weekly && (
           <WeeklyAttendanceTable
             users={users}
             attendanceState={attendanceState}
             dateState={dateState}
+            forEmployee={false}
           />
         )}
-        {selectedOption === AttendanceOption.Monthly && (
+        {selectedOption === AttendanceTableType.Monthly && (
           <MonthlyAttendanceTable
             users={users}
             attendanceState={attendanceState}
             dateState={dateState}
+            forEmployee={false}
           />
         )}
       </>
     </ChartCardWrapper>
   );
+}
+
+export enum AttendanceTableType {
+  Daily = 'Daily',
+  Weekly = 'Weekly',
+  Monthly = 'Monthly',
 }

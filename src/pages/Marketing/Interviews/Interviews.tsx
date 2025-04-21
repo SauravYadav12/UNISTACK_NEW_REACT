@@ -41,7 +41,7 @@ export default function Interviews(props: Iprops) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [openDialog, setOpenDialog] = useState(false);
   const [requirement, setRequirement] = useState<any>();
-  const [viewData, setViewData] = useState<any>();
+  const [viewData, setViewData] = useState<any>({});
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -146,7 +146,7 @@ export default function Interviews(props: Iprops) {
     !archive &&
       syncDataById(data, {
         queryFunction: interviewsList,
-        viewDataState: [viewData, setViewData],
+        setViewData,
         setResults,
       });
   };
@@ -157,6 +157,7 @@ export default function Interviews(props: Iprops) {
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
+    setViewData({})
   };
   const clearReqFromParams = () => {
     setSearchParams((pre) => {
@@ -168,6 +169,8 @@ export default function Interviews(props: Iprops) {
   const handleCloseForm = () => {
     setDrawerOpen(false);
     clearReqFromParams();
+    setRequirement(undefined);
+    setViewData({});
   };
   const handleClickOpen = () => {
     setOpenDialog(true);

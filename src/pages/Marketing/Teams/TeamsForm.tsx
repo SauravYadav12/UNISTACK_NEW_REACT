@@ -1,5 +1,7 @@
 import {
+  Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -20,7 +22,7 @@ import {
   validateAllFields,
   ValidationMeta,
 } from '../../../utils/validators';
-import { convertValuesToEmptyString } from '../../../utils/utils';
+import { convertValuesToEmptyString, getJUser } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 
 const teamValidationMeta: ValidationMeta[] = [
@@ -47,7 +49,7 @@ const initialValues = {
 export default function TeamsForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = getJUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: any }>(
     convertValuesToEmptyString(initialValues)
@@ -66,12 +68,13 @@ export default function TeamsForm(props: any) {
   );
 
   useEffect(() => {
-    if (mode === 'view') {
+    if (!user) return;
+    if (mode === 'view' || mode === 'edit') {
       setValues(viewData);
     } else if (mode === 'add') {
       setValues((prevValues: any) => ({
         ...prevValues,
-        createdBy: user.firstName || '',
+        createdBy: user.firstName + ' ' + user.lastName,
       }));
     }
     setErrors(convertValuesToEmptyString(initialValues));
@@ -160,6 +163,13 @@ export default function TeamsForm(props: any) {
     meta && isFieldValid(meta, values[key], setErrors);
   };
 
+  if (!user) return null;
+  if (!values)
+    return (
+      <Box className="loader" sx={{ py: 10 }}>
+        <CircularProgress size={25} />
+      </Box>
+    );
   return (
     <form style={{ margin: '0 20px' }}>
       <Grid
@@ -217,7 +227,7 @@ export default function TeamsForm(props: any) {
             >
               Edit
             </Button>
-            {user.role === 'super-admin' && (
+            {user?.role === 'super-admin' && (
               <Button
                 variant="contained"
                 color="primary"

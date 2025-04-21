@@ -10,18 +10,10 @@ import { jUser, UserRole } from '../../Interfaces/iUser';
 interface iProps {
   role: UserRole;
   userId: string;
-  setAlertMessage: any;
-  setOpen: (s: boolean) => void;
-  onChangeUser(usr: jUser): void;
+  onSuccess: (usr: jUser) => void;
 }
 
-export default function UserRoleSelect({
-  role,
-  userId,
-  setAlertMessage,
-  setOpen,
-  onChangeUser,
-}: iProps) {
+export default function UserRoleSelect({ role, userId, onSuccess }: iProps) {
   const [userRole, setUserRole] = React.useState(role);
 
   const handleChange = async (event: SelectChangeEvent) => {
@@ -32,9 +24,7 @@ export default function UserRoleSelect({
       const payload = { role: newRole };
       const { data } = await updateUser(userId, payload);
       const { user } = data;
-      onChangeUser(user);
-      setAlertMessage(`Role updated to ${newRole}`);
-      setOpen(true);
+      onSuccess(user);
     } catch (error) {
       setUserRole(preRole);
       console.log(error);

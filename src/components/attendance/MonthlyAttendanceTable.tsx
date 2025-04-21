@@ -12,16 +12,19 @@ import {
   Box,
   IconButton,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
-import { jUser } from '../../Interfaces/iUser';
+import { iAttendance, jUser } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import Sync from '@mui/icons-material/Sync';
 import AttendanceStatusBox from './AttendanceStatusBox';
 import { Moment } from 'moment';
 import moment from 'moment';
+import { AttendanceTableType } from '../../pages/Attendance/AttendanceDashboard';
+import DatePickerButton from './DatePickerButton';
 
 const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
   position: 'sticky',
@@ -33,18 +36,25 @@ interface iProps {
   users: jUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
+  forEmployee: boolean;
   tableContainerHeight?: number;
 }
 const MonthlyAttendanceTable = ({
   users,
   attendanceState,
   dateState,
+  forEmployee,
   tableContainerHeight = 430,
 }: iProps) => {
   const theme = useTheme();
   const [currentDate, setCurrentDate] = dateState;
-  const { attendance, loading, loadData, error } = attendanceState;
+  const { attendance, loading, loadData, setResults, error } = attendanceState;
   const daysInMonth = currentDate.daysInMonth();
+
+  function handleChange(att: iAttendance) {
+    setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
+  }
+
   const handlePrevMonth = () => {
     setCurrentDate(currentDate.clone().subtract(1, 'month').startOf('month'));
   };
@@ -136,6 +146,10 @@ const MonthlyAttendanceTable = ({
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                       <AttendanceStatusBox
                         attendance={getAttendance(date, employee._id)}
+                        forEmployee={forEmployee}
+                        date={date}
+                        onChange={handleChange}
+                        user={employee}
                       />
                     </Box>
                   </TableCell>
@@ -153,7 +167,23 @@ const MonthlyAttendanceTable = ({
       p={'0px'}
       boxShadow={false}
       //   title="Monthly Attendance"
-      subtitle={currentDate.format('MMMM YYYY')}
+      subtitle={
+        <>
+          <Stack
+            direction={'row'}
+            alignItems={'center'}
+            gap={1}
+            justifyContent={'center'}
+          >
+            {currentDate.format('MMMM YYYY')}
+
+            <DatePickerButton
+              tableType={AttendanceTableType.Monthly}
+              dateState={dateState}
+            />
+          </Stack>
+        </>
+      }
       action={
         <div>
           <IconButton onClick={handlePrevMonth} size="small">

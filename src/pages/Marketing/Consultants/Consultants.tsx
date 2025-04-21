@@ -14,7 +14,7 @@ import { FormMode } from '../Requirements/Requirements';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [viewData, setViewData] = useState<any>();
+  const [viewData, setViewData] = useState<any>({});
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState<FormMode>('view');
 
@@ -94,7 +94,7 @@ export default function Consultants() {
     syncDataById(data, {
       queryFunction: consultantsList,
       setResults,
-      viewDataState: [viewData, setViewData],
+      setViewData,
     });
   };
 
@@ -107,6 +107,7 @@ export default function Consultants() {
 
   const handleCloseForm = () => {
     setDrawerOpen(false);
+    setViewData({});
   };
 
   const handleEdit = (editMode: any) => {

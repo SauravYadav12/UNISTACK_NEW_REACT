@@ -3,7 +3,7 @@ import moment from 'moment';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
 interface iOptions {
-  viewDataState: [any, (s: any) => void];
+  setViewData: (s: any) => void;
   queryFunction: (
     query?: string
   ) => Promise<AxiosResponse<ApiQueryRes<PaginationResult<any>>, any>>;
@@ -11,7 +11,7 @@ interface iOptions {
 }
 export async function syncDataById(iData: any, options: iOptions) {
   const { _id } = iData;
-  const { viewDataState, queryFunction, setResults } = options;
+  const { setViewData, queryFunction, setResults } = options;
   try {
     const res = await queryFunction(`_id=${_id}`);
     if (!res.data.data?.results?.length) return;
@@ -25,7 +25,7 @@ export async function syncDataById(iData: any, options: iOptions) {
       return [...pre];
     });
 
-    if (uData._id === viewDataState[0]?._id) viewDataState[1](uData);
+    setViewData(uData);
   } catch (error) {
     console.warn('Falied to sync Data ' + _id);
   }

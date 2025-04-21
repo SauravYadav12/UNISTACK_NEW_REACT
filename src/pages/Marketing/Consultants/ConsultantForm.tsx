@@ -1,5 +1,7 @@
 import {
+  Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -93,7 +95,7 @@ export default function ConsultantForm(props: iProps) {
   );
 
   useEffect(() => {
-    if (mode === 'view' && viewData) {
+    if (mode === 'view' || mode === 'edit') {
       setValues(viewData);
       setProjects(viewData.projects || []);
     } else if (mode === 'add') {
@@ -256,7 +258,12 @@ export default function ConsultantForm(props: iProps) {
     const meta = consultantValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
-
+  if (!values)
+    return (
+      <Box className="loader" sx={{ py: 10 }}>
+        <CircularProgress size={25} />
+      </Box>
+    );
   return (
     <form style={{ margin: '0 20px' }}>
       <Grid
