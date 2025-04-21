@@ -11,7 +11,7 @@ import { dateFormate } from '../constants';
 import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
 import { markAttendance, updateAttendance } from '../../services/attendanceApi';
 import { getJUser } from '../../utils/utils';
-import { dateByUserShift, handleAttendanceStatus } from '../../utils/dateUtil';
+import { dateByUserShift, getAttendanceStatus } from '../../utils/dateUtil';
 export const autoOpenAttendanceModalKey =
   'automatically_open_mark_attendance_modal';
 
@@ -27,7 +27,7 @@ const MarkAttendanceModal = ({
   const [open, setOpen] = state;
   const isUserHasSession = user._id === getJUser()?._id;
   async function onMarkAttendance() {
-    let status = handleAttendanceStatus(user.shift);
+    let status = getAttendanceStatus(user);
     if (forAdmin && !status) {
       status = AttendanceStatus.Present;
     }

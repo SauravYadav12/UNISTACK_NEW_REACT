@@ -27,9 +27,6 @@ const MyAttendance = () => {
   const me = getJUser()!;
   const { myAttendanceState } = useAuth();
   const dateState = useState(dateByUserShift(me.shift));
-  function handleChange(att: iAttendance) {
-    setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
-  }
 
   if (!myAttendanceState || myAttendanceState?.loading)
     return (
@@ -39,6 +36,10 @@ const MyAttendance = () => {
     );
 
   const { error, attendance, setResults, loadData } = myAttendanceState;
+
+  function handleChange(att: iAttendance) {
+    setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
+  }
 
   if (error) {
     return (
@@ -74,7 +75,11 @@ const MyAttendance = () => {
         <ChartCardWrapper
           title={'Daily Attendance'}
           action={
-            <Box>
+            <Box
+              display={'flex'}
+              justifyContent={'center'}
+              alignItems={'center'}
+            >
               <CheckInCheckOut
                 user={me}
                 date={dateState[0]}
@@ -172,6 +177,7 @@ function MyAttendanceHistory({ users }: MyAttendanceHistoryProps) {
             users={users}
             attendanceState={attendanceState}
             dateState={dateState}
+            forEmployee
           />
         )}
         {option === AttendanceOption.Monthly && (
@@ -180,6 +186,7 @@ function MyAttendanceHistory({ users }: MyAttendanceHistoryProps) {
             users={users}
             attendanceState={attendanceState}
             dateState={dateState}
+            forEmployee
           />
         )}
       </>

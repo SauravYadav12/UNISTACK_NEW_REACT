@@ -90,6 +90,7 @@ export const syncUserOnLocalStorage = async () => {
     const iUser = getIUser()!;
     const { data } = await usersList(`_id=${iUser.id}`);
     if (!data?.users?.length) return;
+    console.log(data);
     const {
       _id,
       active,
@@ -101,6 +102,7 @@ export const syncUserOnLocalStorage = async () => {
       role,
       premium,
       shift,
+      workLocation,
     } = data.users[0] as jUser;
     const synciUser: iUser = {
       id: _id,
@@ -113,6 +115,7 @@ export const syncUserOnLocalStorage = async () => {
       role,
       premium,
       shift,
+      workLocation,
     };
     localStorage.setItem('user', JSON.stringify(synciUser));
   } catch (error) {

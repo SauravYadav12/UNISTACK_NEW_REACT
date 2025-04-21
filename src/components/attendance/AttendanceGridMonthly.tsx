@@ -4,7 +4,7 @@ import React from 'react';
 import { Grid, Typography, IconButton } from '@mui/material';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { jUser } from '../../Interfaces/iUser';
+import { iAttendance, jUser } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 
@@ -61,14 +61,14 @@ const AttendanceGridMonthly = ({
   attendanceState,
   dateState,
 }: iProps) => {
-  const { attendance, loading, error, loadData } = attendanceState;
+  const { attendance, loading, error, loadData, setResults } = attendanceState;
   const [currentDate, setCurrentDate] = dateState;
 
-  const year = currentDate.year();
-  const month = currentDate.month();
   const daysInMonth = currentDate.daysInMonth();
   const firstDayOfMonth = currentDate.clone().startOf('month').day(); // 0 for Sunday, 6 for Saturday
-
+  function handleChange(att: iAttendance) {
+    setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
+  }
   const handlePrevMonth = () => {
     setCurrentDate(currentDate.clone().subtract(1, 'month').startOf('month'));
   };
@@ -84,7 +84,8 @@ const AttendanceGridMonthly = ({
   const getAttendance = (date: Moment) => {
     const att = attendance.find(
       (item) =>
-        moment(item.date).format(dateFormate) === moment(date).format(dateFormate)
+        moment(item.date).format(dateFormate) ===
+        moment(date).format(dateFormate)
     );
     return att;
   };
@@ -112,6 +113,9 @@ const AttendanceGridMonthly = ({
           <AttendanceStatusBox
             label={`${day}`}
             attendance={getAttendance(date)}
+            date={date}
+            user={user}
+            onChange={handleChange}
           />
         </DateCell>
       );
@@ -172,16 +176,8 @@ const AttendanceGridMonthly = ({
           <IconButton onClick={handlePrevMonth}>
             <ArrowLeft />
           </IconButton>
-          <Typography variant="h6">
-            {/* {new Intl.DateTimeFormat('en-US', { month: 'long' }).format(
-              currentDate
-            )} */}
-             {currentDate.format('MMMM')}
-          </Typography>
+          <Typography variant="h6">{currentDate.format('MMMM')}</Typography>
           <IconButton
-            // disabled={dayjs(currentDate).isAfter(
-            //   new Date().setMonth(new Date().getMonth() - 1)
-            // )}
             disabled={currentDate.isAfter(
               moment().subtract(1, 'month').endOf('month')
             )}

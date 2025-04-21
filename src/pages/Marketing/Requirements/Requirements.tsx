@@ -47,7 +47,8 @@ export default function Requirements() {
   const { data: accounts } = accountsState;
   const consultantsState = useFetchData(getConsultantsList, []);
   const { data: consultants } = consultantsState;
-
+  const formStateLoading = accountsState.loading || consultantsState.loading;
+  const formStateError = accountsState.error || consultantsState.error;
   const isArchiveRequirementModuleAllowed = isModuleAllowed(
     moduleKey(ModuleGroup.Archive, ArchiveModule.Requirements)
   );
@@ -146,7 +147,7 @@ export default function Requirements() {
     !archive &&
       syncDataById(data, {
         queryFunction: requirementsList,
-        viewDataState: [viewData, setViewData],
+        setViewData,
         setResults,
       });
   };
@@ -190,6 +191,8 @@ export default function Requirements() {
   const handleDrawerClose = () => {
     setDrawerOpen(false);
     setReqToCopy(undefined);
+    setDuplicateReqDrawer(undefined);
+    setViewData({});
   };
 
   async function getAccountList() {
@@ -229,49 +232,41 @@ export default function Requirements() {
     </>
   );
 
-  function MyForm() {
-    const formLoading = accountsState.loading || consultantsState.loading;
-    const formError = accountsState.error || consultantsState.error;
-
-    const reload = () => {
-      accountsState.loadData();
-      consultantsState.loadData();
-    };
-
-    if (formLoading)
-      return (
+  const MyForm = (
+    <>
+      {formStateLoading ? (
         <Box className="loader" sx={{ py: 10, height: '300px', pr: 0, m: 0 }}>
           <CircularProgress />
         </Box>
-      );
-
-    if (formError) {
-      return (
+      ) : formStateError ? (
         <Box textAlign={'center'}>
-          <Typography color="error">{error || formError}</Typography>
-          <IconButton onClick={reload}>
+          <Typography color="error">{formStateError}</Typography>
+          <IconButton
+            onClick={() => {
+              accountsState.loadData();
+              consultantsState.loadData();
+            }}
+          >
             <Sync color="primary" />
           </IconButton>
         </Box>
-      );
-    }
-
-    return (
-      <RequirementsForm
-        setResults={setResults}
-        hideButtons={archive}
-        accounts={accounts || []}
-        consultants={consultants || []}
-        viewData={viewData}
-        mode={mode}
-        onDrawerClose={handleDrawerClose}
-        isEditing={mode !== 'view'}
-        onEdit={handleEdit}
-        onCopy={handleCopy}
-        reqToCopy={reqToCopy}
-      />
-    );
-  }
+      ) : (
+        <RequirementsForm
+          setResults={setResults}
+          hideButtons={archive}
+          accounts={accounts || []}
+          consultants={consultants || []}
+          viewData={viewData}
+          mode={mode}
+          onDrawerClose={handleDrawerClose}
+          isEditing={mode !== 'view'}
+          onEdit={handleEdit}
+          onCopy={handleCopy}
+          reqToCopy={reqToCopy}
+        />
+      )}
+    </>
+  );
 
   return (
     <>
@@ -308,14 +303,16 @@ export default function Requirements() {
           />
         }
       >
-        <MyForm />
+        {MyForm}
       </CustomDrawer>
 
-      <RequirementDrawer
-        open={Boolean(duplicateReqDrawer)}
-        reqID={viewData.duplicateWith}
-        onClose={() => setDuplicateReqDrawer(undefined)}
-      />
+      {viewData?.duplicateWith && (
+        <RequirementDrawer
+          open={Boolean(duplicateReqDrawer)}
+          reqID={viewData.duplicateWith}
+          onClose={() => setDuplicateReqDrawer(undefined)}
+        />
+      )}
     </>
   );
 }

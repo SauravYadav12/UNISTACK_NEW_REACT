@@ -2,39 +2,27 @@ import * as React from 'react';
 import Switch from '@mui/material/Switch';
 import { updateUser } from '../../services/authApi';
 import { toast } from 'react-toastify';
-import { iUser, jUser } from '../../Interfaces/iUser';
+import { jUser } from '../../Interfaces/iUser';
 import { Tooltip } from '@mui/material';
 
-export default function CanEditSwitch({
-  active,
-  iUser,
-  setOpen,
-  onChangeUser,
-  setAlertMessage,
-}: CanEditSwitchProps) {
-  const [checked, setChecked] = React.useState(active);
+export default function CanEditSwitch({ canEdit, jUser, onSuccess }: iProps) {
+  const [checked, setChecked] = React.useState(canEdit);
 
   const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const status = event.target.checked;
     try {
       setChecked(!!status);
       const payload = { canEdit: status };
-      const { data } = await updateUser(iUser._id, payload);
+      const { data } = await updateUser(jUser._id, payload);
       const { user } = data;
-      setOpen(true);
-      onChangeUser(user);
-      if (user.canEdit) {
-        setAlertMessage('Profile edit permission granted');
-      } else {
-        setAlertMessage('Profile edit permission revoked');
-      }
+      onSuccess(user);
     } catch (error) {
       setChecked(!status);
       console.log(error);
       toast.error('Failed to update!');
     }
   };
-  const isSuperAdmin = iUser.role === 'super-admin';
+  const isSuperAdmin = jUser.role === 'super-admin';
   return (
     <>
       <Tooltip
@@ -53,13 +41,8 @@ export default function CanEditSwitch({
   );
 }
 
-interface CanEditSwitchProps {
-  active: boolean;
-  iUser: Omit<iUser, 'id'> & {
-    _id: string;
-  };
-  onChangeUser(usr: jUser): void;
-
-  setOpen: (s: boolean) => void;
-  setAlertMessage: (m: string) => void;
+interface iProps {
+  canEdit: boolean;
+  jUser: jUser;
+  onSuccess: (usr: jUser) => void;
 }

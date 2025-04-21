@@ -1,5 +1,7 @@
 import {
+  Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -51,7 +53,7 @@ interface iProps {
   mode?: FormMode;
   onCreate?: () => void;
   onEdit?: (editMode: boolean) => void;
-  onDrawerClose: ()=>void;
+  onDrawerClose: () => void;
   setResults?: SetResults;
 }
 export default function InterviewForm(props: iProps) {
@@ -89,11 +91,11 @@ export default function InterviewForm(props: iProps) {
   }, [requirement]);
 
   useEffect(() => {
-    if (mode === 'view') {
+    if (mode === 'view' || mode === 'edit') {
       setValues(viewData);
     }
     setErrors(convertValuesToEmptyString(testAndVendorInterviewInitialValues));
-  }, [mode]);
+  }, [mode, viewData]);
 
   function initializeValuesToCreateInterview(requirement: any) {
     if (!requirement) return;
@@ -197,7 +199,7 @@ export default function InterviewForm(props: iProps) {
         });
         return [...pre];
       });
-        onDrawerClose();
+      onDrawerClose();
     } catch (error) {
       console.log('An error occurred while updating the form:', error);
     } finally {
@@ -209,7 +211,7 @@ export default function InterviewForm(props: iProps) {
     try {
       await deleteVendorInterview(values._id);
       setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
-        onDrawerClose();
+      onDrawerClose();
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
@@ -231,6 +233,13 @@ export default function InterviewForm(props: iProps) {
     const meta = vendorInterviewValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
+
+  if (!values)
+    return (
+      <Box className="loader" sx={{ py: 10 }}>
+        <CircularProgress size={25} />
+      </Box>
+    );
 
   return (
     <form style={{ margin: '0 20px' }}>

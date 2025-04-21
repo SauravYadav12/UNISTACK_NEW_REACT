@@ -38,6 +38,7 @@ import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
 import { Sync } from '@mui/icons-material';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import { jUser, UserRole } from '../../Interfaces/iUser';
+import UserWorkLocationSelect from '../../components/userManagement/UserWorkLocationSelect';
 
 interface CustomCard {
   color: string;
@@ -104,29 +105,27 @@ function UserManagement() {
       },
       {
         field: 'firstName',
-        headerName: 'First Name',
-        width: 100,
-        editable: true,
+        headerName: 'Name',
+        width: 160,
+        valueGetter: (val: any, param: jUser) => {
+          return param.firstName + ' ' + param.lastName;
+        },
       },
-      {
-        field: 'lastName',
-        headerName: 'Last Name',
-        width: 100,
-        editable: true,
-      },
-      { field: 'email', headerName: 'Email', width: 200, editable: true },
+      { field: 'email', headerName: 'Email', width: 200 },
       {
         field: 'role',
         headerName: 'Role',
-        width: 100,
+        width: 200,
         type: 'actions',
         renderCell: (params: any) => (
           <UserRoleSelect
-            onChangeUser={HandleChangeUser}
             role={params.row.role as UserRole}
             userId={params.row._id}
-            setOpen={setOpen}
-            setAlertMessage={setAlertMessage}
+            onSuccess={(u) => {
+              HandleChangeUser(u);
+              setAlertMessage(`Role updated to ${u.role}`);
+              setOpen(true);
+            }}
           />
         ),
       },
@@ -137,11 +136,30 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params: any) => (
           <UserShiftSelect
-            onChangeUser={HandleChangeUser}
             shift={params.row.shift}
             userId={params.row._id}
-            setOpen={setOpen}
-            setAlertMessage={setAlertMessage}
+            onSuccess={(u) => {
+              setAlertMessage(`Shift updated to ${u.shift}`);
+              setOpen(true);
+              HandleChangeUser(u);
+            }}
+          />
+        ),
+      },
+      {
+        field: 'workLocation',
+        headerName: 'Work Location',
+        width: 150,
+        type: 'actions',
+        renderCell: (params: any) => (
+          <UserWorkLocationSelect
+            location={params.row.workLocation}
+            userId={params.row._id}
+            onSuccess={(u) => {
+              HandleChangeUser(u);
+              setAlertMessage(`Work Location updated to ${u.workLocation}`);
+              setOpen(true);
+            }}
           />
         ),
       },
@@ -152,12 +170,17 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params: any) => (
           <ActiveUserSwitch
-            onChangeUser={HandleChangeUser}
             active={params.row.active}
             userId={params.row._id}
-            user={params.row}
-            setOpen={setOpen}
-            setAlertMessage={setAlertMessage}
+            onSuccess={(u) => {
+              HandleChangeUser(u);
+              if (u.active) {
+                setAlertMessage('User Activated successfully');
+              } else {
+                setAlertMessage('User Deactivated');
+              }
+              setOpen(true);
+            }}
           />
         ),
       },
@@ -168,11 +191,17 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params: any) => (
           <CanEditSwitch
-            onChangeUser={HandleChangeUser}
-            active={!!params.row.canEdit}
-            iUser={params.row}
-            setOpen={setOpen}
-            setAlertMessage={setAlertMessage}
+            canEdit={!!params.row.canEdit}
+            jUser={params.row}
+            onSuccess={(u) => {
+              HandleChangeUser(u);
+              setOpen(true);
+              if (u.canEdit) {
+                setAlertMessage('Profile edit permission granted');
+              } else {
+                setAlertMessage('Profile edit permission revoked');
+              }
+            }}
           />
         ),
       },
@@ -181,7 +210,6 @@ function UserManagement() {
         headerName: 'Premium',
         width: 100,
         type: 'boolean',
-        editable: true,
       },
       { field: 'corpName', headerName: 'Corp Name', width: 100 },
       {
@@ -430,7 +458,7 @@ function UserManagement() {
 
 export default UserManagement;
 
-const MyForm = ({ user, modeState }: MyFormqProps) => {
+const MyForm = ({ user, modeState }: MyFormProps) => {
   const [mode, setMode] = modeState;
   const {
     data: myProfile,
@@ -474,7 +502,7 @@ const MyForm = ({ user, modeState }: MyFormqProps) => {
   );
 };
 
-interface MyFormqProps {
+interface MyFormProps {
   user: any;
   modeState: ['view' | 'edit', Dispatch<SetStateAction<'view' | 'edit'>>];
 }

@@ -36,7 +36,7 @@ export default function CustomSelectField({
           {label}
         </InputLabel>
         <Select
-          value={selectedValue}
+          value={selectedValue||''}
           onBlur={onBlur}
           onChange={handleChange}
           label={label}

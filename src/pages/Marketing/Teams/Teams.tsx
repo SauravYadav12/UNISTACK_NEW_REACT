@@ -8,13 +8,14 @@ import { teamsList } from '../../../services/teamsApi';
 import { dateFormate2 } from '../../../components/constants';
 import { usePagination } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
+import { syncDataById } from '../../../utils/syncDataById';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState('view');
   const [isEditing, setIsEditing] = useState(false);
-  const [viewData, setViewData] = useState({});
+  const [viewData, setViewData] = useState<any>({});
 
   const {
     gridData,
@@ -69,16 +70,22 @@ export default function Teams() {
     setDrawerOpen(true);
   };
   const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.filter((r: any) => r.teamId === row.teamId);
+    const data = gridData?.results?.find((r: any) => r.teamId === row.teamId);
     if (!data) return;
-    setViewData(data[0]);
+    setViewData(data);
     setFormTitle(`Team ID :- ${row.teamId}`);
     setMode('view');
     setIsEditing(false);
     setDrawerOpen(true);
+    syncDataById(data, {
+      queryFunction: teamsList,
+      setResults,
+      setViewData,
+    });
   };
   const handleCloseForm = () => {
     setDrawerOpen(false);
+    setViewData({});
   };
   const handleEdit = (editMode: any) => {
     setIsEditing(editMode);

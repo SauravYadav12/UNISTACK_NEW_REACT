@@ -1,6 +1,12 @@
-import { AttendanceStatus, UserShift } from './../Interfaces/iUser';
+import {
+  AttendanceStatus,
+  jUser,
+  UserShift,
+  WorkLocation,
+} from './../Interfaces/iUser';
 import mz, { Moment } from 'moment-timezone';
 import moment from 'moment';
+import { getJUser } from './utils';
 
 export const officeStartTimeInEst = { h: 9, m: 0 };
 export const officeStartTimeInIst = { h: 10, m: 0 };
@@ -60,11 +66,13 @@ export function timeRemainingUntilOfficeEnd(
   return timeremaining > 0 ? timeremaining : 0;
 }
 
-export function handleAttendanceStatus(
-  shift: UserShift,
-  date: Moment = dateByUserShift(shift)
+export function getAttendanceStatus(
+  user: jUser,
+  date: Moment = dateByUserShift(user.shift)
 ) {
-  const delayInMinutes = timeElapsedSinceOfficeStart(shift, date);
+  if (user.workLocation === WorkLocation.Home) return AttendanceStatus.Present;
+
+  const delayInMinutes = timeElapsedSinceOfficeStart(user.shift, date);
 
   if (delayInMinutes <= presentThresholdMinutes) {
     return AttendanceStatus.Present;
@@ -93,4 +101,41 @@ export function timeZoneKeyByUserShift(shift: UserShift) {
     tzKey = 'EST';
   }
   return tzKey;
+}
+
+export function getWorkingDuration(checkIn: string, checkOut: string) {
+  const shift = getJUser()?.shift;
+  if (!shift) return;
+  const checkinTime = timeByUserShift(shift, moment(checkIn));
+  const checkoutTime = timeByUserShift(shift, moment(checkOut));
+
+  // Extract time components (hours and minutes)
+  const checkinHours = checkinTime.hours();
+  const checkinMinutes = checkinTime.minutes();
+  const checkoutHours = checkoutTime.hours();
+  const checkoutMinutes = checkoutTime.minutes();
+
+  // Create Moment objects for the same day to calculate the difference
+  const startOfDay = moment().startOf('day'); // Represents the beginning of the current day
+  const startCheckin = startOfDay
+    .clone()
+    .hours(checkinHours)
+    .minutes(checkinMinutes)
+    .seconds(0)
+    .milliseconds(0);
+  const startCheckout = startOfDay
+    .clone()
+    .hours(checkoutHours)
+    .minutes(checkoutMinutes)
+    .seconds(0)
+    .milliseconds(0);
+
+  // Calculate the difference in milliseconds
+  const differenceInMilliseconds = startCheckout.diff(startCheckin);
+  const duration = moment.duration(differenceInMilliseconds);
+
+  const hours = Math.floor(duration.asHours());
+  const minutes = Math.floor(duration.asMinutes()) % 60;
+
+  return `${hours}h ${minutes}m`;
 }

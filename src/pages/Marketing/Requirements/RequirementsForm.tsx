@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Card,
+  CircularProgress,
   Grid,
   IconButton,
   Stack,
@@ -57,7 +58,7 @@ interface iProps {
   accounts?: jUser[];
   consultants?: any[];
   reqToCopy?: any;
-  onDrawerClose?: ()=>void;
+  onDrawerClose?: () => void;
   onEdit?: (editMode: boolean) => void;
   onCopy?: () => void;
   setResults?: SetResults;
@@ -118,19 +119,18 @@ export default function RequirementsForm(props: iProps) {
   );
 
   useEffect(() => {
-    (mode === 'view' || mode === 'edit') && setValues(viewData);
-    mode === 'add' &&
+    if (mode === 'view' || mode === 'edit') {
+      setValues(viewData);
+    } else if (mode === 'add') {
       setValues((pre: any) => ({
         ...pre,
         reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
         reqEnteredByRef: `${getIUser()?.id}`,
       }));
-  }, [mode, viewData]);
-
-  useEffect(() => {
+    }
     setFile(undefined);
     setErrors(convertValuesToEmptyString(requirementFormInitialValues));
-  }, [mode]);
+  }, [mode, viewData]);
 
   useEffect(() => {
     if (!reqToCopy) return;
@@ -204,14 +204,13 @@ export default function RequirementsForm(props: iProps) {
 
     setIsSubmitting(true);
 
-    if (file) {
-      const url = await handleFileUpload(file);
-      if (url) {
-        values.resumeUpload = url;
-      }
-    }
-
     try {
+      if (file) {
+        const url = await handleFileUpload(file);
+        if (url) {
+          values.resumeUpload = url;
+        }
+      }
       const { data } = await createRequirement(values);
       setResults?.((pre: any) => [data.data, ...pre]);
       onDrawerClose?.();
@@ -233,13 +232,16 @@ export default function RequirementsForm(props: iProps) {
 
     if (!isValid) return;
     const payload = { ...values };
+    if(payload.mComment?.length!==viewData.mComment?.length){
+      alert('Failed to update comment')
+    }
     if (comment.trim().length) {
       const commentPayload = {
         username: `${user.firstName} ${user.lastName}`,
         date: new Date(),
         comment: comment,
       };
-      payload.mComment = [...(payload?.mComment || []), commentPayload];
+      payload.mComment = [...(payload.mComment || []), commentPayload];
     }
     setIsSubmitting(true);
     try {
@@ -314,6 +316,14 @@ export default function RequirementsForm(props: iProps) {
       console.error('An error occurred while creating the interview:', error);
     }
   }
+
+  if (!values)
+    return (
+      <Box className="loader" sx={{ py: 10 }}>
+        <CircularProgress size={25} />
+      </Box>
+    );
+
   const appliedForField = (
     <>
       {mode === 'view' ? (

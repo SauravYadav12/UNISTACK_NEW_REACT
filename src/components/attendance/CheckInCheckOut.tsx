@@ -7,7 +7,7 @@ import MarkAttendanceModal, {
 import MarkCheckoutTimeModal from '../dashboard/MarkCheckoutTimeModal';
 import {
   getOfficeStartTime,
-  handleAttendanceStatus,
+  getAttendanceStatus,
   notApplicableThresholdMinutes,
   timeZoneKeyByUserShift,
 } from '../../utils/dateUtil';
@@ -31,8 +31,7 @@ const CheckInCheckOut = ({
   const showMarkAttendance =
     !todaysAttendance || todaysAttendance.status === AttendanceStatus.Absent;
 
-  const disableMarkAttendance =
-    !handleAttendanceStatus(user.shift) && !forAdmin;
+  const disableMarkAttendance = !getAttendanceStatus(user) && !forAdmin;
 
   const showCheckout =
     todaysAttendance &&
@@ -137,8 +136,6 @@ const CheckInCheckOut = ({
             Check out
           </Button>
           <MarkCheckoutTimeModal
-            user={user}
-            forAdmin={forAdmin}
             attendence={todaysAttendance}
             state={[openCheckoutModal, setOpenCheckoutModal]}
             onMark={handleChange}

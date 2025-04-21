@@ -8,44 +8,44 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { dateFormate, timeFormate } from '../constants';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance } from '../../Interfaces/iUser';
 import { updateAttendance } from '../../services/attendanceApi';
-import {
-  dateByUserShift,
-  // timeRemainingUntilOfficeEnd,
-} from '../../utils/dateUtil';
+import { dateByUserShift } from '../../utils/dateUtil';
 import { getJUser } from '../../utils/utils';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { useNavigate } from 'react-router-dom';
+import { logout } from '../../services/authApi';
 
 const MarkCheckoutTimeModal = ({
-  user,
   state,
   attendence,
-  forAdmin = false,
-  onCancel,
   onMark,
 }: MarkCheckoutTimeModalProps) => {
+  const navigate = useNavigate();
   const [open, setOpen] = state;
-
+  const { validateLogout } = useAuth();
   async function onMarkCheckoutTime() {
-    // if (timeRemainingUntilOfficeEnd(user.shift) <= 0 && !forAdmin) {
-    //   toast.error('In-applicable check-out time');
-    //   return;
-    // }
     try {
       const { data } = await updateAttendance(attendence._id, {
         checkOut: new Date().toUTCString(),
       });
       onMark && data.data && onMark(data.data);
       toast.success('Check-out time marked successfully');
-      closeModal(false);
+      closeModal();
     } catch (error) {
       console.log(error);
     }
   }
 
-  function closeModal(emitOnCancel = true) {
+  async function closeModal() {
     setOpen(false);
-    emitOnCancel && onCancel && onCancel();
+    validateLogout();
+    navigate(`/`);
+    try {
+      await logout();
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return (
@@ -83,10 +83,7 @@ const MarkCheckoutTimeModal = ({
 export default MarkCheckoutTimeModal;
 
 interface MarkCheckoutTimeModalProps {
-  user: jUser;
   attendence: iAttendance;
   state: [boolean, (s: boolean) => void];
-  forAdmin?: boolean;
   onMark?: (a: iAttendance) => void;
-  onCancel?: () => void;
 }
