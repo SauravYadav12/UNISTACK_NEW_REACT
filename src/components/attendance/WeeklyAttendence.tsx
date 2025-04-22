@@ -75,8 +75,8 @@ const WeeklyAttendanceTable = ({
   const getAttendance = (date: Moment, userRef: string) => {
     const att = attendance.find(
       (item) =>
-        moment(item.date).format(dateFormate) === date.format(dateFormate) &&
-        userRef === item?.userRef
+        moment(item.date).format(dateFormate) ===
+          moment(date).format(dateFormate) && userRef === item?.userRef
     );
     return att;
   };
