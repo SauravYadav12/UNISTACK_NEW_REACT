@@ -193,13 +193,17 @@ export default function RequirementsForm(props: iProps) {
     );
 
     if (!isValid) return;
+
+    const payload = { ...values };
+    delete payload.mComment;
+
     if (comment.trim().length) {
       const commentsPayload = {
         username: `${user.firstName} ${user.lastName}`,
         date: new Date(),
         comment: comment,
       };
-      values.mComment = commentsPayload;
+      payload.mComment = commentsPayload;
     }
 
     setIsSubmitting(true);
@@ -208,10 +212,10 @@ export default function RequirementsForm(props: iProps) {
       if (file) {
         const url = await handleFileUpload(file);
         if (url) {
-          values.resumeUpload = url;
+          payload.resumeUpload = url;
         }
       }
-      const { data } = await createRequirement(values);
+      const { data } = await createRequirement(payload);
       setResults?.((pre: any) => [data.data, ...pre]);
       onDrawerClose?.();
     } catch (error) {
@@ -232,7 +236,7 @@ export default function RequirementsForm(props: iProps) {
 
     if (!isValid) return;
     const payload = { ...values };
-
+    delete payload.mComment;
     if (comment.trim().length) {
       const commentPayload = {
         username: `${user.firstName} ${user.lastName}`,
