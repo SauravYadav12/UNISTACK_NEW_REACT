@@ -4,13 +4,14 @@ import React from 'react';
 import { Grid, Typography, IconButton } from '@mui/material';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, jUser, UserShift } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 
 import SyncIcon from '@mui/icons-material/Sync';
 import AttendanceStatusBox from './AttendanceStatusBox';
 import moment, { Moment } from 'moment';
+import { dateByUserShift } from '../../utils/dateUtil';
 const AttendanceCalendarRoot = styled('div')(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   borderRadius: theme.shape.borderRadius,
@@ -84,8 +85,9 @@ const AttendanceGridMonthly = ({
   const getAttendance = (date: Moment) => {
     const att = attendance.find(
       (item) =>
-        moment(item.date).format(dateFormate) ===
-        moment(date).format(dateFormate)
+        dateByUserShift(UserShift.India, moment(item.date)).format(
+          dateFormate
+        ) === moment(date).format(dateFormate)
     );
     return att;
   };
