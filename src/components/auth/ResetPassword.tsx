@@ -3,11 +3,13 @@ import React, { FormEvent, useState } from 'react';
 import { resetPassword } from '../../services/authApi';
 interface iProps {
   otp: string;
+  email: string;
   passwordState: [string, React.Dispatch<React.SetStateAction<string>>];
   loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
   onSuccess: () => void;
 }
 const ResetPassword = ({
+  email,
   otp,
   passwordState,
   loadingState,
@@ -55,7 +57,7 @@ const ResetPassword = ({
     }
     setLoading(true);
     try {
-      await resetPassword(password, otp);
+      await resetPassword(password, email, otp);
       onSuccess();
     } catch (error) {
       console.log(error);

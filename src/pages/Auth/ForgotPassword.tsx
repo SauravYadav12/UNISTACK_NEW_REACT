@@ -107,6 +107,7 @@ const ForgotPassword = () => {
             )}
             {step === ForgotPasswordStep.VerifyOTP && (
               <VerifyOTP
+                email={emailState[0]}
                 onChangeEmail={() => setStep(ForgotPasswordStep.SendOTP)}
                 onResendOtp={handleResendOTP}
                 otpState={otpState}
@@ -116,6 +117,7 @@ const ForgotPassword = () => {
             )}
             {step === ForgotPasswordStep.ResetPassword && (
               <ResetPassword
+                email={emailState[0]}
                 otp={otpState[0]}
                 passwordState={passwordState}
                 loadingState={[loading, setLoading]}
