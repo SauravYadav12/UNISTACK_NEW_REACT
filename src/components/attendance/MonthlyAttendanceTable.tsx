@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, jUser, UserShift } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import Sync from '@mui/icons-material/Sync';
@@ -25,6 +25,7 @@ import { Moment } from 'moment';
 import moment from 'moment';
 import { AttendanceTableType } from '../../pages/Attendance/AttendanceDashboard';
 import DatePickerButton from './DatePickerButton';
+import { dateByUserShift } from '../../utils/dateUtil';
 
 const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
   position: 'sticky',
@@ -75,8 +76,9 @@ const MonthlyAttendanceTable = ({
   const getAttendance = (date: Moment, userRef: string) => {
     const att = attendance.find(
       (item) =>
-        moment(item.date).format(dateFormate) ===
-          moment(date).format(dateFormate) && userRef === item?.userRef
+        dateByUserShift(UserShift.India, moment(item.date)).format(
+          dateFormate
+        ) === moment(date).format(dateFormate) && userRef === item?.userRef
     );
     return att;
   };

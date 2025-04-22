@@ -199,7 +199,7 @@ export default function RequirementsForm(props: iProps) {
         date: new Date(),
         comment: comment,
       };
-      values.mComment = [...(values?.mComment || []), commentsPayload];
+      values.mComment = commentsPayload;
     }
 
     setIsSubmitting(true);
@@ -232,16 +232,14 @@ export default function RequirementsForm(props: iProps) {
 
     if (!isValid) return;
     const payload = { ...values };
-    if(payload.mComment?.length!==viewData.mComment?.length){
-      alert('Failed to update comment')
-    }
+
     if (comment.trim().length) {
       const commentPayload = {
         username: `${user.firstName} ${user.lastName}`,
         date: new Date(),
         comment: comment,
       };
-      payload.mComment = [...(payload.mComment || []), commentPayload];
+      payload.mComment = commentPayload;
     }
     setIsSubmitting(true);
     try {
@@ -254,7 +252,7 @@ export default function RequirementsForm(props: iProps) {
       const { data } = await updateRequirement(values._id, payload);
       setResults?.((pre: any) => {
         pre = pre.map((d: any) => {
-          if (d._id === data.mComment._id) return data.mComment;
+          if (d._id === data.data._id) return data.data;
           return d;
         });
         return [...pre];
