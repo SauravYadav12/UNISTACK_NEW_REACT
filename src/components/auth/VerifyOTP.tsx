@@ -2,6 +2,7 @@ import { Box, TextField, Button, Typography, Grid, Link } from '@mui/material';
 import React, { FormEvent, useState } from 'react';
 import { verifyOtp } from '../../services/authApi';
 interface iProps {
+  email: string;
   loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
   otpState: [string, React.Dispatch<React.SetStateAction<string>>];
   onChangeEmail: () => void;
@@ -9,6 +10,7 @@ interface iProps {
   onSuccess: () => void;
 }
 const VerifyOTP = ({
+  email,
   loadingState,
   otpState,
   onSuccess,
@@ -27,11 +29,11 @@ const VerifyOTP = ({
     e.preventDefault();
     if (!validateOtp(otp)) {
       setError('OTP should be 6 digits.');
-      return
+      return;
     }
     setLoading(true);
     try {
-      await verifyOtp(otp);
+      await verifyOtp(email, otp);
       onSuccess();
     } catch (error: any) {
       console.log(error);

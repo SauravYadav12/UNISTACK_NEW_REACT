@@ -123,12 +123,15 @@ export const syncUserOnLocalStorage = async () => {
   }
 };
 
-export async function sendOtp(email: string) {
+export async function sendOtp(
+  email: string,
+  otpFor: 'reset-password' | 'login'
+) {
   let headers: any = {
     'Content-Type': 'application/json',
   };
   const response = await axios.post(
-    `${BASE_URL}/users/send-otp/${email}`,
+    `${BASE_URL}/users/send-${otpFor}-otp/${email}`,
     {},
     {
       headers,
@@ -137,12 +140,12 @@ export async function sendOtp(email: string) {
   return response;
 }
 
-export async function verifyOtp(otp: string) {
+export async function verifyOtp(email: string, otp: string) {
   let headers: any = {
     'Content-Type': 'application/json',
   };
   const response = await axios.post(
-    `${BASE_URL}/users/verify-otp/${otp}`,
+    `${BASE_URL}/users/${email}/verify-otp/${otp}`,
     {},
     {
       headers,
@@ -150,12 +153,16 @@ export async function verifyOtp(otp: string) {
   );
   return response;
 }
-export async function resetPassword(password: string, otp: string) {
+export async function resetPassword(
+  password: string,
+  email: string,
+  otp: string
+) {
   let headers: any = {
     'Content-Type': 'application/json',
   };
   const response = await axios.post(
-    `${BASE_URL}/users/reset-password/${otp}`,
+    `${BASE_URL}/users/${email}/reset-password/${otp}`,
     { password },
     {
       headers,

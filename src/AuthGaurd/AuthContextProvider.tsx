@@ -42,7 +42,7 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const myProfileState = useFetchData(getMyProfile, [isAuthenticated]);
 
-  const validateLogin = (token: string, user: string) => {
+  const validateLogin = (token: string, user: any) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem(autoOpenAttendanceModalKey, 'true');
@@ -98,7 +98,7 @@ interface DefaultContextValue {
   myAttendanceState?: iUseAttendance;
   accessControlState?: iFetchData<iAccessControl | undefined>;
   isAuthenticated: boolean;
-  validateLogin: (token: string, user: string) => void;
+  validateLogin: (token: string, user: any) => void;
   validateLogout: () => void;
   setMyProfile: (profile: UserProfile) => void;
   isModuleAllowed: (key: string) => boolean;

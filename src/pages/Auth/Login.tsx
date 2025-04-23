@@ -1,47 +1,71 @@
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import StorageIcon from '@mui/icons-material/Storage';
-import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/authApi';
+import { sendOtp } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import Loader from '../../components/loader/Loader';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import CopyRight from '../../components/auth/CopyRight';
+import VerifyUser from '../../components/auth/VerifyUser';
+import VerifyOTP from '../../components/auth/VerifyOTP';
+import { validateEmail } from '../../utils/validators';
+import { jUser } from '../../Interfaces/iUser';
 
-function Copyright(props: any) {
-  return (
-    <Typography
-      variant="body2"
-      color="text.secondary"
-      align="center"
-      {...props}
-    >
-      {'Copyright © '}
-      <Link color="inherit" target="_blank" href="https://www.unicodez.com/">
-        Unicodez Inc
-      </Link>
-      {' 2025.'}
-    </Typography>
-  );
-}
-
-// TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
 export default function Login() {
+  const loginSteps = Object.values(LoginStep);
+  const [step, setStep] = React.useState(loginSteps[0]);
+  const emailState = React.useState('');
+  const passwordState = React.useState('');
+  const otpState = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const navigate = useNavigate();
-  const { validateLogin, isAuthenticated } = useAuth();
+  const [authData, setAuthData] = React.useState<AuthData>();
+  const { isAuthenticated, validateLogin } = useAuth();
+
+  async function handleSendOTP() {
+    const email = emailState[0];
+    if (!validateEmail(email)) {
+      toast.error('Invalid email');
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendOtp(email, 'login');
+      toast.success('OTP sent successfully');
+      setStep(LoginStep.VerifyOTP);
+    } catch (error) {
+      console.log(error);
+      toast.error('Failed to resend');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resendOtp() {
+    await handleSendOTP();
+  }
+
+  async function onUserVerifiedSuccessfully(token: string, user: jUser) {
+    await handleSendOTP();
+    setAuthData({ token, user });
+  }
+
+  function onOtpVerifiedSuccessfully() {
+    if (!authData) {
+      toast.error('Missing token');
+      return;
+    }
+    const { token, user } = authData;
+    validateLogin(token, user);
+    navigate('/dashboard');
+    toast.success('Login Successfull');
+  }
 
   React.useEffect((): any => {
     if (isAuthenticated) {
@@ -49,29 +73,6 @@ export default function Login() {
       return;
     }
   }, []);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      const data = new FormData(event.currentTarget);
-      const email = data.get('email')?.toString();
-      const pass = data.get('password')?.toString();
-      if (email && pass) {
-        setLoading(true);
-        const { data } = await login(email, pass);
-        validateLogin(data.token, data.user);
-        toast.success('Login Successfull');
-        navigate('/dashboard');
-      } else {
-        toast.error('Email or password missing');
-      }
-    } catch (error: any) {
-      const message: any = error?.response?.data?.message;
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <>
@@ -90,72 +91,40 @@ export default function Login() {
             <Avatar sx={{ m: 1, bgcolor: '#EC4599', width: 56, height: 56 }}>
               <StorageIcon />
             </Avatar>
-            <Typography component="h1" variant="h5">
-              Sign in
-            </Typography>
-            <Box
-              component="form"
-              onSubmit={handleSubmit}
-              noValidate
-              sx={{ mt: 1 }}
-            >
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                autoFocus
+
+            {step === LoginStep.VerifyUser && (
+              <VerifyUser
+                emailState={emailState}
+                passwordState={passwordState}
+                loadingState={[loading, setLoading]}
+                onSuccess={onUserVerifiedSuccessfully}
               />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="current-password"
+            )}
+
+            {step === LoginStep.VerifyOTP && (
+              <VerifyOTP
+                email={emailState[0]}
+                loadingState={[loading, setLoading]}
+                otpState={otpState}
+                onChangeEmail={() => setStep(LoginStep.VerifyUser)}
+                onResendOtp={resendOtp}
+                onSuccess={onOtpVerifiedSuccessfully}
               />
-              <FormControlLabel
-                control={<Checkbox value="remember" color="primary" />}
-                label="Remember me"
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-              >
-                Sign In
-              </Button>
-              <Grid container>
-                <Grid item xs>
-                  <Link
-                    onClick={() => navigate('/forgot-password')}
-                    variant="body2"
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    Forgot password?
-                  </Link>
-                </Grid>
-                <Grid item>
-                  <Link
-                    onClick={() => navigate('/signup')}
-                    sx={{ cursor: 'pointer' }}
-                    variant="body2"
-                  >
-                    {"Don't have an account? Sign Up"}
-                  </Link>
-                </Grid>
-              </Grid>
-            </Box>
+            )}
           </Box>
           <CopyRight />
         </Container>
       </ThemeProvider>
     </>
   );
+}
+
+enum LoginStep {
+  VerifyUser = 'VerifyUser',
+  VerifyOTP = 'VerifyOTP',
+}
+
+interface AuthData {
+  token: string;
+  user: any;
 }

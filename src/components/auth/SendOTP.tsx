@@ -1,34 +1,23 @@
 import { Box, TextField, Button, Typography } from '@mui/material';
 import React, { ChangeEvent, FormEvent, useState } from 'react';
-import { sendOtp } from '../../services/authApi';
 import { validateEmail } from '../../utils/validators';
 interface iProps {
-  loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
   emailState: [string, React.Dispatch<React.SetStateAction<string>>];
-  onSuccess: () => void;
+  onClickSendOtp: () => void;
 }
-const SendOTP = ({ loadingState, emailState, onSuccess }: iProps) => {
-  const [loading, setLoading] = loadingState;
+const SendOTP = ({ emailState, onClickSendOtp }: iProps) => {
   const [email, setEmail] = emailState;
   const [error, setError] = useState('');
+
   async function HandleSendOTP(e: FormEvent) {
     e.preventDefault();
+
     if (!validateEmail(email)) {
       setError('Invalid email');
       return;
     }
-    setLoading(true);
-    try {
-      await sendOtp(email);
-      onSuccess();
-    } catch (error: any) {
-      console.log(error);
-      if (error.response.data.error) {
-        setError(error.response.data.error);
-      }
-    } finally {
-      setLoading(false);
-    }
+
+    onClickSendOtp();
   }
 
   function onChange(e: ChangeEvent) {
