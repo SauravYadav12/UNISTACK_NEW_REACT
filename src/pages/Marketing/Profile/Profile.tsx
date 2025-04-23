@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { Box, Button, IconButton, Tab, Tabs, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  IconButton,
+  Tab,
+  Tabs,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { ModeEditOutline, Sync } from '@mui/icons-material';
 import ProfileForm from './ProfileForm';
 import MyAvatar from '../../../components/profile/myAvatar/MyAvatar';
@@ -21,6 +30,9 @@ import {
 } from './constants';
 import { getIUser } from '../../../utils/utils';
 function Profile() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const marginRight = isMobile ? 0 : 25;
   const iuser = getIUser();
   const canEdit = iuser?.canEdit || iuser?.role === 'super-admin';
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -72,7 +84,7 @@ function Profile() {
 
   return (
     <>
-      <div style={{ marginRight: 25 }}>
+      <div style={{ marginRight }}>
         <Box
           className="top-container"
           sx={{
@@ -91,7 +103,7 @@ function Profile() {
           />
         </Box>
       </div>
-      <div style={{ marginRight: 25 }}>
+      <div style={{ marginRight }}>
         <Box className="middle-container">
           <Box
             sx={{
@@ -99,12 +111,14 @@ function Profile() {
               height: 100,
             }}
           >
-            <Box className="left-box">
-              <FaRegIdBadge color="#032840" fontSize={17} />
-              <Typography variant="h6">
-                {myProfile?.employeeId || 'NA'}
-              </Typography>
-            </Box>
+            {!isMobile && (
+              <Box className="left-box">
+                <FaRegIdBadge color="#032840" fontSize={17} />
+                <Typography variant="h6">
+                  {myProfile?.employeeId || 'NA'}
+                </Typography>
+              </Box>
+            )}
           </Box>
           <Box className="middle-box">
             <MyAvatar
@@ -112,33 +126,79 @@ function Profile() {
               avatar={myProfile?.photo}
               onEdit={() => setProfilePictureDrawer(!profilePictureDrawer)}
             />
-            <Box className="profile-name">
+            <Box className="profile-name" sx={{ width: 'max-content' }}>
               <span>{myProfile?.name}</span>
             </Box>
           </Box>
 
           <Box className="right-box">
-            {canEdit && (
+            {!isMobile && (
+              <>
+                {canEdit && (
+                  <Button
+                    variant="contained"
+                    style={{
+                      marginRight,
+                      float: 'right',
+                      borderRadius: '10px',
+                    }}
+                    onClick={() => setDrawerOpen(true)}
+                    size="small"
+                  >
+                    <ModeEditOutline
+                      style={{
+                        paddingRight: '8px',
+                        width: '16px',
+                        height: '16px',
+                      }}
+                    />{' '}
+                    <span>Edit</span>
+                  </Button>
+                )}
+              </>
+            )}
+          </Box>
+        </Box>
+      </div>
+
+      {isMobile && (
+        <Box>
+          <Box className="left-box">
+            <FaRegIdBadge color="#032840" fontSize={14} />
+            <Typography variant="subtitle1">
+              {myProfile?.employeeId || 'NA'}
+            </Typography>
+          </Box>
+          {canEdit && (
+            <Box
+              display={'flex'}
+              justifyContent={'center'}
+              alignItems={'center'}
+              my={2}
+            >
               <Button
                 variant="contained"
                 style={{
-                  marginRight: 25,
-                  float: 'right',
                   borderRadius: '10px',
                 }}
                 onClick={() => setDrawerOpen(true)}
                 size="small"
               >
                 <ModeEditOutline
-                  style={{ paddingRight: '8px', width: '16px', height: '16px' }}
+                  style={{
+                    paddingRight: '8px',
+                    width: '16px',
+                    height: '16px',
+                  }}
                 />{' '}
                 <span>Edit</span>
               </Button>
-            )}
-          </Box>
+            </Box>
+          )}
         </Box>
-      </div>
-      <div style={{ marginRight: 25 }}>
+      )}
+
+      <div style={{ marginRight }}>
         <Box>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs
