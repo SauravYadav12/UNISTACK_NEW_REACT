@@ -40,7 +40,7 @@ const ForgotPassword = () => {
   const navigate = useNavigate();
   const { validateLogin } = useAuth();
 
-  async function handleResendOTP() {
+  async function handleSendOTP() {
     const email = emailState[0];
     if (!validateEmail(email)) {
       toast.error('Invalid email');
@@ -48,14 +48,23 @@ const ForgotPassword = () => {
     }
     setLoading(true);
     try {
-      await sendOtp(email);
+      await sendOtp(email, 'reset-password');
       toast.success('OTP sent successfully');
-    } catch (error) {
+      setStep(ForgotPasswordStep.VerifyOTP);
+    } catch (error: any) {
       console.log(error);
-      toast.error('Failed to resend');
+      if (error.response.data.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('Failed to send');
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function reSendOTP() {
+    await handleSendOTP();
   }
 
   async function onPasswordResetSuccessfull() {
@@ -73,9 +82,6 @@ const ForgotPassword = () => {
     }
   }
 
-  function onOtpSentSuccessfully() {
-    setStep(ForgotPasswordStep.VerifyOTP);
-  }
   function onOtpVerifiedSuccessfully() {
     setStep(ForgotPasswordStep.ResetPassword);
   }
@@ -99,17 +105,13 @@ const ForgotPassword = () => {
             </Avatar>
 
             {step === ForgotPasswordStep.SendOTP && (
-              <SendOTP
-                emailState={emailState}
-                loadingState={[loading, setLoading]}
-                onSuccess={onOtpSentSuccessfully}
-              />
+              <SendOTP emailState={emailState} onClickSendOtp={handleSendOTP} />
             )}
             {step === ForgotPasswordStep.VerifyOTP && (
               <VerifyOTP
                 email={emailState[0]}
                 onChangeEmail={() => setStep(ForgotPasswordStep.SendOTP)}
-                onResendOtp={handleResendOTP}
+                onResendOtp={reSendOTP}
                 otpState={otpState}
                 loadingState={[loading, setLoading]}
                 onSuccess={onOtpVerifiedSuccessfully}

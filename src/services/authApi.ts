@@ -123,12 +123,15 @@ export const syncUserOnLocalStorage = async () => {
   }
 };
 
-export async function sendOtp(email: string) {
+export async function sendOtp(
+  email: string,
+  otpFor: 'reset-password' | 'login'
+) {
   let headers: any = {
     'Content-Type': 'application/json',
   };
   const response = await axios.post(
-    `${BASE_URL}/users/send-otp/${email}`,
+    `${BASE_URL}/users/send-${otpFor}-otp/${email}`,
     {},
     {
       headers,

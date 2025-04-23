@@ -1,16 +1,6 @@
-import {
-  Box,
-  TextField,
-  FormControlLabel,
-  Checkbox,
-  Button,
-  Grid,
-  Link,
-  Typography,
-} from '@mui/material';
+import { Box, TextField, Button, Grid, Link, Typography } from '@mui/material';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { login } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import { jUser } from '../../Interfaces/iUser';
@@ -18,7 +8,7 @@ interface iProps {
   emailState: [string, React.Dispatch<React.SetStateAction<string>>];
   passwordState: [string, React.Dispatch<React.SetStateAction<string>>];
   loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
-  onSuccess: (token:string,user:jUser) => void;
+  onSuccess: (token: string, user: jUser) => void;
 }
 const VerifyUser = ({
   emailState,
@@ -27,7 +17,6 @@ const VerifyUser = ({
   onSuccess,
 }: iProps) => {
   const navigate = useNavigate();
-//   const { validateLogin } = useAuth();
   const [loading, setLoading] = loadingState;
   const [email, setEmail] = emailState;
   const [pass, setPass] = passwordState;
@@ -37,9 +26,6 @@ const VerifyUser = ({
       if (email && pass) {
         setLoading(true);
         const { data } = await login(email, pass);
-        // validateLogin(data.token, data.user);
-        // toast.success('Login Successfull');
-        // navigate('/dashboard');
         onSuccess(data.token, data.user);
       } else {
         toast.error('Email or password missing');
@@ -82,10 +68,7 @@ const VerifyUser = ({
           value={pass}
           onChange={(e) => setPass(e.target.value)}
         />
-        {/* <FormControlLabel
-        control={<Checkbox value="remember" color="primary" />}
-        label="Remember me"
-      /> */}
+
         <Button
           type="submit"
           fullWidth

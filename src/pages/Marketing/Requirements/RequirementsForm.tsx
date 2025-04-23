@@ -932,7 +932,7 @@ export default function RequirementsForm(props: iProps) {
                 label="Requirement Entered Date"
                 value={values.createdAt}
                 disabled
-                onChange={(newValue) => addValue('createdAt', newValue)} // Handle date change
+                onChange={() => ''}
                 renderInput={(params) => (
                   <TextField
                     size="small"

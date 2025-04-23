@@ -1,19 +1,12 @@
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import StorageIcon from '@mui/icons-material/Storage';
-import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import { login, sendOtp } from '../../services/authApi';
+import { sendOtp } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import Loader from '../../components/loader/Loader';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
@@ -32,9 +25,10 @@ export default function Login() {
   const otpState = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated ,validateLogin} = useAuth();
+  const [authData, setAuthData] = React.useState<AuthData>();
+  const { isAuthenticated, validateLogin } = useAuth();
 
-  async function sendOTP() {
+  async function handleSendOTP() {
     const email = emailState[0];
     if (!validateEmail(email)) {
       toast.error('Invalid email');
@@ -42,8 +36,9 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      await sendOtp(email);
+      await sendOtp(email, 'login');
       toast.success('OTP sent successfully');
+      setStep(LoginStep.VerifyOTP);
     } catch (error) {
       console.log(error);
       toast.error('Failed to resend');
@@ -53,15 +48,23 @@ export default function Login() {
   }
 
   async function resendOtp() {
-    await sendOTP();
+    await handleSendOTP();
+  }
+
+  async function onUserVerifiedSuccessfully(token: string, user: jUser) {
+    await handleSendOTP();
+    setAuthData({ token, user });
   }
 
   function onOtpVerifiedSuccessfully() {
-    toast.success('Login Successfull');
-    navigate('/dashboard');
-  }
-  function onUserVerifiedSuccessfully(token:string,user:jUser) {
+    if (!authData) {
+      toast.error('Missing token');
+      return;
+    }
+    const { token, user } = authData;
     validateLogin(token, user);
+    navigate('/dashboard');
+    toast.success('Login Successfull');
   }
 
   React.useEffect((): any => {
@@ -94,7 +97,7 @@ export default function Login() {
                 emailState={emailState}
                 passwordState={passwordState}
                 loadingState={[loading, setLoading]}
-                onSuccess={() => setStep(LoginStep.VerifyOTP)}
+                onSuccess={onUserVerifiedSuccessfully}
               />
             )}
 
@@ -119,4 +122,9 @@ export default function Login() {
 enum LoginStep {
   VerifyUser = 'VerifyUser',
   VerifyOTP = 'VerifyOTP',
+}
+
+interface AuthData {
+  token: string;
+  user: any;
 }

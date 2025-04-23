@@ -1,7 +1,5 @@
-import dayjs from 'dayjs';
-import { dateFormate } from '../../../components/constants';
 import { RequirementStatus } from '../../../Interfaces/reports';
-import { validateEmail, ValidationMeta } from '../../../utils/validators';
+import { ValidationMeta } from '../../../utils/validators';
 
 export const requestStatusOptions: RequirementStatus[] = [
   'New Working',
@@ -112,16 +110,10 @@ export const requirementValidationMeta: ValidationMeta[] = [
   { field: 'assignedTo', required: true },
   { field: 'jobDescription', required: true },
   { field: 'vendorCompany', required: true },
-  { field: 'vendorPersonName', required: true },
-  { field: 'clientEmail', validate: validateEmail },
+  // { field: 'vendorPersonName', required: true },
+  // { field: 'clientEmail', validate: validateEmail },
   // { field: 'primeVendorEmail', validate: validateEmail },
   // { field: 'vendorEmail', validate: validateEmail },
-  {
-    field: 'createdAt',
-    transform(value: any) {
-      return value ? dayjs(value).format(dateFormate) : null;
-    },
-  },
 ];
 
 type ReqirementStatusColors = {
