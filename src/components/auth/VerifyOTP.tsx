@@ -1,6 +1,7 @@
 import { Box, TextField, Button, Typography, Grid, Link } from '@mui/material';
 import React, { FormEvent, useState } from 'react';
 import { verifyOtp } from '../../services/authApi';
+import { toast } from 'react-toastify';
 interface iProps {
   email: string;
   loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
@@ -39,6 +40,9 @@ const VerifyOTP = ({
       console.log(error);
       if (error?.response?.data?.error) {
         setError(error?.response?.data?.error);
+        setOtp('');
+      } else {
+        toast.error('Failed to verify');
       }
     } finally {
       setLoading(false);
@@ -75,6 +79,7 @@ const VerifyOTP = ({
           label="OTP"
           name="otp"
           autoFocus
+          type="number"
           error={!!error}
           helperText={error}
           onChange={onChange}
