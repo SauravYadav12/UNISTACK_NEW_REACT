@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import { iAttendance, jUser } from '../Interfaces/iUser';
+import { iAttendance, iUser } from '../Interfaces/iUser';
 import { getAttendance } from '../services/attendanceApi';
 import { dateByUserShift } from '../utils/dateUtil';
-import { getJUser } from '../utils/utils';
 import { dateFormate } from '../components/constants';
 import moment from 'moment';
+import { useAuth } from '../AuthGaurd/AuthContextProvider';
 
 export function useAttendance(
   para: AttendancePara,
   dependencies?: any[]
 ): iUseAttendance {
-  const me = getJUser();
+  const me = useAuth().iUser;
   const defaultDate = me
     ? dateByUserShift(me.shift).format(dateFormate)
     : moment().format(dateFormate);
@@ -67,7 +67,7 @@ export interface iUseAttendance {
   setResults: React.Dispatch<React.SetStateAction<iAttendance[]>>;
 }
 interface AttendancePara {
-  users?: jUser[];
+  users?: iUser[];
   fromDate?: string;
   toDate?: string;
   fetchDataIf?: boolean;

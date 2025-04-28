@@ -26,7 +26,7 @@ function Navbar({ sidebar, toggleSideBar }: any) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [width, setWidth] = React.useState(drawerWidth);
-  const user: iUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const { iUser: user } = useAuth();
 
   React.useEffect(() => {
     toggleSideBar ? setWidth(smallDrawerWidth) : setWidth(drawerWidth);
@@ -73,7 +73,7 @@ function Navbar({ sidebar, toggleSideBar }: any) {
             )}
             <Box sx={{ flexGrow: 0, marginRight: '10px' }}>
               <Typography textAlign="center">
-                Welcome, {user.firstName}
+                Welcome, {user?.firstName}
               </Typography>
             </Box>
 
@@ -92,7 +92,8 @@ interface LeavesButtonProp {
 }
 function LeavesButton({ onClick }: LeavesButtonProp) {
   const navigate = useNavigate();
-  const { isModuleAllowed } = useAuth();
+  const { isModuleAllowed, iUser } = useAuth();
+
   if (
     !isModuleAllowed(
       moduleKey(ModuleGroup['Presence & Leave'], EmployeeModule.Leaves)

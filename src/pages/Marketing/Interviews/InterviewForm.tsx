@@ -53,16 +53,13 @@ import {
   urlValidator,
   validateAllFields,
 } from '../../../utils/validators';
-import {
-  convertValuesToEmptyString,
-  downloadFile,
-  getIUser,
-} from '../../../utils/utils';
+import { convertValuesToEmptyString, downloadFile } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { UserRole } from '../../../Interfaces/iUser';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 interface iProps {
   viewData: any;
@@ -96,7 +93,7 @@ export default function InterviewForm(props: iProps) {
   const [openAlert, setOpenAlert] = useState(false);
   const [scriptModal, setScriptModal] = useState(false);
   const [reqDrawer, setReqDrawer] = useState<string>();
-  const user = getIUser();
+  const user = useAuth().iUser;
 
   useHardKeySubmit(
     {

@@ -37,7 +37,7 @@ import { dateFormate2, timeFormate } from '../../components/constants';
 import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
 import { Sync } from '@mui/icons-material';
 import { useFetchData } from '../../hooks/fetchDataHook';
-import { jUser, UserRole } from '../../Interfaces/iUser';
+import { iUser, UserRole } from '../../Interfaces/iUser';
 import UserWorkLocationSelect from '../../components/userManagement/UserWorkLocationSelect';
 
 interface CustomCard {
@@ -55,7 +55,7 @@ function UserManagement() {
     error,
     setData: setUsers,
     loadData,
-  } = useFetchData<jUser[]>(getUsersList, []);
+  } = useFetchData<iUser[]>(getUsersList, []);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [selectedUser, setSelectedUser] = useState<any>();
@@ -74,7 +74,7 @@ function UserManagement() {
     return data.users || [];
   }
 
-  function HandleChangeUser(usr: jUser) {
+  function HandleChangeUser(usr: iUser) {
     setUsers((pre) => {
       pre =
         pre?.map((u) => {
@@ -107,7 +107,7 @@ function UserManagement() {
         field: 'firstName',
         headerName: 'Name',
         width: 160,
-        valueGetter: (val: any, param: jUser) => {
+        valueGetter: (val: any, param: iUser) => {
           return param.firstName + ' ' + param.lastName;
         },
       },

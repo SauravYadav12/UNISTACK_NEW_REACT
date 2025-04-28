@@ -10,9 +10,8 @@ import {
 import React, { useEffect, useState } from 'react';
 import AttendanceGridMonthly from '../../components/attendance/AttendanceGridMonthly';
 import AttendanceSummary from '../../components/attendance/AttendanceSummary';
-import { iAttendance, jUser, UserRole } from '../../Interfaces/iUser';
+import { iAttendance, iUser, UserRole } from '../../Interfaces/iUser';
 import { usersList } from '../../services/authApi';
-import { getJUser } from '../../utils/utils';
 import WeeklyAttendanceTable from '../../components/attendance/WeeklyAttendence';
 import MonthlyAttendanceTable from '../../components/attendance/MonthlyAttendanceTable';
 import DailyAttendanceTable from '../../components/attendance/DailyAttendanceTable';
@@ -28,14 +27,14 @@ import moment, { Moment, unitOfTime } from 'moment';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 const AttendanceDashboard = () => {
-  const usersListState = useFetchData<jUser[]>(fetchUsers, []);
+  const usersListState = useFetchData<iUser[]>(fetchUsers, []);
 
   const { data: users, loading, error, loadData } = usersListState;
 
   async function fetchUsers() {
     const { data } = await usersList();
     const { users } = data;
-    return (users as jUser[])?.filter(
+    return (users as iUser[])?.filter(
       (u) => u.role !== UserRole['super-admin']
     );
   }
@@ -72,14 +71,14 @@ const AttendanceDashboard = () => {
 export default AttendanceDashboard;
 
 interface MyDashBoardComponentProp {
-  users: jUser[];
+  users: iUser[];
   onReload: () => void;
 }
 
 function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
-  const { myAttendanceState } = useAuth();
+  const { myAttendanceState, iUser } = useAuth();
   const [exportModal, setExportModal] = useState(false);
-  const [currentUser, setCurrentUser] = useState<jUser>(users[0]);
+  const [currentUser, setCurrentUser] = useState<iUser>(users[0]);
   const currentUserTodaysAttendance = useAttendance(
     {
       users: [currentUser],
@@ -88,7 +87,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
   );
 
   const attendanceGridMonthlyDateState = useState(
-    dateByUserShift(getJUser()!.shift)
+    dateByUserShift(iUser!.shift)
   );
   const currentUserMonthlyAttendance = useAttendance(
     {
@@ -109,7 +108,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
   );
 
   const optionBasedAttendanceDateState = useState(
-    dateByUserShift(getJUser()!.shift)
+    dateByUserShift(iUser!.shift)
   );
 
   const { fromDate, toDate } = iDates(optionBasedAttendanceDateState[0]);
@@ -148,7 +147,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
       currentUserTodaysAttendance,
       usersWiseOptionBasedAttendance,
     ];
-    if (myAttendanceState && att.userRef === getJUser()?._id) {
+    if (myAttendanceState && att.userRef === iUser?._id) {
       states.push(myAttendanceState);
     }
     for (const hook of states) {
@@ -166,7 +165,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
 
   useEffect(() => {
     optionBasedAttendanceDateState[1](
-      iDates(dateByUserShift(getJUser()!.shift)).fromDate
+      iDates(dateByUserShift(iUser!.shift)).fromDate
     );
   }, [userWiseAttendanceOption]);
 
@@ -225,7 +224,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
                 <CheckInCheckOut
                   forAdmin
                   user={currentUser}
-                  date={dateByUserShift(getJUser()!.shift)}
+                  date={dateByUserShift(iUser!.shift)}
                   attendance={currentUserTodaysAttendance.attendance[0]}
                   onChange={handleChangeAttendance}
                 />
@@ -289,7 +288,7 @@ interface UserWiseAttendanceListProps {
   options: AttendanceTableType[];
   selectedOption: AttendanceTableType;
   onChangeOption: (option: AttendanceTableType) => void;
-  users: jUser[];
+  users: iUser[];
   attendanceState: iUseAttendance;
   onChangeAttendance?: (a: iAttendance) => void;
 }

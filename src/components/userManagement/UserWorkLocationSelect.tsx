@@ -1,5 +1,5 @@
 import React from 'react';
-import { iUser, jUser, WorkLocation } from '../../Interfaces/iUser';
+import { iUser, WorkLocation } from '../../Interfaces/iUser';
 import {
   Box,
   FormControl,
@@ -12,7 +12,7 @@ import { updateUser } from '../../services/authApi';
 interface iProps {
   location: WorkLocation;
   userId: string;
-  onSuccess:(usr: jUser)=> void;
+  onSuccess:(usr: iUser)=> void;
 }
 const UserWorkLocationSelect = ({
   location,

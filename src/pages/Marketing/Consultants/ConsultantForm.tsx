@@ -37,6 +37,7 @@ import { getExampleNumber } from 'libphonenumber-js';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 const initialValues = {
   timeZone: '',
@@ -78,7 +79,7 @@ export default function ConsultantForm(props: iProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { viewData, mode, isEditing, onDrawerClose, onEdit, setResults } =
     props;
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = useAuth().iUser!;
   const [projects, setProjects] = useState<any[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: any }>(
     convertValuesToEmptyString(initialValues)

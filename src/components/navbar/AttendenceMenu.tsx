@@ -9,14 +9,12 @@ import {
   SuperAdminModule,
   moduleKey,
 } from '../../utils/accessControlUtil';
-import { getJUser } from '../../utils/utils';
 interface iProps {
   onClose?: () => void;
 }
 const AttendenceMenu = ({ onClose }: iProps) => {
-  const me = getJUser();
   const navigate = useNavigate();
-  const { isModuleAllowed } = useAuth();
+  const { isModuleAllowed, iUser: me } = useAuth();
   const options = [
     {
       title: 'My Attendance',

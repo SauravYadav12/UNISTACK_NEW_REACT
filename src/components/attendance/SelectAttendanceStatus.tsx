@@ -1,6 +1,6 @@
 import { Select, MenuItem } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
+import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 import { Moment } from 'moment';
 import { toast } from 'react-toastify';
 import { updateAttendance, markAttendance } from '../../services/attendanceApi';
@@ -9,7 +9,7 @@ import { dateFormate } from '../constants';
 interface iProps {
   date: Moment;
   attendance?: iAttendance;
-  user: jUser;
+  user: iUser;
   onChange?: (attendance: iAttendance) => void;
 }
 const SelectAttendanceStatus = ({

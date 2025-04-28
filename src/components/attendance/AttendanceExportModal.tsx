@@ -10,7 +10,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { mkConfig, generateCsv, download, ColumnHeader } from 'export-to-csv';
-import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
+import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 import { dateFormate, timeFormate } from '../constants';
 import dayjs from 'dayjs';
 import { useState } from 'react';
@@ -20,11 +20,11 @@ import { getAttendance } from '../../services/attendanceApi';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import { timeByUserShift } from '../../utils/dateUtil';
-import { getJUser } from '../../utils/utils';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 interface iProps {
   filename?: string;
   open: boolean;
-  users: jUser[];
+  users: iUser[];
   onOpen: () => void;
   onClose: () => void;
 }
@@ -36,6 +36,8 @@ function AttendanceExportModal({
   onClose,
   onOpen,
 }: iProps) {
+  const { iUser: user } = useAuth();
+
   const columnHeaders: ColumnHeader[] = [
     { key: 'username', displayLabel: 'User Name' },
     { key: 'status', displayLabel: 'Status' },
@@ -80,12 +82,12 @@ function AttendanceExportModal({
         date: dayjs(date).format(dateFormate),
         checkIn:
           checkIn &&
-          timeByUserShift(getJUser()!.shift, moment(checkIn)).format(
+          timeByUserShift(user!.shift, moment(checkIn)).format(
             timeFormate + ' z'
           ),
         checkOut:
           checkOut &&
-          timeByUserShift(getJUser()!.shift, moment(checkOut)).format(
+          timeByUserShift(user!.shift, moment(checkOut)).format(
             timeFormate + ' z'
           ),
       });

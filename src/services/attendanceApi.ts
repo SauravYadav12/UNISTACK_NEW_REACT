@@ -5,7 +5,7 @@ import { ApiQueryRes } from '../Interfaces/apiRes';
 import {
   AttendanceStatus,
   iAttendance,
-  jUser,
+  iUser,
 } from '../Interfaces/iUser';
 export async function getAttendance(query = '') {
   const token = await getJwtToken();
@@ -23,7 +23,7 @@ export async function getAttendance(query = '') {
   return response;
 }
 export async function markAttendance(
-  user: jUser,
+  user: iUser,
   date:string,
   status: AttendanceStatus
 ) {

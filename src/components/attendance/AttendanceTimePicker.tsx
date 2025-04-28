@@ -16,8 +16,8 @@ import moment, { Moment } from 'moment';
 import { toast } from 'react-toastify';
 import { updateAttendance } from '../../services/attendanceApi';
 import { dateByUserShift } from '../../utils/dateUtil';
-import { getJUser } from '../../utils/utils';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 interface iProps {
   attendance: iAttendance;
   field: 'checkIn' | 'checkOut';
@@ -30,7 +30,7 @@ const AttendanceTimePicker = ({
   onChange,
   label,
 }: iProps) => {
-  const me = getJUser()!;
+  const me = useAuth().iUser!;
   const [date, setDate] = useState<Moment | null>(iShiftDate());
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const open = Boolean(anchorEl);

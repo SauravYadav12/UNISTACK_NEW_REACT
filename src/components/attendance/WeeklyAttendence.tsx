@@ -15,7 +15,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, iUser } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import AttendanceStatusBox from './AttendanceStatusBox';
@@ -25,7 +25,7 @@ import { AttendanceTableType } from '../../pages/Attendance/AttendanceDashboard'
 import DatePickerButton from './DatePickerButton';
 
 interface iProps {
-  users: jUser[];
+  users: iUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   tableContainerHeight?: number;

@@ -1,4 +1,3 @@
-import { getJUser } from '../../utils/utils';
 import {
   Box,
   IconButton,
@@ -10,7 +9,7 @@ import {
 import ChartCardWrapper from '../../components/dashboard/ChartCardWrapper';
 import DailyAttendanceTable from '../../components/attendance/DailyAttendanceTable';
 import CheckInCheckOut from '../../components/attendance/CheckInCheckOut';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, iUser } from '../../Interfaces/iUser';
 
 import SyncIcon from '@mui/icons-material/Sync';
 import { useEffect, useState } from 'react';
@@ -24,8 +23,8 @@ import moment from 'moment';
 import { dateFormate } from '../../components/constants';
 
 const MyAttendance = () => {
-  const me = getJUser()!;
-  const { myAttendanceState } = useAuth();
+  const { myAttendanceState, iUser } = useAuth();
+  const me = iUser!;
   const dateState = useState(dateByUserShift(me.shift));
 
   if (!myAttendanceState || myAttendanceState?.loading)
@@ -114,14 +113,15 @@ enum AttendanceOption {
   Monthly = 'Monthly',
 }
 interface MyAttendanceHistoryProps {
-  users: jUser[];
+  users: iUser[];
 }
 
 function MyAttendanceHistory({ users }: MyAttendanceHistoryProps) {
+  const { iUser } = useAuth();
   const options = Object.values(AttendanceOption);
   const [option, setOption] = useState(options[0]);
 
-  const dateState = useState(dateByUserShift(getJUser()!.shift));
+  const dateState = useState(dateByUserShift(iUser!.shift));
 
   const { fromDate, toDate } = iDates(dateState[0]);
 
@@ -146,7 +146,7 @@ function MyAttendanceHistory({ users }: MyAttendanceHistoryProps) {
   }
 
   useEffect(() => {
-    dateState[1](iDates(dateByUserShift(getJUser()!.shift)).fromDate);
+    dateState[1](iDates(dateByUserShift(iUser!.shift)).fromDate);
   }, [option]);
 
   return (

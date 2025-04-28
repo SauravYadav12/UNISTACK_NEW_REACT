@@ -11,7 +11,6 @@ import { dateFormate, timeFormate } from '../constants';
 import { iAttendance } from '../../Interfaces/iUser';
 import { updateAttendance } from '../../services/attendanceApi';
 import { dateByUserShift } from '../../utils/dateUtil';
-import { getJUser } from '../../utils/utils';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../services/authApi';
@@ -23,7 +22,7 @@ const MarkCheckoutTimeModal = ({
 }: MarkCheckoutTimeModalProps) => {
   const navigate = useNavigate();
   const [open, setOpen] = state;
-  const { validateLogout } = useAuth();
+  const { validateLogout, iUser } = useAuth();
   async function onMarkCheckoutTime() {
     try {
       const { data } = await updateAttendance(attendence._id, {
@@ -39,8 +38,7 @@ const MarkCheckoutTimeModal = ({
 
   async function closeModal() {
     setOpen(false);
-    const me = getJUser();
-    if (me?._id === attendence.userRef) {
+    if (iUser?._id === attendence.userRef) {
       validateLogout();
       navigate(`/`);
       try {
@@ -67,7 +65,7 @@ const MarkCheckoutTimeModal = ({
             Please mark your checkout time to complete your workday.
             <br />
             Date:{' '}
-            {dateByUserShift(getJUser()!.shift).format(
+            {dateByUserShift(iUser!.shift).format(
               dateFormate + ' ' + timeFormate + ' z'
             )}
           </DialogContentText>

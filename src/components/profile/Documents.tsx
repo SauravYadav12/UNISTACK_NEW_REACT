@@ -5,14 +5,13 @@ import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import Divider from '@mui/material/Divider';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { getBlobFileByUrl, getFileMetaData, getIUser } from '../../utils/utils';
+import { getBlobFileByUrl, getFileMetaData } from '../../utils/utils';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import { updateProfile } from '../../services/userProfileApi';
 import './profile.css';
 const Documents = () => {
-  const { myProfile, setMyProfile } = useAuth();
+  const { myProfile, iUser: user, setMyProfile } = useAuth();
   const [myDocuments, setMyDocuments] = useState<DocumentsSchema[]>([]);
-  const user = getIUser();
 
   const deleteFile = async (fieldName: DocumentsField) => {
     if (!myProfile?._id) return;

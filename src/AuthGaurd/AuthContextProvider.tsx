@@ -1,21 +1,23 @@
 import { createContext, useContext, useState } from 'react';
 import { UserProfile } from '../Interfaces/profile';
-import { getIUser, getJUser, isTokenExpired } from '../utils/utils';
+import { getUserIdFromToken, isTokenExpired } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';
-import { syncUserOnLocalStorage } from '../services/authApi';
+import { syncIUser } from '../services/authApi';
 import { iUseAttendance, useAttendance } from '../hooks/attendanceHook';
 import { iFetchData, useFetchData } from '../hooks/fetchDataHook';
 import { getAccessControl } from '../services/accessControlApi';
 import { iAccessControl } from '../utils/accessControlUtil';
-import { UserRole } from '../Interfaces/iUser';
+import { iUser, UserRole } from '../Interfaces/iUser';
 import { autoOpenAttendanceModalKey } from '../components/dashboard/MarkAttendanceModal';
+import { toast } from 'react-toastify';
 
 const AuthContext = createContext({
   isAuthenticated: false,
   myAttendanceState: undefined,
+  myProfile: undefined,
+  syncIUser() {},
   validateLogin: (token: string) => {},
   validateLogout: () => {},
-  myProfile: undefined,
   setMyProfile: () => {},
   isModuleAllowed: () => false,
 } as DefaultContextValue);
@@ -31,22 +33,32 @@ export const AuthContextProvider = ({ children }: any) => {
     return data.data;
   }, [isAuthenticated]);
 
-  const me = getJUser()!;
+  const iUserState = useFetchData(async () => {
+    const id = getUserIdFromToken();
+    if (!isAuthenticated || !id) return;
+    const { user, error } = await syncIUser(id);
+    if (error) {
+      toast.error('Failed to sync user');
+    }
+    return user;
+  }, [isAuthenticated]);
+
   const myAttendanceState = useAttendance(
     {
-      users: [me],
-      fetchDataIf: isAuthenticated,
+      users: [iUserState.data!],
+      fetchDataIf: isAuthenticated && !!iUserState.data,
     },
-    [isAuthenticated]
+    [isAuthenticated, iUserState.data]
   );
 
   const myProfileState = useFetchData(getMyProfile, [isAuthenticated]);
 
   const validateLogin = (token: string, user: any) => {
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+    // localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem(autoOpenAttendanceModalKey, 'true');
     setIsAuthenticated(true);
+    iUserState.setData(user);
   };
 
   function validateLogout() {
@@ -55,15 +67,14 @@ export const AuthContextProvider = ({ children }: any) => {
   }
 
   async function getMyProfile() {
-    if (!isAuthenticated) return;
-    syncUserOnLocalStorage();
-    const iUser = getIUser()!;
+    if (!isAuthenticated || !iUserState.data) return;
+    const iUser = iUserState.data;
     const profile = await getProfileByUser(iUser);
     return profile;
   }
 
   const isModuleAllowed = (key: string) => {
-    const me = getJUser();
+    const me = iUserState.data;
     const { loading, error, data } = accessControlState;
     if (loading || error || !data || !me?.role || isTokenExpired())
       return false;
@@ -74,11 +85,14 @@ export const AuthContextProvider = ({ children }: any) => {
   return (
     <AuthContext.Provider
       value={{
+        iUserState,
+        iUser: iUserState.data,
         myProfileState,
         myProfile: myProfileState.data,
         myAttendanceState,
         accessControlState,
         isAuthenticated,
+        syncIUser: iUserState.loadData,
         setMyProfile: myProfileState.setData,
         validateLogin,
         validateLogout,
@@ -93,11 +107,14 @@ export const AuthContextProvider = ({ children }: any) => {
 export const useAuth = () => useContext(AuthContext);
 
 interface DefaultContextValue {
+  iUserState?: iFetchData<iUser | undefined>;
+  iUser?: iUser;
   myProfileState?: iFetchData<UserProfile | undefined>;
   myProfile?: UserProfile;
   myAttendanceState?: iUseAttendance;
   accessControlState?: iFetchData<iAccessControl | undefined>;
   isAuthenticated: boolean;
+  syncIUser: () => void;
   validateLogin: (token: string, user: any) => void;
   validateLogout: () => void;
   setMyProfile: (profile: UserProfile) => void;

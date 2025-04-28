@@ -4,13 +4,13 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { updateUser } from '../../services/authApi';
-import { jUser, UserShift } from '../../Interfaces/iUser';
+import { iUser, UserShift } from '../../Interfaces/iUser';
 import { toast } from 'react-toastify';
 
 interface iProps {
   shift: UserShift;
   userId: string;
-  onSuccess: (usr: jUser) => void;
+  onSuccess: (usr: iUser) => void;
 }
 
 export default function UserShiftSelect({ shift, userId, onSuccess }: iProps) {

@@ -8,10 +8,10 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { dateFormate } from '../constants';
-import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
+import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 import { markAttendance, updateAttendance } from '../../services/attendanceApi';
-import { getJUser } from '../../utils/utils';
 import { dateByUserShift, getAttendanceStatus } from '../../utils/dateUtil';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 export const autoOpenAttendanceModalKey =
   'automatically_open_mark_attendance_modal';
 
@@ -24,8 +24,9 @@ const MarkAttendanceModal = ({
   onCancel,
   onMark,
 }: MarkAttendanceModalProps) => {
+  const { iUser } = useAuth();
   const [open, setOpen] = state;
-  const isUserHasSession = user._id === getJUser()?._id;
+  const isUserHasSession = user._id === iUser?._id;
   async function onMarkAttendance() {
     let status = getAttendanceStatus(user);
     if (forAdmin && !status) {
@@ -74,7 +75,7 @@ const MarkAttendanceModal = ({
               ? 'Start your day by quickly marking your attendance.'
               : `Mark Attendance for ${user.firstName + ' ' + user.lastName}`}
             <br />
-            Date: {dateByUserShift(getJUser()!.shift).format(dateFormate)}
+            Date: {dateByUserShift(iUser!.shift).format(dateFormate)}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -91,7 +92,7 @@ const MarkAttendanceModal = ({
 export default MarkAttendanceModal;
 
 interface MarkAttendanceModalProps {
-  user: jUser;
+  user: iUser;
   date: string;
   state: [boolean, (s: boolean) => void];
   attendence?: iAttendance;

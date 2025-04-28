@@ -17,10 +17,10 @@ import moment from 'moment';
 import InterviewForm from '../../pages/Marketing/Interviews/InterviewForm';
 import CustomDrawer from '../drawer/CustomDrawer';
 import DashboardCard from './ChartCardWrapper';
-import { getJUser } from '../../utils/utils';
 import { dateByUserShift } from '../../utils/dateUtil';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 const TodaysInterviews = () => {
-  const user = getJUser()!;
+  const user = useAuth().iUser!;
   const [rows, setRows] = useState<any[]>();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewData, setViewData] = useState<any>();

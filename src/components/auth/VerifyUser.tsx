@@ -3,12 +3,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../../services/authApi';
 import { toast } from 'react-toastify';
-import { jUser } from '../../Interfaces/iUser';
+import { iUser } from '../../Interfaces/iUser';
 interface iProps {
   emailState: [string, React.Dispatch<React.SetStateAction<string>>];
   passwordState: [string, React.Dispatch<React.SetStateAction<string>>];
   loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
-  onSuccess: (token: string, user: jUser) => void;
+  onSuccess: (token: string, user: iUser) => void;
 }
 const VerifyUser = ({
   emailState,
