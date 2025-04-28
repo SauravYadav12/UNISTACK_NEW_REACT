@@ -96,7 +96,11 @@ const DailyAttendanceTable = ({
     return (
       <>
         {users.map((employee) => {
-          const att = attendance?.find((e) => employee._id === e.userRef);
+          const att = attendance?.find(
+            (e) =>
+              employee._id === e.userRef &&
+              e.date === currentDate.format(dateFormate)
+          );
           return (
             <TableRow key={employee._id}>
               <TableCell>
