@@ -39,12 +39,15 @@ const MarkCheckoutTimeModal = ({
 
   async function closeModal() {
     setOpen(false);
-    validateLogout();
-    navigate(`/`);
-    try {
-      await logout();
-    } catch (error) {
-      console.log(error);
+    const me = getJUser();
+    if (me?._id === attendence.userRef) {
+      validateLogout();
+      navigate(`/`);
+      try {
+        await logout();
+      } catch (error) {
+        console.log(error);
+      }
     }
   }
 

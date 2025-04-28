@@ -99,6 +99,7 @@ const AttendanceStatusBox = ({
           //   backgroundColor: theme.palette.action.hover,
         },
       }}
+      onClick={()=>console.log(attendance)}
     >
       <Tooltip title={tip()} arrow>
         <Typography onClick={forEmployee ? undefined : handleClick}>
