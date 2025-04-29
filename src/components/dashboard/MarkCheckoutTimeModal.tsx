@@ -29,6 +29,15 @@ const MarkCheckoutTimeModal = ({
         checkOut: new Date().toUTCString(),
       });
       onMark && data.data && onMark(data.data);
+      if (iUser?._id === attendence.userRef) {
+        validateLogout();
+        navigate(`/`);
+        try {
+          await logout();
+        } catch (error) {
+          console.log(error);
+        }
+      }
       toast.success('Check-out time marked successfully');
       closeModal();
     } catch (error) {
@@ -38,15 +47,6 @@ const MarkCheckoutTimeModal = ({
 
   async function closeModal() {
     setOpen(false);
-    if (iUser?._id === attendence.userRef) {
-      validateLogout();
-      navigate(`/`);
-      try {
-        await logout();
-      } catch (error) {
-        console.log(error);
-      }
-    }
   }
 
   return (

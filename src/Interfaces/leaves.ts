@@ -7,6 +7,7 @@ export interface CreateLeavePayload {
   reason: string;
   isHalfDay: boolean;
   halfDayType?: HalfDayType;
+  attachments?:string[]
 }
 
 export interface iLeave extends CreateLeavePayload {

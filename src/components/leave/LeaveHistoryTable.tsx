@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -20,6 +20,10 @@ import { useFetchData } from '../../hooks/fetchDataHook';
 import { getLeaves } from '../../services/leavesApi';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { Sync } from '@mui/icons-material';
+import CustomDrawer from '../drawer/CustomDrawer';
+import LeaveForm from './LeaveForm';
+import { FormMode } from '../../pages/Marketing/Requirements/Requirements';
+import { iLeave } from '../../Interfaces/leaves';
 
 interface iProps {
   tableContainerHeight?: number | string;
@@ -33,6 +37,9 @@ function LeaveHistoryTable({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { iUser } = useAuth();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mode, setMode] = useState<FormMode>('view');
+  const [viewData, setViewData] = useState<iLeave>();
   const {
     data: leaveHistory,
     error,
@@ -53,6 +60,12 @@ function LeaveHistoryTable({
     { hide: isMobile, title: 'Reason' },
     { title: 'Appiled At' },
   ];
+
+  const handleDrawerClose = () => {
+    setViewData(undefined);
+    setDrawerOpen(false);
+    setMode('view');
+  };
 
   function MyBody() {
     if (loading) {
@@ -102,8 +115,8 @@ function LeaveHistoryTable({
             color="primary"
             sx={{ borderRadius: '10px' }}
             onClick={() => {
-              // setViewData(row);
-              // setDrawerOpen(true);
+              setViewData(leave);
+              setDrawerOpen(true);
             }}
           >
             View
@@ -139,8 +152,47 @@ function LeaveHistoryTable({
     ));
   }
 
+  function DrawerSubtitle(viewData: iLeave) {
+    const { startDate, endDate } = viewData;
+    return (
+      <>
+        {startDate === endDate ? (
+          moment(startDate).format(dateFormate2)
+        ) : (
+          <>
+            {moment(startDate).format(dateFormate2) +
+              ' to ' +
+              moment(endDate).format(dateFormate2)}
+          </>
+        )}
+      </>
+    );
+  }
+
   return (
     <div>
+      <CustomDrawer
+        open={drawerOpen}
+        onClose={handleDrawerClose}
+        title={viewData?.name + ' . ' + viewData?.type}
+        closeOnOutSideClick={mode === 'view'}
+        subTitle={viewData && DrawerSubtitle(viewData)}
+      >
+        {viewData && (
+          <LeaveForm
+            viewData={viewData}
+            {...(forAdmin && {
+              isEditing: mode === 'edit',
+              onDelete: () => {},
+              onEdit: (s) => {
+                setMode(s ? 'edit' : 'view');
+              },
+              onDrawerClose: handleDrawerClose,
+            })}
+            hideButtons={!forAdmin}
+          />
+        )}
+      </CustomDrawer>
       <TableContainer
         sx={{ height: tableContainerHeight, scrollbarWidth: 'thin' }}
       >
