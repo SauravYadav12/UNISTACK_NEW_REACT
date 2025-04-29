@@ -11,9 +11,27 @@ import { iUser, UserRole } from '../Interfaces/iUser';
 import { autoOpenAttendanceModalKey } from '../components/dashboard/MarkAttendanceModal';
 import { toast } from 'react-toastify';
 
+const initialFetchState = {
+  data: undefined,
+  error: '',
+  loading: false,
+  loadData: async function () {},
+  setData: () => {},
+};
+const initialMyAttendanceState = {
+  attendance: [],
+  loadData: async function () {},
+  error: '',
+  loading: false,
+  setResults: () => {},
+};
+
 const AuthContext = createContext({
   isAuthenticated: false,
-  myAttendanceState: undefined,
+  accessControlState: initialFetchState,
+  iUserState: initialFetchState,
+  myProfileState: initialFetchState,
+  myAttendanceState: initialMyAttendanceState,
   myProfile: undefined,
   syncIUser() {},
   validateLogin: (token: string) => {},
@@ -45,7 +63,7 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const myAttendanceState = useAttendance(
     {
-      users: [iUserState.data!],
+      users: iUserState.data ? [iUserState.data] : [],
       fetchDataIf: isAuthenticated && !!iUserState.data,
     },
     [isAuthenticated, iUserState.data]
@@ -55,7 +73,6 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const validateLogin = (token: string, user: any) => {
     localStorage.setItem('token', token);
-    // localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem(autoOpenAttendanceModalKey, 'true');
     setIsAuthenticated(true);
     iUserState.setData(user);
@@ -75,9 +92,8 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const isModuleAllowed = (key: string) => {
     const me = iUserState.data;
-    const { loading, error, data } = accessControlState;
-    if (loading || error || !data || !me?.role || isTokenExpired())
-      return false;
+    const { data } = accessControlState;
+    if (!data || !me?.role || isTokenExpired()) return false;
     if (me.role === UserRole['super-admin']) return true;
     return data[me.role]?.includes(key) || false;
   };
@@ -107,12 +123,12 @@ export const AuthContextProvider = ({ children }: any) => {
 export const useAuth = () => useContext(AuthContext);
 
 interface DefaultContextValue {
-  iUserState?: iFetchData<iUser | undefined>;
+  iUserState: iFetchData<iUser | undefined>;
   iUser?: iUser;
   myProfileState?: iFetchData<UserProfile | undefined>;
   myProfile?: UserProfile;
-  myAttendanceState?: iUseAttendance;
-  accessControlState?: iFetchData<iAccessControl | undefined>;
+  myAttendanceState: iUseAttendance;
+  accessControlState: iFetchData<iAccessControl | undefined>;
   isAuthenticated: boolean;
   syncIUser: () => void;
   validateLogin: (token: string, user: any) => void;

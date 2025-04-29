@@ -28,7 +28,7 @@ const LeavesManagement = () => {
           return (
             <Box sx={{ py: 1, my: 2 }} key={t}>
               <ChartCardWrapper title={`${tab} Leaves`}>
-                <LeaveHistoryTable />
+                <LeaveHistoryTable forAdmin />
               </ChartCardWrapper>
             </Box>
           );

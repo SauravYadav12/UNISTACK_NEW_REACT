@@ -500,7 +500,7 @@ function Notes({ note, poc }: { note: string; poc: string }) {
       {data.map(([key, val], i) => {
         return (
           <ListItem
-            key={key}
+            key={i}
             sx={{
               display: 'flex',
               width: '100%',
