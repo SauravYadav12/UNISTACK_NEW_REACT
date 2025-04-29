@@ -12,16 +12,19 @@ import { Box } from '@mui/material';
 import { Moment } from 'moment';
 
 const AttendancePopUp = () => {
+  const dateState = React.useState<Moment>();
   const { myAttendanceState, iUser, isModuleAllowed } = useAuth();
   const me = iUser;
-  if (!myAttendanceState) return null;
-  const { loading, error, attendance, setResults } = myAttendanceState;
 
-  const dateState = React.useState<Moment>();
+  const { loading, error, attendance, setResults } = myAttendanceState;
 
   function handleChange(att: iAttendance) {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
+
+  useEffect(() => {
+    me?.shift && dateState[1](dateByUserShift(me.shift));
+  }, [me?.shift]);
 
   if (
     !isModuleAllowed(
@@ -31,10 +34,6 @@ const AttendancePopUp = () => {
   ) {
     return null;
   }
-
-  useEffect(() => {
-    me?.shift && dateState[1](dateByUserShift(me.shift));
-  }, [me?.shift]);
 
   if (loading || error || !me || !dateState[0]) return null;
 

@@ -3,21 +3,18 @@ import { iAttendance, iUser } from '../Interfaces/iUser';
 import { getAttendance } from '../services/attendanceApi';
 import { dateByUserShift } from '../utils/dateUtil';
 import { dateFormate } from '../components/constants';
+import { getUserShiftFromToken } from '../utils/utils';
 import moment from 'moment';
-import { useAuth } from '../AuthGaurd/AuthContextProvider';
 
 export function useAttendance(
   para: AttendancePara,
   dependencies?: any[]
 ): iUseAttendance {
-  const me = useAuth().iUser;
-  const defaultDate = me
-    ? dateByUserShift(me.shift).format(dateFormate)
-    : moment().format(dateFormate);
+  const shift = getUserShiftFromToken();
   const {
     users,
-    fromDate = defaultDate,
-    toDate = defaultDate,
+    fromDate = (shift ? dateByUserShift(shift) : moment()).format(dateFormate),
+    toDate = (shift ? dateByUserShift(shift) : moment()).format(dateFormate),
     fetchDataIf = true,
   } = para;
   const [attendance, setAttendance] = useState<iAttendance[]>([]);
@@ -33,7 +30,7 @@ export function useAttendance(
   }
 
   const loadData = async () => {
-    if (loading || !fetchDataIf || !me) return;
+    if (loading || !fetchDataIf || !shift) return;
     try {
       setError('');
       setLoading(true);

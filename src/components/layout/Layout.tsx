@@ -16,7 +16,7 @@ function Layout() {
 
   useEffect(() => {
     syncIUser();
-    // accessControlState?.loadData();
+    accessControlState?.loadData();
   }, [location]);
 
   useEffect(() => {
