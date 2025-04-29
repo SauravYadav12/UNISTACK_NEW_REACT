@@ -44,6 +44,7 @@ import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 interface iProps {
   viewData: any;
@@ -74,7 +75,7 @@ export default function InterviewForm(props: iProps) {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = useAuth().iUser!;
 
   useHardKeySubmit(
     {

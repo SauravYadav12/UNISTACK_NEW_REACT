@@ -28,17 +28,17 @@ import {
   profileFormSections,
   profilePhotoSection,
 } from './constants';
-import { getIUser } from '../../../utils/utils';
+import { UserRole } from '../../../Interfaces/iUser';
 function Profile() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const marginRight = isMobile ? 0 : 25;
-  const iuser = getIUser();
-  const canEdit = iuser?.canEdit || iuser?.role === 'super-admin';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePictureDrawer, setProfilePictureDrawer] = useState(false);
   const [value, setValue] = React.useState(0);
-  const { myProfileState } = useAuth();
+  const { myProfileState, iUser } = useAuth();
+
+  const canEdit = iUser?.canEdit || iUser?.role === UserRole['super-admin'];
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);

@@ -6,8 +6,8 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import PhoneField from './PhoneField';
-import { getIUser } from '../../../utils/utils';
 import { dateFormate } from '../../constants';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 const RenderFields = ({
   disabled,
@@ -18,7 +18,7 @@ const RenderFields = ({
   onChange,
   onBlur,
 }: RenderFieldProps) => {
-  const user = getIUser();
+  const user = useAuth().iUser;
   const {
     fieldName,
     fieldType = 'text',

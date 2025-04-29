@@ -22,8 +22,9 @@ import {
   validateAllFields,
   ValidationMeta,
 } from '../../../utils/validators';
-import { convertValuesToEmptyString, getJUser } from '../../../utils/utils';
+import { convertValuesToEmptyString } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 const teamValidationMeta: ValidationMeta[] = [
   {
@@ -49,7 +50,7 @@ const initialValues = {
 export default function TeamsForm(props: any) {
   const [values, setValues] = useState<any>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
-  const user = getJUser();
+  const user = useAuth().iUser!;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: any }>(
     convertValuesToEmptyString(initialValues)

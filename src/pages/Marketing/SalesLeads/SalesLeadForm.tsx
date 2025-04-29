@@ -12,15 +12,15 @@ import {
   salesLeadInitialValues,
   salesLeadStatusOptions,
 } from './constants';
-import { getIUser } from '../../../utils/utils';
 import { Country } from 'country-state-city';
 import AlertBox from '../../../components/alert/AlertBox';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 const SalesLeadForm = (props: any) => {
   const [values, setValues] = useState(salesLeadInitialValues);
   const [openAlert, setOpenAlert] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = useAuth().iUser!;
   const { viewData, mode, setDrawerOpen, isEditing, onEdit, onDelete } = props;
 
   useEffect(() => {
@@ -46,7 +46,6 @@ const SalesLeadForm = (props: any) => {
   }
 
   const onAddComment = async (comment: string) => {
-    const user = getIUser();
     if (!values._id || !user) return;
     try {
       const name = `${user.firstName} ${user.lastName}`;

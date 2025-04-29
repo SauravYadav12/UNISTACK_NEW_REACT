@@ -30,7 +30,7 @@ import {
   updateRequirement,
 } from '../../../services/requirementApi';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import { convertValuesToEmptyString, getIUser } from '../../../utils/utils';
+import { convertValuesToEmptyString } from '../../../utils/utils';
 import { SelectedFile } from '../../../components/profile/formFields/DocumentsField';
 import { AttachFile } from '@mui/icons-material';
 import { uploadFile } from '../../../services/storageApi';
@@ -46,18 +46,22 @@ import {
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { FormMode } from './Requirements';
-import { jUser } from '../../../Interfaces/iUser';
+import { iUser, UserRole } from '../../../Interfaces/iUser';
 import { SetResults } from '../../../hooks/paginationHook';
 import { createInterviewQueryParam } from '../Interviews/interviewValues';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 interface iProps {
   viewData: any;
   isEditing?: boolean;
   hideButtons?: boolean;
   mode?: FormMode;
-  accounts?: jUser[];
+  accounts?: iUser[];
   consultants?: any[];
   reqToCopy?: any;
+  disableCreateInterview?: boolean;
+  disableCopyRequirement?: boolean;
+  disableDelete?: boolean;
   onDrawerClose?: () => void;
   onEdit?: (editMode: boolean) => void;
   onCopy?: () => void;
@@ -71,7 +75,7 @@ export default function RequirementsForm(props: iProps) {
     convertValuesToEmptyString(requirementFormInitialValues)
   );
   const [comment, setComment] = useState('');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = useAuth().iUser!;
   const [deleteAlert, setDeleteAlert] = useState(false);
   const [copyAlert, setCopyAlert] = useState(false);
   const {
@@ -81,6 +85,9 @@ export default function RequirementsForm(props: iProps) {
     reqToCopy,
     isEditing = false,
     hideButtons = false,
+    disableCopyRequirement,
+    disableCreateInterview,
+    disableDelete,
     mode = 'view',
     onEdit,
     onDrawerClose,
@@ -124,8 +131,8 @@ export default function RequirementsForm(props: iProps) {
     } else if (mode === 'add') {
       setValues((pre: any) => ({
         ...pre,
-        reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
-        reqEnteredByRef: `${getIUser()?.id}`,
+        reqEnteredBy: `${user?.firstName} ${user?.lastName}`,
+        reqEnteredByRef: `${user?.id}`,
       }));
     }
     setFile(undefined);
@@ -582,36 +589,41 @@ export default function RequirementsForm(props: iProps) {
                 </>
               ) : (
                 <>
-                  {viewData.reqStatus === 'Submitted' && (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      type="button"
-                      onClick={handlecreateInterview}
-                      size="small"
-                      sx={{ borderRadius: '10px', width: 'max-content' }}
-                      disabled={isSubmitting}
-                    >
-                      Create interview
-                    </Button>
+                  {!disableCreateInterview &&
+                    viewData.reqStatus === 'Submitted' && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="button"
+                        onClick={handlecreateInterview}
+                        size="small"
+                        sx={{ borderRadius: '10px', width: 'max-content' }}
+                        disabled={isSubmitting}
+                      >
+                        Create interview
+                      </Button>
+                    )}
+                  {!disableCopyRequirement && (
+                    <>
+                      <AlertBox
+                        open={copyAlert}
+                        title="Copy Requirement"
+                        description="Are you sure you want to copy this requirement ?"
+                        onClose={() => setCopyAlert(false)}
+                        onOk={() => handleCopyRequirement?.()}
+                      />
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="button"
+                        onClick={() => setCopyAlert(true)}
+                        size="small"
+                        sx={{ borderRadius: '10px' }}
+                      >
+                        Copy
+                      </Button>
+                    </>
                   )}
-                  <AlertBox
-                    open={copyAlert}
-                    title="Copy Requirement"
-                    description="Are you sure you want to copy this requirement ?"
-                    onClose={() => setCopyAlert(false)}
-                    onOk={() => handleCopyRequirement?.()}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="button"
-                    onClick={() => setCopyAlert(true)}
-                    size="small"
-                    sx={{ borderRadius: '10px' }}
-                  >
-                    Copy
-                  </Button>
                   <Button
                     variant="contained"
                     color="primary"
@@ -622,7 +634,7 @@ export default function RequirementsForm(props: iProps) {
                   >
                     Edit
                   </Button>
-                  {user.role === 'super-admin' && (
+                  {!disableDelete && user.role === UserRole['super-admin'] && (
                     <>
                       <Button
                         variant="contained"
@@ -999,7 +1011,7 @@ export default function RequirementsForm(props: iProps) {
             disabled
             onChange={(event: any) => {
               handleChange(event, 'reqEnteredBy');
-              const id = getIUser()?.id;
+              const id = user?.id;
               handleChange({ target: { value: id } }, 'reqEnteredByRef');
             }}
           />

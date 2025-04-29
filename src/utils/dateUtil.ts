@@ -1,12 +1,12 @@
 import {
   AttendanceStatus,
-  jUser,
+  iUser,
   UserShift,
   WorkLocation,
 } from './../Interfaces/iUser';
 import mz, { Moment } from 'moment-timezone';
 import moment from 'moment';
-import { getJUser } from './utils';
+// import { getJUser } from './utils';
 
 export const officeStartTimeInEst = { h: 9, m: 0 };
 export const officeStartTimeInIst = { h: 10, m: 0 };
@@ -67,7 +67,7 @@ export function timeRemainingUntilOfficeEnd(
 }
 
 export function getAttendanceStatus(
-  user: jUser,
+  user: iUser,
   date: Moment = dateByUserShift(user.shift)
 ) {
   if (user.workLocation === WorkLocation.Home) return AttendanceStatus.Present;
@@ -103,9 +103,11 @@ export function timeZoneKeyByUserShift(shift: UserShift) {
   return tzKey;
 }
 
-export function getWorkingDuration(checkIn: string, checkOut: string) {
-  const shift = getJUser()?.shift;
-  if (!shift) return;
+export function getWorkingDuration(
+  checkIn: string,
+  checkOut: string,
+  shift: UserShift
+) {
   const checkinTime = timeByUserShift(shift, moment(checkIn));
   const checkoutTime = timeByUserShift(shift, moment(checkOut));
 

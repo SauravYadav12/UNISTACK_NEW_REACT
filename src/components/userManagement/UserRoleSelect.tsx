@@ -5,12 +5,12 @@ import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { updateUser } from '../../services/authApi';
 import { toast } from 'react-toastify';
-import { jUser, UserRole } from '../../Interfaces/iUser';
+import { iUser, UserRole } from '../../Interfaces/iUser';
 
 interface iProps {
   role: UserRole;
   userId: string;
-  onSuccess: (usr: jUser) => void;
+  onSuccess: (usr: iUser) => void;
 }
 
 export default function UserRoleSelect({ role, userId, onSuccess }: iProps) {

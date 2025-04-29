@@ -4,6 +4,7 @@ export interface iUser {
   email: string;
   firstName: string;
   id: string;
+  _id: string;
   lastName: string;
   premium: boolean;
   role: UserRole;
@@ -21,10 +22,6 @@ export interface iAttendance {
   status: AttendanceStatus;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface jUser extends Omit<iUser, 'id'> {
-  _id: string;
 }
 
 export enum AttendanceStatus {

@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, iUser } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import Sync from '@mui/icons-material/Sync';
@@ -33,7 +33,7 @@ const EmployeeInfoCell = styled(TableCell)(({ theme }) => ({
   zIndex: 1,
 }));
 interface iProps {
-  users: jUser[];
+  users: iUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   forEmployee: boolean;

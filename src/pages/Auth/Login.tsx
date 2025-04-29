@@ -14,7 +14,7 @@ import CopyRight from '../../components/auth/CopyRight';
 import VerifyUser from '../../components/auth/VerifyUser';
 import VerifyOTP from '../../components/auth/VerifyOTP';
 import { validateEmail } from '../../utils/validators';
-import { jUser } from '../../Interfaces/iUser';
+import { iUser } from '../../Interfaces/iUser';
 
 const defaultTheme = createTheme();
 export default function Login() {
@@ -51,7 +51,7 @@ export default function Login() {
     await handleSendOTP();
   }
 
-  async function onUserVerifiedSuccessfully(token: string, user: jUser) {
+  async function onUserVerifiedSuccessfully(token: string, user: iUser) {
     await handleSendOTP();
     setAuthData({ token, user });
   }

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
+import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 import { Box, Button, Tooltip } from '@mui/material';
 import MarkAttendanceModal, {
   autoOpenAttendanceModalKey,
@@ -11,9 +11,9 @@ import {
   notApplicableThresholdMinutes,
   timeZoneKeyByUserShift,
 } from '../../utils/dateUtil';
-import { getJUser } from '../../utils/utils';
 import moment, { Moment } from 'moment';
 import { dateFormate, timeFormate } from '../constants';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 const CheckInCheckOut = ({
   user,
@@ -24,6 +24,7 @@ const CheckInCheckOut = ({
   forAdmin = false,
   onChange,
 }: iProps) => {
+  const { iUser } = useAuth();
   const [todaysAttendance, setTodaysAttendance] = React.useState<
     iAttendance | undefined
   >(attendance);
@@ -43,7 +44,7 @@ const CheckInCheckOut = ({
       !!localStorage.getItem(autoOpenAttendanceModalKey) &&
       showMarkAttendance &&
       !disableMarkAttendance &&
-      getJUser()!._id === user._id
+      iUser!._id === user._id
   );
 
   const [openCheckoutModal, setOpenCheckoutModal] = React.useState(false);
@@ -149,7 +150,7 @@ const CheckInCheckOut = ({
 export default CheckInCheckOut;
 
 interface iProps {
-  user: jUser;
+  user: iUser;
   date: Moment;
   attendance: iAttendance;
   allowAutomaticPopUp?: boolean;

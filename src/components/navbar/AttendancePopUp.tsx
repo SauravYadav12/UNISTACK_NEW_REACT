@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { iAttendance, UserRole } from '../../Interfaces/iUser';
 import { dateByUserShift } from '../../utils/dateUtil';
-import { getJUser } from '../../utils/utils';
 import CheckInCheckOut from '../attendance/CheckInCheckOut';
 import {
   EmployeeModule,
@@ -10,20 +9,19 @@ import {
   moduleKey,
 } from '../../utils/accessControlUtil';
 import { Box } from '@mui/material';
+import { Moment } from 'moment';
 
 const AttendancePopUp = () => {
-  const me = getJUser();
-  const { myAttendanceState, isModuleAllowed } = useAuth();
-  if (!myAttendanceState || !me) return null;
+  const { myAttendanceState, iUser, isModuleAllowed } = useAuth();
+  const me = iUser;
+  if (!myAttendanceState) return null;
   const { loading, error, attendance, setResults } = myAttendanceState;
 
-  const dateState = React.useState(dateByUserShift(me.shift));
+  const dateState = React.useState<Moment>();
 
   function handleChange(att: iAttendance) {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
-
-  if (loading || error) return null;
 
   if (
     !isModuleAllowed(
@@ -33,6 +31,12 @@ const AttendancePopUp = () => {
   ) {
     return null;
   }
+
+  useEffect(() => {
+    me?.shift && dateState[1](dateByUserShift(me.shift));
+  }, [me?.shift]);
+
+  if (loading || error || !me || !dateState[0]) return null;
 
   return (
     <Box sx={{ flexGrow: 0, marginRight: '20px' }}>

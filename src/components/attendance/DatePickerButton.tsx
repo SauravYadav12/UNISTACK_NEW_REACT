@@ -11,15 +11,15 @@ import moment from 'moment';
 import { Moment } from 'moment';
 import React, { useState } from 'react';
 import { AttendanceTableType } from '../../pages/Attendance/AttendanceDashboard';
-import { getJUser } from '../../utils/utils';
 import { dateByUserShift } from '../../utils/dateUtil';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 interface iProps {
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   tableType: AttendanceTableType;
 }
 const DatePickerButton = ({ dateState, tableType }: iProps) => {
-  const usr = getJUser();
+  const usr = useAuth().iUser!;
   const [currentDate, setCurrentDate] = dateState;
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const open = Boolean(anchorEl);

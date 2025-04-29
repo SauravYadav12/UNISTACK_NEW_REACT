@@ -1,16 +1,16 @@
-import { AttendanceStatus, iAttendance, jUser } from '../../Interfaces/iUser';
+import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 import { useTheme } from '@mui/material/styles';
 import { Box, Popover, Stack, Tooltip, Typography } from '@mui/material';
 import { getWorkingDuration, timeByUserShift } from '../../utils/dateUtil';
-import { getJUser } from '../../utils/utils';
 import { timeFormate } from '../constants';
 import moment, { Moment } from 'moment';
 import { useState } from 'react';
 import SelectAttendanceStatus from './SelectAttendanceStatus';
 import AttendanceTimePicker from './AttendanceTimePicker';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 interface iProps {
   date: Moment;
-  user: jUser;
+  user: iUser;
   attendance?: iAttendance;
   label?: string;
   forEmployee?: boolean;
@@ -24,6 +24,7 @@ const AttendanceStatusBox = ({
   label,
   onChange,
 }: iProps) => {
+  const { iUser } = useAuth();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -64,7 +65,7 @@ const AttendanceStatusBox = ({
         <Typography variant="caption">
           Check In:{' '}
           {checkIn
-            ? timeByUserShift(getJUser()!.shift, moment(checkIn)).format(
+            ? timeByUserShift(iUser!.shift, moment(checkIn)).format(
                 timeFormate + ' z'
               )
             : 'NA'}
@@ -74,7 +75,7 @@ const AttendanceStatusBox = ({
         <Typography variant="caption">
           Check Out:{' '}
           {checkOut
-            ? timeByUserShift(getJUser()!.shift, moment(checkOut)).format(
+            ? timeByUserShift(iUser!.shift, moment(checkOut)).format(
                 timeFormate + ' z'
               )
             : 'NA'}
@@ -99,7 +100,7 @@ const AttendanceStatusBox = ({
           //   backgroundColor: theme.palette.action.hover,
         },
       }}
-      onClick={()=>console.log(attendance)}
+      onClick={() => console.log(attendance)}
     >
       <Tooltip title={tip()} arrow>
         <Typography onClick={forEmployee ? undefined : handleClick}>
@@ -165,18 +166,17 @@ interface WorkingDurationProps {
 
 function WorkingDuration({ attendance }: WorkingDurationProps) {
   const { checkIn, checkOut } = attendance;
+  const { iUser } = useAuth();
 
   return (
     <>
-      {
-        <>
-          <br />
-          <Typography variant="caption">
-            Working duration:{' '}
-            {checkOut && checkIn ? getWorkingDuration(checkIn, checkOut) : 'NA'}
-          </Typography>
-        </>
-      }
+      <br />
+      <Typography variant="caption">
+        Working duration:{' '}
+        {checkOut && checkIn && iUser
+          ? getWorkingDuration(checkIn, checkOut, iUser.shift)
+          : 'NA'}
+      </Typography>
     </>
   );
 }
@@ -194,6 +194,7 @@ export function MyTimePicker({
   label,
   onChange,
 }: MyTimePickerProp) {
+  const { iUser } = useAuth();
   return (
     <Stack direction={'row'} display={'flex'} justifyContent={'center'}>
       <Typography
@@ -203,10 +204,9 @@ export function MyTimePicker({
       >
         <span style={{ fontWeight: 'bold' }}> {label} </span>
         {attendance[field] && attendance.status !== AttendanceStatus.Absent
-          ? timeByUserShift(
-              getJUser()!.shift,
-              moment(attendance[field])
-            ).format(timeFormate + ' z')
+          ? timeByUserShift(iUser!.shift, moment(attendance[field])).format(
+              timeFormate + ' z'
+            )
           : 'NA'}
       </Typography>
       {onChange && (

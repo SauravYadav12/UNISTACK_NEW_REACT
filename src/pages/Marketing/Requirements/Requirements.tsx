@@ -24,17 +24,16 @@ import {
   moduleKey,
 } from '../../../utils/accessControlUtil';
 import { useFetchData } from '../../../hooks/fetchDataHook';
-import { jUser } from '../../../Interfaces/iUser';
+import { iUser } from '../../../Interfaces/iUser';
 import { Sync } from '@mui/icons-material';
 import moment from 'moment';
 import { dateFormate2 } from '../../../components/constants';
-import { getIUser } from '../../../utils/utils';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
 import { syncDataById } from '../../../utils/syncDataById';
 
 export default function Requirements() {
-  const { isModuleAllowed } = useAuth();
+  const { isModuleAllowed, iUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -43,7 +42,7 @@ export default function Requirements() {
   const [mode, setMode] = useState<FormMode>('view');
   const [duplicateReqDrawer, setDuplicateReqDrawer] = useState<string>();
   const [archive, setArchive] = useState(false);
-  const accountsState = useFetchData<jUser[]>(getAccountList, []);
+  const accountsState = useFetchData<iUser[]>(getAccountList, []);
   const { data: accounts } = accountsState;
   const consultantsState = useFetchData(getConsultantsList, []);
   const { data: consultants } = consultantsState;
@@ -170,8 +169,8 @@ export default function Requirements() {
 
     const copy = {
       ...viewData,
-      reqEnteredBy: `${getIUser()?.firstName} ${getIUser()?.lastName}`,
-      reqEnteredByRef: `${getIUser()?.id}`,
+      reqEnteredBy: `${iUser?.firstName} ${iUser?.lastName}`,
+      reqEnteredByRef: `${iUser?.id}`,
       isDuplicate: true,
       duplicateWith: viewData.reqID,
       rate: '',

@@ -4,7 +4,7 @@ import React from 'react';
 import { Grid, Typography, IconButton } from '@mui/material';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { iAttendance, jUser } from '../../Interfaces/iUser';
+import { iAttendance, iUser } from '../../Interfaces/iUser';
 import { dateFormate } from '../constants';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 
@@ -51,7 +51,7 @@ const DateCell = styled(Grid)(({ theme, status }: any) => ({
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 interface iProps {
-  user: jUser;
+  user: iUser;
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
 }

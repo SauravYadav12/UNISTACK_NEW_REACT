@@ -3,12 +3,12 @@ import Switch from '@mui/material/Switch';
 import { updateUser } from '../../services/authApi';
 import { createProfile } from '../../services/userProfileApi';
 import { toast } from 'react-toastify';
-import { jUser } from '../../Interfaces/iUser';
+import { iUser } from '../../Interfaces/iUser';
 
 interface iProps {
   active: boolean;
   userId: string;
-  onSuccess: (usr: jUser) => void;
+  onSuccess: (usr: iUser) => void;
 }
 export default function ActiveUserSwitch({
   active,

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { getIUser, getJwtToken, myIpGeoLocation } from '../utils/utils';
-import { iUser, jUser } from '../Interfaces/iUser';
+import { getJwtToken, myIpGeoLocation } from '../utils/utils';
+import { iUser } from '../Interfaces/iUser';
 import { BASE_URL } from './userProfileApi';
 // import { toast } from 'react-toastify';
 
@@ -85,43 +85,20 @@ export async function updateUser(id: any, payload: any) {
   return response;
 }
 
-export const syncUserOnLocalStorage = async () => {
-  try {
-    const iUser = getIUser()!;
-    const { data } = await usersList(`_id=${iUser.id}`);
-    if (!data?.users?.length) return;
-    console.log(data);
-    const {
-      _id,
-      active,
-      firstName,
-      lastName,
-      corpName,
-      canEdit,
-      email,
-      role,
-      premium,
-      shift,
-      workLocation,
-    } = data.users[0] as jUser;
-    const synciUser: iUser = {
-      id: _id,
-      active,
-      canEdit,
-      firstName,
-      lastName,
-      corpName,
-      email,
-      role,
-      premium,
-      shift,
-      workLocation,
-    };
-    localStorage.setItem('user', JSON.stringify(synciUser));
-  } catch (error) {
-    console.warn('faild to sync');
-  }
-};
+export async function syncIUser(id: string) {
+  const token = await getJwtToken();
+  let headers: any = {
+    'Content-Type': 'application/json',
+    Authorization: token,
+  };
+  const { data } = await axios.get<{ user?: iUser; error?: string }>(
+    `${BASE_URL}/users/sync-iuser/${id}`,
+    {
+      headers,
+    }
+  );
+  return data;
+}
 
 export async function sendOtp(
   email: string,

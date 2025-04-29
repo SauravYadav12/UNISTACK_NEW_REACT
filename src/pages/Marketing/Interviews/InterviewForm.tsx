@@ -53,16 +53,13 @@ import {
   urlValidator,
   validateAllFields,
 } from '../../../utils/validators';
-import {
-  convertValuesToEmptyString,
-  downloadFile,
-  getIUser,
-} from '../../../utils/utils';
+import { convertValuesToEmptyString, downloadFile } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { UserRole } from '../../../Interfaces/iUser';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 
 interface iProps {
   viewData: any;
@@ -70,6 +67,8 @@ interface iProps {
   isEditing?: boolean;
   hideButtons?: boolean;
   mode?: FormMode;
+  disableGenerateScript?: boolean;
+  disableDelete?: boolean;
   onDrawerClose?: () => void;
   onCreate?: () => void;
   onEdit?: (editMode: boolean) => void;
@@ -83,6 +82,8 @@ export default function InterviewForm(props: iProps) {
     mode = 'view',
     isEditing = false,
     hideButtons = false,
+    disableGenerateScript,
+    disableDelete,
     onEdit,
     onDrawerClose,
     setResults,
@@ -96,7 +97,7 @@ export default function InterviewForm(props: iProps) {
   const [openAlert, setOpenAlert] = useState(false);
   const [scriptModal, setScriptModal] = useState(false);
   const [reqDrawer, setReqDrawer] = useState<string>();
-  const user = getIUser();
+  const user = useAuth().iUser;
 
   useHardKeySubmit(
     {
@@ -411,25 +412,26 @@ export default function InterviewForm(props: iProps) {
                   >
                     Edit
                   </Button>
-                  {!['Interview Cancelled', 'Interview Tentative'].includes(
-                    values.interviewStatus
-                  ) && (
-                    <>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        type="button"
-                        onClick={() => setScriptModal(true)}
-                        size="small"
-                        sx={{ borderRadius: '10px' }}
-                      >
-                        {values.script
-                          ? 'Re-generate scirpt'
-                          : 'Generate script'}
-                      </Button>
-                    </>
-                  )}
-                  {user?.role === 'super-admin' && (
+                  {!disableGenerateScript &&
+                    !['Interview Cancelled', 'Interview Tentative'].includes(
+                      values.interviewStatus
+                    ) && (
+                      <>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          type="button"
+                          onClick={() => setScriptModal(true)}
+                          size="small"
+                          sx={{ borderRadius: '10px' }}
+                        >
+                          {values.script
+                            ? 'Re-generate scirpt'
+                            : 'Generate script'}
+                        </Button>
+                      </>
+                    )}
+                  {!disableDelete && user?.role === 'super-admin' && (
                     <>
                       <Button
                         variant="contained"

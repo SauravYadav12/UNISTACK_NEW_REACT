@@ -1,7 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
-import { iUser, jUser } from '../Interfaces/iUser';
 import axios from 'axios';
-import { logout } from '../services/authApi';
 
 export const getJwtToken = async () => {
   if (isTokenExpired()) {
@@ -11,21 +9,6 @@ export const getJwtToken = async () => {
   return localStorage.getItem('token');
 };
 
-export const getIUser = () => {
-  const json = localStorage.getItem('user');
-  if (!json) {
-    logout();
-    return;
-  }
-  return JSON.parse(json) as iUser;
-};
-export const getJUser = () => {
-  const i = getIUser();
-  if (!i) return;
-  const j: jUser = { ...i, _id: i.id };
-  return j;
-};
-
 export function isTokenExpired() {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -33,6 +16,14 @@ export function isTokenExpired() {
   }
   const decoded: any = jwtDecode(token);
   return decoded.exp < Date.now() / 1000;
+}
+export function getUserIdFromToken(): string | undefined {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return;
+  }
+  const decoded: any = jwtDecode(token);
+  return decoded?.user?._id || decoded?.user?.id;
 }
 
 export const getBlobFileByUrl = async (url?: string) => {

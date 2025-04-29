@@ -20,12 +20,11 @@ import { Android12Switch } from '../../pages/Marketing/Profile/constants';
 import {
   AttendanceStatus,
   iAttendance,
-  jUser,
+  iUser,
   UserRole,
 } from '../../Interfaces/iUser';
 import { markAttendance, updateAttendance } from '../../services/attendanceApi';
 import { toast } from 'react-toastify';
-import { getJUser } from '../../utils/utils';
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import { iUseAttendance } from '../../hooks/attendanceHook';
 import {
@@ -39,8 +38,9 @@ import { Moment } from 'moment';
 import DatePickerButton from './DatePickerButton';
 import { AttendanceTableType } from '../../pages/Attendance/AttendanceDashboard';
 import SelectAttendanceStatus from './SelectAttendanceStatus';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 interface iProps {
-  users: jUser[];
+  users: iUser[];
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   forEmployee: boolean;
@@ -55,6 +55,7 @@ const DailyAttendanceTable = ({
   tableContainerHeight = 480,
   onChange,
 }: iProps) => {
+  const { iUser } = useAuth();
   const [currentDate, setCurrentDate] = dateState;
   const { attendance, error, loading, loadData } = attendanceState;
   function nextDay() {
@@ -150,8 +151,8 @@ const DailyAttendanceTable = ({
               </TableCell>
               {!forEmployee && (
                 <TableCell align="center">
-                  {att?.checkIn && att.checkOut
-                    ? getWorkingDuration(att.checkIn, att.checkOut)
+                  {att?.checkIn && att.checkOut && iUser
+                    ? getWorkingDuration(att.checkIn, att.checkOut, iUser.shift)
                     : 'NA'}
                 </TableCell>
               )}
@@ -213,7 +214,7 @@ const DailyAttendanceTable = ({
                 onClick={nextDay}
                 size="small"
                 disabled={currentDate.isAfter(
-                  dateByUserShift(getJUser()!.shift).subtract(1, 'day')
+                  dateByUserShift(iUser!.shift).subtract(1, 'day')
                 )}
               >
                 <ArrowRight />
@@ -254,7 +255,7 @@ export default DailyAttendanceTable;
 interface AttendanceFormProps {
   date: Moment;
   attendance?: iAttendance;
-  user: jUser;
+  user: iUser;
   forEmployee?: boolean;
   onChange?: (attendance: iAttendance) => void;
 }
@@ -266,6 +267,7 @@ function AttendanceForm({
   attendance,
   onChange,
 }: AttendanceFormProps) {
+  const { iUser } = useAuth();
   const canEditRoles = [UserRole['super-admin'], UserRole.hr];
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(attendance?.status);
@@ -304,7 +306,7 @@ function AttendanceForm({
         forEmployee={forEmployee}
         onChange={onChangeAttendance}
       />
-      {!forEmployee && canEditRoles.includes(getJUser()!.role) && (
+      {!forEmployee && iUser && canEditRoles.includes(iUser.role) && (
         <Box width={'fit-content'}>
           <SelectAttendanceStatus
             attendance={attendance}
@@ -320,7 +322,7 @@ function AttendanceForm({
 
 interface AttendanceSwitchProps {
   status?: AttendanceStatus;
-  user: jUser;
+  user: iUser;
   forEmployee?: boolean;
   onChange: (attendance: AttendanceStatus) => void;
 }
@@ -331,13 +333,13 @@ function AttendanceSwitch({
   forEmployee,
   onChange,
 }: AttendanceSwitchProps) {
+  const { iUser } = useAuth();
   const [checked, setChecked] = useState(status !== AttendanceStatus.Absent);
   const canEditRoles = [UserRole['super-admin'], UserRole.hr];
   const isTimeApplicable = !!getAttendanceStatus(user);
   const disabled = forEmployee
     ? status !== AttendanceStatus.Absent || !isTimeApplicable
-    : !canEditRoles.includes(getJUser()!.role) &&
-      status !== AttendanceStatus.Absent;
+    : !canEditRoles.includes(iUser!.role) && status !== AttendanceStatus.Absent;
 
   function getStatus() {
     if (!!status && status != AttendanceStatus.Absent)
