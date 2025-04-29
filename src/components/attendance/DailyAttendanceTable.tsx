@@ -84,7 +84,7 @@ const DailyAttendanceTable = ({
         <TableRow>
           <TableCell colSpan={4}>
             <Box textAlign={'center'}>
-              <Typography color="error">{'error'}</Typography>
+              <Typography color="error">{error}</Typography>
               <IconButton onClick={loadData}>
                 <SyncIcon color="primary" />
               </IconButton>

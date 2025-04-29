@@ -500,7 +500,7 @@ function Notes({ note, poc }: { note: string; poc: string }) {
       {data.map(([key, val], i) => {
         return (
           <ListItem
-            key={key}
+            key={i}
             sx={{
               display: 'flex',
               width: '100%',
@@ -550,7 +550,7 @@ function OverAllExperience({ projects }: { projects: any[] }) {
         <TableBody>
           {projects?.map((row, i) => (
             <TableRow
-              key={row.name}
+              key={i}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
             >
               <TableCell>{row.projectNumber}</TableCell>
