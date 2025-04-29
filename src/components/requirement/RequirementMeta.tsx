@@ -26,6 +26,7 @@ const RequirementMeta = ({
     loading,
     error,
     loadData,
+    setData,
   } = useFetchData<any[]>(findCreatedInterviews, [requirement]);
   const [intDrawer, setIntDrawer] = useState<any>();
   const isDuplicate =
@@ -148,6 +149,12 @@ const RequirementMeta = ({
         open={Boolean(intDrawer)}
         onClose={() => setIntDrawer(undefined)}
         interview={intDrawer}
+        setData={(cb) => {
+          const results = cb(createdInterviews || []);
+          setData(results);
+          const int = results.find((i: any) => i._id === intDrawer._id);
+          setIntDrawer(int);
+        }}
       />
     </>
   );

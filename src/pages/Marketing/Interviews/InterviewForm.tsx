@@ -67,6 +67,8 @@ interface iProps {
   isEditing?: boolean;
   hideButtons?: boolean;
   mode?: FormMode;
+  disableGenerateScript?: boolean;
+  disableDelete?: boolean;
   onDrawerClose?: () => void;
   onCreate?: () => void;
   onEdit?: (editMode: boolean) => void;
@@ -80,6 +82,8 @@ export default function InterviewForm(props: iProps) {
     mode = 'view',
     isEditing = false,
     hideButtons = false,
+    disableGenerateScript,
+    disableDelete,
     onEdit,
     onDrawerClose,
     setResults,
@@ -408,25 +412,26 @@ export default function InterviewForm(props: iProps) {
                   >
                     Edit
                   </Button>
-                  {!['Interview Cancelled', 'Interview Tentative'].includes(
-                    values.interviewStatus
-                  ) && (
-                    <>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        type="button"
-                        onClick={() => setScriptModal(true)}
-                        size="small"
-                        sx={{ borderRadius: '10px' }}
-                      >
-                        {values.script
-                          ? 'Re-generate scirpt'
-                          : 'Generate script'}
-                      </Button>
-                    </>
-                  )}
-                  {user?.role === 'super-admin' && (
+                  {!disableGenerateScript &&
+                    !['Interview Cancelled', 'Interview Tentative'].includes(
+                      values.interviewStatus
+                    ) && (
+                      <>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          type="button"
+                          onClick={() => setScriptModal(true)}
+                          size="small"
+                          sx={{ borderRadius: '10px' }}
+                        >
+                          {values.script
+                            ? 'Re-generate scirpt'
+                            : 'Generate script'}
+                        </Button>
+                      </>
+                    )}
+                  {!disableDelete && user?.role === 'super-admin' && (
                     <>
                       <Button
                         variant="contained"
