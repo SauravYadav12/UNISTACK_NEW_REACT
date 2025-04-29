@@ -1,5 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
+import { iUser, UserShift } from '../Interfaces/iUser';
 
 export const getJwtToken = async () => {
   if (isTokenExpired()) {
@@ -17,13 +18,23 @@ export function isTokenExpired() {
   const decoded: any = jwtDecode(token);
   return decoded.exp < Date.now() / 1000;
 }
-export function getUserIdFromToken(): string | undefined {
+
+export function getUserDataFromToken(): iUser | undefined {
   const token = localStorage.getItem('token');
   if (!token) {
     return;
   }
   const decoded: any = jwtDecode(token);
-  return decoded?.user?._id || decoded?.user?.id;
+  return decoded?.user;
+}
+
+export function getUserIdFromToken(): string | undefined {
+  const user = getUserDataFromToken();
+  return user?._id || user?.id;
+}
+export function getUserShiftFromToken(): UserShift | undefined {
+  const user = getUserDataFromToken();
+  return user?.shift;
 }
 
 export const getBlobFileByUrl = async (url?: string) => {
