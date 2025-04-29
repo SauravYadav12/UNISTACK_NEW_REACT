@@ -46,7 +46,7 @@ import {
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { FormMode } from './Requirements';
-import { iUser } from '../../../Interfaces/iUser';
+import { iUser, UserRole } from '../../../Interfaces/iUser';
 import { SetResults } from '../../../hooks/paginationHook';
 import { createInterviewQueryParam } from '../Interviews/interviewValues';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
@@ -59,6 +59,9 @@ interface iProps {
   accounts?: iUser[];
   consultants?: any[];
   reqToCopy?: any;
+  disableCreateInterview?: boolean;
+  disableCopyRequirement?: boolean;
+  disableDelete?: boolean;
   onDrawerClose?: () => void;
   onEdit?: (editMode: boolean) => void;
   onCopy?: () => void;
@@ -82,6 +85,9 @@ export default function RequirementsForm(props: iProps) {
     reqToCopy,
     isEditing = false,
     hideButtons = false,
+    disableCopyRequirement,
+    disableCreateInterview,
+    disableDelete,
     mode = 'view',
     onEdit,
     onDrawerClose,
@@ -583,36 +589,41 @@ export default function RequirementsForm(props: iProps) {
                 </>
               ) : (
                 <>
-                  {viewData.reqStatus === 'Submitted' && (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      type="button"
-                      onClick={handlecreateInterview}
-                      size="small"
-                      sx={{ borderRadius: '10px', width: 'max-content' }}
-                      disabled={isSubmitting}
-                    >
-                      Create interview
-                    </Button>
+                  {!disableCreateInterview &&
+                    viewData.reqStatus === 'Submitted' && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="button"
+                        onClick={handlecreateInterview}
+                        size="small"
+                        sx={{ borderRadius: '10px', width: 'max-content' }}
+                        disabled={isSubmitting}
+                      >
+                        Create interview
+                      </Button>
+                    )}
+                  {!disableCopyRequirement && (
+                    <>
+                      <AlertBox
+                        open={copyAlert}
+                        title="Copy Requirement"
+                        description="Are you sure you want to copy this requirement ?"
+                        onClose={() => setCopyAlert(false)}
+                        onOk={() => handleCopyRequirement?.()}
+                      />
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="button"
+                        onClick={() => setCopyAlert(true)}
+                        size="small"
+                        sx={{ borderRadius: '10px' }}
+                      >
+                        Copy
+                      </Button>
+                    </>
                   )}
-                  <AlertBox
-                    open={copyAlert}
-                    title="Copy Requirement"
-                    description="Are you sure you want to copy this requirement ?"
-                    onClose={() => setCopyAlert(false)}
-                    onOk={() => handleCopyRequirement?.()}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="button"
-                    onClick={() => setCopyAlert(true)}
-                    size="small"
-                    sx={{ borderRadius: '10px' }}
-                  >
-                    Copy
-                  </Button>
                   <Button
                     variant="contained"
                     color="primary"
@@ -623,7 +634,7 @@ export default function RequirementsForm(props: iProps) {
                   >
                     Edit
                   </Button>
-                  {user.role === 'super-admin' && (
+                  {!disableDelete && user.role === UserRole['super-admin'] && (
                     <>
                       <Button
                         variant="contained"
