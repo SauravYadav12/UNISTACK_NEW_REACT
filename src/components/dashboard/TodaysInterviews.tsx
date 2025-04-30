@@ -7,21 +7,34 @@ import {
   TableCell,
   TableBody,
   Button,
+  Box,
+  CircularProgress,
+  IconButton,
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { dateFormate, dateFormate2, timeFormate } from '../constants';
-import { toast } from 'react-toastify';
 import { interviewsList } from '../../services/interviewApi';
 import { interviewStatusColors } from '../../pages/Marketing/TestAndVendorInterviews/testAndViValues';
 import moment from 'moment';
-import InterviewForm from '../../pages/Marketing/Interviews/InterviewForm';
-import CustomDrawer from '../drawer/CustomDrawer';
 import DashboardCard from './ChartCardWrapper';
 import { dateByUserShift } from '../../utils/dateUtil';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import InterviewDrawer from '../interview/InterviewDrawer';
+import { useFetchData } from '../../hooks/fetchDataHook';
+import { vendorInterviewsList } from '../../services/vendorInterviewApi';
+import { Sync } from '@mui/icons-material';
+import { UserRole } from '../../Interfaces/iUser';
 const TodaysInterviews = () => {
   const user = useAuth().iUser!;
-  const [rows, setRows] = useState<any[]>();
+
+  const {
+    data: rows,
+    error,
+    loading,
+    loadData: reload,
+    setData,
+  } = useFetchData(getInterviews, [user.shift]);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewData, setViewData] = useState<any>();
   const toDay = dateByUserShift(user.shift);
@@ -48,10 +61,14 @@ const TodaysInterviews = () => {
         </Button>
       ),
     },
-    { field: 'intId', headerName: 'Int ID' },
+    {
+      field: 'intId',
+      headerName: 'ID',
+      renderCell: (row: any) => row.intId || row.testID,
+    },
     {
       field: 'interviewStatus',
-      headerName: 'Int Status',
+      headerName: 'Status',
       renderCell: (row: any) => (
         <span
           style={{
@@ -66,7 +83,7 @@ const TodaysInterviews = () => {
 
     {
       field: 'interviewTime',
-      headerName: 'Int Time',
+      headerName: 'Time',
       renderCell: (row: any) => {
         return (
           moment(row.interviewTime, timeFormate).format(timeFormate) +
@@ -87,18 +104,91 @@ const TodaysInterviews = () => {
     },
   ];
 
-  const getInterviews = async () => {
-    try {
-      const date = toDay.format(dateFormate);
-      const { data } = await interviewsList('interviewDate=' + date);
-      setRows(data.data?.results || []);
-    } catch (error) {
-      toast.error('Failed to load');
+  async function getInterviews() {
+    const date = toDay.format(dateFormate);
+    let [int, vendorInt] = await Promise.all([
+      interviewsList('interviewDate=' + date),
+      vendorInterviewsList('interviewDate=' + date),
+    ]);
+    const intRes = int.data.data?.results || [];
+    const vendorIntRes = vendorInt.data.data?.results || [];
+    return [...intRes, ...vendorIntRes];
+  }
+  async function getVendorInterviews() {
+    const date = toDay.format(dateFormate);
+    const { data } = await vendorInterviewsList('interviewDate=' + date);
+    return data.data?.results || [];
+  }
+
+  function MyBody() {
+    if (loading) {
+      return (
+        <TableRow>
+          <TableCell colSpan={4}>
+            <Box className="loader" sx={{ py: 10 }}>
+              <CircularProgress size={25} />
+            </Box>
+          </TableCell>
+        </TableRow>
+      );
     }
-  };
-  useEffect(() => {
-    getInterviews();
-  }, []);
+
+    if (error) {
+      return (
+        <TableRow>
+          <TableCell colSpan={4}>
+            <Box textAlign={'center'}>
+              <Typography color="error">{error}</Typography>
+              <IconButton onClick={reload}>
+                <Sync color="primary" />
+              </IconButton>
+            </Box>
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (!rows?.length)
+      return (
+        <tr>
+          <td
+            colSpan={columns.length}
+            style={{ textAlign: 'center', padding: '10px 0px' }}
+          >
+            Not found
+          </td>
+        </tr>
+      );
+
+    return rows.map((row) => (
+      <TableRow
+        key={row._id}
+        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+      >
+        {columns.map((c, i) => {
+          const val = (c.renderCell ? c.renderCell(row) : row[c.field]) || 'NA';
+          return (
+            <TableCell
+              key={i}
+              align={i + 1 === columns.length ? 'right' : 'center'}
+              sx={{ fontSize: 'small' }}
+            >
+              {typeof val === 'string' ? (
+                <>
+                  {val.slice(0, 25)}
+                  {val.length > 25 && '...'}
+                </>
+              ) : (
+                val
+              )}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+    ));
+  }
+
+  if (user?.role === UserRole.user) return null;
 
   return (
     <>
@@ -132,68 +222,26 @@ const TodaysInterviews = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows?.length ? (
-                <>
-                  {rows.map((row) => (
-                    <TableRow
-                      key={row._id}
-                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                    >
-                      {columns.map((c, i) => {
-                        const val =
-                          (c.renderCell ? c.renderCell(row) : row[c.field]) ||
-                          'NA';
-                        return (
-                          <TableCell
-                            key={i}
-                            align={
-                              i + 1 === columns.length ? 'right' : 'center'
-                            }
-                            sx={{ fontSize: 'small' }}
-                          >
-                            {typeof val === 'string' ? (
-                              <>
-                                {val.slice(0, 25)}
-                                {val.length > 25 && '...'}
-                              </>
-                            ) : (
-                              val
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  ))}
-                </>
-              ) : (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    style={{ textAlign: 'center', padding: '10px 0px' }}
-                  >
-                    Not found
-                  </td>
-                </tr>
-              )}
+              <MyBody />
             </TableBody>
           </Table>
         </TableContainer>
       </DashboardCard>
 
-      <CustomDrawer
+      <InterviewDrawer
         open={Boolean(drawerOpen && viewData)}
-        onClose={() => setDrawerOpen(false)}
-        title={'Interview ID : ' + viewData?.intId}
-        closeOnOutSideClick
-      >
-        {!!viewData && (
-          <InterviewForm
-            viewData={viewData}
-            onDrawerClose={() => setDrawerOpen(false)}
-            hideButtons
-          />
-        )}
-      </CustomDrawer>
+        onClose={() => {
+          setDrawerOpen(false);
+          setViewData({});
+        }}
+        interview={viewData}
+        setData={(cb) => {
+          const results = cb(rows || []);
+          setData(results);
+          const int = results.find((i: any) => i._id === viewData._id);
+          setViewData(int);
+        }}
+      />
     </>
   );
 };

@@ -12,8 +12,8 @@ const PositionsChart = () => {
     'All',
   ];
   const [chartType, setChartType] = React.useState(chartTypeOptions[0]);
-
-  const optionscolumnchart: any = {
+  const chartHeight = 370;
+  const optionscolumnchart: ApexCharts.ApexOptions = {
     chart: {
       type: 'bar',
       fontFamily: "'Plus Jakarta Sans', sans-serif;",
@@ -21,7 +21,7 @@ const PositionsChart = () => {
       toolbar: {
         show: true,
       },
-      height: 370,
+      height: chartHeight,
     },
     colors: ['#02B2AF', '#2E96FF'],
     plotOptions: {
@@ -29,7 +29,7 @@ const PositionsChart = () => {
         horizontal: false,
         barHeight: '60%',
         columnWidth: '62%',
-        borderRadius: [6],
+        borderRadius: 6,
         borderRadiusApplication: 'end',
         borderRadiusWhenStacked: 'all',
       },
@@ -73,7 +73,7 @@ const PositionsChart = () => {
   const seriescolumnchart: any = [
     {
       name: 'Last week',
-      data: [2, 10, 12, 5,25],
+      data: [2, 10, 12, 5, 25],
     },
     {
       name: 'This week',
@@ -107,7 +107,7 @@ const PositionsChart = () => {
         options={optionscolumnchart}
         series={seriescolumnchart}
         type="bar"
-        height={370}
+        height={chartHeight}
         width={'100%'}
       />
     </ChartCardWrapper>

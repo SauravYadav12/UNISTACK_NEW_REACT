@@ -63,7 +63,7 @@ interface iProps {
   onDrawerClose: () => void;
   setResults?: SetResults;
 }
-export default function InterviewForm(props: iProps) {
+export default function TestAndVendorForm(props: iProps) {
   const [values, setValues] = useState<any>(
     testAndVendorInterviewInitialValues
   );
