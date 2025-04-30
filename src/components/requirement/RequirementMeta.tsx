@@ -10,6 +10,7 @@ import { useFetchData } from '../../hooks/fetchDataHook';
 import { interviewsList } from '../../services/interviewApi';
 import { Sync } from '@mui/icons-material';
 import InterviewDrawer from '../interview/InterviewDrawer';
+import { vendorInterviewsList } from '../../services/vendorInterviewApi';
 
 interface iProps {
   requirement: any;
@@ -29,16 +30,25 @@ const RequirementMeta = ({
     setData,
   } = useFetchData<any[]>(findCreatedInterviews, [requirement]);
   const [intDrawer, setIntDrawer] = useState<any>();
+
   const isDuplicate =
     Boolean(requirement.isDuplicate) &&
     Boolean(requirement.duplicateWith?.trim());
+
   const hideMyInterviews =
     hideInterviews ||
     (!createdInterviews?.length &&
       ['New Working', 'Cancelled'].includes(requirement.reqStatus));
+
   async function findCreatedInterviews() {
-    const { data } = await interviewsList(`reqID=${requirement.reqID}`);
-    return data.data?.results || [];
+    const q = `reqID=${requirement.reqID}`;
+    let [int, vendorInt] = await Promise.all([
+      interviewsList(q),
+      vendorInterviewsList(q),
+    ]);
+    const intRes = int.data.data?.results || [];
+    const vendorIntRes = vendorInt.data.data?.results || [];
+    return [...intRes, ...vendorIntRes];
   }
 
   function MyInterviews() {
@@ -83,7 +93,7 @@ const RequirementMeta = ({
           }}
           onClick={() => setIntDrawer(int)}
         >
-          {int.intId}
+          {int.intId || int.testID}
         </Button>
       );
     });
