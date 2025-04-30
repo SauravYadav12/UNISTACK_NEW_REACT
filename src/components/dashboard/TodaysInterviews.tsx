@@ -24,6 +24,7 @@ import { useFetchData } from '../../hooks/fetchDataHook';
 import { vendorInterviewsList } from '../../services/vendorInterviewApi';
 import { Sync } from '@mui/icons-material';
 import { UserRole } from '../../Interfaces/iUser';
+
 const TodaysInterviews = () => {
   const user = useAuth().iUser!;
 
@@ -113,11 +114,6 @@ const TodaysInterviews = () => {
     const intRes = int.data.data?.results || [];
     const vendorIntRes = vendorInt.data.data?.results || [];
     return [...intRes, ...vendorIntRes];
-  }
-  async function getVendorInterviews() {
-    const date = toDay.format(dateFormate);
-    const { data } = await vendorInterviewsList('interviewDate=' + date);
-    return data.data?.results || [];
   }
 
   function MyBody() {

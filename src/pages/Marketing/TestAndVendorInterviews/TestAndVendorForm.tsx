@@ -49,6 +49,7 @@ import ScriptModal from '../../../components/interview/ScriptModal';
 import { toast } from 'react-toastify';
 import ScriptBox from '../Interviews/ScriptBox';
 import { UserRole } from '../../../Interfaces/iUser';
+import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 
 interface iProps {
   viewData: any;
@@ -68,6 +69,7 @@ export default function TestAndVendorForm(props: iProps) {
     testAndVendorInterviewInitialValues
   );
   const [scriptModal, setScriptModal] = useState(false);
+  const [reqDrawer, setReqDrawer] = useState<string>();
   const {
     requirement,
     viewData,
@@ -739,13 +741,34 @@ export default function TestAndVendorForm(props: iProps) {
             selectedValue={values.jobTitle}
             onChange={(event: any) => addValue('jobTitle', event.target.value)}
           />
-          <CustomTextField
-            label="Req ID"
-            disabled
-            width={320}
-            selectedValue={values.reqID}
-            onChange={(event: any) => addValue('reqID', event.target.value)}
-          />
+          <div>
+            <Grid item sx={{ m: 1, width: 320, position: 'relative' }}>
+              <MyButtonLayer onClick={() => setReqDrawer(values.reqID)} />
+              <TextField
+                label={'Req ID'}
+                value={values.reqID}
+                disabled
+                fullWidth
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: '#f0f0f0',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '4px',
+                    color: '#1976d2',
+                  },
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    fontSize: 'small',
+                    fontWeight: 600,
+                    WebkitTextFillColor: '#1976d2',
+                    backgroundColor: '#f0f0f0',
+                  },
+                }}
+                multiline={true}
+              />
+            </Grid>
+          </div>
           <CustomTextField
             label="Client Name"
             width={300}
@@ -812,6 +835,45 @@ export default function TestAndVendorForm(props: iProps) {
           onSave={handleSaveScript}
         />
       )}
+
+      {values.reqID && (
+        <RequirementDrawer
+          open={Boolean(reqDrawer)}
+          onClose={() => setReqDrawer(undefined)}
+          reqID={values.reqID}
+        />
+      )}
     </>
+  );
+}
+
+interface MyButtonLayer {
+  onClick: () => void;
+}
+function MyButtonLayer({ onClick }: MyButtonLayer) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        top: 0,
+        left: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <span
+        onClick={onClick}
+        style={{
+          height: '23px',
+          background: 'transparent',
+          width: '95%',
+          zIndex: 1,
+          cursor: 'pointer',
+        }}
+      ></span>
+    </div>
   );
 }
