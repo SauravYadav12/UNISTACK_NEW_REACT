@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Card,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -9,15 +8,11 @@ import {
   DialogContentText,
   DialogTitle,
   Grid,
-  IconButton,
-  Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
 import { useEffect, useState } from 'react';
-import DownloadIcon from '@mui/icons-material/Download';
 import {
   DatePicker,
   LocalizationProvider,
@@ -46,13 +41,7 @@ import {
 } from '../../../services/interviewApi';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import ScriptModal from '../../../components/interview/ScriptModal';
-import { getMaterialFileIcon } from 'file-extension-icon-js';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import {
-  isFieldValid,
-  urlValidator,
-  validateAllFields,
-} from '../../../utils/validators';
+import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString, downloadFile } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { UserRole } from '../../../Interfaces/iUser';
@@ -60,6 +49,8 @@ import RequirementDrawer from '../../../components/requirement/RequirementDrawer
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import { toast } from 'react-toastify';
+import ScriptBox from './ScriptBox';
 
 interface iProps {
   viewData: any;
@@ -258,6 +249,7 @@ export default function InterviewForm(props: iProps) {
         return [...pre];
       });
     } catch (error) {
+      toast.error('Failed to save');
       console.log('An error occurred while updating script field:', error);
     }
   };
@@ -297,47 +289,6 @@ export default function InterviewForm(props: iProps) {
       </Box>
     );
 
-  const scriptFileElements = (
-    <>
-      {!!values?.script && urlValidator(values?.script) && mode === 'view' && (
-        <Card
-          variant="outlined"
-          className="document-container"
-          sx={{ borderRadius: '10px', p: 0, width: '210px' }}
-        >
-          <Stack py={'6px'} pl={2} direction={'row'} alignItems={'center'}>
-            <img
-              src={`${getMaterialFileIcon(values?.script)}`}
-              alt="icon"
-              style={{
-                width: '17px',
-                height: '17px',
-              }}
-            />
-            <Typography variant={'subtitle2'} pl={'3px'}>
-              Script
-            </Typography>
-          </Stack>
-          <Box pr={1}>
-            <IconButton
-              target="_blank"
-              href={values?.script}
-              sx={{ height: '30px' }}
-            >
-              <OpenInNewIcon style={{ color: '#1976d2', width: '16px' }} />
-            </IconButton>
-            <IconButton
-              onClick={() => downloadFile(values?.script)}
-              sx={{ height: '30px' }}
-            >
-              <DownloadIcon style={{ color: '#1976d2', width: '16px' }} />
-            </IconButton>
-          </Box>
-        </Card>
-      )}
-    </>
-  );
-
   return (
     <>
       <form style={{ margin: '0 20px' }}>
@@ -350,7 +301,11 @@ export default function InterviewForm(props: iProps) {
             rowGap: '20px',
           }}
         >
-          <Box>{scriptFileElements}</Box>
+          <Box>
+            {!!values?.script && mode === 'view' && (
+              <ScriptBox scriptUrl={values.script} />
+            )}
+          </Box>
 
           {!hideButtons && (
             <Grid
