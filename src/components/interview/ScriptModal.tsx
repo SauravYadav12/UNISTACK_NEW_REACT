@@ -44,7 +44,7 @@ const ScriptModal = ({
   const [saving, setSaving] = useState<boolean>(false);
   const [requirement, setRequirement] = useState<any>();
   const [consultant, setConsultant] = useState<any>();
-
+  const intId = interview.intId || interview.testID;
   const options: Options = {
     filename: 'script.pdf',
     page: {
@@ -66,7 +66,7 @@ const ScriptModal = ({
   const fileInstance = async () => {
     const d: InstanceType<typeof jsPDF> = (await toPDF()) as any;
     const pdfBlob = d.output('blob');
-    return new File([pdfBlob], `Script-${interview.intId || ''}.pdf`, {
+    return new File([pdfBlob], `Script-${intId}.pdf`, {
       type: 'application/pdf',
     });
   };
@@ -157,8 +157,7 @@ const ScriptModal = ({
           width="210mm"
         >
           <h2 style={{ margin: 0, fontSize: 'larger' }}>
-            {!!interview.script ? 'Updated Script' : 'Script'} :{' '}
-            {interview.intId}
+            {!!interview.script ? 'Updated Script' : 'Script'} : {intId}
           </h2>
           <IconButton onClick={onClose} sx={{ height: 'fit-content' }}>
             <CloseIcon />
@@ -307,6 +306,7 @@ interface ScriptModalProps {
 }
 
 function Header({ interview }: { interview: any }) {
+  const intId = interview.intId || interview.testID;
   return (
     <Stack
       direction={'row'}
@@ -324,7 +324,7 @@ function Header({ interview }: { interview: any }) {
       <Typography fontWeight={'bold'} color={'blue'}>
         INT ID:{' '}
       </Typography>
-      <Typography fontWeight={'bold'}> {interview.intId} </Typography>
+      <Typography fontWeight={'bold'}> {intId} </Typography>
       <Typography fontWeight={'bold'} color={'white'} px={'5px'}>
         ||
       </Typography>
