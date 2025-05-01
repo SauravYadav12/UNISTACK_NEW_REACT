@@ -6,7 +6,10 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
 import { dateFormate2 } from '../../../components/constants';
-import { usePagination } from '../../../hooks/paginationHook';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
 
 import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
@@ -23,6 +26,7 @@ export default function Consultants() {
     paginationModel,
     error,
     loading,
+    setSearchModel,
     setPaginationModel,
     reload,
     setResults,
@@ -144,6 +148,9 @@ export default function Consultants() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
+        onFilterModelChange={(model, detail, isServerSerachOn) =>
+          setSearchModel(isServerSerachOn ? model : initialSearchModel)
+        }
         error={error}
         retry={reload}
         loading={loading}

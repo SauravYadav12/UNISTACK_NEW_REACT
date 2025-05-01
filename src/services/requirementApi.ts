@@ -1,11 +1,13 @@
 import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
+import { BASE_URL } from './userProfileApi';
 
-export async function requirementsList(query: string='') {
+export async function requirementsList(
+  query: string = '',
+  signal?: AbortSignal
+) {
   const token = await getJwtToken();
-
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
   let headers: any = {
     'Content-Type': 'application/json',
@@ -15,13 +17,13 @@ export async function requirementsList(query: string='') {
   const url = `${BASE_URL}/requirements/get-requirements?${query}`;
   const response = await axios.get<ApiQueryRes<PaginationResult>>(url, {
     headers,
+    signal,
   });
   return response;
 }
 
 export async function createRequirement(data: any) {
   const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
@@ -38,7 +40,6 @@ export async function createRequirement(data: any) {
 
 export async function updateRequirement(id: any, payload: any) {
   const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
@@ -55,7 +56,6 @@ export async function updateRequirement(id: any, payload: any) {
 
 export async function deleteRequirement(id: string) {
   const token = await getJwtToken();
-  const BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
   const headers = {
     Authorization: token,
   };

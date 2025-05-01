@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
-export async function teamsList(query: string = '') {
+export async function teamsList(query: string = '', signal?: AbortSignal) {
   const token = await getJwtToken();
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
@@ -13,6 +13,7 @@ export async function teamsList(query: string = '') {
     `${BASE_URL}/teams/get-teams?${query}`,
     {
       headers,
+      signal,
     }
   );
   return response;

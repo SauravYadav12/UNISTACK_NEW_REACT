@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import {
   DataGrid,
@@ -10,6 +10,8 @@ import {
   GridOverlay,
   GridPaginationModel,
   GridToolbarQuickFilter,
+  GridCallbackDetails,
+  GridFilterModel,
 } from '@mui/x-data-grid';
 import Switch from '@mui/material/Switch';
 import {
@@ -29,11 +31,105 @@ import {
   ModuleGroup,
   moduleKey,
 } from '../../utils/accessControlUtil';
+const formControlSX = {
+  '& .MuiFormControlLabel-label': {
+    fontFamily: `"Roboto", "Helvetica", "Arial", sans-serif`,
+    fontWeight: 500,
+    fontSize: '0.8125rem',
+    lineHeight: 1.75,
+    letterSpacing: '0.02857em',
+    textTransform: 'uppercase',
+    color: '#1976d2',
+  },
+};
 
-interface CustomPaginationProps {
-  paginateState: PaginateState;
-  loading: boolean;
-  currentRowLength: number;
+interface iFilterModel {
+  model: GridFilterModel;
+  details: GridCallbackDetails<'filter'>;
+}
+
+export default function CustomDataGrid(props: Iprops) {
+  const serverSideSearchState = useState(true);
+  const [iFilterModel, setiFilterModel] = useState<iFilterModel>();
+  const { archiveState, error, retry, paginateState, onFilterModelChange } =
+    props;
+
+  useEffect(() => {
+    if (!iFilterModel) return;
+    const { model, details } = iFilterModel;
+    onFilterModelChange?.(model, details, serverSideSearchState[0]);
+  }, [serverSideSearchState[0], archiveState?.[0]]);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
+      <Box
+        display={'flex'}
+        justifyContent={'space-between'}
+        alignContent={'center'}
+        alignItems={'center'}
+      >
+        {props.header}
+      </Box>
+      <div style={{ flex: 1, minHeight: '300px' }}>
+        <Box sx={{ height: '98%' }}>
+          <DataGrid
+            onFilterModelChange={(model, details) => {
+              setiFilterModel({ model, details });
+              onFilterModelChange?.(model, details, serverSideSearchState[0]);
+            }}
+            loading={props.loading}
+            rows={props.rows}
+            columns={props.columns}
+            filterMode={serverSideSearchState[0] ? 'server' : 'client'}
+            paginationMode="server"
+            rowCount={paginateState.totalRows}
+            getRowId={(row: any) => row._id}
+            slots={{
+              toolbar: () => (
+                <CustomToolbar
+                  serverSideSearchState={serverSideSearchState}
+                  archiveState={archiveState}
+                />
+              ),
+              noRowsOverlay: () =>
+                error ? (
+                  <ErrorOverlay message={error} retry={retry} />
+                ) : (
+                  <GridOverlay>Not found</GridOverlay>
+                ),
+            }}
+            slotProps={{
+              pagination: {
+                component: () => (
+                  <CustomPagination
+                    paginateState={paginateState}
+                    loading={props.loading}
+                    currentRowLength={props.rows.length}
+                  />
+                ),
+                disabled: props.loading,
+              },
+            }}
+            sx={{
+              '& .MuiDataGrid-columnHeaderTitle': {
+                fontWeight: 'bold',
+                color: '#504e4e',
+              },
+              '& .MuiDataGrid-scrollbar': {
+                scrollbarWidth: 'thin',
+              },
+            }}
+          />
+        </Box>
+      </div>
+    </div>
+  );
 }
 function CustomPagination({
   paginateState,
@@ -109,12 +205,13 @@ function CustomPagination({
   );
 }
 
-interface CustomToolbarProps {
-  archiveState?: ArchiveState;
-}
-function CustomToolbar({ archiveState }: CustomToolbarProps) {
+function CustomToolbar({
+  archiveState,
+  serverSideSearchState,
+}: CustomToolbarProps) {
   const { isModuleAllowed } = useAuth();
-  const [checked, cb, prop] = archiveState || [];
+  const [serverSideSearch, setServerSideSearch] = serverSideSearchState;
+  const [archive, setArchive, archiveProp] = archiveState || [];
 
   const isArchiveModuleAllowed = Object.values(ArchiveModule).some((m) =>
     isModuleAllowed(moduleKey(ModuleGroup.Archive, m))
@@ -129,30 +226,32 @@ function CustomToolbar({ archiveState }: CustomToolbarProps) {
       <GridToolbarFilterButton />
       {isArchiveModuleAllowed && archiveState && (
         <FormControlLabel
-          control={<Switch checked={!!checked} disabled={prop?.disabled} />}
+          control={
+            <Switch checked={!!archive} disabled={archiveProp?.disabled} />
+          }
           label={`Archive`}
-          onChange={({ target }: any) => cb && cb(target.checked)}
-          sx={{
-            '& .MuiFormControlLabel-label': {
-              fontFamily: `"Roboto", "Helvetica", "Arial", sans-serif`,
-              fontWeight: 500,
-              fontSize: '0.8125rem',
-              lineHeight: 1.75,
-              letterSpacing: '0.02857em',
-              textTransform: 'uppercase',
-              color: '#1976d2',
-            },
-          }}
+          onChange={({ target }: any) => setArchive?.(target.checked)}
+          sx={formControlSX}
         />
       )}
       <GridToolbarExport />
       <Box sx={{ flexGrow: 1 }} />
-      <GridToolbarQuickFilter />
+
+      <FormControlLabel
+        control={<Switch checked={serverSideSearch} />}
+        label={`Server filter`}
+        onChange={({ target }: any) =>
+          setServerSideSearch(Boolean(target.checked))
+        }
+        sx={formControlSX}
+      />
+
+      <GridToolbarQuickFilter autoFocus />
     </GridToolbarContainer>
   );
 }
 
-const ErrorOverlay = ({ message, retry }: CustomErrorOverlayProps) => {
+function ErrorOverlay({ message, retry }: CustomErrorOverlayProps) {
   return (
     <GridOverlay>
       <div
@@ -171,84 +270,21 @@ const ErrorOverlay = ({ message, retry }: CustomErrorOverlayProps) => {
       </div>
     </GridOverlay>
   );
-};
-
-export default function CustomDataGrid(props: Iprops) {
-  const { archiveState, error, retry, paginateState } = props;
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-      }}
-    >
-      <Box
-        display={'flex'}
-        justifyContent={'space-between'}
-        alignContent={'center'}
-        alignItems={'center'}
-      >
-        {props.header}
-      </Box>
-      <div style={{ flex: 1, minHeight: '300px' }}>
-        <Box sx={{ height: '98%' }}>
-          <DataGrid
-            loading={props.loading}
-            rows={props.rows}
-            columns={props.columns}
-            paginationMode="server"
-            rowCount={paginateState.totalRows}
-            getRowId={(row: any) => row._id}
-            slots={{
-              toolbar: () => <CustomToolbar archiveState={archiveState} />,
-              noRowsOverlay: () =>
-                error ? (
-                  <ErrorOverlay message={error} retry={retry} />
-                ) : (
-                  <GridOverlay>Not found</GridOverlay>
-                ),
-            }}
-            slotProps={{
-              toolbar: {
-                showQuickFilter: true,
-              },
-              pagination: {
-                component: () => (
-                  <CustomPagination
-                    paginateState={paginateState}
-                    loading={props.loading}
-                    currentRowLength={props.rows.length}
-                  />
-                ),
-                disabled: props.loading,
-              },
-            }}
-            sx={{
-              '& .MuiDataGrid-columnHeaderTitle': {
-                fontWeight: 'bold',
-                color: '#504e4e',
-              },
-              '& .MuiDataGrid-scrollbar': {
-                scrollbarWidth: 'thin',
-              },
-            }}
-          />
-        </Box>
-      </div>
-    </div>
-  );
 }
-
 interface Iprops {
   loading: boolean;
   error: string;
   header: JSX.Element | string;
   rows: any[];
   columns: any[];
+  paginateState: PaginateState;
   archiveState?: ArchiveState;
   retry: () => void;
-  paginateState: PaginateState;
+  onFilterModelChange?: (
+    model: GridFilterModel,
+    details: GridCallbackDetails<'filter'>,
+    serverSideSearch: boolean
+  ) => void;
 }
 interface PaginateState {
   totalRows: number;
@@ -267,4 +303,17 @@ type ArchiveStateButtonProps = {
 interface CustomErrorOverlayProps {
   message: string;
   retry: () => void;
+}
+interface CustomPaginationProps {
+  paginateState: PaginateState;
+  loading: boolean;
+  currentRowLength: number;
+}
+
+interface CustomToolbarProps {
+  archiveState?: ArchiveState;
+  serverSideSearchState: [
+    boolean,
+    React.Dispatch<React.SetStateAction<boolean>>
+  ];
 }
