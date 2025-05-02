@@ -80,7 +80,6 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   useEffect(() => {
     loadData();
     setPaginationModel(initialPaginationModel);
-    console.log('changed');
   }, [searchModel]);
 
   useEffect(() => {

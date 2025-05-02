@@ -292,9 +292,6 @@ export default function Interviews(props: Iprops) {
                   setArchive(s);
                   setGridData(undefined);
                 },
-                {
-                  disabled: loading,
-                },
               ]
             : undefined
         }

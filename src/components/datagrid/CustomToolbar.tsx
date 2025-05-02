@@ -5,7 +5,6 @@ import {
   moduleKey,
   ModuleGroup,
 } from '../../utils/accessControlUtil';
-import { ArchiveState } from './DataGrid';
 import {
   GridToolbarContainer,
   GridToolbarColumnsButton,
@@ -14,7 +13,7 @@ import {
   GridToolbarDensitySelector,
   GridToolbarQuickFilter,
 } from '@mui/x-data-grid';
-import { useEffect, useRef } from 'react';
+import { useDataGridContext } from '../../contextProviders/DataGridContextProvider';
 
 const formControlSX = {
   '& .MuiFormControlLabel-label': {
@@ -27,37 +26,17 @@ const formControlSX = {
     color: '#1976d2',
   },
 };
-const cursorPositionKey = 'dataGridCustomToolbarSearchInputLastCursorPosition';
 
-export default function CustomToolbar({
-  archiveState,
-  serverSideSearchState,
-}: CustomToolbarProps) {
+export default function CustomToolbar() {
   const { isModuleAllowed } = useAuth();
+  const { serverSideSearchState, archiveState, disableArchiveBtnState } =
+    useDataGridContext();
   const [serverSideSearch, setServerSideSearch] = serverSideSearchState;
-  const [archive, setArchive, archiveProp] = archiveState || [];
-
-  const quickFilterInputRef = useRef<HTMLInputElement | null>(null);
+  const [archive, setArchive] = archiveState || [];
 
   const isArchiveModuleAllowed = Object.values(ArchiveModule).some((m) =>
     isModuleAllowed(moduleKey(ModuleGroup.Archive, m))
   );
-
-  const handleInput = (event: any) => {
-    // console.log('SET ',event.target.selectionStart)
-    event.target.selectionStart >= 0 &&
-      localStorage.setItem(cursorPositionKey, event.target.selectionStart);
-  };
-
-  useEffect(() => {
-    const position = Number(localStorage.getItem(cursorPositionKey));
-    if (position >= 0 && quickFilterInputRef.current) {
-      // console.log('GET ',position)
-      quickFilterInputRef.current.focus();
-      quickFilterInputRef.current.selectionStart = position;
-      quickFilterInputRef.current.selectionEnd = position;
-    }
-  }, [quickFilterInputRef.current]);
 
   return (
     <GridToolbarContainer>
@@ -66,13 +45,13 @@ export default function CustomToolbar({
         slotProps={{ tooltip: { title: 'Change density' } }}
       />
       <GridToolbarFilterButton />
-      {isArchiveModuleAllowed && archiveState && (
+      {isArchiveModuleAllowed && typeof archive === 'boolean' && (
         <FormControlLabel
           control={
-            <Switch checked={!!archive} disabled={archiveProp?.disabled} />
+            <Switch checked={archive} disabled={disableArchiveBtnState[0]} />
           }
           label={`Archive`}
-          onChange={({ target }: any) => setArchive?.(target.checked)}
+          onChange={() => setArchive?.(!archive)}
           sx={formControlSX}
         />
       )}
@@ -88,18 +67,7 @@ export default function CustomToolbar({
         sx={formControlSX}
       />
 
-      <GridToolbarQuickFilter
-        onSelect={handleInput}
-        inputRef={quickFilterInputRef}
-      />
+      <GridToolbarQuickFilter />
     </GridToolbarContainer>
   );
-}
-
-interface CustomToolbarProps {
-  archiveState?: ArchiveState;
-  serverSideSearchState: [
-    boolean,
-    React.Dispatch<React.SetStateAction<boolean>>
-  ];
 }
