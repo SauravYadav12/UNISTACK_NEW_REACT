@@ -28,7 +28,6 @@ const formControlSX = {
 };
 
 export default function CustomToolbar() {
-  
   const { isModuleAllowed } = useAuth();
   const { serverSideSearchState, archiveState, disableArchiveBtnState } =
     useDataGridContext();
@@ -46,13 +45,13 @@ export default function CustomToolbar() {
         slotProps={{ tooltip: { title: 'Change density' } }}
       />
       <GridToolbarFilterButton />
-      {isArchiveModuleAllowed && archiveState && (
+      {isArchiveModuleAllowed && typeof archive === 'boolean' && (
         <FormControlLabel
           control={
-            <Switch checked={!!archive} disabled={disableArchiveBtnState[0]} />
+            <Switch checked={archive} disabled={disableArchiveBtnState[0]} />
           }
           label={`Archive`}
-          onChange={({ target }: any) => setArchive?.(!archive)}
+          onChange={() => setArchive?.(!archive)}
           sx={formControlSX}
         />
       )}
