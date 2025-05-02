@@ -2,7 +2,10 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
-export async function consultantsList(query: string = '') {
+export async function consultantsList(
+  query: string = '',
+  signal?: AbortSignal
+) {
   const token = await getJwtToken();
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
@@ -13,6 +16,7 @@ export async function consultantsList(query: string = '') {
     `${BASE_URL}/consultants/get-consultants?${query}`,
     {
       headers,
+      signal,
     }
   );
   return response;

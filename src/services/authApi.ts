@@ -1,5 +1,9 @@
 import axios from 'axios';
-import { getJwtToken, myIpGeoLocation } from '../utils/utils';
+import {
+  getJwtToken,
+  getUserIdFromToken,
+  myIpGeoLocation,
+} from '../utils/utils';
 import { iUser } from '../Interfaces/iUser';
 import { BASE_URL } from './userProfileApi';
 // import { toast } from 'react-toastify';
@@ -31,33 +35,22 @@ export async function login(email: string, password: string) {
   return response;
 }
 export async function logout() {
-  const clearSession = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-  };
+  const id = getUserIdFromToken();
   let headers: any = {
     'Content-Type': 'application/json',
   };
-  let json = localStorage.getItem('user');
-  if (!json) {
-    clearSession();
-    return;
-  }
-  const iuser = JSON.parse(json) as iUser;
-  if (!iuser.id) {
-    clearSession();
+  if (!id) {
     return;
   }
   const { ip, location } = await myIpGeoLocation();
   const data = {
     location,
     ip,
-    _id: iuser.id,
+    _id: id,
   };
   const response = await axios.post(`${BASE_URL}/users/logout`, data, {
     headers,
   });
-  clearSession();
   return response;
 }
 

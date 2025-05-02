@@ -15,7 +15,10 @@ import TestAndVendorForm from './TestAndVendorForm';
 import { vendorInterviewsList } from '../../../services/vendorInterviewApi';
 import { interviewStatusColors } from './testAndViValues';
 import { dateFormate2 } from '../../../components/constants';
-import { usePagination } from '../../../hooks/paginationHook';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
 import { syncDataById } from '../../../utils/syncDataById';
 import { FormMode } from '../Requirements/Requirements';
 import SearchRequirement from '../Interviews/SearchRequirement';
@@ -33,6 +36,7 @@ export default function TestAndVendorInterviews() {
     paginationModel,
     error,
     loading,
+    setSearchModel,
     setPaginationModel,
     reload,
     setResults,
@@ -183,6 +187,9 @@ export default function TestAndVendorInterviews() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
+        onFilterModelChange={(model, detail, isServerSerachOn) =>
+          setSearchModel(isServerSerachOn ? model : initialSearchModel)
+        }
         error={error}
         retry={reload}
         loading={loading}

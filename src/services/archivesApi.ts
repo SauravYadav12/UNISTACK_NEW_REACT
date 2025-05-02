@@ -2,7 +2,10 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 
-export async function archiveRequirementsList(query: string = '') {
+export async function archiveRequirementsList(
+  query: string = '',
+  signal?: AbortSignal
+) {
   const token = await getJwtToken();
 
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
@@ -15,11 +18,15 @@ export async function archiveRequirementsList(query: string = '') {
   const url = `${BASE_URL}/archives/requirements?${query}`;
   const response = await axios.get<ApiQueryRes<PaginationResult>>(url, {
     headers,
+    signal,
   });
   return response;
 }
 
-export async function archiveInterviewsList(query: string = '') {
+export async function archiveInterviewsList(
+  query: string = '',
+  signal?: AbortSignal
+) {
   const token = await getJwtToken();
   const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
@@ -30,6 +37,7 @@ export async function archiveInterviewsList(query: string = '') {
     `${BASE_URL}/archives/interviews?${query}`,
     {
       headers,
+      signal,
     }
   );
   return response;

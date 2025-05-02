@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { GridPaginationModel } from '@mui/x-data-grid';
+import { useEffect, useRef, useState } from 'react';
+import { GridFilterModel, GridPaginationModel } from '@mui/x-data-grid';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
-import { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 export const allDoc = 100000000;
 export const pageSizeList = [100, 500, 1000, 5000, allDoc];
@@ -9,36 +9,67 @@ export const initialPaginationModel: GridPaginationModel = {
   page: 1,
   pageSize: pageSizeList[0] || 100,
 };
-
+export const initialSearchModel: GridFilterModel = {
+  items: [],
+  quickFilterValues: [],
+};
+export const searchStringKey = 'searchString';
 export function usePagination(para: ApiQuery, dependencies: any[]) {
+  const [searchModel, setSearchModel] =
+    useState<GridFilterModel>(initialSearchModel);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(
     initialPaginationModel
   );
   const [gridData, setGridData] = useState<PaginationResult>();
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-
+  const abortControllerRef = useRef<AbortController | null>(null);
   const setResults: SetResults = (cb) => {
     const results = cb(gridData?.results || []);
     setGridData((pre) => ({ ...pre, results, totalDocuments: results.length }));
   };
 
+  function createQueryString() {
+    const { page, pageSize } = paginationModel;
+    const iQuery = para.queryParams || '';
+    let queryString = '';
+    // searchModel.quickFilterValues?.forEach((v) => {
+    //   queryString = queryString + '&' + searchStringKey + '=' + v;
+    // });
+    if (searchModel.quickFilterValues?.length) {
+      const val = searchModel.quickFilterValues.join(' ');
+      queryString = `${queryString}&${searchStringKey}=${val}`;
+    }
+
+    queryString = `${queryString}&${iQuery}&page=${page}&limit=${pageSize}`;
+
+    return queryString;
+  }
+
   const loadData = async () => {
-    if (loading) return;
-    let { page, pageSize } = paginationModel;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     try {
       setError('');
       setLoading(true);
-      const query =
-        (para.queryParams || '') + `&page=${page}&limit=${pageSize}`;
-      const { data } = await para.queryFunction(query);
+      const query = createQueryString();
+      const { data } = await para.queryFunction(query, signal);
       setGridData(data.data);
-    } catch (error) {
-      setGridData({});
-      console.error('Error fetching requirements:', error);
-      setError('Failed to load');
-    } finally {
       setLoading(false);
+    } catch (error) {
+      if (axios.isCancel(error)) {
+        console.log('Request cancelled:', error.message);
+      } else {
+        setGridData({});
+        console.error('Error fetching requirements:', error);
+        setError('Failed to load');
+        setLoading(false);
+      }
     }
   };
 
@@ -47,7 +78,15 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   }, [paginationModel]);
 
   useEffect(() => {
-    setPaginationModel({ page: 1, pageSize: pageSizeList[0] });
+    loadData();
+    setPaginationModel(initialPaginationModel);
+    console.log('changed');
+  }, [searchModel]);
+
+  useEffect(() => {
+    loadData();
+    setPaginationModel(initialPaginationModel);
+    setSearchModel(initialSearchModel);
   }, [...dependencies]);
 
   return {
@@ -55,6 +94,8 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     loading,
     gridData,
     paginationModel,
+    searchModel,
+    setSearchModel,
     setPaginationModel,
     setGridData,
     setError,
@@ -66,7 +107,8 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
 
 interface ApiQuery {
   queryFunction: (
-    query?: string
+    query?: string,
+    signal?: AbortSignal
   ) => Promise<AxiosResponse<ApiQueryRes<PaginationResult<any>>, any>>;
   queryParams?: string;
 }

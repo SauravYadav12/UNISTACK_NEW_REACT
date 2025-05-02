@@ -62,7 +62,7 @@ const ResetPassword = ({
     } catch (error) {
       console.log(error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   }
 
@@ -110,7 +110,6 @@ const ResetPassword = ({
           id="confirm-new-password"
           label="Confirm new password"
           name="new-password"
-          autoFocus
           error={!!error.confirmPassword}
           helperText={error.confirmPassword}
           onChange={onChangeConfirmPassword}

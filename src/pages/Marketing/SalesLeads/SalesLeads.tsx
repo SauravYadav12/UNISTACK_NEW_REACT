@@ -11,7 +11,10 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { Country } from 'country-state-city';
 import './salesLead.css';
 import { dateFormate2 } from '../../../components/constants';
-import { usePagination } from '../../../hooks/paginationHook';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
 import SalesLeadAssignedToSelect from '../../../components/salesLead/SalesLeadAssignedToSelect';
 import { usersList } from '../../../services/authApi';
 import { useFetchData } from '../../../hooks/fetchDataHook';
@@ -29,6 +32,7 @@ const SalesLeads = () => {
     paginationModel,
     error,
     loading,
+    setSearchModel,
     setPaginationModel,
     reload,
     setResults,
@@ -172,6 +176,9 @@ const SalesLeads = () => {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
+        onFilterModelChange={(model, detail, isServerSerachOn) =>
+          setSearchModel(isServerSerachOn ? model : initialSearchModel)
+        }
         error={error || accountsState.error}
         retry={onReload}
         header={dataGridHeader}

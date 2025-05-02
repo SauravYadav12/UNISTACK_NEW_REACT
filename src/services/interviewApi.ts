@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
+import { BASE_URL } from './userProfileApi';
 
-export async function interviewsList(query: string='') {
+export async function interviewsList(query: string = '', signal?: AbortSignal) {
   const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
@@ -13,6 +13,7 @@ export async function interviewsList(query: string='') {
     `${BASE_URL}/interviews/get-interviews?${query}`,
     {
       headers,
+      signal,
     }
   );
   return response;
@@ -20,7 +21,6 @@ export async function interviewsList(query: string='') {
 
 export async function createInterview(data: any) {
   const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
@@ -37,7 +37,6 @@ export async function createInterview(data: any) {
 
 export async function updateInterview(id: any, values: any) {
   const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
   let headers: any = {
     'Content-Type': 'application/json',
     Authorization: token,
@@ -54,7 +53,6 @@ export async function updateInterview(id: any, values: any) {
 
 export async function deleteInterview(id: string) {
   const token = await getJwtToken();
-  const BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
   const headers = {
     Authorization: token,
   };
