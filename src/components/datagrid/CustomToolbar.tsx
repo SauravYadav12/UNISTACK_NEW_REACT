@@ -81,7 +81,7 @@ export default function CustomToolbar({
 
       <FormControlLabel
         control={<Switch checked={serverSideSearch} />}
-        label={`Server filter`}
+        label={`Server search`}
         onChange={({ target }: any) =>
           setServerSideSearch(Boolean(target.checked))
         }
