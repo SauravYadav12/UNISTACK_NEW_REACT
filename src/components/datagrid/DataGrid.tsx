@@ -11,23 +11,43 @@ import { IconButton, Typography } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import CustomToolbar from './CustomToolbar';
 import CustomPagination from './CustomPagination';
+import {
+  DataGridContextProvider,
+  useDataGridContext,
+} from '../../contextProviders/DataGridContextProvider';
 
 interface iFilterModel {
   model: GridFilterModel;
   details: GridCallbackDetails<'filter'>;
 }
 
-export default function CustomDataGrid(props: Iprops) {
-  const serverSideSearchState = useState(true);
+function MyDataGrid(props: Iprops) {
+  const {
+    serverSideSearchState,
+    disableArchiveBtnState,
+    archiveState: iArchiveState,
+  } = useDataGridContext();
+  const [serverSideSearch] = serverSideSearchState;
   const [iFilterModel, setiFilterModel] = useState<iFilterModel>();
-  const { archiveState, error, retry, paginateState, onFilterModelChange } =
-    props;
+  const { error, retry, paginateState, onFilterModelChange } = props;
 
   useEffect(() => {
     if (!iFilterModel) return;
     const { model, details } = iFilterModel;
-    onFilterModelChange?.(model, details, serverSideSearchState[0]);
-  }, [serverSideSearchState[0], archiveState?.[0]]);
+    onFilterModelChange?.(model, details, serverSideSearch);
+  }, [serverSideSearch, props.archiveState?.[0]]);
+
+  useEffect(() => {
+    disableArchiveBtnState[1](props.loading);
+  }, [props.loading]);
+
+  useEffect(() => {
+    iArchiveState[1](props.archiveState?.[0]);
+  }, [props.archiveState?.[0]]);
+
+  useEffect(() => {
+    props.archiveState?.[1](!!iArchiveState[0]);
+  }, [iArchiveState[0]]);
 
   return (
     <div
@@ -50,22 +70,17 @@ export default function CustomDataGrid(props: Iprops) {
           <DataGrid
             onFilterModelChange={(model, details) => {
               setiFilterModel({ model, details });
-              onFilterModelChange?.(model, details, serverSideSearchState[0]);
+              onFilterModelChange?.(model, details, serverSideSearch);
             }}
             loading={props.loading}
             rows={props.rows}
             columns={props.columns}
-            filterMode={serverSideSearchState[0] ? 'server' : 'client'}
+            filterMode={serverSideSearch ? 'server' : 'client'}
             paginationMode="server"
             rowCount={paginateState.totalRows}
             getRowId={(row: any) => row._id}
             slots={{
-              toolbar: () => (
-                <CustomToolbar
-                  serverSideSearchState={serverSideSearchState}
-                  archiveState={archiveState}
-                />
-              ),
+              toolbar: CustomToolbar,
               noRowsOverlay: () =>
                 error ? (
                   <ErrorOverlay message={error} retry={retry} />
@@ -98,6 +113,16 @@ export default function CustomDataGrid(props: Iprops) {
         </Box>
       </div>
     </div>
+  );
+}
+
+export default function CustomDataGrid(props: Iprops) {
+  return (
+    <DataGridContextProvider
+      archiveState={props.archiveState && props.archiveState[0]}
+    >
+      <MyDataGrid {...props} />
+    </DataGridContextProvider>
   );
 }
 
@@ -141,14 +166,7 @@ export interface PaginateState {
   model: GridPaginationModel;
   onChange: (e: GridPaginationModel) => void;
 }
-export type ArchiveState = [
-  boolean,
-  (archive: boolean) => void,
-  ArchiveStateButtonProps | undefined
-];
-type ArchiveStateButtonProps = {
-  disabled: boolean;
-};
+export type ArchiveState = [boolean, (archive: boolean) => void];
 
 interface CustomErrorOverlayProps {
   message: string;

@@ -33,9 +33,11 @@ import { dateFormate2 } from '../../../components/constants';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
 import { syncDataById } from '../../../utils/syncDataById';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [viewData, setViewData] = useState<any>({});
@@ -116,6 +118,7 @@ export default function Requirements() {
   } = usePagination(
     {
       queryFunction: archive ? getArchiveRequirements : getRequirements,
+      queryParams: searchParams.toString(),
     },
     [archive]
   );
@@ -286,7 +289,7 @@ export default function Requirements() {
         retry={reload}
         archiveState={
           isArchiveRequirementModuleAllowed
-            ? [archive, onChangeArchiveButton, { disabled: loading }]
+            ? [archive, onChangeArchiveButton]
             : undefined
         }
         header={header}
