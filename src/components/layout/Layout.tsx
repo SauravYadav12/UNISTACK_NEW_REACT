@@ -7,7 +7,7 @@ import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
 function Layout() {
   const location = useLocation();
-  const { syncIUser, accessControlState } = useAuth();
+  const { syncIUser, accessControlState, myProfileState } = useAuth();
   const [toggleSidebar, setTogglesidebar] = useState(false);
 
   const handleSidebarToggle = () => {
@@ -15,6 +15,7 @@ function Layout() {
   };
 
   useEffect(() => {
+    !myProfileState.data && myProfileState.loadData();
     // syncIUser();
     // accessControlState?.loadData();
   }, [location]);

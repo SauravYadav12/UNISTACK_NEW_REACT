@@ -72,14 +72,7 @@ const RequirementMeta = ({
       );
     }
 
-    if (!createdInterviews?.length)
-      return (
-        <Typography variant="body1" color="textSecondary">
-          NA
-        </Typography>
-      );
-
-    return createdInterviews.map((int, i) => {
+    return createdInterviews?.map((int, i) => {
       return (
         <Button
           key={i}
@@ -139,17 +132,19 @@ const RequirementMeta = ({
             alignItems={'center'}
             flexWrap={'wrap'}
             gap={1}
+            minHeight={'25px'}
           >
-            <Typography
-              variant="body1"
-              color="textSecondary"
-              fontWeight={600}
-              fontSize={'18px'}
-              minWidth={'175px'}
-            >
-              Created Interview{(createdInterviews?.length || 0) > 1 ? 's' : ''}{' '}
-              :
-            </Typography>
+            {!!createdInterviews?.length && (
+              <Typography
+                variant="body1"
+                color="textSecondary"
+                fontWeight={600}
+                fontSize={'18px'}
+                minWidth={'175px'}
+              >
+                <>Created Interview{createdInterviews.length > 1 && 's'}:</>
+              </Typography>
+            )}
             <MyInterviews />
           </Stack>
         )}

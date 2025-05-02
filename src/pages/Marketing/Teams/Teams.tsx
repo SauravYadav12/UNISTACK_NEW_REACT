@@ -6,7 +6,10 @@ import TeamsForm from './TeamsForm';
 import { useState } from 'react';
 import { teamsList } from '../../../services/teamsApi';
 import { dateFormate2 } from '../../../components/constants';
-import { usePagination } from '../../../hooks/paginationHook';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
 
@@ -22,6 +25,7 @@ export default function Teams() {
     paginationModel,
     error,
     loading,
+    setSearchModel,
     setPaginationModel,
     reload,
     setResults,
@@ -122,6 +126,9 @@ export default function Teams() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
+        onFilterModelChange={(model, detail, isServerSerachOn) =>
+          setSearchModel(isServerSerachOn ? model : initialSearchModel)
+        }
         error={error}
         retry={reload}
         loading={loading}

@@ -10,11 +10,13 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useState } from 'react';
 import RequirementsForm from './RequirementsForm';
 import { requirementsList } from '../../../services/requirementApi';
-import { useSearchParams } from 'react-router-dom';
 import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
-import { usePagination } from '../../../hooks/paginationHook';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
 import { consultantsList } from '../../../services/consultantApi';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
@@ -31,6 +33,7 @@ import { dateFormate2 } from '../../../components/constants';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
 import { syncDataById } from '../../../utils/syncDataById';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
@@ -107,6 +110,7 @@ export default function Requirements() {
     paginationModel,
     error,
     loading,
+    setSearchModel,
     setPaginationModel,
     setGridData,
     reload,
@@ -118,15 +122,14 @@ export default function Requirements() {
     },
     [archive]
   );
-
-  async function getRequirements(query?: string) {
-    const res = await requirementsList(query);
+  async function getRequirements(query?: string, signal?: AbortSignal) {
+    const res = await requirementsList(query, signal);
     setArchive(false);
     return res;
   }
 
-  async function getArchiveRequirements(query?: string) {
-    const res = await archiveRequirementsList(query);
+  async function getArchiveRequirements(query?: string, signal?: AbortSignal) {
+    const res = await archiveRequirementsList(query, signal);
     setArchive(true);
     return res;
   }
@@ -275,11 +278,18 @@ export default function Requirements() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
+        onFilterModelChange={(model, detail, isServerSerachOn) =>
+          setSearchModel(
+            isServerSerachOn && model.quickFilterValues?.length
+              ? model
+              : initialSearchModel
+          )
+        }
         error={error}
         retry={reload}
         archiveState={
           isArchiveRequirementModuleAllowed
-            ? [archive, onChangeArchiveButton, { disabled: loading }]
+            ? [archive, onChangeArchiveButton]
             : undefined
         }
         header={header}

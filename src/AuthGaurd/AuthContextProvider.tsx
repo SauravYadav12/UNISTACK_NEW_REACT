@@ -125,7 +125,7 @@ export const useAuth = () => useContext(AuthContext);
 interface DefaultContextValue {
   iUserState: iFetchData<iUser | undefined>;
   iUser?: iUser;
-  myProfileState?: iFetchData<UserProfile | undefined>;
+  myProfileState: iFetchData<UserProfile | undefined>;
   myProfile?: UserProfile;
   myAttendanceState: iUseAttendance;
   accessControlState: iFetchData<iAccessControl | undefined>;

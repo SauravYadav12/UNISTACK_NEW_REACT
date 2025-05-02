@@ -5,6 +5,22 @@ import { iSalesLead, SalesLeadComment } from '../Interfaces/salesLeads';
 
 const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
+export async function getSalesLeads(query: string = '', signal?: AbortSignal) {
+  const token = await getJwtToken();
+  let headers: any = {
+    'Content-Type': 'application/json',
+    Authorization: token,
+  };
+  const response = await axios.get<ApiQueryRes<PaginationResult<iSalesLead>>>(
+    `${BASE_URL}/sales-leads?${query}`,
+    {
+      headers,
+      signal,
+    }
+  );
+  return response;
+}
+
 export async function updateSalesLead(
   profileId: string,
   body: Partial<iSalesLead>
@@ -38,20 +54,7 @@ export async function getSalesLead(id: string) {
   );
   return response;
 }
-export async function getSalesLeads(query: string='') {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<PaginationResult<iSalesLead>>>(
-    `${BASE_URL}/sales-leads?${query}`,
-    {
-      headers,
-    }
-  );
-  return response;
-}
+
 export async function deleteSalesLead(id: string) {
   const token = await getJwtToken();
   let headers: any = {

@@ -11,7 +11,6 @@ import { drawerWidth, smallDrawerWidth } from '../constants';
 import './navbar.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { iUser } from '../../Interfaces/iUser';
 import {
   EmployeeModule,
   ModuleGroup,

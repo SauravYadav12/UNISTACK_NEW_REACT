@@ -46,13 +46,13 @@ const UserMenu = () => {
   };
 
   async function handleLogOut() {
-    validateLogout();
-    navigate(`/`);
     try {
-      await logout();
+      logout();
     } catch (error) {
       console.log(error);
     }
+    validateLogout();
+    navigate(`/`);
   }
 
   return (

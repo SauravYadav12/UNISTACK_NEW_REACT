@@ -18,7 +18,10 @@ import { toast } from 'react-toastify';
 import { interviewStatusColors } from '../TestAndVendorInterviews/testAndViValues';
 import { dateFormate2, timeFormate } from '../../../components/constants';
 import { archiveInterviewsList } from '../../../services/archivesApi';
-import { usePagination } from '../../../hooks/paginationHook';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import {
@@ -55,6 +58,7 @@ export default function Interviews(props: Iprops) {
     paginationModel,
     error,
     loading,
+    setSearchModel,
     setPaginationModel,
     setGridData,
     reload,
@@ -157,7 +161,7 @@ export default function Interviews(props: Iprops) {
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
-    setViewData({})
+    setViewData({});
   };
   const clearReqFromParams = () => {
     setSearchParams((pre) => {
@@ -182,13 +186,13 @@ export default function Interviews(props: Iprops) {
     setMode(editMode ? 'edit' : 'view');
   };
 
-  async function getInterviews(query?: string) {
-    const res = await interviewsList(query);
+  async function getInterviews(query?: string, signal?: AbortSignal) {
+    const res = await interviewsList(query, signal);
     setArchive(false);
     return res;
   }
-  async function getArchiveInterviews(query?: string) {
-    const res = await archiveInterviewsList(query);
+  async function getArchiveInterviews(query?: string, signal?: AbortSignal) {
+    const res = await archiveInterviewsList(query, signal);
     setArchive(true);
     return res;
   }
@@ -262,6 +266,10 @@ export default function Interviews(props: Iprops) {
         </DialogContent>
       </Dialog>
       <CustomDataGrid
+        header={dataGridHeader}
+        rows={gridData?.results || []}
+        columns={columns}
+        loading={loading}
         error={error}
         retry={reload}
         paginateState={{
@@ -269,6 +277,13 @@ export default function Interviews(props: Iprops) {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
+        onFilterModelChange={(model, detail, isServerSerachOn) =>
+          setSearchModel(
+            isServerSerachOn && model.quickFilterValues?.length
+              ? model
+              : initialSearchModel
+          )
+        }
         archiveState={
           isArchiveInterviewModuleAllowed
             ? [
@@ -277,16 +292,9 @@ export default function Interviews(props: Iprops) {
                   setArchive(s);
                   setGridData(undefined);
                 },
-                {
-                  disabled: loading,
-                },
               ]
             : undefined
         }
-        header={dataGridHeader}
-        rows={gridData?.results || []}
-        columns={columns}
-        loading={loading}
       />
       <CustomDrawer
         open={drawerOpen}
