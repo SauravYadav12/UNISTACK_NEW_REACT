@@ -30,18 +30,19 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   };
 
   function createQueryString() {
-    let { page, pageSize } = paginationModel;
+    const { page, pageSize } = paginationModel;
+    const iQuery = para.queryParams || '';
     let queryString = '';
-    searchModel.quickFilterValues?.forEach((v) => {
-      queryString = queryString + '&' + searchStringKey + '=' + v;
-    });
+    // searchModel.quickFilterValues?.forEach((v) => {
+    //   queryString = queryString + '&' + searchStringKey + '=' + v;
+    // });
+    if (searchModel.quickFilterValues?.length) {
+      const val = searchModel.quickFilterValues.join(' ');
+      queryString = `${queryString}&${searchStringKey}=${val}`;
+    }
 
-    queryString =
-      queryString +
-      '&' +
-      (para.queryParams || '') +
-      `&page=${page}&limit=${pageSize}`;
-    console.log({ queryString });
+    queryString = `${queryString}&${iQuery}&page=${page}&limit=${pageSize}`;
+
     return queryString;
   }
 
