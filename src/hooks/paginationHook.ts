@@ -9,14 +9,15 @@ export const initialPaginationModel: GridPaginationModel = {
   page: 1,
   pageSize: pageSizeList[0] || 100,
 };
-export const initialSearchModel: GridFilterModel = {
+export const initialSearchModel: iSearchModel = {
   items: [],
   quickFilterValues: [],
+  options: {},
 };
 export const searchStringKey = 'searchString';
 export function usePagination(para: ApiQuery, dependencies: any[]) {
   const [searchModel, setSearchModel] =
-    useState<GridFilterModel>(initialSearchModel);
+    useState<iSearchModel>(initialSearchModel);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(
     initialPaginationModel
   );
@@ -44,6 +45,15 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     queryString = `${queryString}&${iQuery}&page=${page}&limit=${pageSize}`;
 
     return queryString;
+  }
+
+  function handleSetSearchModel(model: GridFilterModel, field?: string) {
+    setSearchModel({
+      ...model,
+      options: {
+        field,
+      },
+    });
   }
 
   const loadData = async () => {
@@ -94,7 +104,7 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     gridData,
     paginationModel,
     searchModel,
-    setSearchModel,
+    setSearchModel: handleSetSearchModel,
     setPaginationModel,
     setGridData,
     setError,
@@ -111,5 +121,13 @@ interface ApiQuery {
   ) => Promise<AxiosResponse<ApiQueryRes<PaginationResult<any>>, any>>;
   queryParams?: string;
 }
+
+interface SearchModelOptions {
+  field?: string;
+}
+
+type iSearchModel = GridFilterModel & {
+  options: SearchModelOptions;
+};
 
 export type SetResults = <T = any>(cb: (pre: T[]) => T[]) => void;
