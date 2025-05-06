@@ -34,8 +34,11 @@ export default function Login() {
       toast.error('Invalid email');
       return;
     }
-    setLoading(true);
     try {
+      const t = setTimeout(() => {
+        setLoading(true);
+        clearTimeout(t);
+      }, 100);
       await sendOtp(email, 'login');
       toast.success('OTP sent successfully');
       setStep(LoginStep.VerifyOTP);

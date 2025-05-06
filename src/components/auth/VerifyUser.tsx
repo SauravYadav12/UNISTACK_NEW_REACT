@@ -34,7 +34,7 @@ const VerifyUser = ({
       const message: any = error?.response?.data?.message;
       toast.error(message);
     } finally {
-      // setLoading(false);
+      setLoading(false);
     }
   };
 

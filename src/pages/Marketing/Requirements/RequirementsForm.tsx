@@ -340,20 +340,21 @@ export default function RequirementsForm(props: iProps) {
           label="Applied For"
           width={230}
           disabled={!isEditing}
-          selectedValue={values.appliedFor}
+          selectedValue={values.appliedFor || ''}
         />
       ) : (
         <CustomSelectField
           label="Applied For"
           valueOptions={consultants?.map((c: any) => c.consultantName) || []}
           disabled={!isEditing}
-          selectedValue={values.appliedFor}
+          selectedValue={values.appliedFor || ''}
           onChange={(value: any) => {
             const _id = consultants?.find(
               (c: any) => c.consultantName === value
-            );
+            )?._id;
             handleChange({ target: { value } }, 'appliedFor');
             handleChange({ target: { value: _id } }, 'appliedForRef');
+            console.log({ _id });
           }}
           width={230}
         />
@@ -368,7 +369,7 @@ export default function RequirementsForm(props: iProps) {
           label="Assigned To"
           width={230}
           disabled={!isEditing}
-          selectedValue={values.assignedTo}
+          selectedValue={values.assignedTo || ''}
         />
       ) : (
         <CustomSelectField
@@ -376,7 +377,7 @@ export default function RequirementsForm(props: iProps) {
           valueOptions={
             accounts?.map((a: any) => `${a.firstName} ${a.lastName}`) || []
           }
-          selectedValue={values.assignedTo}
+          selectedValue={values.assignedTo || ''}
           disabled={!isEditing}
           onBlur={() => onBlur('assignedTo')}
           onChange={(value: any) => {
@@ -672,7 +673,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomSelectField
             label="Req Status"
             valueOptions={requestStatusOptions}
-            selectedValue={values.reqStatus}
+            selectedValue={values.reqStatus || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('reqStatus')}
             onChange={(value: any) =>
@@ -687,7 +688,7 @@ export default function RequirementsForm(props: iProps) {
             label="Next Step"
             width={230}
             disabled={!isEditing}
-            selectedValue={values.nextStep}
+            selectedValue={values.nextStep || ''}
             onChange={(event: any) => addValue('nextStep', event.target.value)}
           />
           {appliedForField}
@@ -695,7 +696,7 @@ export default function RequirementsForm(props: iProps) {
             label={'Rate'}
             width={230}
             disabled={!isEditing}
-            selectedValue={values.rate}
+            selectedValue={values.rate || ''}
             onChange={(event: any) => addValue('rate', event.target.value)}
           />
 
@@ -704,7 +705,7 @@ export default function RequirementsForm(props: iProps) {
             width={230}
             disabled={!isEditing}
             valueOptions={taxTypeOptions}
-            selectedValue={values.taxType}
+            selectedValue={values.taxType || ''}
             onChange={(value: any) =>
               handleChange({ target: { value } }, 'taxType')
             }
@@ -714,7 +715,7 @@ export default function RequirementsForm(props: iProps) {
             label={'Remote %'}
             width={230}
             disabled={!isEditing}
-            selectedValue={values.remote}
+            selectedValue={values.remote || ''}
             onChange={(event: any) => addValue('remote', event.target.value)}
           />
 
@@ -723,7 +724,7 @@ export default function RequirementsForm(props: iProps) {
             width={230}
             disabled={!isEditing}
             valueOptions={duration}
-            selectedValue={values.duration}
+            selectedValue={values.duration || ''}
             onChange={(value: any) =>
               handleChange({ target: { value } }, 'duration')
             }
@@ -763,7 +764,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Client Company"
             width={315}
-            selectedValue={values.clientCompany}
+            selectedValue={values.clientCompany || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('clientCompany', event.target.value)
@@ -772,7 +773,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Client Website"
             width={315}
-            selectedValue={values.clientWebsite}
+            selectedValue={values.clientWebsite || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('clientWebsite', event.target.value)
@@ -781,7 +782,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Client Address"
             width={315}
-            selectedValue={values.clientAddress}
+            selectedValue={values.clientAddress || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('clientAddress', event.target.value)
@@ -790,7 +791,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Client Person Name"
             width={315}
-            selectedValue={values.clientPerson}
+            selectedValue={values.clientPerson || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('clientPerson', event.target.value)
@@ -799,7 +800,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Client Phone number"
             width={315}
-            selectedValue={values.clientPhone}
+            selectedValue={values.clientPhone || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('clientPhone', event.target.value)
@@ -809,7 +810,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Client Email"
             width={315}
-            selectedValue={values.clientEmail}
+            selectedValue={values.clientEmail || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('clientEmail')}
             onChange={(event: any) => handleEmail(event, 'clientEmail')}
@@ -826,7 +827,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Prime Vendor Company"
             width={315}
-            selectedValue={values.primeVendorCompany}
+            selectedValue={values.primeVendorCompany || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('primeVendorCompany', event.target.value)
@@ -835,7 +836,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Prime Vendor Website"
             width={315}
-            selectedValue={values.primeVendorWebsite}
+            selectedValue={values.primeVendorWebsite || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('primeVendorWebsite', event.target.value)
@@ -844,7 +845,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Prime Vendor Person Name"
             width={315}
-            selectedValue={values.primeVendorName}
+            selectedValue={values.primeVendorName || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('primeVendorName', event.target.value)
@@ -853,7 +854,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Prime Vendor Phone number"
             width={315}
-            selectedValue={values.primeVendorPhone}
+            selectedValue={values.primeVendorPhone || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('primeVendorPhone', event.target.value)
@@ -863,7 +864,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Prime Vendor Email"
             width={315}
-            selectedValue={values.primeVendorEmail}
+            selectedValue={values.primeVendorEmail || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('primeVendorEmail')}
             onChange={(event: any) => handleEmail(event, 'primeVendorEmail')}
@@ -880,7 +881,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Vendor Company"
             width={315}
-            selectedValue={values.vendorCompany}
+            selectedValue={values.vendorCompany || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('vendorCompany')}
             onChange={(event: any) =>
@@ -892,7 +893,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Vendor Website"
             width={315}
-            selectedValue={values.vendorWebsite}
+            selectedValue={values.vendorWebsite || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('vendorWebsite', event.target.value)
@@ -901,7 +902,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Vendor Person Name"
             width={315}
-            selectedValue={values.vendorPersonName}
+            selectedValue={values.vendorPersonName || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('vendorPersonName')}
             onChange={(event: any) =>
@@ -913,7 +914,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Vendor Phone number"
             width={315}
-            selectedValue={values.vendorPhone}
+            selectedValue={values.vendorPhone || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('vendorPhone', event.target.value)
@@ -923,7 +924,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Vendor Email"
             width={315}
-            selectedValue={values.vendorEmail}
+            selectedValue={values.vendorEmail || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('vendorEmail')}
             onChange={(event: any) => handleEmail(event, 'vendorEmail')}
@@ -972,7 +973,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomSelectField
             label="Primary Tech Stack"
             valueOptions={techStack}
-            selectedValue={values.primaryTechStack}
+            selectedValue={values.primaryTechStack || ''}
             disabled={!isEditing}
             onChange={(value: any) =>
               handleChange({ target: { value } }, 'primaryTechStack')
@@ -982,14 +983,14 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Job Title"
             width={315}
-            selectedValue={values.jobTitle}
+            selectedValue={values.jobTitle || ''}
             disabled={!isEditing}
             onChange={(event: any) => addValue('jobTitle', event.target.value)}
           />
           <CustomTextField
             label="Employement Type (If Mentioned)"
             width={315}
-            selectedValue={values.employmentType}
+            selectedValue={values.employmentType || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('employmentType', event.target.value)
@@ -998,7 +999,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Job Portal Link"
             width={315}
-            selectedValue={values.jobPortalLink}
+            selectedValue={values.jobPortalLink || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('jobPortalLink', event.target.value)
@@ -1007,7 +1008,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Requirement Entered By"
             width={315}
-            selectedValue={values.reqEnteredBy}
+            selectedValue={values.reqEnteredBy || ''}
             disabled
             onChange={(event: any) => {
               handleChange(event, 'reqEnteredBy');
@@ -1018,7 +1019,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Primary Tech Stack"
             width={315}
-            selectedValue={values.primaryTech}
+            selectedValue={values.primaryTech || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('primaryTech', event.target.value)
@@ -1027,7 +1028,7 @@ export default function RequirementsForm(props: iProps) {
           <CustomTextField
             label="Secondary Tech Stack"
             width={315}
-            selectedValue={values.secondaryTech}
+            selectedValue={values.secondaryTech || ''}
             disabled={!isEditing}
             onChange={(event: any) =>
               addValue('secondaryTech', event.target.value)
@@ -1038,7 +1039,7 @@ export default function RequirementsForm(props: iProps) {
             multiline
             width={980}
             disabled={!isEditing}
-            selectedValue={values.jobDescription}
+            selectedValue={values.jobDescription || ''}
             onBlur={() => onBlur('jobDescription')}
             onChange={(event: any) =>
               addValue('jobDescription', event.target.value)
@@ -1060,7 +1061,7 @@ export default function RequirementsForm(props: iProps) {
           >
             <p>
               <span>Entered By:</span>
-              <strong> {values.reqEnteredBy}</strong>
+              <strong> {values.reqEnteredBy || ''}</strong>
               <span> On Date:</span>
               <strong>
                 {' '}
