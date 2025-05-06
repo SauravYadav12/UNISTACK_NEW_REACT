@@ -54,6 +54,7 @@ import RequirementDrawer from '../../../components/requirement/RequirementDrawer
 interface iProps {
   viewData: any;
   requirement?: any;
+  teamsList: any[];
   isEditing?: boolean;
   hideButtons?: boolean;
   mode?: FormMode;
@@ -72,6 +73,7 @@ export default function TestAndVendorForm(props: iProps) {
   const [reqDrawer, setReqDrawer] = useState<string>();
   const {
     requirement,
+    teamsList,
     viewData,
     mode,
     isEditing,
@@ -169,17 +171,20 @@ export default function TestAndVendorForm(props: iProps) {
         newValue = meta.transform(newValue);
       }
     }
-    const updatedValues = { ...values, [key]: newValue };
-    const {
-      interviewDuration = '',
-      interviewType = '',
-      interviewViaMode = '',
-      meetingType = '',
-      vendorCompany = '',
-    } = updatedValues;
-    const iSubLine = `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}`;
-    updatedValues.subjectLine = `${iSubLine}_Interview_With_Vendor/IMP/PV_${vendorCompany}`;
-    setValues(updatedValues);
+
+    setValues((pre: any) => {
+      const updatedValues = { ...pre, [key]: newValue };
+      const {
+        interviewDuration = '',
+        interviewType = '',
+        interviewViaMode = '',
+        meetingType = '',
+        vendorCompany = '',
+      } = updatedValues;
+      const iSubLine = `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}`;
+      updatedValues.subjectLine = `${iSubLine}_Interview_With_Vendor/IMP/PV_${vendorCompany}`;
+      return { ...updatedValues };
+    });
   };
 
   async function handleSubmitForm(event: any) {
@@ -797,15 +802,32 @@ export default function TestAndVendorForm(props: iProps) {
           <Grid item xs={12}>
             <h4>4. Interviewee Candidate Details</h4>
           </Grid>
-          <CustomTextField
-            label="Candidate Name"
-            width={310}
-            disabled={!isEditing}
-            selectedValue={values.candidateName}
-            onChange={(event: any) =>
-              addValue('candidateName', event.target.value)
-            }
-          />
+          {isEditing ? (
+            <CustomSelectField
+              label="Candidate Name"
+              valueOptions={teamsList.map((c: any) => c.teamName || '')}
+              selectedValue={values.candidateName || ''}
+              onChange={(value: any) => {
+                const _id = teamsList?.find(
+                  (c: any) => c.teamName === value
+                )?._id;
+                addValue('candidateName', value);
+                addValue('candidateRef', _id);
+                console.log({ _id });
+              }}
+              width={310}
+            />
+          ) : (
+            <CustomTextField
+              label="Candidate Name"
+              width={310}
+              disabled={!isEditing}
+              selectedValue={values.candidateName || ''}
+              onChange={(event: any) =>
+                addValue('candidateName', event.target.value)
+              }
+            />
+          )}
           <CustomTextField
             label="Rates For Interview"
             width={310}

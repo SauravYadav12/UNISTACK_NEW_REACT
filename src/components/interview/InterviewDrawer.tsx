@@ -4,6 +4,10 @@ import InterviewForm from '../../pages/Marketing/Interviews/InterviewForm';
 import { FormMode } from '../../pages/Marketing/Requirements/Requirements';
 import { SetResults } from '../../hooks/paginationHook';
 import TestAndVendorForm from '../../pages/Marketing/TestAndVendorInterviews/TestAndVendorForm';
+import { useFetchData } from '../../hooks/fetchDataHook';
+import { teamsList } from '../../services/teamsApi';
+import { Sync } from '@mui/icons-material';
+import { Box, CircularProgress, Typography, IconButton } from '@mui/material';
 interface iProps {
   open: boolean;
   interview?: any;
@@ -12,6 +16,15 @@ interface iProps {
 }
 const InterviewDrawer = ({ interview, open, setData, onClose }: iProps) => {
   const [mode, setMode] = useState<FormMode>('view');
+
+  const teamState = useFetchData(async () => {
+    const { data } = await teamsList(`limit=5000`);
+    return data.data?.results || [];
+  });
+
+  const formStateLoading = teamState.loading;
+  const formStateError = teamState.error;
+
   const handleEdit = (editMode: boolean) => {
     setMode(editMode ? 'edit' : 'view');
   };
@@ -28,27 +41,51 @@ const InterviewDrawer = ({ interview, open, setData, onClose }: iProps) => {
         closeOnOutSideClick
       >
         <>
-          {interview?.intId && (
-            <InterviewForm
-              disableDelete
-              viewData={interview}
-              mode={mode}
-              isEditing={mode !== 'view'}
-              onDrawerClose={() => setMode('view')}
-              onEdit={handleEdit}
-              setResults={setData}
-            />
-          )}
-          {interview?.testID && (
-            <TestAndVendorForm
-              disableDelete
-              viewData={interview}
-              mode={mode}
-              isEditing={mode !== 'view'}
-              onDrawerClose={() => setMode('view')}
-              onEdit={handleEdit}
-              setResults={setData}
-            />
+          {formStateLoading ? (
+            <Box
+              className="loader"
+              sx={{ py: 10, height: '300px', pr: 0, m: 0 }}
+            >
+              <CircularProgress />
+            </Box>
+          ) : formStateError ? (
+            <Box textAlign={'center'}>
+              <Typography color="error">{formStateError}</Typography>
+              <IconButton
+                onClick={() => {
+                  teamState.loadData();
+                }}
+              >
+                <Sync color="primary" />
+              </IconButton>
+            </Box>
+          ) : (
+            <>
+              {interview?.intId && (
+                <InterviewForm
+                  teamsList={teamState.data || []}
+                  disableDelete
+                  viewData={interview}
+                  mode={mode}
+                  isEditing={mode !== 'view'}
+                  onDrawerClose={() => setMode('view')}
+                  onEdit={handleEdit}
+                  setResults={setData}
+                />
+              )}
+              {interview?.testID && (
+                <TestAndVendorForm
+                  teamsList={teamState.data || []}
+                  disableDelete
+                  viewData={interview}
+                  mode={mode}
+                  isEditing={mode !== 'view'}
+                  onDrawerClose={() => setMode('view')}
+                  onEdit={handleEdit}
+                  setResults={setData}
+                />
+              )}
+            </>
           )}
         </>
       </CustomDrawer>

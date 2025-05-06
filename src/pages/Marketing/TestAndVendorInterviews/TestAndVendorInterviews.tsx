@@ -1,10 +1,13 @@
 import {
+  Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogContentText,
   DialogTitle,
   IconButton,
+  Typography,
 } from '@mui/material';
 import CustomDataGrid, {
   GridFilterOption,
@@ -26,6 +29,9 @@ import { syncDataById } from '../../../utils/syncDataById';
 import { FormMode } from '../Requirements/Requirements';
 import SearchRequirement from '../Interviews/SearchRequirement';
 import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import { useFetchData } from '../../../hooks/fetchDataHook';
+import { teamsList } from '../../../services/teamsApi';
+import { Sync } from '@mui/icons-material';
 
 export default function TestAndVendorInterviews() {
   const [openDialog, setOpenDialog] = useState(false);
@@ -34,6 +40,13 @@ export default function TestAndVendorInterviews() {
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
+  const teamState = useFetchData(async () => {
+    const { data } = await teamsList(`limit=5000`);
+    return data.data?.results || [];
+  });
+
+  const formStateLoading = teamState.loading;
+  const formStateError = teamState.error;
 
   const {
     gridData,
@@ -231,15 +244,33 @@ export default function TestAndVendorInterviews() {
         title={formTitle}
         closeOnOutSideClick={mode === 'view'}
       >
-        <TestAndVendorForm
-          setResults={setResults}
-          requirement={requirement}
-          viewData={viewData}
-          onDrawerClose={handleCloseForm}
-          mode={mode}
-          isEditing={mode !== 'view'}
-          onEdit={handleEdit}
-        />
+        {formStateLoading ? (
+          <Box className="loader" sx={{ py: 10, height: '300px', pr: 0, m: 0 }}>
+            <CircularProgress />
+          </Box>
+        ) : formStateError ? (
+          <Box textAlign={'center'}>
+            <Typography color="error">{formStateError}</Typography>
+            <IconButton
+              onClick={() => {
+                teamState.loadData();
+              }}
+            >
+              <Sync color="primary" />
+            </IconButton>
+          </Box>
+        ) : (
+          <TestAndVendorForm
+            teamsList={teamState.data || []}
+            setResults={setResults}
+            requirement={requirement}
+            viewData={viewData}
+            onDrawerClose={handleCloseForm}
+            mode={mode}
+            isEditing={mode !== 'view'}
+            onEdit={handleEdit}
+          />
+        )}
       </CustomDrawer>
     </>
   );
