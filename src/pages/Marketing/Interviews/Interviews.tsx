@@ -1,10 +1,13 @@
 import {
+  Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogContentText,
   DialogTitle,
   IconButton,
+  Typography,
 } from '@mui/material';
 import moment from 'moment';
 import CustomDataGrid, {
@@ -37,6 +40,9 @@ import { syncDataById } from '../../../utils/syncDataById';
 import { requirementsList } from '../../../services/requirementApi';
 import { createInterviewQueryParam } from './interviewValues';
 import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import { useFetchData } from '../../../hooks/fetchDataHook';
+import { teamsList } from '../../../services/teamsApi';
+import { Sync } from '@mui/icons-material';
 
 interface Iprops {
   label: string;
@@ -53,6 +59,15 @@ export default function Interviews(props: Iprops) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [archive, setArchive] = props.archiveState;
+
+  const teamState = useFetchData(async () => {
+    const { data } = await teamsList(`limit=5000`);
+    return data.data?.results || [];
+  });
+
+  const formStateLoading = teamState.loading;
+  const formStateError = teamState.error;
+
   const isArchiveInterviewModuleAllowed = isModuleAllowed(
     moduleKey(ModuleGroup.Archive, ArchiveModule.Interviews)
   );
@@ -324,17 +339,35 @@ export default function Interviews(props: Iprops) {
         title={formTitle}
         closeOnOutSideClick={mode === 'view'}
       >
-        <InterviewForm
-          onCreate={clearReqFromParams}
-          setResults={setResults}
-          hideButtons={archive}
-          requirement={requirement}
-          viewData={viewData}
-          onDrawerClose={handleCloseForm}
-          mode={mode}
-          isEditing={mode !== 'view'}
-          onEdit={handleEdit}
-        />
+        {formStateLoading ? (
+          <Box className="loader" sx={{ py: 10, height: '300px', pr: 0, m: 0 }}>
+            <CircularProgress />
+          </Box>
+        ) : formStateError ? (
+          <Box textAlign={'center'}>
+            <Typography color="error">{formStateError}</Typography>
+            <IconButton
+              onClick={() => {
+                teamState.loadData();
+              }}
+            >
+              <Sync color="primary" />
+            </IconButton>
+          </Box>
+        ) : (
+          <InterviewForm
+            teamsList={teamState.data || []}
+            onCreate={clearReqFromParams}
+            setResults={setResults}
+            hideButtons={archive}
+            requirement={requirement}
+            viewData={viewData}
+            onDrawerClose={handleCloseForm}
+            mode={mode}
+            isEditing={mode !== 'view'}
+            onEdit={handleEdit}
+          />
+        )}
       </CustomDrawer>
     </>
   );

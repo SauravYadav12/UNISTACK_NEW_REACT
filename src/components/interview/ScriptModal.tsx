@@ -189,7 +189,10 @@ const ScriptModal = ({
               }}
             >
               <Box>
-                <Header interview={interview} />
+                <Header
+                  interview={interview}
+                  name={consultant.consultantName || ''}
+                />
                 <Divider />
                 <CondidateDetail consultant={consultant} />
               </Box>
@@ -305,7 +308,7 @@ interface ScriptModalProps {
   onClose: () => void;
 }
 
-function Header({ interview }: { interview: any }) {
+function Header({ interview, name }: { interview: any; name: string }) {
   const intId = interview.intId || interview.testID;
   return (
     <Stack
@@ -331,10 +334,7 @@ function Header({ interview }: { interview: any }) {
       <Typography fontWeight={'bold'} color={'blue'}>
         FULL NAME:{' '}
       </Typography>
-      <Typography fontWeight={'bold'}>
-        {' '}
-        {interview.consultant?.toUpperCase()}{' '}
-      </Typography>
+      <Typography fontWeight={'bold'}> {name.toUpperCase()} </Typography>
 
       <Typography fontWeight={'bold'} color={'white'} px={'5px'}>
         ||

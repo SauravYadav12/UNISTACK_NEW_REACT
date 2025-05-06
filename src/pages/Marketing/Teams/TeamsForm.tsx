@@ -31,14 +31,14 @@ const teamValidationMeta: ValidationMeta[] = [
     field: 'teamName',
     required: true,
   },
-  {
-    field: 'contactPerson',
-    required: true,
-  },
-  {
-    field: 'phone',
-    required: true,
-  },
+  // {
+  //   field: 'contactPerson',
+  //   required: true,
+  // },
+  // {
+  //   field: 'phone',
+  //   required: true,
+  // },
 ];
 const initialValues = {
   teamName: '',
