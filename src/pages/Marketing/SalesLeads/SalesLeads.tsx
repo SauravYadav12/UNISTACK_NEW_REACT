@@ -1,7 +1,10 @@
 import { Button, IconButton } from '@mui/material';
 import React, { useState } from 'react';
 import moment from 'moment';
-import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDataGrid, {
+  GridFilterOption,
+  iGridColumn,
+} from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { getSalesLeads } from '../../../services/salesLeadsApi';
 import { iSalesLead } from '../../../Interfaces/salesLeads';
@@ -19,6 +22,7 @@ import SalesLeadAssignedToSelect from '../../../components/salesLead/SalesLeadAs
 import { usersList } from '../../../services/authApi';
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { syncDataById } from '../../../utils/syncDataById';
+import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -43,7 +47,7 @@ const SalesLeads = () => {
     []
   );
 
-  const columns = [
+  const columns: readonly iGridColumn[] = [
     {
       field: 'view',
       headerName: 'View',
@@ -59,6 +63,9 @@ const SalesLeads = () => {
           View
         </Button>
       ),
+      serverFilterOptions: {
+        exclude: true,
+      },
     },
     {
       field: 'firstName',
@@ -111,6 +118,11 @@ const SalesLeads = () => {
       headerName: 'Created At',
       width: 180,
       valueGetter: (params: any) => moment(params).format(dateFormate2),
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
+      },
     },
   ];
   const handleViewDetails = (row: iSalesLead) => {
@@ -156,6 +168,18 @@ const SalesLeads = () => {
     accountsState.loadData();
   }
 
+  const handleChangeFilterModel = (
+    model: GridFilterModel,
+    details: GridCallbackDetails<'filter'>,
+    options: GridFilterOption
+  ) => {
+    const iModel =
+      options.serverSideSearch && model.quickFilterValues?.length
+        ? model
+        : initialSearchModel;
+    setSearchModel(iModel, options.field);
+  };
+
   const dataGridHeader = (
     <>
       <h3>Sales Leads</h3>
@@ -176,9 +200,7 @@ const SalesLeads = () => {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        onFilterModelChange={(model, detail, isServerSerachOn) =>
-          setSearchModel(isServerSerachOn ? model : initialSearchModel)
-        }
+        onFilterModelChange={handleChangeFilterModel}
         error={error || accountsState.error}
         retry={onReload}
         header={dataGridHeader}

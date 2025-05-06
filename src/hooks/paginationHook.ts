@@ -9,15 +9,16 @@ export const initialPaginationModel: GridPaginationModel = {
   page: 1,
   pageSize: pageSizeList[0] || 100,
 };
-export const initialSearchModel: iSearchModel = {
+export const initialSearchModel: GridFilterModel = {
   items: [],
   quickFilterValues: [],
-  options: {},
 };
 export const searchStringKey = 'searchString';
+export const searchFieldKey = 'searchField';
 export function usePagination(para: ApiQuery, dependencies: any[]) {
   const [searchModel, setSearchModel] =
-    useState<iSearchModel>(initialSearchModel);
+    useState<GridFilterModel>(initialSearchModel);
+  const [searchField, setSearchField] = useState<string>('');
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(
     initialPaginationModel
   );
@@ -32,14 +33,15 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
 
   function createQueryString() {
     const { page, pageSize } = paginationModel;
+    const { quickFilterValues } = searchModel;
     const iQuery = para.queryParams || '';
     let queryString = '';
     // searchModel.quickFilterValues?.forEach((v) => {
     //   queryString = queryString + '&' + searchStringKey + '=' + v;
     // });
-    if (searchModel.quickFilterValues?.length) {
-      const val = searchModel.quickFilterValues.join(' ');
-      queryString = `${queryString}&${searchStringKey}=${val}`;
+    if (quickFilterValues?.length && searchField) {
+      const val = quickFilterValues.join(' ');
+      queryString = `${queryString}&${searchStringKey}=${val}&${searchFieldKey}=${searchField}`;
     }
 
     queryString = `${queryString}&${iQuery}&page=${page}&limit=${pageSize}`;
@@ -48,12 +50,8 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   }
 
   function handleSetSearchModel(model: GridFilterModel, field?: string) {
-    setSearchModel({
-      ...model,
-      options: {
-        field,
-      },
-    });
+    setSearchModel(model);
+    setSearchField(field || '');
   }
 
   const loadData = async () => {
@@ -93,6 +91,11 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   }, [searchModel]);
 
   useEffect(() => {
+    searchModel.quickFilterValues?.length && loadData();
+    setPaginationModel(initialPaginationModel);
+  }, [searchField]);
+
+  useEffect(() => {
     loadData();
     setPaginationModel(initialPaginationModel);
     setSearchModel(initialSearchModel);
@@ -122,12 +125,12 @@ interface ApiQuery {
   queryParams?: string;
 }
 
-interface SearchModelOptions {
-  field?: string;
-}
+// interface SearchModelOptions {
+//   field?: string;
+// }
 
-type iSearchModel = GridFilterModel & {
-  options: SearchModelOptions;
-};
+// type iSearchModel = GridFilterModel & {
+//   options: SearchModelOptions;
+// };
 
 export type SetResults = <T = any>(cb: (pre: T[]) => T[]) => void;

@@ -27,6 +27,7 @@ function MyDataGrid(props: Iprops) {
     serverSideSearchState,
     disableArchiveBtnState,
     archiveState: iArchiveState,
+    selectedFilterOption,
     setFilterOptions,
     setSelectedFilterOption,
   } = useDataGridContext();
@@ -37,8 +38,11 @@ function MyDataGrid(props: Iprops) {
   useEffect(() => {
     if (!iFilterModel) return;
     const { model, details } = iFilterModel;
-    onFilterModelChange?.(model, details, { serverSideSearch });
-  }, [serverSideSearch, props.archiveState?.[0]]);
+    onFilterModelChange?.(model, details, {
+      serverSideSearch,
+      field: selectedFilterOption,
+    });
+  }, [serverSideSearch, selectedFilterOption, props.archiveState?.[0]]);
 
   useEffect(() => {
     disableArchiveBtnState[1](props.loading);
@@ -56,7 +60,7 @@ function MyDataGrid(props: Iprops) {
     const options = extractFilterOptions();
     setFilterOptions(options);
     serverSideSearch && setSelectedFilterOption(options[0]?.field || '');
-  }, [props.columns]);
+  }, []);
 
   function extractFilterOptions() {
     return props.columns.flatMap((column) => {
@@ -89,7 +93,10 @@ function MyDataGrid(props: Iprops) {
           <DataGrid
             onFilterModelChange={(model, details) => {
               setiFilterModel({ model, details });
-              onFilterModelChange?.(model, details, { serverSideSearch });
+              onFilterModelChange?.(model, details, {
+                serverSideSearch,
+                field: selectedFilterOption,
+              });
             }}
             loading={props.loading}
             rows={props.rows}

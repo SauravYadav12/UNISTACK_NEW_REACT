@@ -6,7 +6,10 @@ import {
   DialogTitle,
   IconButton,
 } from '@mui/material';
-import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDataGrid, {
+  GridFilterOption,
+  iGridColumn,
+} from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useState } from 'react';
@@ -22,6 +25,7 @@ import {
 import { syncDataById } from '../../../utils/syncDataById';
 import { FormMode } from '../Requirements/Requirements';
 import SearchRequirement from '../Interviews/SearchRequirement';
+import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
 
 export default function TestAndVendorInterviews() {
   const [openDialog, setOpenDialog] = useState(false);
@@ -47,7 +51,7 @@ export default function TestAndVendorInterviews() {
     []
   );
 
-  const columns = [
+  const columns: readonly iGridColumn[] = [
     {
       field: 'view',
       headerName: 'View',
@@ -63,6 +67,9 @@ export default function TestAndVendorInterviews() {
           View
         </Button>
       ),
+      serverFilterOptions: {
+        exclude: true,
+      },
     },
     { field: 'testID', headerName: 'Test ID', width: 100 },
     {
@@ -86,6 +93,11 @@ export default function TestAndVendorInterviews() {
       valueGetter: (params: any) => {
         return moment(params).format(dateFormate2);
       },
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
+      },
     },
     { field: 'interviewDuration', headerName: 'Test Duration', width: 100 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
@@ -99,6 +111,11 @@ export default function TestAndVendorInterviews() {
       width: 180,
       valueGetter: (params: any) => {
         return moment(params).format(dateFormate2);
+      },
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
       },
     },
   ];
@@ -139,6 +156,19 @@ export default function TestAndVendorInterviews() {
   const handleEdit = (editMode: any) => {
     setMode(editMode ? 'edit' : 'view');
   };
+
+  const handleChangeFilterModel = (
+    model: GridFilterModel,
+    details: GridCallbackDetails<'filter'>,
+    options: GridFilterOption
+  ) => {
+    const iModel =
+      options.serverSideSearch && model.quickFilterValues?.length
+        ? model
+        : initialSearchModel;
+    setSearchModel(iModel, options.field);
+  };
+
   const header = (
     <>
       <h3>Test and Vendor Interviews</h3>
@@ -187,9 +217,7 @@ export default function TestAndVendorInterviews() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        onFilterModelChange={(model, detail, isServerSerachOn) =>
-          setSearchModel(isServerSerachOn ? model : initialSearchModel)
-        }
+        onFilterModelChange={handleChangeFilterModel}
         error={error}
         retry={reload}
         loading={loading}

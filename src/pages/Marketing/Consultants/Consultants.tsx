@@ -1,7 +1,10 @@
 import { Button, IconButton } from '@mui/material';
 import moment from 'moment';
 import { useState } from 'react';
-import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDataGrid, {
+  GridFilterOption,
+  iGridColumn,
+} from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
 import { consultantsList } from '../../../services/consultantApi';
@@ -14,6 +17,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
 import { FormMode } from '../Requirements/Requirements';
+import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -43,7 +47,7 @@ export default function Consultants() {
     }
     return 'red';
   };
-  const columns = [
+  const columns: readonly iGridColumn[] = [
     {
       field: 'view',
       headerName: 'View',
@@ -59,6 +63,9 @@ export default function Consultants() {
           View
         </Button>
       ),
+      serverFilterOptions: {
+        exclude: true,
+      },
     },
     { field: 'consultantId', headerName: 'ID', width: 100 },
     {
@@ -83,6 +90,11 @@ export default function Consultants() {
       headerName: 'Created At',
       width: 180,
       valueGetter: (params: any) => moment(params).format(dateFormate2),
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
+      },
     },
   ];
 
@@ -118,6 +130,18 @@ export default function Consultants() {
     setMode(editMode ? 'edit' : 'view');
   };
 
+  const handleChangeFilterModel = (
+    model: GridFilterModel,
+    details: GridCallbackDetails<'filter'>,
+    options: GridFilterOption
+  ) => {
+    const iModel =
+      options.serverSideSearch && model.quickFilterValues?.length
+        ? model
+        : initialSearchModel;
+    setSearchModel(iModel, options.field);
+  };
+
   const header = (
     <>
       <h3>Consultants</h3>
@@ -148,9 +172,7 @@ export default function Consultants() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        onFilterModelChange={(model, detail, isServerSerachOn) =>
-          setSearchModel(isServerSerachOn ? model : initialSearchModel)
-        }
+        onFilterModelChange={handleChangeFilterModel}
         error={error}
         retry={reload}
         loading={loading}
