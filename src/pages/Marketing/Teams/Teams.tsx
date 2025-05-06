@@ -1,5 +1,8 @@
 import { Button, IconButton } from '@mui/material';
-import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDataGrid, {
+  GridFilterOption,
+  iGridColumn,
+} from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import TeamsForm from './TeamsForm';
@@ -12,6 +15,7 @@ import {
 } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
+import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -36,7 +40,7 @@ export default function Teams() {
     []
   );
 
-  const columns = [
+  const columns: readonly iGridColumn[] = [
     {
       field: 'view',
       headerName: 'View',
@@ -52,6 +56,9 @@ export default function Teams() {
           View
         </Button>
       ),
+      serverFilterOptions: {
+        exclude: true,
+      },
     },
     { field: 'teamId', headerName: 'Team ID', width: 150 },
     { field: 'teamName', headerName: 'Name', width: 150 },
@@ -63,6 +70,11 @@ export default function Teams() {
       headerName: 'Created At',
       width: 180,
       valueGetter: (params: any) => moment(params).format(dateFormate2),
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
+      },
     },
   ];
 
@@ -96,6 +108,18 @@ export default function Teams() {
     setMode(editMode ? 'edit' : 'view');
   };
 
+  const handleChangeFilterModel = (
+    model: GridFilterModel,
+    details: GridCallbackDetails<'filter'>,
+    options: GridFilterOption
+  ) => {
+    const iModel =
+      options.serverSideSearch && model.quickFilterValues?.length
+        ? model
+        : initialSearchModel;
+    setSearchModel(iModel, options.field);
+  };
+
   const header = (
     <>
       <h3>Teams</h3>
@@ -126,9 +150,7 @@ export default function Teams() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        onFilterModelChange={(model, detail, isServerSerachOn) =>
-          setSearchModel(isServerSerachOn ? model : initialSearchModel)
-        }
+        onFilterModelChange={handleChangeFilterModel}
         error={error}
         retry={reload}
         loading={loading}

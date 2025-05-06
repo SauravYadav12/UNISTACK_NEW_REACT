@@ -6,6 +6,7 @@ import {
   GridPaginationModel,
   GridCallbackDetails,
   GridFilterModel,
+  GridColDef,
 } from '@mui/x-data-grid';
 import { IconButton, Typography } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -26,6 +27,9 @@ function MyDataGrid(props: Iprops) {
     serverSideSearchState,
     disableArchiveBtnState,
     archiveState: iArchiveState,
+    selectedFilterOption,
+    setFilterOptions,
+    setSelectedFilterOption,
   } = useDataGridContext();
   const [serverSideSearch] = serverSideSearchState;
   const [iFilterModel, setiFilterModel] = useState<iFilterModel>();
@@ -34,8 +38,11 @@ function MyDataGrid(props: Iprops) {
   useEffect(() => {
     if (!iFilterModel) return;
     const { model, details } = iFilterModel;
-    onFilterModelChange?.(model, details, serverSideSearch);
-  }, [serverSideSearch, props.archiveState?.[0]]);
+    onFilterModelChange?.(model, details, {
+      serverSideSearch,
+      field: selectedFilterOption,
+    });
+  }, [serverSideSearch, selectedFilterOption, props.archiveState?.[0]]);
 
   useEffect(() => {
     disableArchiveBtnState[1](props.loading);
@@ -48,6 +55,22 @@ function MyDataGrid(props: Iprops) {
   useEffect(() => {
     props.archiveState?.[1](!!iArchiveState[0]);
   }, [iArchiveState[0]]);
+
+  useEffect(() => {
+    const options = extractFilterOptions();
+    setFilterOptions(options);
+    serverSideSearch && setSelectedFilterOption(options[0]?.field || '');
+  }, []);
+
+  function extractFilterOptions() {
+    return props.columns.flatMap((column) => {
+      const { serverFilterOptions, headerName = column.field, field } = column;
+      if (serverFilterOptions?.exclude) {
+        return [];
+      }
+      return [{ headerName, field }];
+    });
+  }
 
   return (
     <div
@@ -70,7 +93,10 @@ function MyDataGrid(props: Iprops) {
           <DataGrid
             onFilterModelChange={(model, details) => {
               setiFilterModel({ model, details });
-              onFilterModelChange?.(model, details, serverSideSearch);
+              onFilterModelChange?.(model, details, {
+                serverSideSearch,
+                field: selectedFilterOption,
+              });
             }}
             loading={props.loading}
             rows={props.rows}
@@ -151,14 +177,14 @@ interface Iprops {
   error: string;
   header: JSX.Element | string;
   rows: any[];
-  columns: any[];
+  columns: readonly iGridColumn[];
   paginateState: PaginateState;
   archiveState?: ArchiveState;
   retry: () => void;
   onFilterModelChange?: (
     model: GridFilterModel,
     details: GridCallbackDetails<'filter'>,
-    serverSideSearch: boolean
+    options: GridFilterOption
   ) => void;
 }
 export interface PaginateState {
@@ -167,8 +193,20 @@ export interface PaginateState {
   onChange: (e: GridPaginationModel) => void;
 }
 export type ArchiveState = [boolean, (archive: boolean) => void];
-
+export interface GridFilterOption {
+  serverSideSearch: boolean;
+  field?: string;
+}
 interface CustomErrorOverlayProps {
   message: string;
   retry: () => void;
 }
+export interface iServerFilterOptions {
+  serverFilterOptions?: {
+    exclude?: boolean;
+    validate?: (val?: string) => boolean;
+    transform?: (val?: string) => string;
+  };
+}
+
+export type iGridColumn = GridColDef<any> & iServerFilterOptions;

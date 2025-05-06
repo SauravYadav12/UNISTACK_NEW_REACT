@@ -1,4 +1,4 @@
-import { FormControlLabel, Switch, Box } from '@mui/material';
+import { FormControlLabel, Switch, Box, MenuItem, Select } from '@mui/material';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
   ArchiveModule,
@@ -29,8 +29,14 @@ const formControlSX = {
 
 export default function CustomToolbar() {
   const { isModuleAllowed } = useAuth();
-  const { serverSideSearchState, archiveState, disableArchiveBtnState } =
-    useDataGridContext();
+  const {
+    serverSideSearchState,
+    archiveState,
+    disableArchiveBtnState,
+    filterOptions,
+    selectedFilterOption,
+    setSelectedFilterOption,
+  } = useDataGridContext();
   const [serverSideSearch, setServerSideSearch] = serverSideSearchState;
   const [archive, setArchive] = archiveState || [];
 
@@ -66,7 +72,30 @@ export default function CustomToolbar() {
         }
         sx={formControlSX}
       />
-
+      {serverSideSearch && (
+        <>
+          <Select
+            value={selectedFilterOption}
+            size="small"
+            onChange={(e) => {
+              setSelectedFilterOption(e.target.value as any);
+            }}
+            sx={{
+              '& .MuiOutlinedInput-notchedOutline': {
+                border: 'none',
+              },
+            }}
+          >
+            {filterOptions.map((o, i) => {
+              return (
+                <MenuItem key={i} value={o.field}>
+                  {o.headerName}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </>
+      )}
       <GridToolbarQuickFilter />
     </GridToolbarContainer>
   );

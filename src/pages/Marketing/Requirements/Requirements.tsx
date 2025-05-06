@@ -5,7 +5,11 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
-import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDataGrid, {
+  GridFilterOption,
+  iGridColumn,
+  iServerFilterOptions,
+} from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useState } from 'react';
 import RequirementsForm from './RequirementsForm';
@@ -13,6 +17,11 @@ import { requirementsList } from '../../../services/requirementApi';
 import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
+import {
+  GridCallbackDetails,
+  GridColDef,
+  GridFilterModel,
+} from '@mui/x-data-grid';
 import {
   initialSearchModel,
   usePagination,
@@ -55,7 +64,7 @@ export default function Requirements() {
     moduleKey(ModuleGroup.Archive, ArchiveModule.Requirements)
   );
 
-  const columns = [
+  const columns: readonly iGridColumn[] = [
     {
       field: 'view',
       headerName: 'View',
@@ -71,6 +80,9 @@ export default function Requirements() {
           View
         </Button>
       ),
+      serverFilterOptions: {
+        exclude: true,
+      },
     },
     { field: 'reqID', headerName: 'Req ID', width: 180 },
     { field: 'assignedTo', headerName: 'Assigned to', width: 120 },
@@ -102,6 +114,11 @@ export default function Requirements() {
       width: 180,
       valueGetter: (val: string) => {
         return moment(val).format(dateFormate2);
+      },
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
       },
     },
   ];
@@ -210,6 +227,18 @@ export default function Requirements() {
     return data.data?.results || [];
   }
 
+  const handleChangeFilterModel = (
+    model: GridFilterModel,
+    details: GridCallbackDetails<'filter'>,
+    options: GridFilterOption
+  ) => {
+    const iModel =
+      options.serverSideSearch && model.quickFilterValues?.length
+        ? model
+        : initialSearchModel;
+    setSearchModel(iModel, options.field);
+  };
+
   const header = (
     <>
       <h3>Requirements</h3>
@@ -278,20 +307,14 @@ export default function Requirements() {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        onFilterModelChange={(model, detail, isServerSerachOn) =>
-          setSearchModel(
-            isServerSerachOn && model.quickFilterValues?.length
-              ? model
-              : initialSearchModel
-          )
-        }
-        error={error}
-        retry={reload}
+        onFilterModelChange={handleChangeFilterModel}
         archiveState={
           isArchiveRequirementModuleAllowed
             ? [archive, onChangeArchiveButton]
             : undefined
         }
+        error={error}
+        retry={reload}
         header={header}
         rows={gridData?.results || []}
         columns={columns}

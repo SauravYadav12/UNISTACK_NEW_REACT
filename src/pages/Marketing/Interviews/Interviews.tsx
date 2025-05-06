@@ -7,7 +7,10 @@ import {
   IconButton,
 } from '@mui/material';
 import moment from 'moment';
-import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDataGrid, {
+  GridFilterOption,
+  iGridColumn,
+} from '../../../components/datagrid/DataGrid';
 import { useEffect, useState } from 'react';
 import InterviewForm from './InterviewForm';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -33,6 +36,7 @@ import { FormMode } from '../Requirements/Requirements';
 import { syncDataById } from '../../../utils/syncDataById';
 import { requirementsList } from '../../../services/requirementApi';
 import { createInterviewQueryParam } from './interviewValues';
+import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
 
 interface Iprops {
   label: string;
@@ -71,7 +75,7 @@ export default function Interviews(props: Iprops) {
     [archive, props.query]
   );
 
-  const columns = [
+  const columns: readonly iGridColumn[] = [
     {
       field: 'view',
       headerName: 'View',
@@ -87,6 +91,9 @@ export default function Interviews(props: Iprops) {
           View
         </Button>
       ),
+      serverFilterOptions: {
+        exclude: true,
+      },
     },
     { field: 'intId', headerName: 'Int ID', width: 100 },
     {
@@ -110,6 +117,11 @@ export default function Interviews(props: Iprops) {
       width: 130,
       valueGetter: (params: any) => {
         return moment(params).format(dateFormate2);
+      },
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
       },
     },
     {
@@ -136,6 +148,11 @@ export default function Interviews(props: Iprops) {
       width: 180,
       valueGetter: (val: string) => {
         return moment(val).format(dateFormate2);
+      },
+      serverFilterOptions: {
+        validate(val) {
+          return !val || moment(val).isValid();
+        },
       },
     },
   ];
@@ -196,6 +213,17 @@ export default function Interviews(props: Iprops) {
     setArchive(true);
     return res;
   }
+  const handleChangeFilterModel = (
+    model: GridFilterModel,
+    details: GridCallbackDetails<'filter'>,
+    options: GridFilterOption
+  ) => {
+    const iModel =
+      options.serverSideSearch && model.quickFilterValues?.length
+        ? model
+        : initialSearchModel;
+    setSearchModel(iModel, options.field);
+  };
 
   const createInterview = async (reqID: string) => {
     try {
@@ -277,13 +305,7 @@ export default function Interviews(props: Iprops) {
           model: paginationModel,
           onChange: setPaginationModel,
         }}
-        onFilterModelChange={(model, detail, isServerSerachOn) =>
-          setSearchModel(
-            isServerSerachOn && model.quickFilterValues?.length
-              ? model
-              : initialSearchModel
-          )
-        }
+        onFilterModelChange={handleChangeFilterModel}
         archiveState={
           isArchiveInterviewModuleAllowed
             ? [
