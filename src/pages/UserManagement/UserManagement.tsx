@@ -39,6 +39,8 @@ import { Sync } from '@mui/icons-material';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import { iUser, UserRole } from '../../Interfaces/iUser';
 import UserWorkLocationSelect from '../../components/userManagement/UserWorkLocationSelect';
+import { iGridColumn } from '../../components/datagrid/DataGrid';
+import { filterOperatorsForDateField } from '../../components/datagrid/CustomToolbar';
 
 interface CustomCard {
   color: string;
@@ -85,7 +87,7 @@ function UserManagement() {
     });
   }
 
-  const Columns: any = useMemo(
+  const Columns = useMemo<iGridColumn[]>(
     () => [
       {
         field: 'view',
@@ -102,6 +104,8 @@ function UserManagement() {
             view
           </Button>
         ),
+        filterable: false,
+        sortable: false,
       },
       {
         field: 'firstName',
@@ -218,6 +222,7 @@ function UserManagement() {
         width: 200,
         valueGetter: (params: any) =>
           moment(params).format(dateFormate2 + ' ' + timeFormate),
+        // filterOperators: filterOperatorsForDateField,
       },
       {
         field: 'updatedAt',
@@ -225,6 +230,7 @@ function UserManagement() {
         width: 200,
         valueGetter: (params: any) =>
           moment(params).format(dateFormate2 + ' ' + timeFormate),
+        // filterOperators: filterOperatorsForDateField,
       },
     ],
     []

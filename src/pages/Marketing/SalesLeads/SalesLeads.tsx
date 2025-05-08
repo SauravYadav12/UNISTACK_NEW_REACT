@@ -23,6 +23,7 @@ import { usersList } from '../../../services/authApi';
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { syncDataById } from '../../../utils/syncDataById';
 import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -63,9 +64,8 @@ const SalesLeads = () => {
           View
         </Button>
       ),
-      serverFilterOptions: {
-        exclude: true,
-      },
+      filterable: false,
+      sortable: false,
     },
     {
       field: 'firstName',
@@ -118,11 +118,7 @@ const SalesLeads = () => {
       headerName: 'Created At',
       width: 180,
       valueGetter: (params: any) => moment(params).format(dateFormate2),
-      serverFilterOptions: {
-        validate(val) {
-          return !val || moment(val).isValid();
-        },
-      },
+      filterOperators: filterOperatorsForDateField,
     },
   ];
   const handleViewDetails = (row: iSalesLead) => {
@@ -174,10 +170,10 @@ const SalesLeads = () => {
     options: GridFilterOption
   ) => {
     const iModel =
-      options.serverSideSearch && model.quickFilterValues?.length
+      options.serverSideSearch && model.items.length && model.items[0].value
         ? model
         : initialSearchModel;
-    setSearchModel(iModel, options.field);
+    setSearchModel(iModel);
   };
 
   const dataGridHeader = (

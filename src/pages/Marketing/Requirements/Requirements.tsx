@@ -8,7 +8,6 @@ import {
 import CustomDataGrid, {
   GridFilterOption,
   iGridColumn,
-  iServerFilterOptions,
 } from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useState } from 'react';
@@ -17,11 +16,7 @@ import { requirementsList } from '../../../services/requirementApi';
 import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
-import {
-  GridCallbackDetails,
-  GridColDef,
-  GridFilterModel,
-} from '@mui/x-data-grid';
+import { GridCallbackDetails, GridFilterModel } from '@mui/x-data-grid';
 import {
   initialSearchModel,
   usePagination,
@@ -43,6 +38,10 @@ import RequirementDrawer from '../../../components/requirement/RequirementDrawer
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
 import { syncDataById } from '../../../utils/syncDataById';
 import { useSearchParams } from 'react-router-dom';
+import {
+  filterOperatorsForDateField,
+  FilterPanelDateInput,
+} from '../../../components/datagrid/CustomToolbar';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
@@ -80,11 +79,10 @@ export default function Requirements() {
           View
         </Button>
       ),
-      serverFilterOptions: {
-        exclude: true,
-      },
+      filterable: false,
+      sortable: false,
     },
-    { field: 'reqID', headerName: 'Req ID', width: 180 },
+    { field: 'reqID', headerName: 'ID', width: 180 },
     { field: 'assignedTo', headerName: 'Assigned to', width: 120 },
     { field: 'appliedFor', headerName: 'Applied For', width: 150 },
     { field: 'clientCompany', headerName: 'Client Name', width: 150 },
@@ -115,11 +113,7 @@ export default function Requirements() {
       valueGetter: (val: string) => {
         return moment(val).format(dateFormate2);
       },
-      serverFilterOptions: {
-        validate(val) {
-          return !val || moment(val).isValid();
-        },
-      },
+      filterOperators: filterOperatorsForDateField,
     },
   ];
   const {
@@ -233,10 +227,10 @@ export default function Requirements() {
     options: GridFilterOption
   ) => {
     const iModel =
-      options.serverSideSearch && model.quickFilterValues?.length
+      options.serverSideSearch && model.items.length && model.items[0].value
         ? model
         : initialSearchModel;
-    setSearchModel(iModel, options.field);
+    setSearchModel(iModel);
   };
 
   const header = (

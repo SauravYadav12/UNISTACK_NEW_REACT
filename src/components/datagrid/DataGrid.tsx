@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import {
   DataGrid,
@@ -7,6 +7,8 @@ import {
   GridCallbackDetails,
   GridFilterModel,
   GridColDef,
+  GridFilterInputValue,
+  GridFilterOperator,
 } from '@mui/x-data-grid';
 import { IconButton, Typography } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -27,22 +29,46 @@ function MyDataGrid(props: Iprops) {
     serverSideSearchState,
     disableArchiveBtnState,
     archiveState: iArchiveState,
-    selectedFilterOption,
-    setFilterOptions,
-    setSelectedFilterOption,
   } = useDataGridContext();
   const [serverSideSearch] = serverSideSearchState;
   const [iFilterModel, setiFilterModel] = useState<iFilterModel>();
   const { error, retry, paginateState, onFilterModelChange } = props;
 
-  useEffect(() => {
-    if (!iFilterModel) return;
-    const { model, details } = iFilterModel;
-    onFilterModelChange?.(model, details, {
-      serverSideSearch,
-      field: selectedFilterOption,
-    });
-  }, [serverSideSearch, selectedFilterOption, props.archiveState?.[0]]);
+  const [filterButtonEl, setFilterButtonEl] =
+    React.useState<HTMLButtonElement | null>(null);
+
+  const columns = useMemo(() => {
+    if (serverSideSearch) {
+      return props.columns.map((column) => {
+        if (!column.filterOperators) {
+          const filterOperators: GridFilterOperator<any>[] = [
+            {
+              value: 'equals',
+              label: 'Equals',
+              getApplyFilterFn() {
+                return () => true;
+              },
+              InputComponent: GridFilterInputValue,
+            },
+            {
+              value: 'contains',
+              label: 'Contains',
+              getApplyFilterFn() {
+                return () => true;
+              },
+              InputComponent: GridFilterInputValue,
+            },
+          ];
+          return {
+            ...column,
+            filterOperators,
+          };
+        }
+        return column;
+      });
+    }
+    return props.columns;
+  }, [props.columns, serverSideSearch]);
 
   useEffect(() => {
     disableArchiveBtnState[1](props.loading);
@@ -55,22 +81,6 @@ function MyDataGrid(props: Iprops) {
   useEffect(() => {
     props.archiveState?.[1](!!iArchiveState[0]);
   }, [iArchiveState[0]]);
-
-  useEffect(() => {
-    const options = extractFilterOptions();
-    setFilterOptions(options);
-    serverSideSearch && setSelectedFilterOption(options[0]?.field || '');
-  }, []);
-
-  function extractFilterOptions() {
-    return props.columns.flatMap((column) => {
-      const { serverFilterOptions, headerName = column.field, field } = column;
-      if (serverFilterOptions?.exclude) {
-        return [];
-      }
-      return [{ headerName, field }];
-    });
-  }
 
   return (
     <div
@@ -95,18 +105,17 @@ function MyDataGrid(props: Iprops) {
               setiFilterModel({ model, details });
               onFilterModelChange?.(model, details, {
                 serverSideSearch,
-                field: selectedFilterOption,
               });
             }}
             loading={props.loading}
             rows={props.rows}
-            columns={props.columns}
+            columns={columns}
             filterMode={serverSideSearch ? 'server' : 'client'}
             paginationMode="server"
             rowCount={paginateState.totalRows}
             getRowId={(row: any) => row._id}
             slots={{
-              toolbar: CustomToolbar,
+              toolbar: CustomToolbar as any,
               noRowsOverlay: () =>
                 error ? (
                   <ErrorOverlay message={error} retry={retry} />
@@ -124,6 +133,12 @@ function MyDataGrid(props: Iprops) {
                   />
                 ),
                 disabled: props.loading,
+              },
+              panel: {
+                anchorEl: filterButtonEl,
+              },
+              toolbar: {
+                setFilterButtonEl,
               },
             }}
             sx={{
@@ -195,7 +210,7 @@ export interface PaginateState {
 export type ArchiveState = [boolean, (archive: boolean) => void];
 export interface GridFilterOption {
   serverSideSearch: boolean;
-  field?: string;
+  // field?: string;
 }
 interface CustomErrorOverlayProps {
   message: string;
@@ -209,4 +224,4 @@ export interface iServerFilterOptions {
   };
 }
 
-export type iGridColumn = GridColDef<any> & iServerFilterOptions;
+export type iGridColumn = GridColDef<any>;

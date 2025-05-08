@@ -18,6 +18,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
 import { FormMode } from '../Requirements/Requirements';
 import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -63,9 +64,8 @@ export default function Consultants() {
           View
         </Button>
       ),
-      serverFilterOptions: {
-        exclude: true,
-      },
+      filterable: false,
+      sortable: false,
     },
     { field: 'consultantId', headerName: 'ID', width: 100 },
     {
@@ -90,11 +90,7 @@ export default function Consultants() {
       headerName: 'Created At',
       width: 180,
       valueGetter: (params: any) => moment(params).format(dateFormate2),
-      serverFilterOptions: {
-        validate(val) {
-          return !val || moment(val).isValid();
-        },
-      },
+      filterOperators: filterOperatorsForDateField,
     },
   ];
 
@@ -136,10 +132,10 @@ export default function Consultants() {
     options: GridFilterOption
   ) => {
     const iModel =
-      options.serverSideSearch && model.quickFilterValues?.length
+      options.serverSideSearch && model.items.length && model.items[0].value
         ? model
         : initialSearchModel;
-    setSearchModel(iModel, options.field);
+    setSearchModel(iModel);
   };
 
   const header = (

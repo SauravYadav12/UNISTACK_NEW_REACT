@@ -15,10 +15,15 @@ export const initialSearchModel: GridFilterModel = {
 };
 export const searchStringKey = 'searchString';
 export const searchFieldKey = 'searchField';
+
+export enum SearchOperator {
+  Equals = 'equals',
+  Contains = 'Contains',
+}
+
 export function usePagination(para: ApiQuery, dependencies: any[]) {
   const [searchModel, setSearchModel] =
     useState<GridFilterModel>(initialSearchModel);
-  const [searchField, setSearchField] = useState<string>('');
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(
     initialPaginationModel
   );
@@ -36,12 +41,13 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     const { quickFilterValues } = searchModel;
     const iQuery = para.queryParams || '';
     let queryString = '';
-    // searchModel.quickFilterValues?.forEach((v) => {
-    //   queryString = queryString + '&' + searchStringKey + '=' + v;
-    // });
-    if (quickFilterValues?.length && searchField) {
-      const val = quickFilterValues.join(' ');
-      queryString = `${queryString}&${searchStringKey}=${val}&${searchFieldKey}=${searchField}`;
+    if (searchModel.items.length) {
+      const { operator, field, value } = searchModel.items[0];
+      if (operator === SearchOperator.Contains && value) {
+        queryString = `${queryString}&${searchStringKey}=${value}&${searchFieldKey}=${field}`;
+      } else if (operator === SearchOperator.Equals && value) {
+        queryString = `${queryString}&${field}=${value}`;
+      }
     }
 
     queryString = `${queryString}&${iQuery}&page=${page}&limit=${pageSize}`;
@@ -49,9 +55,8 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     return queryString;
   }
 
-  function handleSetSearchModel(model: GridFilterModel, field?: string) {
+  function handleSetSearchModel(model: GridFilterModel) {
     setSearchModel(model);
-    setSearchField(field || '');
   }
 
   const loadData = async () => {
@@ -89,11 +94,6 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     loadData();
     setPaginationModel(initialPaginationModel);
   }, [searchModel]);
-
-  useEffect(() => {
-    searchModel.quickFilterValues?.length && loadData();
-    setPaginationModel(initialPaginationModel);
-  }, [searchField]);
 
   useEffect(() => {
     loadData();

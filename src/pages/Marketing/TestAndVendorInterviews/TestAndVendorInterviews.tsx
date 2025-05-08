@@ -32,6 +32,7 @@ import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { teamsList } from '../../../services/teamsApi';
 import { Sync } from '@mui/icons-material';
+import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 
 export default function TestAndVendorInterviews() {
   const [openDialog, setOpenDialog] = useState(false);
@@ -80,9 +81,8 @@ export default function TestAndVendorInterviews() {
           View
         </Button>
       ),
-      serverFilterOptions: {
-        exclude: true,
-      },
+      filterable: false,
+      sortable: false,
     },
     { field: 'testID', headerName: 'Test ID', width: 100 },
     {
@@ -106,11 +106,7 @@ export default function TestAndVendorInterviews() {
       valueGetter: (params: any) => {
         return moment(params).format(dateFormate2);
       },
-      serverFilterOptions: {
-        validate(val) {
-          return !val || moment(val).isValid();
-        },
-      },
+      filterOperators: filterOperatorsForDateField,
     },
     { field: 'interviewDuration', headerName: 'Test Duration', width: 100 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
@@ -125,11 +121,7 @@ export default function TestAndVendorInterviews() {
       valueGetter: (params: any) => {
         return moment(params).format(dateFormate2);
       },
-      serverFilterOptions: {
-        validate(val) {
-          return !val || moment(val).isValid();
-        },
-      },
+      filterOperators: filterOperatorsForDateField,
     },
   ];
 
@@ -176,10 +168,10 @@ export default function TestAndVendorInterviews() {
     options: GridFilterOption
   ) => {
     const iModel =
-      options.serverSideSearch && model.quickFilterValues?.length
+      options.serverSideSearch && model.items.length && model.items[0].value
         ? model
         : initialSearchModel;
-    setSearchModel(iModel, options.field);
+    setSearchModel(iModel);
   };
 
   const header = (
