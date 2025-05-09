@@ -43,6 +43,7 @@ import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { teamsList } from '../../../services/teamsApi';
 import { Sync } from '@mui/icons-material';
+import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 
 interface Iprops {
   label: string;
@@ -106,11 +107,10 @@ export default function Interviews(props: Iprops) {
           View
         </Button>
       ),
-      serverFilterOptions: {
-        exclude: true,
-      },
+      sortable: false,
+      filterable: false,
     },
-    { field: 'intId', headerName: 'Int ID', width: 100 },
+    { field: 'intId', headerName: 'ID', width: 100 },
     {
       field: 'interviewStatus',
       headerName: 'Int Status',
@@ -133,11 +133,7 @@ export default function Interviews(props: Iprops) {
       valueGetter: (params: any) => {
         return moment(params).format(dateFormate2);
       },
-      serverFilterOptions: {
-        validate(val) {
-          return !val || moment(val).isValid();
-        },
-      },
+      filterOperators: filterOperatorsForDateField,
     },
     {
       field: 'interviewTime',
@@ -150,6 +146,8 @@ export default function Interviews(props: Iprops) {
           (r.timeZone || '')
         );
       },
+      filterable: false,
+      sortable: false,
     },
     { field: 'intResult', headerName: 'Int Result', width: 150 },
     { field: 'subjectLine', headerName: 'Subject Line', width: 150 },
@@ -164,11 +162,7 @@ export default function Interviews(props: Iprops) {
       valueGetter: (val: string) => {
         return moment(val).format(dateFormate2);
       },
-      serverFilterOptions: {
-        validate(val) {
-          return !val || moment(val).isValid();
-        },
-      },
+      filterOperators: filterOperatorsForDateField,
     },
   ];
 
@@ -234,10 +228,10 @@ export default function Interviews(props: Iprops) {
     options: GridFilterOption
   ) => {
     const iModel =
-      options.serverSideSearch && model.quickFilterValues?.length
+      options.serverSideSearch && model.items.length && model.items[0].value
         ? model
         : initialSearchModel;
-    setSearchModel(iModel, options.field);
+    setSearchModel(iModel);
   };
 
   const createInterview = async (reqID: string) => {

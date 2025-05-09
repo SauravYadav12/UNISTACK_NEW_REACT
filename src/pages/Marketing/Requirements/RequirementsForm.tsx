@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   CircularProgress,
+  Divider,
   Grid,
   IconButton,
   Stack,
@@ -26,6 +27,7 @@ import {
 } from './requirementsValues';
 import {
   createRequirement,
+  createRequirementLog,
   deleteRequirement,
   updateRequirement,
 } from '../../../services/requirementApi';
@@ -50,11 +52,17 @@ import { iUser, UserRole } from '../../../Interfaces/iUser';
 import { SetResults } from '../../../hooks/paginationHook';
 import { createInterviewQueryParam } from '../Interviews/interviewValues';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import {
+  CreateRequirementLogPayload,
+  LogOperation,
+} from '../../../Interfaces/requirement';
+import RequirementLogTable from '../../../components/requirement/RequirementLogTable';
 
 interface iProps {
   viewData: any;
   isEditing?: boolean;
   hideButtons?: boolean;
+  hideFooter?: boolean;
   mode?: FormMode;
   accounts?: iUser[];
   consultants?: any[];
@@ -62,6 +70,7 @@ interface iProps {
   disableCreateInterview?: boolean;
   disableCopyRequirement?: boolean;
   disableDelete?: boolean;
+  showLogs?: boolean;
   onDrawerClose?: () => void;
   onEdit?: (editMode: boolean) => void;
   onCopy?: () => void;
@@ -88,6 +97,7 @@ export default function RequirementsForm(props: iProps) {
     disableCopyRequirement,
     disableCreateInterview,
     disableDelete,
+    showLogs = false,
     mode = 'view',
     onEdit,
     onDrawerClose,
@@ -189,6 +199,26 @@ export default function RequirementsForm(props: iProps) {
     setValues((pre: any) => ({ ...pre, resumeUpload: '' }));
   };
 
+  async function createLog(data: any, operation: LogOperation) {
+    if (!data._id) {
+      console.error({ data }, ' ', 'create log payload is not valid data');
+    }
+    try {
+      const logPayload: CreateRequirementLogPayload = {
+        requirementRef: data._id,
+        userName: user.firstName + ' ' + user.lastName,
+        userRef: user._id,
+        oldData: values,
+        newData: data,
+        operation,
+      };
+
+      const { data: logData } = await createRequirementLog(logPayload);
+    } catch (error) {
+      console.log('Failed to create log ', error);
+    }
+  }
+
   async function handleSubmitForm(event: any) {
     event.preventDefault();
     if (isSubmitting) return;
@@ -224,6 +254,7 @@ export default function RequirementsForm(props: iProps) {
       }
       const { data } = await createRequirement(payload);
       setResults?.((pre: any) => [data.data, ...pre]);
+      createLog(data.data, 'create');
       onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
@@ -268,6 +299,7 @@ export default function RequirementsForm(props: iProps) {
         });
         return [...pre];
       });
+      createLog(data.data, 'update');
       onDrawerClose?.(); // Close the drawer after successful update
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
@@ -731,20 +763,6 @@ export default function RequirementsForm(props: iProps) {
           />
 
           <Stack>
-            {values?.mComment?.map((comment: any, i: number) => {
-              const label = `${comment.username} . ${dayjs(comment.date).format(
-                dateFormate + ' ' + timeFormate
-              )}`;
-              return (
-                <CustomTextField
-                  key={i}
-                  label={label}
-                  width={970}
-                  disabled
-                  selectedValue={comment.comment}
-                />
-              );
-            })}
             {isEditing && mode !== 'view' && (
               <CustomTextField
                 label={"Marketing Person's Comment"}
@@ -753,6 +771,23 @@ export default function RequirementsForm(props: iProps) {
                 onChange={(event: any) => setComment(event.target.value)}
               />
             )}
+
+            {[...(values?.mComment || [])]
+              .reverse()
+              .map((comment: any, i: number) => {
+                const label = `${comment.username} . ${dayjs(
+                  comment.date
+                ).format(dateFormate + ' ' + timeFormate)}`;
+                return (
+                  <CustomTextField
+                    key={i}
+                    label={label}
+                    width={970}
+                    disabled
+                    selectedValue={comment.comment}
+                  />
+                );
+              })}
           </Stack>
         </Grid>
 
@@ -1049,46 +1084,56 @@ export default function RequirementsForm(props: iProps) {
           />
         </Grid>
         {/* Section 6: Footer */}
-        {mode === 'view' ? (
-          <div
-            style={{
-              marginTop: '20px',
-              justifyContent: 'space-between',
-              display: 'flex',
-              fontSize: '14px',
-              borderTop: '1px solid #ccc',
-            }}
-          >
-            <p>
-              <span>Entered By:</span>
-              <strong> {values.reqEnteredBy || ''}</strong>
-              <span> On Date:</span>
-              <strong>
-                {' '}
-                {dayjs(values.createdAt).format(
-                  dateFormate + ' ' + timeFormate
-                )}
-              </strong>
-            </p>
-            <p>
-              <span>Last Updated By: </span>
-              <strong>
-                {values.mComment && values.mComment.length > 0
-                  ? values.mComment[values.mComment.length - 1].username
-                  : 'N/A'}
-              </strong>
-              <span> On Date:</span>
-              <strong>
-                {' '}
-                {values.mComment && values.mComment.length > 0
-                  ? dayjs(
-                      values.mComment[values.mComment.length - 1].date
-                    ).format(dateFormate + ' ' + timeFormate)
-                  : 'N/A'}
-              </strong>
-            </p>
-          </div>
-        ) : null}
+        {!props.hideFooter && !isEditing && (
+          <>
+            <Divider sx={{ marginTop: '20px' }} />
+            <div
+              style={{
+                // marginTop: '20px',
+                justifyContent: 'space-between',
+                display: 'flex',
+                fontSize: '14px',
+                // borderTop: '1px solid #ccc',
+              }}
+            >
+              <p>
+                <span>Entered By:</span>
+                <strong> {values.reqEnteredBy || ''}</strong>
+                <span> On Date:</span>
+                <strong>
+                  {' '}
+                  {dayjs(values.createdAt).format(
+                    dateFormate + ' ' + timeFormate
+                  )}
+                </strong>
+              </p>
+              <p>
+                <span>Last Updated By: </span>
+                <strong>
+                  {values.mComment && values.mComment.length > 0
+                    ? values.mComment[values.mComment.length - 1].username
+                    : 'N/A'}
+                </strong>
+                <span> On Date:</span>
+                <strong>
+                  {' '}
+                  {values.mComment && values.mComment.length > 0
+                    ? dayjs(
+                        values.mComment[values.mComment.length - 1].date
+                      ).format(dateFormate + ' ' + timeFormate)
+                    : 'N/A'}
+                </strong>
+              </p>
+            </div>
+          </>
+        )}
+
+        {showLogs && viewData._id && !isEditing && (
+          <>
+            <Divider />
+            <RequirementLogTable requirementObjectId={viewData._id} />
+          </>
+        )}
       </form>
     </>
   );

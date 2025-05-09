@@ -14,9 +14,19 @@ import { FormMode } from '../../pages/Marketing/Requirements/Requirements';
 interface iProps {
   reqID: string;
   open: boolean;
+  title?: string | JSX.Element;
+  subTitle?: string | JSX.Element;
+  hideButtons?: boolean;
   onClose: () => void;
 }
-const RequirementDrawer = ({ reqID, open, onClose }: iProps) => {
+const RequirementDrawer = ({
+  reqID,
+  open,
+  title,
+  subTitle,
+  hideButtons,
+  onClose,
+}: iProps) => {
   const {
     data: viewData,
     loading,
@@ -92,9 +102,11 @@ const RequirementDrawer = ({ reqID, open, onClose }: iProps) => {
     if (!viewData) return;
     return (
       <RequirementsForm
+        showLogs
         disableCopyRequirement
         disableCreateInterview
         disableDelete
+        hideButtons={hideButtons}
         accounts={accounts || []}
         consultants={consultants || []}
         viewData={viewData}
@@ -114,19 +126,21 @@ const RequirementDrawer = ({ reqID, open, onClose }: iProps) => {
     <CustomDrawer
       open={open}
       onClose={onClose}
-      title={'Requrement ID: ' + reqID}
+      title={title || 'Requrement ID: ' + reqID}
       closeOnOutSideClick
       subTitle={
-        <>
-          {!!viewData && (
-            <RequirementMeta
-              requirement={viewData}
-              onOpenDuplicateReq={() =>
-                setDuplicateReqDrawer(viewData.duplicateWith)
-              }
-            />
-          )}
-        </>
+        subTitle || (
+          <>
+            {!!viewData && (
+              <RequirementMeta
+                requirement={viewData}
+                onOpenDuplicateReq={() =>
+                  setDuplicateReqDrawer(viewData.duplicateWith)
+                }
+              />
+            )}
+          </>
+        )
       }
     >
       <ReqDrawerBody />

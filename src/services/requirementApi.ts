@@ -2,6 +2,10 @@ import axios from 'axios';
 import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import { BASE_URL } from './userProfileApi';
+import {
+  CreateRequirementLogPayload,
+  RequirementLog,
+} from '../Interfaces/requirement';
 
 export async function requirementsList(
   query: string = '',
@@ -63,5 +67,40 @@ export async function deleteRequirement(id: string) {
     `${BASE_URL}/requirements/delete-requirement/${id}`,
     { headers }
   );
+  return response;
+}
+
+export async function createRequirementLog(data: CreateRequirementLogPayload) {
+  const token = await getJwtToken();
+  let headers: any = {
+    'Content-Type': 'application/json',
+    Authorization: token,
+  };
+  const response = await axios.post(
+    `${BASE_URL}/requirements/create-log`,
+    data,
+    {
+      headers,
+    }
+  );
+  return response;
+}
+
+export async function getRequirementLogs(
+  query: string = '',
+  signal?: AbortSignal
+) {
+  const token = await getJwtToken();
+
+  let headers: any = {
+    'Content-Type': 'application/json',
+    Authorization: token,
+  };
+
+  const url = `${BASE_URL}/requirements/get-log?${query}`;
+  const response = await axios.get<ApiQueryRes<RequirementLog[]>>(url, {
+    headers,
+    signal,
+  });
   return response;
 }

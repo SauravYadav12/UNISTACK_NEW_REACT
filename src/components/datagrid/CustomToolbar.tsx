@@ -1,4 +1,4 @@
-import { FormControlLabel, Switch, Box, MenuItem, Select } from '@mui/material';
+import { FormControlLabel, Switch, Box, TextField } from '@mui/material';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
   ArchiveModule,
@@ -12,8 +12,13 @@ import {
   GridToolbarExport,
   GridToolbarDensitySelector,
   GridToolbarQuickFilter,
+  GridFilterOperator,
 } from '@mui/x-data-grid';
 import { useDataGridContext } from '../../contextProviders/DataGridContextProvider';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { dateFormate2 } from '../constants';
+import { Moment } from 'moment';
 
 const formControlSX = {
   '& .MuiFormControlLabel-label': {
@@ -26,17 +31,15 @@ const formControlSX = {
     color: '#1976d2',
   },
 };
-
-export default function CustomToolbar() {
+interface iProps {
+  setFilterButtonEl: React.Dispatch<
+    React.SetStateAction<HTMLButtonElement | null>
+  >;
+}
+export default function CustomToolbar({ setFilterButtonEl }: iProps) {
   const { isModuleAllowed } = useAuth();
-  const {
-    serverSideSearchState,
-    archiveState,
-    disableArchiveBtnState,
-    filterOptions,
-    selectedFilterOption,
-    setSelectedFilterOption,
-  } = useDataGridContext();
+  const { serverSideSearchState, archiveState, disableArchiveBtnState } =
+    useDataGridContext();
   const [serverSideSearch, setServerSideSearch] = serverSideSearchState;
   const [archive, setArchive] = archiveState || [];
 
@@ -50,7 +53,7 @@ export default function CustomToolbar() {
       <GridToolbarDensitySelector
         slotProps={{ tooltip: { title: 'Change density' } }}
       />
-      <GridToolbarFilterButton />
+      <GridToolbarFilterButton ref={setFilterButtonEl} />
       {isArchiveModuleAllowed && typeof archive === 'boolean' && (
         <FormControlLabel
           control={
@@ -72,31 +75,76 @@ export default function CustomToolbar() {
         }
         sx={formControlSX}
       />
-      {serverSideSearch && (
-        <>
-          <Select
-            value={selectedFilterOption}
-            size="small"
-            onChange={(e) => {
-              setSelectedFilterOption(e.target.value as any);
-            }}
-            sx={{
-              '& .MuiOutlinedInput-notchedOutline': {
-                border: 'none',
-              },
-            }}
-          >
-            {filterOptions.map((o, i) => {
-              return (
-                <MenuItem key={i} value={o.field}>
-                  {o.headerName}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </>
-      )}
-      <GridToolbarQuickFilter />
+
+      <GridToolbarQuickFilter disabled={serverSideSearch} />
     </GridToolbarContainer>
   );
 }
+
+interface FilterPanelDateInputProps {
+  props: any;
+}
+
+export function FilterPanelDateInput({ props }: FilterPanelDateInputProps) {
+  const { item, applyValue } = props;
+  const handleChange = (date: Moment) => {
+    applyValue({ ...item, value: date.format(dateFormate2) });
+  };
+  return (
+    <LocalizationProvider dateAdapter={AdapterMoment}>
+      <DatePicker
+        {...props}
+        value={item.value || null}
+        onChange={handleChange}
+        renderInput={(params) => (
+          <TextField
+            size="small"
+            {...params}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fieldset: {
+                  borderColor: 'transparent',
+                  borderBottomColor: 'black',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'white',
+                  borderBottomColor: 'black',
+                  borderBottomWidth: '2px',
+                },
+                '&.Mui-focused fieldset': {
+                  borderBottomColor: 'black',
+                  borderLeftColor: 'transparent',
+                  borderTopColor: 'transparent',
+                  borderRightColor: 'transparent',
+                },
+              },
+            }}
+          />
+        )}
+        inputFormat={dateFormate2}
+      />
+    </LocalizationProvider>
+  );
+}
+
+export const filterOperatorsForDateField: GridFilterOperator[] = [
+  {
+    label: 'Equals',
+    value: 'equal',
+    getApplyFilterFn: (filterItem) => {
+      if (!filterItem.value) {
+        return null;
+      }
+      return (params) => {
+        return filterItem.value == params;
+      };
+    },
+    InputComponent: (props) => {
+      return (
+        <Box display={'flex'} alignItems={'flex-end'} height={'100%'}>
+          <FilterPanelDateInput props={props} />
+        </Box>
+      );
+    },
+  },
+];
