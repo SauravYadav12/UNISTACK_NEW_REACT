@@ -277,6 +277,7 @@ export default function Requirements() {
         </Box>
       ) : (
         <RequirementsForm
+          showLogs
           setResults={setResults}
           hideButtons={archive}
           accounts={accounts || []}
