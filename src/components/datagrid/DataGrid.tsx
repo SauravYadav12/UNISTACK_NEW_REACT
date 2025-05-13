@@ -18,6 +18,7 @@ import {
   DataGridContextProvider,
   useDataGridContext,
 } from '../../contextProviders/DataGridContextProvider';
+import { SearchOperator } from '../../hooks/paginationHook';
 
 interface iFilterModel {
   model: GridFilterModel;
@@ -43,7 +44,7 @@ function MyDataGrid(props: Iprops) {
         if (!column.filterOperators) {
           const filterOperators: GridFilterOperator<any>[] = [
             {
-              value: 'equals',
+              value: SearchOperator.Equals,
               label: 'Equals',
               getApplyFilterFn() {
                 return () => true;
@@ -51,7 +52,7 @@ function MyDataGrid(props: Iprops) {
               InputComponent: GridFilterInputValue,
             },
             {
-              value: 'contains',
+              value: SearchOperator.Contains,
               label: 'Contains',
               getApplyFilterFn() {
                 return () => true;
