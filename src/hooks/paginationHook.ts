@@ -15,10 +15,11 @@ export const initialSearchModel: GridFilterModel = {
 };
 export const searchStringKey = 'searchString';
 export const searchFieldKey = 'searchField';
+export const caseInsensitiveSearchFieldsKey = 'caseInsensitiveFields';
 
 export enum SearchOperator {
   Equals = 'equals',
-  Contains = 'Contains',
+  Contains = 'contains',
 }
 
 export function usePagination(para: ApiQuery, dependencies: any[]) {
@@ -38,7 +39,6 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
 
   function createQueryString() {
     const { page, pageSize } = paginationModel;
-    const { quickFilterValues } = searchModel;
     const iQuery = para.queryParams || '';
     let queryString = '';
     if (searchModel.items.length) {
@@ -46,7 +46,7 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
       if (operator === SearchOperator.Contains && value) {
         queryString = `${queryString}&${searchStringKey}=${value}&${searchFieldKey}=${field}`;
       } else if (operator === SearchOperator.Equals && value) {
-        queryString = `${queryString}&${field}=${value}`;
+        queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
       }
     }
 
@@ -124,13 +124,5 @@ interface ApiQuery {
   ) => Promise<AxiosResponse<ApiQueryRes<PaginationResult<any>>, any>>;
   queryParams?: string;
 }
-
-// interface SearchModelOptions {
-//   field?: string;
-// }
-
-// type iSearchModel = GridFilterModel & {
-//   options: SearchModelOptions;
-// };
 
 export type SetResults = <T = any>(cb: (pre: T[]) => T[]) => void;

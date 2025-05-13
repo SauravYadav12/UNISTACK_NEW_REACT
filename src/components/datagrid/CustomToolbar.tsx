@@ -18,7 +18,8 @@ import { useDataGridContext } from '../../contextProviders/DataGridContextProvid
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import { dateFormate2 } from '../constants';
-import { Moment } from 'moment';
+import moment, { Moment } from 'moment';
+import { SearchOperator } from '../../hooks/paginationHook';
 
 const formControlSX = {
   '& .MuiFormControlLabel-label': {
@@ -98,6 +99,8 @@ export function FilterPanelDateInput({ props }: FilterPanelDateInputProps) {
         onChange={handleChange}
         renderInput={(params) => (
           <TextField
+            error={!moment(item.value).isValid()}
+            helperText={!moment(item.value).isValid() ? 'Invalid date' : ''}
             size="small"
             {...params}
             sx={{
@@ -130,7 +133,7 @@ export function FilterPanelDateInput({ props }: FilterPanelDateInputProps) {
 export const filterOperatorsForDateField: GridFilterOperator[] = [
   {
     label: 'Equals',
-    value: 'equal',
+    value: SearchOperator.Equals,
     getApplyFilterFn: (filterItem) => {
       if (!filterItem.value) {
         return null;
