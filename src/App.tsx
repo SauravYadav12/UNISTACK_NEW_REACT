@@ -100,7 +100,8 @@ function App() {
                     module: EmployeeModule.Leaves,
                   }}
                 >
-                  <Leaves />
+                  {/* <Leaves /> */}
+                  <>Comming Soon</>
                 </ProtectedRoute>
               }
             />
@@ -244,7 +245,8 @@ function App() {
                     module: SuperAdminModule['Leaves Management'],
                   }}
                 >
-                  <LeavesManagement />
+                  {/* <LeavesManagement /> */}
+                  <>Comming Soon</>
                 </ProtectedRoute>
               }
             />

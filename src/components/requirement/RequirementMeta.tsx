@@ -11,15 +11,18 @@ import { interviewsList } from '../../services/interviewApi';
 import { Sync } from '@mui/icons-material';
 import InterviewDrawer from '../interview/InterviewDrawer';
 import { vendorInterviewsList } from '../../services/vendorInterviewApi';
+import { archiveInterviewsList } from '../../services/archivesApi';
 
 interface iProps {
   requirement: any;
   hideInterviews?: boolean;
+  archive?: boolean;
   onOpenDuplicateReq: () => void;
 }
 const RequirementMeta = ({
   requirement,
   hideInterviews,
+  archive,
   onOpenDuplicateReq,
 }: iProps) => {
   const {
@@ -42,6 +45,14 @@ const RequirementMeta = ({
 
   async function findCreatedInterviews() {
     const q = `reqID=${requirement.reqID}`;
+
+    if (archive) {
+      const int = await archiveInterviewsList(q);
+      const intRes = int.data.data?.results || [];
+      console.log(intRes);
+      return intRes;
+    }
+
     let [int, vendorInt] = await Promise.all([
       interviewsList(q),
       vendorInterviewsList(q),
@@ -151,6 +162,7 @@ const RequirementMeta = ({
       </Stack>
 
       <InterviewDrawer
+        archive={archive}
         open={Boolean(intDrawer)}
         onClose={() => setIntDrawer(undefined)}
         interview={intDrawer}

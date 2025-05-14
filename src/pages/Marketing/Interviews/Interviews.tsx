@@ -350,6 +350,7 @@ export default function Interviews(props: Iprops) {
           </Box>
         ) : (
           <InterviewForm
+            archive={archive}
             teamsList={teamState.data || []}
             onCreate={clearReqFromParams}
             setResults={setResults}

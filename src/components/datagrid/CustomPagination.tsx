@@ -36,7 +36,11 @@ export default function CustomPagination({
           disabled={loading}
           value={model.pageSize}
           onChange={({ target }) =>
-            onChange({ ...model, pageSize: parseInt(target.value as string) })
+            onChange({
+              ...model,
+              pageSize: parseInt(target.value as string),
+              page: 1,
+            })
           }
           size="small"
           sx={{
