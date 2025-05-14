@@ -61,6 +61,7 @@ interface iProps {
   mode?: FormMode;
   disableGenerateScript?: boolean;
   disableDelete?: boolean;
+  archive?: boolean;
   onDrawerClose?: () => void;
   onCreate?: () => void;
   onEdit?: (editMode: boolean) => void;
@@ -77,6 +78,7 @@ export default function InterviewForm(props: iProps) {
     hideButtons = false,
     disableGenerateScript,
     disableDelete,
+    archive,
     onEdit,
     onDrawerClose,
     setResults,
@@ -890,6 +892,8 @@ export default function InterviewForm(props: iProps) {
           open={Boolean(reqDrawer)}
           onClose={() => setReqDrawer(undefined)}
           reqID={values.reqID}
+          archive={archive}
+          hideButtons={archive}
         />
       )}
     </>

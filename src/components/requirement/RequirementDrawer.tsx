@@ -10,6 +10,7 @@ import { iUser } from '../../Interfaces/iUser';
 import { usersList } from '../../services/authApi';
 import { consultantsList } from '../../services/consultantApi';
 import { FormMode } from '../../pages/Marketing/Requirements/Requirements';
+import { archiveRequirementsList } from '../../services/archivesApi';
 
 interface iProps {
   reqID: string;
@@ -17,6 +18,7 @@ interface iProps {
   title?: string | JSX.Element;
   subTitle?: string | JSX.Element;
   hideButtons?: boolean;
+  archive?: boolean;
   onClose: () => void;
 }
 const RequirementDrawer = ({
@@ -25,6 +27,7 @@ const RequirementDrawer = ({
   title,
   subTitle,
   hideButtons,
+  archive,
   onClose,
 }: iProps) => {
   const {
@@ -64,7 +67,9 @@ const RequirementDrawer = ({
 
   async function findReq() {
     if (!open) return;
-    const { data } = await requirementsList(`reqID=${reqID}`);
+    const { data } = await (archive
+      ? archiveRequirementsList
+      : requirementsList)(`reqID=${reqID}`);
     if (!data.data?.results?.length) return;
     return data.data?.results[0];
   }
@@ -133,6 +138,7 @@ const RequirementDrawer = ({
           <>
             {!!viewData && (
               <RequirementMeta
+                archive={archive}
                 requirement={viewData}
                 onOpenDuplicateReq={() =>
                   setDuplicateReqDrawer(viewData.duplicateWith)

@@ -11,10 +11,17 @@ import { Box, CircularProgress, Typography, IconButton } from '@mui/material';
 interface iProps {
   open: boolean;
   interview?: any;
+  archive?: boolean;
   onClose: () => void;
   setData: SetResults;
 }
-const InterviewDrawer = ({ interview, open, setData, onClose }: iProps) => {
+const InterviewDrawer = ({
+  interview,
+  open,
+  archive,
+  setData,
+  onClose,
+}: iProps) => {
   const [mode, setMode] = useState<FormMode>('view');
 
   const teamState = useFetchData(async () => {
@@ -63,8 +70,10 @@ const InterviewDrawer = ({ interview, open, setData, onClose }: iProps) => {
             <>
               {interview?.intId && (
                 <InterviewForm
+                  archive={archive}
                   teamsList={teamState.data || []}
                   disableDelete
+                  hideButtons={archive}
                   viewData={interview}
                   mode={mode}
                   isEditing={mode !== 'view'}
@@ -76,6 +85,7 @@ const InterviewDrawer = ({ interview, open, setData, onClose }: iProps) => {
               {interview?.testID && (
                 <TestAndVendorForm
                   teamsList={teamState.data || []}
+                  hideButtons={archive}
                   disableDelete
                   viewData={interview}
                   mode={mode}

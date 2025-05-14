@@ -324,6 +324,7 @@ export default function Requirements() {
           <RequirementMeta
             hideInterviews={mode !== 'view'}
             requirement={viewData}
+            archive={archive}
             onOpenDuplicateReq={() =>
               setDuplicateReqDrawer(viewData.duplicateWith)
             }
@@ -335,6 +336,7 @@ export default function Requirements() {
 
       {viewData?.duplicateWith && (
         <RequirementDrawer
+          archive={archive}
           open={Boolean(duplicateReqDrawer)}
           reqID={viewData.duplicateWith}
           onClose={() => setDuplicateReqDrawer(undefined)}
