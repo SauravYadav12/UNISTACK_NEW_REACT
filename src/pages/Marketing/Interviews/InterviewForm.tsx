@@ -113,13 +113,14 @@ export default function InterviewForm(props: iProps) {
     }
     setErrors(convertValuesToEmptyString(interviewFormInitialValues));
   }, [mode, viewData]);
+
   function initializeValuesToCreateInterview(requirement: any) {
     if (!requirement) return;
     const {
       reqID,
       appliedFor,
       appliedForRef,
-      clientPerson,
+      clientCompany,
       duration,
       taxType,
       jobTitle,
@@ -131,7 +132,7 @@ export default function InterviewForm(props: iProps) {
       ...prevValues,
       consultant: appliedFor,
       consultantRef: appliedForRef,
-      clientName: clientPerson,
+      clientName: clientCompany,
       reqID,
       vendorCompany,
       primeVendorCompany,

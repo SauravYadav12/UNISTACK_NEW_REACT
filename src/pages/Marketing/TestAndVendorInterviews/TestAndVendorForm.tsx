@@ -118,7 +118,7 @@ export default function TestAndVendorForm(props: iProps) {
       reqID,
       appliedFor,
       appliedForRef,
-      clientPerson,
+      clientCompany,
       duration,
       taxType,
       jobTitle,
@@ -130,7 +130,7 @@ export default function TestAndVendorForm(props: iProps) {
       ...prevValues,
       consultant: appliedFor,
       consultantRef: appliedForRef,
-      clientName: clientPerson,
+      clientName: clientCompany,
       reqID,
       vendorCompany,
       primeVendorCompany,
@@ -144,6 +144,7 @@ export default function TestAndVendorForm(props: iProps) {
       marketingPersonRef: user?.id,
     }));
   }
+
   const handleSaveScript = async (script: string) => {
     try {
       const { data } = await updateVendorInterview(values._id, { script });
