@@ -101,7 +101,7 @@ function App() {
                   }}
                 >
                   {/* <Leaves /> */}
-                  <>Comming Soon</>
+                  <>Coming Soon</>
                 </ProtectedRoute>
               }
             />
@@ -246,7 +246,7 @@ function App() {
                   }}
                 >
                   {/* <LeavesManagement /> */}
-                  <>Comming Soon</>
+                  <>Coming Soon</>
                 </ProtectedRoute>
               }
             />
