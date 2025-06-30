@@ -31,19 +31,11 @@ const teamValidationMeta: ValidationMeta[] = [
     field: 'teamName',
     required: true,
   },
-  // {
-  //   field: 'contactPerson',
-  //   required: true,
-  // },
-  // {
-  //   field: 'phone',
-  //   required: true,
-  // },
 ];
 const initialValues = {
   teamName: '',
-  contactPerson: '',
-  phone: '',
+  teckStack: '',
+  developerName: '',
   createdBy: '',
 };
 
@@ -247,7 +239,7 @@ export default function TeamsForm(props: any) {
               aria-describedby="alert-dialog-description"
             >
               <DialogTitle id="alert-dialog-title">
-                {'Delete Consultant?'}
+                {'Delete Team?'}
               </DialogTitle>
               <DialogContent>
                 <DialogContentText id="alert-dialog-description">
@@ -283,27 +275,26 @@ export default function TeamsForm(props: any) {
           onChange={(event: any) => addValue('teamName', event.target.value)}
         />
         <CustomTextField
-          onBlur={() => onBlur('contactPerson')}
-          label="Contact Person Name"
+          onBlur={() => onBlur('teckStack')}
+          label="Teck Stack"
           width={320}
-          selectedValue={values.contactPerson}
-          error={!!errors.contactPerson}
-          helperText={errors.contactPerson}
+          selectedValue={values.teckStack}
+          error={!!errors.teckStack}
+          helperText={errors.teckStack}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('contactPerson', event.target.value)
-          }
+          onChange={(event: any) => addValue('teckStack', event.target.value)}
         />
         <CustomTextField
-          onBlur={() => onBlur('phone')}
-          label="Phone"
+          onBlur={() => onBlur('developerName')}
+          label="Developer Name"
           width={320}
-          selectedValue={values.phone}
-          type="number"
-          error={!!errors.phone}
-          helperText={errors.phone}
+          selectedValue={values.developerName}
+          error={!!errors.developerName}
+          helperText={errors.developerName}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('phone', event.target.value)}
+          onChange={(event: any) =>
+            addValue('developerName', event.target.value)
+          }
         />
         {mode === 'view' && (
           <>

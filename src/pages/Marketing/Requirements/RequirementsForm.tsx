@@ -24,6 +24,7 @@ import {
   taxTypeOptions,
   techStack,
   requirementValidationMeta,
+  reqFields,
 } from './requirementsValues';
 import {
   createRequirement,
@@ -57,6 +58,7 @@ import {
   LogOperation,
 } from '../../../Interfaces/requirement';
 import RequirementLogTable from '../../../components/requirement/RequirementLogTable';
+import { getChangedFields } from '../../../utils/formUtil';
 
 interface iProps {
   viewData: any;
@@ -213,7 +215,7 @@ export default function RequirementsForm(props: iProps) {
         operation,
       };
 
-      const { data: logData } = await createRequirementLog(logPayload);
+      await createRequirementLog(logPayload);
     } catch (error) {
       console.log('Failed to create log ', error);
     }
@@ -273,8 +275,9 @@ export default function RequirementsForm(props: iProps) {
     );
 
     if (!isValid) return;
-    const payload = { ...values };
+    let payload = { ...values };
     delete payload.mComment;
+    payload = getChangedFields(viewData, payload, reqFields);
     if (comment.trim().length) {
       const commentPayload = {
         username: `${user.firstName} ${user.lastName}`,

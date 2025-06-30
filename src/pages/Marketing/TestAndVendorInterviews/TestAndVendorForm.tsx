@@ -805,7 +805,7 @@ export default function TestAndVendorForm(props: iProps) {
           </Grid>
           {isEditing ? (
             <CustomSelectField
-              label="Candidate Name"
+              label="Team"
               valueOptions={teamsList.map((c: any) => c.teamName || '')}
               selectedValue={values.candidateName || ''}
               onChange={(value: any) => {
@@ -820,7 +820,7 @@ export default function TestAndVendorForm(props: iProps) {
             />
           ) : (
             <CustomTextField
-              label="Candidate Name"
+              label="Team"
               width={310}
               disabled={!isEditing}
               selectedValue={values.candidateName || ''}
@@ -830,21 +830,18 @@ export default function TestAndVendorForm(props: iProps) {
             />
           )}
           <CustomTextField
-            label="Rates For Interview"
+            label="Teck Stack"
             width={310}
             disabled={!isEditing}
-            selectedValue={values.rateForInterview}
-            onChange={(event: any) =>
-              addValue('rateForInterview', event.target.value)
-            }
+            selectedValue={values.teckStack || ''}
+            onChange={(event: any) => addValue('teckStack', event.target.value)}
           />
-          <CustomSelectField
-            label="Payment Status"
-            valueOptions={paymentStatusOptions}
-            selectedValue={values.paymentStatus}
+          <CustomTextField
+            label="Developer Name"
+            selectedValue={values.developerName || ''}
             disabled={!isEditing}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'paymentStatus')
+            onChange={(event: any) =>
+              addValue('developerName', event.target.value)
             }
             width={310}
           />

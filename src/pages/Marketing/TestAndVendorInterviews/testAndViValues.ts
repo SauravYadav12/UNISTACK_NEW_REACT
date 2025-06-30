@@ -145,7 +145,7 @@ export const testAndVendorInterviewInitialValues = {
   taxType: '',
   duration: '',
   candidateName: '',
-  rateForInterview: '',
-  paymentStatus: '',
+  teckStack: '',
+  developerName: '',
   jobDescription: '',
 };

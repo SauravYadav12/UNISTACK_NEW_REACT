@@ -62,8 +62,8 @@ export default function Teams() {
     },
     { field: 'teamId', headerName: 'Team ID', width: 150 },
     { field: 'teamName', headerName: 'Name', width: 150 },
-    { field: 'contactPerson', headerName: 'Contact Person', width: 150 },
-    { field: 'phone', headerName: 'Phone', width: 150 },
+    { field: 'teckStack', headerName: 'Teck Stack', width: 150 },
+    { field: 'developerName', headerName: 'Developer Name', width: 150 },
     { field: 'createdBy', headerName: 'Created by', width: 150 },
     {
       field: 'createdAt',
