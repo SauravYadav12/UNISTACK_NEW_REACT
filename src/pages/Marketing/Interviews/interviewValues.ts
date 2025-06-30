@@ -96,8 +96,8 @@ export const interviewFormInitialValues = {
   taxType: '',
   duration: '',
   candidateName: '',
-  rateForInterview: '',
-  paymentStatus: '',
+  teckStack: '',
+  developerName: '',
   jobDescription: '',
   script: '',
 };
