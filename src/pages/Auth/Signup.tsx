@@ -17,7 +17,7 @@ import { signup } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { allowdDomains, useAuth } from '../../AuthGaurd/AuthContextProvider';
 import CopyRight from '../../components/auth/CopyRight';
 
 // TODO remove, this demo shouldn't need to reset the theme.
@@ -54,7 +54,7 @@ export default function SignUp() {
       const checkNull = Object.values(values).filter((i) => i === '');
       if (!checkNull.length) {
         const domain = values.email?.toString().split('@')[1];
-        if (domain?.toLowerCase() !== 'unicodez.com') {
+        if (!domain || !allowdDomains.includes(domain.toLowerCase())) {
           return toast.error('Invalid Email');
         }
         if (checked) {
