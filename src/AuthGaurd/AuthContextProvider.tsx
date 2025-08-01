@@ -11,6 +11,9 @@ import { iUser, UserRole } from '../Interfaces/iUser';
 import { autoOpenAttendanceModalKey } from '../components/dashboard/MarkAttendanceModal';
 import { toast } from 'react-toastify';
 
+
+export const allowdDomains=['unicodez.com','team.unicodez.com']
+
 export const initialFetchState = {
   data: undefined,
   error: '',
