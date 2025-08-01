@@ -11,7 +11,7 @@ import { iUser, UserRole } from '../Interfaces/iUser';
 import { autoOpenAttendanceModalKey } from '../components/dashboard/MarkAttendanceModal';
 import { toast } from 'react-toastify';
 
-const initialFetchState = {
+export const initialFetchState = {
   data: undefined,
   error: '',
   loading: false,

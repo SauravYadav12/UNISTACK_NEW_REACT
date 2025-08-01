@@ -1,6 +1,7 @@
 import {
   Box,
   CircularProgress,
+  Divider,
   Grid,
   IconButton,
   MenuItem,
@@ -22,9 +23,10 @@ import { dateFormate } from '../../components/constants';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import { Sync } from '@mui/icons-material';
 import { dateByUserShift } from '../../utils/dateUtil';
-import AttendanceExportModal from '../../components/attendance/AttendanceExportModal';
 import moment, { Moment, unitOfTime } from 'moment';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import UpcomingHolidays from '../../components/holiday/UpcomingHolidays';
+import { AttendanceTopBar } from '../../components/attendance/AttendanceTopBar';
 
 const AttendanceDashboard = () => {
   const usersListState = useFetchData<iUser[]>(fetchUsers, []);
@@ -77,7 +79,7 @@ interface MyDashBoardComponentProp {
 
 function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
   const { myAttendanceState, iUser } = useAuth();
-  const [exportModal, setExportModal] = useState(false);
+
   const [currentUser, setCurrentUser] = useState<iUser>(users[0]);
   const currentUserTodaysAttendance = useAttendance(
     {
@@ -175,6 +177,8 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
 
   return (
     <>
+      <AttendanceTopBar reload={reload} users={users} />
+      <Divider sx={{ mt: 1 }} />
       <Box
         sx={{
           py: 1,
@@ -185,26 +189,24 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
         }}
       >
         <Box>
-          {
-            <Select
-              labelId="month-dd"
-              id="month-dd"
-              value={currentUser?._id}
-              size="small"
-              onChange={(e) => {
-                const selected = users?.find((u) => u._id === e.target.value)!;
-                setCurrentUser(selected);
-              }}
-            >
-              {users?.map((o, i) => {
-                return (
-                  <MenuItem key={i} value={o._id}>
-                    {o.firstName + ' ' + o.lastName}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          }
+          <Select
+            labelId="month-dd"
+            id="month-dd"
+            value={currentUser?._id}
+            size="small"
+            onChange={(e) => {
+              const selected = users?.find((u) => u._id === e.target.value)!;
+              setCurrentUser(selected);
+            }}
+          >
+            {users?.map((o, i) => {
+              return (
+                <MenuItem key={i} value={o._id}>
+                  {o.firstName + ' ' + o.lastName}
+                </MenuItem>
+              );
+            })}
+          </Select>
         </Box>
         <Box
           sx={{
@@ -219,29 +221,15 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
               alignItems: 'center',
             }}
           >
-            <Box sx={{ height: 'fit-content', display: 'flex', columnGap: 2 }}>
-              {!currentUserTodaysAttendance.loading && (
-                <CheckInCheckOut
-                  forAdmin
-                  user={currentUser}
-                  date={dateByUserShift(iUser!.shift)}
-                  attendance={currentUserTodaysAttendance.attendance[0]}
-                  onChange={handleChangeAttendance}
-                />
-              )}
-
-              <AttendanceExportModal
-                open={exportModal}
-                onOpen={() => setExportModal(true)}
-                onClose={() => setExportModal(false)}
-                users={users || []}
+            {!currentUserTodaysAttendance.loading && (
+              <CheckInCheckOut
+                forAdmin
+                user={currentUser}
+                date={dateByUserShift(iUser!.shift)}
+                attendance={currentUserTodaysAttendance.attendance[0]}
+                onChange={handleChangeAttendance}
               />
-            </Box>
-            <div>
-              <IconButton onClick={reload}>
-                <Sync color="primary" />
-              </IconButton>
-            </div>
+            )}
           </Box>
         </Box>{' '}
       </Box>
@@ -279,6 +267,9 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
           />
         </Box>
       )}
+      <Box sx={{ mb: 2 }}>
+        <UpcomingHolidays forAdmin />
+      </Box>
     </>
   );
 }

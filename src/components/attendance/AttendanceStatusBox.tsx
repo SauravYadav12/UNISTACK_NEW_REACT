@@ -1,13 +1,26 @@
 import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
-import { useTheme } from '@mui/material/styles';
-import { Box, Popover, Stack, Tooltip, Typography } from '@mui/material';
+import {
+  Box,
+  Popover,
+  Stack,
+  styled,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { getWorkingDuration, timeByUserShift } from '../../utils/dateUtil';
-import { timeFormate } from '../constants';
+import { dateFormate, timeFormate } from '../constants';
 import moment, { Moment } from 'moment';
 import { useState } from 'react';
 import SelectAttendanceStatus from './SelectAttendanceStatus';
 import AttendanceTimePicker from './AttendanceTimePicker';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import {
+  getStatusShortForm,
+  HolidayStatus,
+  iHolidayStatus,
+  isHolidayMarked,
+} from '../../utils/holidayUtil';
+import { useHoliday } from '../../contextProviders/HolidayContextProvider';
 interface iProps {
   date: Moment;
   user: iUser;
@@ -16,6 +29,38 @@ interface iProps {
   forEmployee?: boolean;
   onChange?: (attendance: iAttendance) => void;
 }
+
+export const StatusBox = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'status',
+})<{ status?: AttendanceStatus | iHolidayStatus }>(({ theme, status }) => ({
+  textAlign: 'center',
+  fontWeight: 'bold',
+  minWidth: '40px',
+  maxWidth: '70px',
+  cursor: 'pointer',
+  borderRadius: '5px',
+  ...(status === AttendanceStatus.Present && {
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.contrastText,
+  }),
+  ...(status === AttendanceStatus.Absent && {
+    backgroundColor: theme.palette.error.light,
+    color: theme.palette.error.contrastText,
+  }),
+  ...(status === AttendanceStatus.Late && {
+    backgroundColor: theme.palette.warning.light,
+    color: theme.palette.error.contrastText,
+  }),
+  ...(status === AttendanceStatus['Half-Day'] && {
+    backgroundColor: theme.palette.secondary.light,
+    color: theme.palette.error.contrastText,
+  }),
+  ...(status === HolidayStatus && {
+    backgroundColor: theme.palette.info.light,
+    color: theme.palette.error.contrastText,
+  }),
+}));
+
 const AttendanceStatusBox = ({
   attendance,
   forEmployee,
@@ -30,81 +75,80 @@ const AttendanceStatusBox = ({
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
-  const status = attendance?.status;
-  const theme = useTheme();
+  const { holidayState } = useHoliday();
 
-  function statusColor() {
-    return {
-      ...(status === AttendanceStatus.Present && {
-        backgroundColor: theme.palette.success.light,
-        color: theme.palette.success.contrastText,
-      }),
-      ...(status === AttendanceStatus.Absent && {
-        backgroundColor: theme.palette.error.light,
-        color: theme.palette.error.contrastText,
-      }),
-      ...(status === AttendanceStatus.Late && {
-        backgroundColor: theme.palette.warning.light,
-        color: theme.palette.error.contrastText,
-      }),
-      ...(status === AttendanceStatus['Half-Day'] && {
-        backgroundColor: theme.palette.secondary.light,
-        color: theme.palette.error.contrastText,
-      }),
-    };
+  const isHoliday = isHolidayMarked(
+    holidayState.data || [],
+    date.format(dateFormate)
+  );
+
+  const status = getStatus();
+
+  function getStatus() {
+    if (
+      isHoliday &&
+      (!attendance || attendance.status === AttendanceStatus.Absent)
+    ) {
+      return HolidayStatus;
+    }
+    return attendance?.status;
   }
 
   function tip() {
-    if (!attendance) return '';
-    const { checkIn, checkOut, status } = attendance;
+    if (!status) return null;
     return (
       <>
         <Typography variant="caption">Status: {status}</Typography>
 
-        <br />
-        <Typography variant="caption">
-          Check In:{' '}
-          {checkIn
-            ? timeByUserShift(iUser!.shift, moment(checkIn)).format(
-                timeFormate + ' z'
-              )
-            : 'NA'}
-        </Typography>
+        {status === 'Holiday' ? (
+          <>
+            <br />
+            <Typography variant="caption">
+              Title: {isHoliday?.name || 'NA'}
+            </Typography>
+            <br />
+            <Typography variant="caption">
+              Description: {isHoliday?.description || 'NA'}
+            </Typography>
+          </>
+        ) : (
+          attendance && (
+            <>
+              <br />
+              <Typography variant="caption">
+                Check In:{' '}
+                {attendance.checkIn
+                  ? timeByUserShift(
+                      iUser!.shift,
+                      moment(attendance.checkIn)
+                    ).format(timeFormate + ' z')
+                  : 'NA'}
+              </Typography>
 
-        <br />
-        <Typography variant="caption">
-          Check Out:{' '}
-          {checkOut
-            ? timeByUserShift(iUser!.shift, moment(checkOut)).format(
-                timeFormate + ' z'
-              )
-            : 'NA'}
-        </Typography>
+              <br />
+              <Typography variant="caption">
+                Check Out:{' '}
+                {attendance.checkOut
+                  ? timeByUserShift(
+                      iUser!.shift,
+                      moment(attendance.checkOut)
+                    ).format(timeFormate + ' z')
+                  : 'NA'}
+              </Typography>
 
-        <WorkingDuration attendance={attendance} />
+              <WorkingDuration attendance={attendance} />
+            </>
+          )
+        )}
       </>
     );
   }
 
   return (
-    <Box
-      sx={{
-        textAlign: 'center',
-        fontWeight: 'bold',
-        minWidth: '40px',
-        maxWidth: '70px',
-        cursor: 'pointer',
-        borderRadius: '5px',
-        ...statusColor(),
-        '&:hover': {
-          //   backgroundColor: theme.palette.action.hover,
-        },
-      }}
-      onClick={() => console.log(attendance)}
-    >
+    <StatusBox status={status}>
       <Tooltip title={tip()} arrow>
         <Typography onClick={forEmployee ? undefined : handleClick}>
-          {label || status?.charAt(0).toUpperCase()}
+          {label || (status && getStatusShortForm(status))}
         </Typography>
       </Tooltip>
       {!forEmployee && (
@@ -154,7 +198,7 @@ const AttendanceStatusBox = ({
           </Box>
         </Popover>
       )}
-    </Box>
+    </StatusBox>
   );
 };
 

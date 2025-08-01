@@ -203,15 +203,7 @@ function AttendanceExportModal({
 
   return (
     <>
-      <Button
-        variant="contained"
-        color="primary"
-        size="small"
-        sx={{
-          borderRadius: '10px',
-        }}
-        onClick={onOpen}
-      >
+      <Button variant="contained" color="primary" size="small" onClick={onOpen}>
         Export
       </Button>
       <Dialog open={open} onClose={onClose}>

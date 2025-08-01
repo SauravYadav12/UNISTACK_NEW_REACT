@@ -21,6 +21,7 @@ import WeeklyAttendanceTable from '../../components/attendance/WeeklyAttendence'
 import { useAttendance } from '../../hooks/attendanceHook';
 import moment from 'moment';
 import { dateFormate } from '../../components/constants';
+import UpcomingHolidays from '../../components/holiday/UpcomingHolidays';
 
 const MyAttendance = () => {
   const { myAttendanceState, iUser } = useAuth();
@@ -101,6 +102,8 @@ const MyAttendance = () => {
           />
         </ChartCardWrapper>
         <MyAttendanceHistory users={[me]} />
+
+        <UpcomingHolidays />
       </Box>
     </>
   );

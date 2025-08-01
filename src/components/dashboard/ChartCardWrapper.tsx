@@ -60,6 +60,7 @@ const ChartCardWrapper = ({
                   variant="h6"
                   fontWeight={600}
                   fontFamily={`'Plus Jakarta Sans','Plus Jakarta Sans Fallback',Helvetica,Arial,sans-serif`}
+                  color={'primary'}
                 >
                   {title}
                 </Typography>

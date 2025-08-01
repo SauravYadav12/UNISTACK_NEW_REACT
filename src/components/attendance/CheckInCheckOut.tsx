@@ -76,7 +76,7 @@ const CheckInCheckOut = ({
   }, [attendance]);
 
   const bStyle = {
-    borderRadius: '10px',
+    // borderRadius: '10px',
     ...(buttonSize === 'small' && {
       '&.MuiButtonBase-root': {
         padding: '2px 4px',
@@ -103,7 +103,7 @@ const CheckInCheckOut = ({
                 variant="contained"
                 color="primary"
                 size="small"
-                sx={bStyle}
+                sx={{...bStyle,minWidth:'max-content'}}
                 onClick={() =>
                   !disableMarkAttendance && setOpenMarkAttendanceModal(true)
                 }

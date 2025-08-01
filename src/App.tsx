@@ -23,7 +23,7 @@ import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
 import AttendanceDashboard from './pages/Attendance/AttendanceDashboard';
 import MyAttendance from './pages/Attendance/MyAttendance';
 import AccessControl from './pages/AccessControl/AccessControl';
-import Leaves from './pages/Leaves/Leaves';
+// import Leaves from './pages/Leaves/Leaves';
 import {
   EmployeeModule,
   HomeModule,
@@ -32,7 +32,8 @@ import {
   SuperAdminModule,
 } from './utils/accessControlUtil';
 import ForgotPassword from './pages/Auth/ForgotPassword';
-import LeavesManagement from './pages/Leaves/LeavesManagement';
+// import LeavesManagement from './pages/Leaves/LeavesManagement';
+import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -87,7 +88,9 @@ function App() {
                     module: EmployeeModule.Attendance,
                   }}
                 >
-                  <MyAttendance />
+                  <HolidayContextProvider>
+                    <MyAttendance />
+                  </HolidayContextProvider>
                 </ProtectedRoute>
               }
             />
@@ -232,7 +235,9 @@ function App() {
                     module: SuperAdminModule['Attendance Dashboard'],
                   }}
                 >
-                  <AttendanceDashboard />
+                  <HolidayContextProvider>
+                    <AttendanceDashboard />
+                  </HolidayContextProvider>
                 </ProtectedRoute>
               }
             />

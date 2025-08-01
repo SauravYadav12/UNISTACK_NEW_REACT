@@ -3,6 +3,7 @@ import {
   Button,
   CircularProgress,
   IconButton,
+  Stack,
   Typography,
 } from '@mui/material';
 import CustomDataGrid, {
@@ -42,6 +43,7 @@ import {
   filterOperatorsForDateField,
   FilterPanelDateInput,
 } from '../../../components/datagrid/CustomToolbar';
+import { separateByDates } from '../../../utils/dataGrid.util';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
@@ -67,18 +69,40 @@ export default function Requirements() {
     {
       field: 'view',
       headerName: 'View',
-      width: 100,
-      renderCell: (params: any) => (
-        <Button
-          size="small"
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: '10px' }}
-          onClick={() => handleViewDetails(params.row)}
-        >
-          View
-        </Button>
-      ),
+      width: 150,
+      renderCell: (params: any) => {
+        if (params.row.dateSeparator) {
+          return (
+            <Box
+              display={'flex'}
+              alignItems={'center'}
+              height={'25px'}
+            >
+              <Typography
+                sx={{
+                  textAlign: 'center',
+                  fontSize: 'small',
+                  fontWeight: 'bold',
+                }}
+              >
+                {moment(params.row.fromDate).format(dateFormate2)}
+              </Typography>
+            </Box>
+          );
+        }
+
+        return (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            sx={{ borderRadius: '10px' }}
+            onClick={() => handleViewDetails(params.row)}
+          >
+            View
+          </Button>
+        );
+      },
       filterable: false,
       sortable: false,
     },
@@ -111,7 +135,7 @@ export default function Requirements() {
       headerName: 'Created At',
       width: 180,
       valueGetter: (val: string) => {
-        return moment(val).format(dateFormate2);
+        return val ? moment(val).format(dateFormate2) : '';
       },
       filterOperators: filterOperatorsForDateField,
     },
@@ -311,7 +335,7 @@ export default function Requirements() {
         error={error}
         retry={reload}
         header={header}
-        rows={gridData?.results || []}
+        rows={separateByDates(gridData?.results || [])}
         columns={columns}
         loading={loading}
       />
