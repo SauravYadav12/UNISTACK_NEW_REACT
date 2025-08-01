@@ -1,4 +1,4 @@
-import { FormControlLabel, Switch, Box, TextField } from '@mui/material';
+import { FormControlLabel, Switch, Box, TextField, Alert } from '@mui/material';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
   ArchiveModule,
@@ -77,7 +77,11 @@ export default function CustomToolbar({ setFilterButtonEl }: iProps) {
         sx={formControlSX}
       />
 
-      <GridToolbarQuickFilter disabled={serverSideSearch} />
+      {!serverSideSearch ? (
+        <GridToolbarQuickFilter />
+      ) : (
+        <Alert sx={{backgroundColor:'inherit'}} severity="info">Use Filters to search data.</Alert>
+      )}
     </GridToolbarContainer>
   );
 }

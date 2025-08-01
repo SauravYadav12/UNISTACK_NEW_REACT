@@ -141,3 +141,16 @@ export function getWorkingDuration(
 
   return `${hours}h ${minutes}m`;
 }
+
+export function getDatesBetween(startDate: string, endDate: string) {
+  const dates = [];
+  const currentDate = moment(startDate);
+  const lastDate = moment(endDate);
+
+  while (currentDate <= lastDate) {
+    dates.push(currentDate);
+    currentDate.add(1, 'days');
+  }
+
+  return dates;
+}

@@ -9,6 +9,7 @@ import {
   GridColDef,
   GridFilterInputValue,
   GridFilterOperator,
+  GridCellParams,
 } from '@mui/x-data-grid';
 import { IconButton, Typography } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -102,6 +103,8 @@ function MyDataGrid(props: Iprops) {
       <div style={{ flex: 1, minHeight: '300px' }}>
         <Box sx={{ height: '98%' }}>
           <DataGrid
+            disableColumnSorting
+            isRowSelectable={(params) => !params?.row?.dateSeparator}
             onFilterModelChange={(model, details) => {
               setiFilterModel({ model, details });
               onFilterModelChange?.(model, details, {
@@ -142,6 +145,9 @@ function MyDataGrid(props: Iprops) {
                 setFilterButtonEl,
               },
             }}
+            getRowClassName={(params) =>
+              params.row.dateSeparator ? 'date-separator-row' : ''
+            }
             sx={{
               '& .MuiDataGrid-columnHeaderTitle': {
                 fontWeight: 'bold',
@@ -150,6 +156,22 @@ function MyDataGrid(props: Iprops) {
               '& .MuiDataGrid-scrollbar': {
                 scrollbarWidth: 'thin',
               },
+              '& .MuiDataGrid-row.date-separator-row': {
+                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                  outline: 'none !important',
+                },
+                '&:hover': {
+                  backgroundColor: '#0000ff1a',
+                },
+                minHeight: '25px !important',
+                maxHeight: '25px !important',
+                height: '25px !important',
+                backgroundColor: '#0000ff1a',
+              },
+              '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within':
+                {
+                  outline: 'none !important',
+                },
             }}
           />
         </Box>

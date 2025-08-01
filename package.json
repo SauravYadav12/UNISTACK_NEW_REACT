@@ -37,6 +37,7 @@
     "react-router-dom": "^6.23.0",
     "react-to-pdf": "^1.0.1",
     "react-toastify": "^10.0.5",
+    "uuid": "^11.1.0",
     "validate-utility": "^0.0.2"
   },
   "devDependencies": {
