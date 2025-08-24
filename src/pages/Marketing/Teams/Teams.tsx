@@ -1,6 +1,5 @@
 import { Button, IconButton } from '@mui/material';
 import CustomDataGrid, {
-  GridFilterOption,
   iGridColumn,
 } from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
@@ -106,13 +105,10 @@ export default function Teams() {
 
   const handleChangeFilterModel = (
     model: GridFilterModel,
-    details: GridCallbackDetails<'filter'>,
-    options: GridFilterOption
+    details: GridCallbackDetails<'filter'>
   ) => {
     const iModel =
-      options.serverSideSearch && model.items.length && model.items[0].value
-        ? model
-        : initialSearchModel;
+    model.items[0]?.value || model.quickFilterValues?.length? model : initialSearchModel;
     setSearchModel(iModel);
   };
 

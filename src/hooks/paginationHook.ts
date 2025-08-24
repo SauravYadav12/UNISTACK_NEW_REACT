@@ -19,7 +19,6 @@ export const caseInsensitiveSearchFieldsKey = 'caseInsensitiveFields';
 
 export enum SearchOperator {
   Equals = 'equals',
-  Contains = 'contains',
 }
 
 export function usePagination(para: ApiQuery, dependencies: any[]) {
@@ -43,11 +42,12 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     let queryString = '';
     if (searchModel.items.length) {
       const { operator, field, value } = searchModel.items[0];
-      if (operator === SearchOperator.Contains && value) {
-        queryString = `${queryString}&${searchStringKey}=${value}&${searchFieldKey}=${field}`;
-      } else if (operator === SearchOperator.Equals && value) {
-        queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
-      }
+      queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
+    }
+
+    const searchText = searchModel.quickFilterValues?.join('').trim();
+    if (searchText) {
+      queryString = `${queryString}&${searchStringKey}=${searchText}`;
     }
 
     queryString = `${queryString}&${iQuery}&page=${page}&limit=${pageSize}`;

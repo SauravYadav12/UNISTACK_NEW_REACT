@@ -201,13 +201,13 @@ export default function RequirementsForm(props: iProps) {
     setValues((pre: any) => ({ ...pre, resumeUpload: '' }));
   };
 
-  async function createLog(data: any, operation: LogOperation) {
-    if (!data._id) {
+  async function createLog(id:string,data: any, operation: LogOperation) {
+    if (!id) {
       console.error({ data }, ' ', 'create log payload is not valid data');
     }
     try {
       const logPayload: CreateRequirementLogPayload = {
-        requirementRef: data._id,
+        requirementRef: id,
         userName: user.firstName + ' ' + user.lastName,
         userRef: user._id,
         oldData: values,
@@ -230,7 +230,16 @@ export default function RequirementsForm(props: iProps) {
       values,
       setErrors
     );
-
+    // const excludeFields = [
+    //   'createdAt',
+    //   'updatedAt',
+    //   'assignedToRef',
+    //   'appliedForRef',
+    //   'reqEnteredByRef',
+    //   '_id',
+    //   '__v',
+    // ];
+    // .filter((k) => !excludeFields.includes(k))
     if (!isValid) return;
 
     const payload = { ...values };
@@ -256,7 +265,7 @@ export default function RequirementsForm(props: iProps) {
       }
       const { data } = await createRequirement(payload);
       setResults?.((pre: any) => [data.data, ...pre]);
-      createLog(data.data, 'create');
+      createLog(data.data._id,payload, 'create');
       onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
@@ -302,8 +311,8 @@ export default function RequirementsForm(props: iProps) {
         });
         return [...pre];
       });
-      createLog(data.data, 'update');
-      onDrawerClose?.(); // Close the drawer after successful update
+      createLog(values._id,payload, 'update');
+      onDrawerClose?.(); 
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
     } finally {

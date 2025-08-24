@@ -2,7 +2,6 @@ import { Button, IconButton } from '@mui/material';
 import moment from 'moment';
 import { useState } from 'react';
 import CustomDataGrid, {
-  GridFilterOption,
   iGridColumn,
 } from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -128,11 +127,10 @@ export default function Consultants() {
 
   const handleChangeFilterModel = (
     model: GridFilterModel,
-    details: GridCallbackDetails<'filter'>,
-    options: GridFilterOption
+    details: GridCallbackDetails<'filter'>
   ) => {
     const iModel =
-      options.serverSideSearch && model.items.length && model.items[0].value
+      model.items[0]?.value || model.quickFilterValues?.length
         ? model
         : initialSearchModel;
     setSearchModel(iModel);
