@@ -1,4 +1,4 @@
-import { FormControlLabel, Switch, Box, TextField, Alert } from '@mui/material';
+import { FormControlLabel, Switch, Box, TextField } from '@mui/material';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
   ArchiveModule,
@@ -13,6 +13,8 @@ import {
   GridToolbarDensitySelector,
   GridToolbarQuickFilter,
   GridFilterOperator,
+  gridFilteredSortedRowIdsSelector,
+  useGridApiContext,
 } from '@mui/x-data-grid';
 import { useDataGridContext } from '../../contextProviders/DataGridContextProvider';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -38,10 +40,12 @@ interface iProps {
   >;
 }
 export default function CustomToolbar({ setFilterButtonEl }: iProps) {
+  const apiRef = useGridApiContext();
   const { isModuleAllowed } = useAuth();
-  const { serverSideSearchState, archiveState, disableArchiveBtnState } =
-    useDataGridContext();
-  const [serverSideSearch, setServerSideSearch] = serverSideSearchState;
+  const { archiveState, disableArchiveBtnState } = useDataGridContext();
+  const csvOptions = {
+    getRowsToExport: () => gridFilteredSortedRowIdsSelector(apiRef),
+  };
   const [archive, setArchive] = archiveState || [];
 
   const isArchiveModuleAllowed = Object.values(ArchiveModule).some((m) =>
@@ -54,7 +58,7 @@ export default function CustomToolbar({ setFilterButtonEl }: iProps) {
       <GridToolbarDensitySelector
         slotProps={{ tooltip: { title: 'Change density' } }}
       />
-      <GridToolbarFilterButton ref={setFilterButtonEl} />
+      <GridToolbarFilterButton ref={setFilterButtonEl}  />
       {isArchiveModuleAllowed && typeof archive === 'boolean' && (
         <FormControlLabel
           control={
@@ -65,23 +69,10 @@ export default function CustomToolbar({ setFilterButtonEl }: iProps) {
           sx={formControlSX}
         />
       )}
-      <GridToolbarExport />
+      <GridToolbarExport csvOptions={csvOptions} />
       <Box sx={{ flexGrow: 1 }} />
 
-      <FormControlLabel
-        control={<Switch checked={serverSideSearch} />}
-        label={`Server search`}
-        onChange={({ target }: any) =>
-          setServerSideSearch(Boolean(target.checked))
-        }
-        sx={formControlSX}
-      />
-
-      {!serverSideSearch ? (
-        <GridToolbarQuickFilter />
-      ) : (
-        <Alert sx={{backgroundColor:'inherit'}} severity="info">Use Filters to search data.</Alert>
-      )}
+      <GridToolbarQuickFilter />
     </GridToolbarContainer>
   );
 }

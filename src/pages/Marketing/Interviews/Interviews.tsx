@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import moment from 'moment';
 import CustomDataGrid, {
-  GridFilterOption,
   iGridColumn,
 } from '../../../components/datagrid/DataGrid';
 import { useEffect, useState } from 'react';
@@ -224,11 +223,10 @@ export default function Interviews(props: Iprops) {
   }
   const handleChangeFilterModel = (
     model: GridFilterModel,
-    details: GridCallbackDetails<'filter'>,
-    options: GridFilterOption
+    details: GridCallbackDetails<'filter'>
   ) => {
     const iModel =
-      options.serverSideSearch && model.items.length && model.items[0].value
+      model.items[0]?.value || model.quickFilterValues?.length
         ? model
         : initialSearchModel;
     setSearchModel(iModel);

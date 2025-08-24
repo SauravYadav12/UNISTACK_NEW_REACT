@@ -3,11 +3,9 @@ import {
   Button,
   CircularProgress,
   IconButton,
-  Stack,
   Typography,
 } from '@mui/material';
 import CustomDataGrid, {
-  GridFilterOption,
   iGridColumn,
 } from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -39,10 +37,7 @@ import RequirementDrawer from '../../../components/requirement/RequirementDrawer
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
 import { syncDataById } from '../../../utils/syncDataById';
 import { useSearchParams } from 'react-router-dom';
-import {
-  filterOperatorsForDateField,
-  FilterPanelDateInput,
-} from '../../../components/datagrid/CustomToolbar';
+import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 import { separateByDates } from '../../../utils/dataGrid.util';
 
 export default function Requirements() {
@@ -73,11 +68,7 @@ export default function Requirements() {
       renderCell: (params: any) => {
         if (params.row.dateSeparator) {
           return (
-            <Box
-              display={'flex'}
-              alignItems={'center'}
-              height={'25px'}
-            >
+            <Box display={'flex'} alignItems={'center'} height={'25px'}>
               <Typography
                 sx={{
                   textAlign: 'center',
@@ -247,11 +238,10 @@ export default function Requirements() {
 
   const handleChangeFilterModel = (
     model: GridFilterModel,
-    details: GridCallbackDetails<'filter'>,
-    options: GridFilterOption
+    _: GridCallbackDetails<'filter'>
   ) => {
     const iModel =
-      options.serverSideSearch && model.items.length && model.items[0].value
+      model.items[0]?.value || model.quickFilterValues?.length
         ? model
         : initialSearchModel;
     setSearchModel(iModel);

@@ -9,7 +9,6 @@ import {
   GridColDef,
   GridFilterInputValue,
   GridFilterOperator,
-  GridCellParams,
 } from '@mui/x-data-grid';
 import { IconButton, Typography } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -27,50 +26,35 @@ interface iFilterModel {
 }
 
 function MyDataGrid(props: Iprops) {
-  const {
-    serverSideSearchState,
-    disableArchiveBtnState,
-    archiveState: iArchiveState,
-  } = useDataGridContext();
-  const [serverSideSearch] = serverSideSearchState;
-  const [iFilterModel, setiFilterModel] = useState<iFilterModel>();
+  const { disableArchiveBtnState, archiveState: iArchiveState } =
+    useDataGridContext();
+  const [_, setiFilterModel] = useState<iFilterModel>();
   const { error, retry, paginateState, onFilterModelChange } = props;
 
   const [filterButtonEl, setFilterButtonEl] =
     React.useState<HTMLButtonElement | null>(null);
 
   const columns = useMemo(() => {
-    if (serverSideSearch) {
-      return props.columns.map((column) => {
-        if (!column.filterOperators) {
-          const filterOperators: GridFilterOperator<any>[] = [
-            {
-              value: SearchOperator.Equals,
-              label: 'Equals',
-              getApplyFilterFn() {
-                return () => true;
-              },
-              InputComponent: GridFilterInputValue,
+    return props.columns.map((column) => {
+      if (!column.filterOperators) {
+        const filterOperators: GridFilterOperator<any>[] = [
+          {
+            value: SearchOperator.Equals,
+            label: 'Equals',
+            getApplyFilterFn() {
+              return () => true;
             },
-            {
-              value: SearchOperator.Contains,
-              label: 'Contains',
-              getApplyFilterFn() {
-                return () => true;
-              },
-              InputComponent: GridFilterInputValue,
-            },
-          ];
-          return {
-            ...column,
-            filterOperators,
-          };
-        }
-        return column;
-      });
-    }
-    return props.columns;
-  }, [props.columns, serverSideSearch]);
+            InputComponent: GridFilterInputValue,
+          },
+        ];
+        return {
+          ...column,
+          filterOperators,
+        };
+      }
+      return column;
+    });
+  }, [props.columns]);
 
   useEffect(() => {
     disableArchiveBtnState[1](props.loading);
@@ -107,14 +91,12 @@ function MyDataGrid(props: Iprops) {
             isRowSelectable={(params) => !params?.row?.dateSeparator}
             onFilterModelChange={(model, details) => {
               setiFilterModel({ model, details });
-              onFilterModelChange?.(model, details, {
-                serverSideSearch,
-              });
+              onFilterModelChange?.(model, details);
             }}
             loading={props.loading}
             rows={props.rows}
             columns={columns}
-            filterMode={serverSideSearch ? 'server' : 'client'}
+            filterMode={'server'}
             paginationMode="server"
             rowCount={paginateState.totalRows}
             getRowId={(row: any) => row._id}
@@ -221,8 +203,7 @@ interface Iprops {
   retry: () => void;
   onFilterModelChange?: (
     model: GridFilterModel,
-    details: GridCallbackDetails<'filter'>,
-    options: GridFilterOption
+    details: GridCallbackDetails<'filter'>
   ) => void;
 }
 export interface PaginateState {
@@ -231,10 +212,7 @@ export interface PaginateState {
   onChange: (e: GridPaginationModel) => void;
 }
 export type ArchiveState = [boolean, (archive: boolean) => void];
-export interface GridFilterOption {
-  serverSideSearch: boolean;
-  // field?: string;
-}
+
 interface CustomErrorOverlayProps {
   message: string;
   retry: () => void;
