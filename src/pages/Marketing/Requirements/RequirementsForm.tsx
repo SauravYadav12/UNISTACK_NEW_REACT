@@ -20,7 +20,7 @@ import {
   duration,
   gotRequirementForm,
   requirementFormInitialValues,
-  requestStatusOptions,
+  reqStatusOptions,
   taxTypeOptions,
   techStack,
   requirementValidationMeta,
@@ -230,16 +230,7 @@ export default function RequirementsForm(props: iProps) {
       values,
       setErrors
     );
-    // const excludeFields = [
-    //   'createdAt',
-    //   'updatedAt',
-    //   'assignedToRef',
-    //   'appliedForRef',
-    //   'reqEnteredByRef',
-    //   '_id',
-    //   '__v',
-    // ];
-    // .filter((k) => !excludeFields.includes(k))
+
     if (!isValid) return;
 
     const payload = { ...values };
@@ -465,7 +456,7 @@ export default function RequirementsForm(props: iProps) {
 
   return (
     <>
-      <Box sx={{ width: '100%', margin: '0 20px' }}>
+      <Box sx={{ maxWidth: '100%', margin: '0 20px' }}>
         <Box
           sx={{
             display: 'flex',
@@ -474,6 +465,7 @@ export default function RequirementsForm(props: iProps) {
             mt: 2,
             flexWrap: 'wrap-reverse',
             rowGap: '20px',
+            width: 'auto',
           }}
         >
           <Box>
@@ -583,12 +575,11 @@ export default function RequirementsForm(props: iProps) {
           </Box>
 
           {!hideButtons && (
-            <Grid
+            <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                marginRight: 10,
                 flexWrap: 'wrap',
               }}
             >
@@ -704,19 +695,18 @@ export default function RequirementsForm(props: iProps) {
                   )}
                 </>
               )}
-            </Grid>
+            </Box>
           )}
         </Box>
       </Box>
       <form style={{ margin: '0 20px' }}>
         <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-          {/* Section 1: Requirement & Communication */}
           <Grid item xs={12}>
             <h4>1. Requirement & Communication</h4>
           </Grid>
           <CustomSelectField
             label="Req Status"
-            valueOptions={requestStatusOptions}
+            valueOptions={reqStatusOptions}
             selectedValue={values.reqStatus || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('reqStatus')}
@@ -804,7 +794,6 @@ export default function RequirementsForm(props: iProps) {
         </Grid>
 
         <Grid container spacing={2}>
-          {/* Section 2: Client Info */}
           <Grid item xs={12}>
             <h4>2. Client Info</h4>
           </Grid>

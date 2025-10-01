@@ -11,12 +11,17 @@ export const getJwtToken = async () => {
 };
 
 export function isTokenExpired() {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return true;
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return true;
+    }
+    const decoded: any = jwtDecode(token);
+    return decoded.exp < Date.now() / 1000;
+  } catch (error) {
+    console.log(error);
   }
-  const decoded: any = jwtDecode(token);
-  return decoded.exp < Date.now() / 1000;
+  return false;
 }
 
 export function getUserDataFromToken(): iUser | undefined {

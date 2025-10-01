@@ -9,7 +9,7 @@ import CustomDataGrid, {
   iGridColumn,
 } from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import RequirementsForm from './RequirementsForm';
 import { requirementsList } from '../../../services/requirementApi';
 import { reqirementStatusColors } from './requirementsValues';
@@ -39,6 +39,7 @@ import { syncDataById } from '../../../utils/syncDataById';
 import { useSearchParams } from 'react-router-dom';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 import { separateByDates } from '../../../utils/dataGrid.util';
+import { reqStatusParamKey } from '../../../components/sidebar/Sidebar';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
@@ -148,6 +149,11 @@ export default function Requirements() {
     },
     [archive]
   );
+
+  useEffect(() => {
+    reload();
+  }, [searchParams]);
+
   async function getRequirements(query?: string, signal?: AbortSignal) {
     const res = await requirementsList(query, signal);
     setArchive(false);

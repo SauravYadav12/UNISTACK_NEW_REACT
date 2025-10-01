@@ -8,7 +8,7 @@ interface iProps {
   emailState: [string, React.Dispatch<React.SetStateAction<string>>];
   passwordState: [string, React.Dispatch<React.SetStateAction<string>>];
   loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
-  onSuccess: (token: string, user: iUser) => void;
+  onSuccess: (user: iUser) => void;
 }
 const VerifyUser = ({
   emailState,
@@ -26,7 +26,7 @@ const VerifyUser = ({
       if (email && pass) {
         setLoading(true);
         const { data } = await login(email, pass);
-        onSuccess(data.token, data.user);
+        onSuccess(data.user);
       } else {
         toast.error('Email or password missing');
       }

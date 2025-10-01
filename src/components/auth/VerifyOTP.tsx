@@ -8,7 +8,7 @@ interface iProps {
   otpState: [string, React.Dispatch<React.SetStateAction<string>>];
   onChangeEmail: () => void;
   onResendOtp: () => void;
-  onSuccess: () => void;
+  onSuccess: (token: string) => void;
 }
 const VerifyOTP = ({
   email,
@@ -34,8 +34,8 @@ const VerifyOTP = ({
     }
     setLoading(true);
     try {
-      await verifyOtp(email, otp);
-      onSuccess();
+      const { data } = await verifyOtp(email, otp);
+      onSuccess(data.token);
     } catch (error: any) {
       console.log(error);
       if (error?.response?.data?.error) {

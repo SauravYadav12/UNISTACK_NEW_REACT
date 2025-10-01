@@ -54,17 +54,17 @@ export default function Login() {
     await handleSendOTP();
   }
 
-  async function onUserVerifiedSuccessfully(token: string, user: iUser) {
+  async function onUserVerifiedSuccessfully(user: iUser) {
     await handleSendOTP();
-    setAuthData({ token, user });
+    setAuthData({ user });
   }
 
-  function onOtpVerifiedSuccessfully() {
+  function onOtpVerifiedSuccessfully(token: string) {
     if (!authData) {
       toast.error('Missing token');
       return;
     }
-    const { token, user } = authData;
+    const { user } = authData;
     validateLogin(token, user);
     navigate('/dashboard');
     toast.success('Login Successfull');
@@ -128,6 +128,5 @@ enum LoginStep {
 }
 
 interface AuthData {
-  token: string;
   user: any;
 }

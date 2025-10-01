@@ -42,7 +42,9 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     let queryString = '';
     if (searchModel.items.length) {
       const { operator, field, value } = searchModel.items[0];
-      queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
+      if (!!value?.toString().trim()) {
+        queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
+      }
     }
 
     const searchText = searchModel.quickFilterValues?.join('').trim();

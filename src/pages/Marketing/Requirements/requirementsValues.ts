@@ -1,7 +1,7 @@
 import { RequirementStatus } from '../../../Interfaces/reports';
 import { ValidationMeta } from '../../../utils/validators';
 
-export const requestStatusOptions: RequirementStatus[] = [
+export const reqStatusOptions: RequirementStatus[] = [
   'New Working',
   'Submitted',
   'Interviewed',
@@ -11,7 +11,7 @@ export const requestStatusOptions: RequirementStatus[] = [
 ];
 
 export const requirementFormInitialValues = {
-  reqStatus: requestStatusOptions[0] || '',
+  reqStatus: reqStatusOptions[0] || '',
   assignedTo: '',
   // assignedToRef: '',
   appliedFor: '',
