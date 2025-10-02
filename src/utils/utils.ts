@@ -19,6 +19,7 @@ export function isTokenExpired() {
     const decoded: any = jwtDecode(token);
     return decoded.exp < Date.now() / 1000;
   } catch (error) {
+    localStorage.removeItem('token');
     console.log(error);
   }
   return false;
@@ -29,8 +30,13 @@ export function getUserDataFromToken(): iUser | undefined {
   if (!token) {
     return;
   }
-  const decoded: any = jwtDecode(token);
-  return decoded?.user;
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded?.user;
+  } catch (error) {
+    localStorage.removeItem('token');
+    console.log(error);
+  }
 }
 
 export function getUserIdFromToken(): string | undefined {
