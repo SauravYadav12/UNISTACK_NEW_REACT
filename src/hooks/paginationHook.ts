@@ -4,7 +4,7 @@ import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import axios, { AxiosResponse } from 'axios';
 
 export const allDoc = 100000000;
-export const pageSizeList = [100, 500, 1000, 5000, allDoc];
+export const pageSizeList = [100, 500, 1000, 2500,5000, allDoc];
 export const initialPaginationModel: GridPaginationModel = {
   page: 1,
   pageSize: pageSizeList[0] || 100,
@@ -47,7 +47,7 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
       }
     }
 
-    const searchText = searchModel.quickFilterValues?.join('').trim();
+    const searchText = searchModel.quickFilterValues?.join(' ').trim();
     if (searchText) {
       queryString = `${queryString}&${searchStringKey}=${searchText}`;
     }
