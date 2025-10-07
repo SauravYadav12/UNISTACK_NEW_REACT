@@ -201,7 +201,7 @@ export default function RequirementsForm(props: iProps) {
     setValues((pre: any) => ({ ...pre, resumeUpload: '' }));
   };
 
-  async function createLog(id:string,data: any, operation: LogOperation) {
+  async function createLog(id: string, data: any, operation: LogOperation) {
     if (!id) {
       console.error({ data }, ' ', 'create log payload is not valid data');
     }
@@ -256,7 +256,7 @@ export default function RequirementsForm(props: iProps) {
       }
       const { data } = await createRequirement(payload);
       setResults?.((pre: any) => [data.data, ...pre]);
-      createLog(data.data._id,payload, 'create');
+      createLog(data.data._id, payload, 'create');
       onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
@@ -302,8 +302,8 @@ export default function RequirementsForm(props: iProps) {
         });
         return [...pre];
       });
-      createLog(values._id,payload, 'update');
-      onDrawerClose?.(); 
+      createLog(values._id, payload, 'update');
+      onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
     } finally {
@@ -626,7 +626,9 @@ export default function RequirementsForm(props: iProps) {
               ) : (
                 <>
                   {!disableCreateInterview &&
-                    viewData.reqStatus === 'Submitted' && (
+                    ['Submitted', 'Interviewed'].includes(
+                      viewData.reqStatus
+                    ) && (
                       <Button
                         variant="contained"
                         color="primary"
