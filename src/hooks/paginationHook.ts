@@ -4,7 +4,7 @@ import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import axios, { AxiosResponse } from 'axios';
 
 export const allDoc = 100000000;
-export const pageSizeList = [100, 500, 1000, 2500,5000, allDoc];
+export const pageSizeList = [100, 500, 1000, 2500, 5000, allDoc];
 export const initialPaginationModel: GridPaginationModel = {
   page: 1,
   pageSize: pageSizeList[0] || 100,
@@ -19,6 +19,7 @@ export const caseInsensitiveSearchFieldsKey = 'caseInsensitiveFields';
 
 export enum SearchOperator {
   Equals = 'equals',
+  Contains = 'contains',
 }
 
 export function usePagination(para: ApiQuery, dependencies: any[]) {
@@ -43,7 +44,11 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     if (searchModel.items.length) {
       const { operator, field, value } = searchModel.items[0];
       if (!!value?.toString().trim()) {
-        queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
+        if (operator === SearchOperator.Contains) {
+          queryString = `${queryString}&${searchStringKey}=${value}&${searchFieldKey}=${field}`;
+        } else if (operator === SearchOperator.Equals) {
+          queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
+        }
       }
     }
 

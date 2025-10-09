@@ -46,6 +46,14 @@ function MyDataGrid(props: Iprops) {
             },
             InputComponent: GridFilterInputValue,
           },
+          {
+            value: SearchOperator.Contains,
+            label: 'Contains',
+            getApplyFilterFn() {
+              return () => true;
+            },
+            InputComponent: GridFilterInputValue,
+          },
         ];
         return {
           ...column,
