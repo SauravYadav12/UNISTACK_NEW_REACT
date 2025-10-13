@@ -51,6 +51,7 @@ export const meetingTypeOptions = [
   'Microsoft Teams',
   'Webex',
   'Flocareer',
+  'Zoho Meeting',
 ];
 
 export const intDurationOptions = [
