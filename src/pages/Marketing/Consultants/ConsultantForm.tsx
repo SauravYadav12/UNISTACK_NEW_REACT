@@ -591,7 +591,7 @@ export default function ConsultantForm(props: iProps) {
         {projects.map((project, index) => (
           <Grid key={index} container spacing={1}>
             <Grid item xs={12}>
-              <h4>{`PROJECT ${project.projectNumber}`}</h4>
+              <h4>{`PROJECT: ${index + 1}`}</h4>
             </Grid>
             <CustomTextField
               label="Project Name"
