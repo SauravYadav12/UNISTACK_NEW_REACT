@@ -107,7 +107,7 @@ export const duration = [
 
 export const requirementValidationMeta: ValidationMeta[] = [
   { field: 'reqStatus', required: true },
-  { field: 'assignedTo', required: true },
+  // { field: 'assignedTo', required: true },
   { field: 'jobDescription', required: true },
   { field: 'vendorCompany', required: true },
 ];
