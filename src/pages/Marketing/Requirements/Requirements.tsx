@@ -70,7 +70,7 @@ export default function Requirements() {
       width: 150,
       renderCell: (params: any) => {
         if (params.row.dateSeparator) {
-          const {count,fromDate}=params.row;
+          const { count, fromDate } = params.row;
           return (
             <Box display={'flex'} alignItems={'center'} height={'25px'}>
               <Typography
@@ -80,8 +80,7 @@ export default function Requirements() {
                   fontWeight: 'bold',
                 }}
               >
-                {moment(fromDate).format(dateFormate2)} -{' '}
-                {count<=9&&'0'}
+                {moment(fromDate).format(dateFormate2)} - {count <= 9 && '0'}
                 {count}
               </Typography>
             </Box>
@@ -162,12 +161,12 @@ export default function Requirements() {
   async function getRequirements(query?: string, signal?: AbortSignal) {
     const res = await requirementsList(query, signal);
     let result = separateByDates(res.data.data?.results || []);
-    const formate = (d: string) => moment(d).format(dateFormate2);
+    const formate = (d: string) => moment(d).format('YYYY-MM-DD');
     const dates = result
       .filter((r) => !!r.dateSeparator)
       .map((d) => d.fromDate)
       .map((d) => formate(d));
-      
+
     const counts = await requirementCounts(dates, signal);
 
     result = result.map((r) => {

@@ -119,7 +119,7 @@ export async function requirementCounts(
   date.forEach((d) => {
     dateQuery += `date=${d}&`;
   });
-  const url = `${BASE_URL}/requirements/count-by-date?${dateQuery}`;
+  const url = `${BASE_URL}/requirements/count-by-date?${dateQuery}&timezone=${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
   const response = await axios.get<
     ApiQueryRes<{ date: string; count: number }[]>
   >(url, {
