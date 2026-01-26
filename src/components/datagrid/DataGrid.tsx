@@ -101,6 +101,7 @@ function MyDataGrid(props: Iprops) {
               setiFilterModel({ model, details });
               onFilterModelChange?.(model, details);
             }}
+            getRowHeight={({ model }) => (model?.dateSeparator ? 25 : null)}
             loading={props.loading}
             rows={props.rows}
             columns={columns}
@@ -150,12 +151,9 @@ function MyDataGrid(props: Iprops) {
                 '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                   outline: 'none !important',
                 },
-                '&:hover': {
-                  backgroundColor: '#0000ff1a',
-                },
-                minHeight: '25px !important',
-                maxHeight: '25px !important',
-                height: '25px !important',
+                // '&:hover': {
+                //   backgroundColor: '#0000ff1a',
+                // },
                 backgroundColor: '#0000ff1a',
               },
               '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within':

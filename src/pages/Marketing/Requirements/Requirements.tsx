@@ -11,7 +11,10 @@ import CustomDataGrid, {
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useEffect, useState } from 'react';
 import RequirementsForm from './RequirementsForm';
-import { requirementsList } from '../../../services/requirementApi';
+import {
+  requirementCounts,
+  requirementsList,
+} from '../../../services/requirementApi';
 import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
@@ -39,7 +42,6 @@ import { syncDataById } from '../../../utils/syncDataById';
 import { useSearchParams } from 'react-router-dom';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 import { separateByDates } from '../../../utils/dataGrid.util';
-import { reqStatusParamKey } from '../../../components/sidebar/Sidebar';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
@@ -68,6 +70,7 @@ export default function Requirements() {
       width: 150,
       renderCell: (params: any) => {
         if (params.row.dateSeparator) {
+          const {count,fromDate}=params.row;
           return (
             <Box display={'flex'} alignItems={'center'} height={'25px'}>
               <Typography
@@ -77,7 +80,9 @@ export default function Requirements() {
                   fontWeight: 'bold',
                 }}
               >
-                {moment(params.row.fromDate).format(dateFormate2)}
+                {moment(fromDate).format(dateFormate2)} -{' '}
+                {count<=9&&'0'}
+                {count}
               </Typography>
             </Box>
           );
@@ -156,6 +161,31 @@ export default function Requirements() {
 
   async function getRequirements(query?: string, signal?: AbortSignal) {
     const res = await requirementsList(query, signal);
+    let result = separateByDates(res.data.data?.results || []);
+    const formate = (d: string) => moment(d).format(dateFormate2);
+    const dates = result
+      .filter((r) => !!r.dateSeparator)
+      .map((d) => d.fromDate)
+      .map((d) => formate(d));
+      
+    const counts = await requirementCounts(dates, signal);
+
+    result = result.map((r) => {
+      if (r.dateSeparator) {
+        const countObj = counts.data?.find(
+          (c) => c.date === formate(r.fromDate)
+        );
+        return {
+          ...r,
+          count: countObj ? countObj.count : 0,
+        };
+      }
+      return r;
+    });
+    if (res.data.data) {
+      res.data.data.results = result;
+    }
+
     setArchive(false);
     return res;
   }
@@ -331,7 +361,7 @@ export default function Requirements() {
         error={error}
         retry={reload}
         header={header}
-        rows={separateByDates(gridData?.results || [])}
+        rows={gridData?.results || []}
         columns={columns}
         loading={loading}
       />

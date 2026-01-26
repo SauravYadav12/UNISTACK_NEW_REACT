@@ -104,3 +104,27 @@ export async function getRequirementLogs(
   });
   return response;
 }
+
+export async function requirementCounts(
+  date: string[] = [],
+  signal?: AbortSignal
+) {
+  const token = await getJwtToken();
+
+  let headers: any = {
+    'Content-Type': 'application/json',
+    Authorization: token,
+  };
+  let dateQuery = '';
+  date.forEach((d) => {
+    dateQuery += `date=${d}&`;
+  });
+  const url = `${BASE_URL}/requirements/count-by-date?${dateQuery}`;
+  const response = await axios.get<
+    ApiQueryRes<{ date: string; count: number }[]>
+  >(url, {
+    headers,
+    signal,
+  });
+  return response.data;
+}
