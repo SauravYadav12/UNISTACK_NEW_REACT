@@ -107,6 +107,8 @@ export async function getRequirementLogs(
 
 export async function requirementCounts(
   date: string[] = [],
+  filters: string = '',
+  archive: boolean = false,
   signal?: AbortSignal
 ) {
   const token = await getJwtToken();
@@ -115,11 +117,13 @@ export async function requirementCounts(
     'Content-Type': 'application/json',
     Authorization: token,
   };
+
   let dateQuery = '';
+
   date.forEach((d) => {
     dateQuery += `date=${d}&`;
   });
-  const url = `${BASE_URL}/requirements/count-by-date?${dateQuery}&timezone=${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+  const url = `${BASE_URL}/requirements/count-by-date?${dateQuery}${filters}&timezone=${Intl.DateTimeFormat().resolvedOptions().timeZone}&archive=${archive}`;
   const response = await axios.get<
     ApiQueryRes<{ date: string; count: number }[]>
   >(url, {

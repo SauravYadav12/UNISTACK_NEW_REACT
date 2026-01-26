@@ -158,8 +158,14 @@ export default function Requirements() {
     reload();
   }, [searchParams]);
 
-  async function getRequirements(query?: string, signal?: AbortSignal) {
-    const res = await requirementsList(query, signal);
+  async function fetchRequirementsData(
+    isArchive: boolean,
+    query?: string,
+    signal?: AbortSignal
+  ) {
+    const apiFunction = isArchive ? archiveRequirementsList : requirementsList;
+    const res = await apiFunction(query, signal);
+
     let result = separateByDates(res.data.data?.results || []);
     const formate = (d: string) => moment(d).format('YYYY-MM-DD');
     const dates = result
@@ -167,7 +173,7 @@ export default function Requirements() {
       .map((d) => d.fromDate)
       .map((d) => formate(d));
 
-    const counts = await requirementCounts(dates, signal);
+    const counts = await requirementCounts(dates, query, isArchive, signal);
 
     result = result.map((r) => {
       if (r.dateSeparator) {
@@ -181,18 +187,21 @@ export default function Requirements() {
       }
       return r;
     });
+
     if (res.data.data) {
       res.data.data.results = result;
     }
 
-    setArchive(false);
+    setArchive(isArchive);
     return res;
   }
 
+  async function getRequirements(query?: string, signal?: AbortSignal) {
+    return fetchRequirementsData(false, query, signal);
+  }
+
   async function getArchiveRequirements(query?: string, signal?: AbortSignal) {
-    const res = await archiveRequirementsList(query, signal);
-    setArchive(true);
-    return res;
+    return fetchRequirementsData(true, query, signal);
   }
 
   const onChangeArchiveButton = (status: boolean) => {
