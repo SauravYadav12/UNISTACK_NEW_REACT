@@ -11,7 +11,16 @@ export interface iUser {
   canEdit: boolean;
   shift: UserShift;
   workLocation: WorkLocation;
+  activity?: iUserActivity[];
 }
+
+export type iUserActivity = {
+  loggedInAt?: string;
+  loggedOutAt?: string;
+  location?: string;
+  ip?: string;
+  _id: string;
+};
 
 export interface iAttendance {
   _id: string;

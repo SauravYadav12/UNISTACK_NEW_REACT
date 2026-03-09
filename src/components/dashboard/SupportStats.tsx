@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { IconArrowUpLeft } from '@tabler/icons-react';
 const SupportStats = () => {
-  const optionscolumnchart: any = {
+  const optionscolumnchart: ApexCharts.ApexOptions = {
     chart: {
       type: 'area',
       fontFamily: "'Plus Jakarta Sans', sans-serif;",
@@ -29,7 +29,7 @@ const SupportStats = () => {
         horizontal: false,
         barHeight: '60%',
         columnWidth: '42%',
-        borderRadius: [3],
+        borderRadius: 3,
         borderRadiusApplication: 'end',
         borderRadiusWhenStacked: 'all',
       },
@@ -45,7 +45,7 @@ const SupportStats = () => {
       theme: 'light',
     },
   };
-  const seriescolumnchart: any = [
+  const seriescolumnchart: ApexCharts.ApexOptions['series'] = [
     {
       name: '',
       data: [0, 10, 60, 20, 10, 12, 58, 20],

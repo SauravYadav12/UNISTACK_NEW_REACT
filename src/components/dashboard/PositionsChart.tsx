@@ -70,7 +70,7 @@ const PositionsChart = () => {
       fillSeriesColor: false,
     },
   };
-  const seriescolumnchart: any = [
+  const seriescolumnchart: ApexCharts.ApexOptions['series'] = [
     {
       name: 'Last week',
       data: [2, 10, 12, 5, 25],

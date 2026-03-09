@@ -6,7 +6,6 @@ import {
   Typography,
 } from '@mui/material';
 import CustomDataGrid, {
-  iGridColumn,
 } from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { useEffect, useState } from 'react';
@@ -18,7 +17,7 @@ import {
 import { reqirementStatusColors } from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
-import { GridCallbackDetails, GridFilterModel } from '@mui/x-data-grid';
+import { GridCallbackDetails, GridColDef, GridFilterModel } from '@mui/x-data-grid';
 import {
   initialSearchModel,
   usePagination,
@@ -42,14 +41,15 @@ import { syncDataById } from '../../../utils/syncDataById';
 import { useSearchParams } from 'react-router-dom';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 import { separateByDates } from '../../../utils/dataGrid.util';
+import { IRequirement, RequirementStatus } from '../../../Interfaces/types';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [viewData, setViewData] = useState<any>({});
-  const [reqToCopy, setReqToCopy] = useState<any>();
+  const [viewData, setViewData] = useState<IRequirement>();
+  const [reqToCopy, setReqToCopy] = useState<Partial<IRequirement>>();
   const [mode, setMode] = useState<FormMode>('view');
   const [duplicateReqDrawer, setDuplicateReqDrawer] = useState<string>();
   const [archive, setArchive] = useState(false);
@@ -63,7 +63,7 @@ export default function Requirements() {
     moduleKey(ModuleGroup.Archive, ArchiveModule.Requirements)
   );
 
-  const columns: readonly iGridColumn[] = [
+  const columns: GridColDef<IRequirement>[] = [
     {
       field: 'view',
       headerName: 'View',
@@ -110,13 +110,13 @@ export default function Requirements() {
       field: 'reqStatus',
       headerName: 'Req Status',
       width: 120,
-      renderCell: (params: any) => (
+      renderCell: ({ row }) => (
         <span
           style={{
-            color: (reqirementStatusColors as any)[params.row.reqStatus],
+            color: (reqirementStatusColors)[row.reqStatus as RequirementStatus],
           }}
         >
-          {params.row.reqStatus}
+          {row.reqStatus}
         </span>
       ),
     },
@@ -209,8 +209,8 @@ export default function Requirements() {
     setGridData(undefined);
   };
 
-  const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.find((r: any) => r.reqID === row.reqID);
+  const handleViewDetails = (row: IRequirement) => {
+    const data = gridData?.results?.find((r) => r.reqID === row.reqID);
     if (!data) return;
     setViewData(data);
     setFormTitle(`Requirement ID: ${row.reqID}`);
@@ -230,7 +230,7 @@ export default function Requirements() {
 
   const handleAddNew = () => {
     setFormTitle('Add New Requirement');
-    setViewData({});
+    setViewData(undefined);
     setMode('add');
     setDrawerOpen(true);
   };
@@ -240,16 +240,16 @@ export default function Requirements() {
     setMode('add');
     setFormTitle('Add New Requirement');
 
-    const copy = {
+    const copy: Partial<IRequirement&{__v?: string}> = {
       ...viewData,
       reqEnteredBy: `${iUser?.firstName} ${iUser?.lastName}`,
       reqEnteredByRef: `${iUser?.id}`,
-      isDuplicate: true,
+      isDuplicate: 'true',
       duplicateWith: viewData.reqID,
-      rate: '',
-      taxType: '',
-      remote: '',
-      duration: '',
+      rate: [],
+      taxType: [],
+      remote: [],
+      duration: [],
       mComment: [],
       resumeUpload: '',
     };
@@ -264,7 +264,7 @@ export default function Requirements() {
     setDrawerOpen(false);
     setReqToCopy(undefined);
     setDuplicateReqDrawer(undefined);
-    setViewData({});
+    setViewData(undefined);
   };
 
   async function getAccountList() {
@@ -384,7 +384,7 @@ export default function Requirements() {
             requirement={viewData}
             archive={archive}
             onOpenDuplicateReq={() =>
-              setDuplicateReqDrawer(viewData.duplicateWith)
+              setDuplicateReqDrawer(viewData?.duplicateWith)
             }
           />
         }
@@ -396,7 +396,7 @@ export default function Requirements() {
         <RequirementDrawer
           archive={archive}
           open={Boolean(duplicateReqDrawer)}
-          reqID={viewData.duplicateWith}
+          reqID={viewData?.duplicateWith}
           onClose={() => setDuplicateReqDrawer(undefined)}
         />
       )}

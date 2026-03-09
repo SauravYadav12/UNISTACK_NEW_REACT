@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Fade from '@mui/material/Fade';
 
-export default function CustomAccordion({ title, children }: any) {
+export default function CustomAccordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [expanded, setExpanded] = React.useState(false);
 
   const handleExpansion = () => {

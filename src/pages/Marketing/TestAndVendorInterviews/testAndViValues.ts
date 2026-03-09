@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import { InterviewStatus } from '../../../Interfaces/reports';
 import { ValidationMeta } from '../../../utils/validators';
+import { IVendor } from '../../../Interfaces/types';
 
 export const timeZoneOptions = ['EST', 'CST', 'MST', 'PST'];
 
@@ -80,18 +81,18 @@ export const vendorInterviewValidationMeta: ValidationMeta[] = [
   {
     field: 'interviewDate',
     required: true,
-    transform(value: any) {
-      return value && dayjs(value).isValid()
-        ? dayjs(value).format(dateFormate)
+    transform(value) {
+      return value && dayjs(value as string).isValid()
+        ? dayjs(value as string).format(dateFormate)
         : null;
     },
   },
   {
     field: 'interviewTime',
     required: true,
-    transform(value: any) {
-      return value && dayjs(value).isValid()
-        ? dayjs(value).format(timeFormate)
+    transform(value) {
+      return value && dayjs(value as string).isValid()
+        ? dayjs(value as string).format(timeFormate)
         : null;
     },
   },
@@ -113,7 +114,7 @@ export const vendorInterviewValidationMeta: ValidationMeta[] = [
   },
 ];
 
-export const testAndVendorInterviewInitialValues = {
+export const testAndVendorInterviewInitialValues: Partial<IVendor> = {
   timeShift: '',
   timeZone: '',
   interviewType: '',
@@ -142,8 +143,8 @@ export const testAndVendorInterviewInitialValues = {
   jobTitle: '',
   reqID: '',
   clientName: '',
-  taxType: '',
-  duration: '',
+  taxType: [''],
+  duration: [''],
   candidateName: '',
   teckStack: '',
   developerName: '',

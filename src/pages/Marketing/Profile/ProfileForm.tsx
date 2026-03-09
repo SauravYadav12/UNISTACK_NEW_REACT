@@ -34,8 +34,10 @@ const ProfileForm = ({
 }: MyProps) => {
   const [myProfile, setMyProfile] = useState<UserProfile>(template);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState<UserProfile>(
-    convertValuesToEmptyString(template) as UserProfile
+  const [formErrors, setFormErrors] = useState(
+    convertValuesToEmptyString(
+      template as unknown as { [key: string]: unknown }
+    ) as unknown as UserProfile
   );
   const [selectedBlobFiles, setSelectedBlobFiles] = React.useState<
     SelectedBlobFiles[]
@@ -55,7 +57,7 @@ const ProfileForm = ({
         target: {
           value: data.data.url,
         },
-      } as any);
+      } as ChangeEvent<HTMLInputElement>);
       setSelectedBlobFiles((pre) =>
         pre.filter((f) => f.field.fieldName !== field.fieldName)
       );
@@ -98,11 +100,12 @@ const ProfileForm = ({
         return;
       }
       onSubmitSuccessfully(data.data);
-    } catch (error: any) {
-      const { codeName, keyPattern, keyValue } = error.response.data.error;
-      if (codeName === 'DuplicateKey' && keyPattern.employeeId) {
+    } catch (error) {
+      const { codeName, keyPattern, keyValue } =
+        (error as any)?.response?.data?.error || {};
+      if (codeName === 'DuplicateKey' && keyPattern?.employeeId) {
         toast.error(
-          `Employee Id ${keyValue.employeeId} already Associated with another profile`
+          `Employee Id ${keyValue?.employeeId} already Associated with another profile`
         );
       } else {
         toast.error('Something went wrong');
@@ -120,7 +123,8 @@ const ProfileForm = ({
   ) => {
     let isValueValid = true;
     let message: string = '';
-    let { fieldName, label, inputAttributes, customValidation } = field;
+    const { fieldName, inputAttributes, customValidation } = field;
+    let { label } = field;
     parentFieldName = field.parentFieldName || parentFieldName;
     label = label || fieldName;
     label = label[0].toUpperCase() + label.slice(1);

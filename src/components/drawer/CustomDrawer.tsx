@@ -6,7 +6,7 @@ interface iProps {
   title: string | JSX.Element | null;
   subTitle?: string | JSX.Element | null;
   closeOnOutSideClick: boolean;
-  children: any;
+  children: React.ReactNode;
   onClose: () => void;
 }
 

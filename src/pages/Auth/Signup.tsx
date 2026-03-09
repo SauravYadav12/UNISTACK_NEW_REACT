@@ -19,11 +19,11 @@ import { useNavigate } from 'react-router-dom';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import { allowdDomains, useAuth } from '../../AuthGaurd/AuthContextProvider';
 import CopyRight from '../../components/auth/CopyRight';
+import { parseError } from '../../utils/utils';
 
-// TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
 
-const initalValues: any = {
+const initalValues = {
   firstName: '',
   lastName: '',
   email: '',
@@ -37,7 +37,7 @@ export default function SignUp() {
   const [loading, setLoading] = React.useState(false);
   const [values, setValues] = React.useState(initalValues);
   const { isAuthenticated } = useAuth();
-  React.useEffect((): any => {
+  React.useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
       return;
@@ -59,7 +59,7 @@ export default function SignUp() {
         }
         if (checked) {
           setLoading(true);
-          const res: any = await signup(values);
+          const res = await signup(values);
           if (res.status === 200) {
             toast.success(res?.data?.message);
             setLoading(false);
@@ -71,9 +71,8 @@ export default function SignUp() {
       } else {
         toast.error('Please fill all the fields');
       }
-    } catch (error: any) {
-      const message: any = error?.response?.data?.message;
-      toast.error(message);
+    } catch (error) {
+      toast.error(parseError(error));
       setLoading(false);
     }
   };

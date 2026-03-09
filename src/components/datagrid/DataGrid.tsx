@@ -25,6 +25,11 @@ interface iFilterModel {
   details: GridCallbackDetails<'filter'>;
 }
 
+type GridRow = Record<string, string | number | boolean | undefined> & {
+  _id: string;
+  dateSeparator?: boolean;
+};
+
 function MyDataGrid(props: Iprops) {
   const { disableArchiveBtnState, archiveState: iArchiveState } =
     useDataGridContext();
@@ -37,7 +42,7 @@ function MyDataGrid(props: Iprops) {
   const columns = useMemo(() => {
     return props.columns.map((column) => {
       if (!column.filterOperators) {
-        const filterOperators: GridFilterOperator<any>[] = [
+        const filterOperators: GridFilterOperator<GridRow>[] = [
           {
             value: SearchOperator.Equals,
             label: 'Equals',
@@ -108,9 +113,9 @@ function MyDataGrid(props: Iprops) {
             filterMode={'server'}
             paginationMode="server"
             rowCount={paginateState.totalRows}
-            getRowId={(row: any) => row._id}
+            getRowId={(row) => row._id}
             slots={{
-              toolbar: CustomToolbar as any,
+              toolbar: CustomToolbar,
               noRowsOverlay: () =>
                 error ? (
                   <ErrorOverlay message={error} retry={retry} />
@@ -202,8 +207,8 @@ interface Iprops {
   loading: boolean;
   error: string;
   header: JSX.Element | string;
-  rows: any[];
-  columns: readonly iGridColumn[];
+  rows: GridRow[];
+  columns: GridColDef[];
   paginateState: PaginateState;
   archiveState?: ArchiveState;
   retry: () => void;
@@ -231,4 +236,3 @@ export interface iServerFilterOptions {
   };
 }
 
-export type iGridColumn = GridColDef<any>;

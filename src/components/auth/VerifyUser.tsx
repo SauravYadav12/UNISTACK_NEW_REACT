@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { login } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import { iUser } from '../../Interfaces/iUser';
+import { parseError } from '../../utils/utils';
 interface iProps {
   emailState: [string, React.Dispatch<React.SetStateAction<string>>];
   passwordState: [string, React.Dispatch<React.SetStateAction<string>>];
@@ -30,8 +31,8 @@ const VerifyUser = ({
       } else {
         toast.error('Email or password missing');
       }
-    } catch (error: any) {
-      const message: any = error?.response?.data?.message;
+    } catch (error) {
+      const message = parseError(error);
       toast.error(message);
     } finally {
       setLoading(false);

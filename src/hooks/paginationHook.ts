@@ -22,7 +22,7 @@ export enum SearchOperator {
   Contains = 'contains',
 }
 
-export function usePagination(para: ApiQuery, dependencies: any[]) {
+export function usePagination(para: ApiQuery, dependencies: unknown[]) {
   const [searchModel, setSearchModel] =
     useState<GridFilterModel>(initialSearchModel);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(
@@ -32,9 +32,14 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
   const setResults: SetResults = (cb) => {
-    const results = cb(gridData?.results || []);
-    setGridData((pre) => ({ ...pre, results, totalDocuments: results.length }));
+    const results = typeof cb === 'function' ? cb(gridData?.results || []) : cb;
+    setGridData((pre) => ({
+      ...pre,
+      results,
+      totalDocuments: results?.length || 0,
+    }));
   };
 
   function createQueryString() {
@@ -43,7 +48,7 @@ export function usePagination(para: ApiQuery, dependencies: any[]) {
     let queryString = '';
     if (searchModel.items.length) {
       const { operator, field, value } = searchModel.items[0];
-      if (!!value?.toString().trim()) {
+      if (value?.toString().trim()) {
         if (operator === SearchOperator.Contains) {
           queryString = `${queryString}&${searchStringKey}=${value}&${searchFieldKey}=${field}`;
         } else if (operator === SearchOperator.Equals) {
@@ -132,4 +137,6 @@ interface ApiQuery {
   queryParams?: string;
 }
 
-export type SetResults = <T = any>(cb: (pre: T[]) => T[]) => void;
+export type SetResults = React.Dispatch<
+  React.SetStateAction<NonNullable<PaginationResult['results']>>
+>;

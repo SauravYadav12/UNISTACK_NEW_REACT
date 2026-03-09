@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import dayjs from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -59,16 +59,17 @@ import {
 } from '../../../Interfaces/requirement';
 import RequirementLogTable from '../../../components/requirement/RequirementLogTable';
 import { getChangedFields } from '../../../utils/formUtil';
+import { IConsultant, IRequirement } from '../../../Interfaces/types';
 
 interface iProps {
-  viewData: any;
+  viewData?: IRequirement;
   isEditing?: boolean;
   hideButtons?: boolean;
   hideFooter?: boolean;
   mode?: FormMode;
   accounts?: iUser[];
-  consultants?: any[];
-  reqToCopy?: any;
+  consultants?: IConsultant[];
+  reqToCopy?: Partial<IRequirement>;
   disableCreateInterview?: boolean;
   disableCopyRequirement?: boolean;
   disableDelete?: boolean;
@@ -80,9 +81,9 @@ interface iProps {
 }
 
 export default function RequirementsForm(props: iProps) {
-  const [values, setValues] = useState<any>(requirementFormInitialValues);
+  const [values, setValues] = useState<Partial<IRequirement>>(requirementFormInitialValues);
   const [file, setFile] = useState<File>();
-  const [errors, setErrors] = useState<{ [key: string]: any }>(
+  const [errors, setErrors] = useState<{ [key: string]: string }>(
     convertValuesToEmptyString(requirementFormInitialValues)
   );
   const [comment, setComment] = useState('');
@@ -139,9 +140,9 @@ export default function RequirementsForm(props: iProps) {
 
   useEffect(() => {
     if (mode === 'view' || mode === 'edit') {
-      setValues(viewData);
+      setValues(viewData||{});
     } else if (mode === 'add') {
-      setValues((pre: any) => ({
+      setValues((pre) => ({
         ...pre,
         reqEnteredBy: `${user?.firstName} ${user?.lastName}`,
         reqEnteredByRef: `${user?.id}`,
@@ -164,7 +165,7 @@ export default function RequirementsForm(props: iProps) {
     const file = e.target.files[0];
     if (file.size > maxSize) {
       setFile(undefined);
-      setErrors((pre: any) => ({
+      setErrors((pre) => ({
         ...pre,
         resumeUpload: `File size should be less than ${(
           maxSize /
@@ -175,7 +176,7 @@ export default function RequirementsForm(props: iProps) {
     }
 
     setFile(file);
-    setErrors((pre: any) => ({
+    setErrors((pre) => ({
       ...pre,
       resumeUpload: ``,
     }));
@@ -184,9 +185,9 @@ export default function RequirementsForm(props: iProps) {
   async function handleFileUpload(file: File) {
     try {
       const { data } = await uploadFile(file);
-      setValues((pre: any) => ({ ...pre, resumeUpload: data.data.url }));
+      setValues((pre) => ({ ...pre, resumeUpload: data.data.url }));
       setFile(undefined);
-      setErrors((pre: any) => ({
+      setErrors((pre) => ({
         ...pre,
         resumeUpload: ``,
       }));
@@ -198,10 +199,10 @@ export default function RequirementsForm(props: iProps) {
   }
   const removeFile = () => {
     setFile(undefined);
-    setValues((pre: any) => ({ ...pre, resumeUpload: '' }));
+    setValues((pre) => ({ ...pre, resumeUpload: '' }));
   };
 
-  async function createLog(id: string, data: any, operation: LogOperation) {
+  async function createLog(id: string, data: Record<string, unknown>, operation: LogOperation) {
     if (!id) {
       console.error({ data }, ' ', 'create log payload is not valid data');
     }
@@ -221,7 +222,7 @@ export default function RequirementsForm(props: iProps) {
     }
   }
 
-  async function handleSubmitForm(event: any) {
+  async function handleSubmitForm(event: React.FormEvent|KeyboardEvent) {
     event.preventDefault();
     if (isSubmitting) return;
 
@@ -242,7 +243,7 @@ export default function RequirementsForm(props: iProps) {
         date: new Date(),
         comment: comment,
       };
-      payload.mComment = commentsPayload;
+      payload.mComment = [commentsPayload];
     }
 
     setIsSubmitting(true);
@@ -255,7 +256,7 @@ export default function RequirementsForm(props: iProps) {
         }
       }
       const { data } = await createRequirement(payload);
-      setResults?.((pre: any) => [data.data, ...pre]);
+      setResults?.((pre) => [data.data, ...pre||[]]);
       createLog(data.data._id, payload, 'create');
       onDrawerClose?.();
     } catch (error) {
@@ -265,26 +266,30 @@ export default function RequirementsForm(props: iProps) {
     }
   }
 
-  async function handleEditSubmitForm(event: any) {
+  async function handleEditSubmitForm(event: React.FormEvent|KeyboardEvent) {
     event.preventDefault();
     if (isSubmitting) return;
+    if (!values._id) {
+      toast.error('Missing requirement id');
+      return;
+    }
     const isValid = validateAllFields(
       requirementValidationMeta,
       values,
-      setErrors as any
+      setErrors
     );
 
     if (!isValid) return;
     let payload = { ...values };
     delete payload.mComment;
-    payload = getChangedFields(viewData, payload, reqFields);
+    payload = getChangedFields(viewData||{}, payload, reqFields);
     if (comment.trim().length) {
       const commentPayload = {
         username: `${user.firstName} ${user.lastName}`,
         date: new Date(),
         comment: comment,
       };
-      payload.mComment = commentPayload;
+      payload.mComment = [commentPayload];
     }
     setIsSubmitting(true);
     try {
@@ -295,65 +300,65 @@ export default function RequirementsForm(props: iProps) {
         }
       }
       const { data } = await updateRequirement(values._id, payload);
-      setResults?.((pre: any) => {
-        pre = pre.map((d: any) => {
+      setResults?.((pre) => {
+        pre = pre?.map((d) => {
           if (d._id === data.data._id) return data.data;
           return d;
         });
-        return [...pre];
+        return [...pre||[]];
       });
       createLog(values._id, payload, 'update');
       onDrawerClose?.();
     } catch (error) {
       console.log('An error occurred while updating the comment:', error);
+      toast.error('Failed to update the requirement');
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDeleteRequirement() {
+    if(!values._id) {
+      toast.error('Missing requirement id');
+      return;
+    }
     try {
       await deleteRequirement(values._id);
-      setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setResults?.((pre) => [...pre||[]].filter((p) => p._id !== values._id));
       onDrawerClose?.();
     } catch (error) {
       console.error('An error occurred while deleting the requirement:', error);
     }
   }
 
-  const handleChange = (event: any, key: string) => {
-    const val = event.target.value;
-    addValue(key, val);
-  };
 
-  const addValue = (key: any, newValue: any) => {
+  const addValue = (key: keyof IRequirement, newValue: string) => {
     const meta = requirementValidationMeta.find((m) => m.field === key);
     if (meta) {
       if (errors[key] && isFieldValid(meta, newValue)) {
         setErrors((pre) => ({ ...pre, [key]: '' }));
       }
       if (meta.transform) {
-        newValue = meta.transform(newValue);
+        newValue = meta.transform(newValue) as string;
       }
     }
-    setValues((prevValues: any) => ({
+    setValues((prevValues) => ({
       ...prevValues,
       [key]: newValue,
     }));
   };
 
-  const handleEmail = (event: any, field: any) => {
-    const value: string = event.target.value?.toLowerCase();
-    addValue(field, value);
-  };
 
-  const onBlur = (key: string) => {
+  const onBlur = (key: keyof IRequirement) => {
     const meta = requirementValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
 
   function handlecreateInterview() {
     try {
+      if(!viewData?._id) {
+        return toast.error('Missing requirement id');
+      }
       navigate(`/interviews?${createInterviewQueryParam}=${viewData.reqID}`);
     } catch (error) {
       toast.error('Failed to create interview');
@@ -374,21 +379,22 @@ export default function RequirementsForm(props: iProps) {
         <CustomTextField
           label="Applied For"
           width={230}
+          onChange={()=>{}}
           disabled={!isEditing}
           selectedValue={values.appliedFor || ''}
         />
       ) : (
         <CustomSelectField
           label="Applied For"
-          valueOptions={consultants?.map((c: any) => c.consultantName) || []}
+          valueOptions={consultants?.map((c) => c.consultantName||'').filter(Boolean) || []}
           disabled={!isEditing}
           selectedValue={values.appliedFor || ''}
-          onChange={(value: any) => {
+          onChange={(value) => {
             const _id = consultants?.find(
-              (c: any) => c.consultantName === value
+              (c) => c.consultantName === value
             )?._id;
-            handleChange({ target: { value } }, 'appliedFor');
-            handleChange({ target: { value: _id } }, 'appliedForRef');
+            addValue('appliedFor', value);
+            addValue('appliedForRef', _id||'');
             console.log({ _id });
           }}
           width={230}
@@ -403,6 +409,7 @@ export default function RequirementsForm(props: iProps) {
         <CustomTextField
           label="Assigned To"
           width={230}
+          onChange={()=>{}}
           disabled={!isEditing}
           selectedValue={values.assignedTo || ''}
         />
@@ -410,17 +417,17 @@ export default function RequirementsForm(props: iProps) {
         <CustomSelectField
           label="Assigned To"
           valueOptions={
-            accounts?.map((a: any) => `${a.firstName} ${a.lastName}`) || []
+            accounts?.map((a) => `${a.firstName} ${a.lastName}`).filter(Boolean) || []
           }
           selectedValue={values.assignedTo || ''}
           disabled={!isEditing}
           onBlur={() => onBlur('assignedTo')}
-          onChange={(value: any) => {
-            handleChange({ target: { value } }, 'assignedTo');
+          onChange={(value) => {
             const id = accounts?.find(
-              (a: any) => `${a.firstName} ${a.lastName}` === value
+              (a) => `${a.firstName} ${a.lastName}` === value
             )?._id;
-            handleChange({ target: { value: id } }, 'assignedToRef');
+            addValue('assignedTo', value);
+            addValue('assignedToRef', id||'');
           }}
           width={230}
           error={!!errors.assignedTo}
@@ -437,6 +444,7 @@ export default function RequirementsForm(props: iProps) {
           label="Got Requirement from"
           selectedValue={values.gotReqFrom || ''}
           width={230}
+          onChange={()=>{}}
           disabled={!isEditing}
         />
       ) : (
@@ -445,9 +453,7 @@ export default function RequirementsForm(props: iProps) {
           valueOptions={gotRequirementForm}
           selectedValue={values.gotReqFrom || ''}
           disabled={!isEditing}
-          onChange={(value: any) =>
-            handleChange({ target: { value } }, 'gotReqFrom')
-          }
+          onChange={(value) => addValue('gotReqFrom', value)}
           width={315}
         />
       )}
@@ -480,7 +486,7 @@ export default function RequirementsForm(props: iProps) {
                 padding: 0,
               }}
             >
-              {!!currentFile ? (
+              {currentFile ? (
                 mode === 'view' ? (
                   <>
                     <Stack
@@ -489,14 +495,14 @@ export default function RequirementsForm(props: iProps) {
                       direction={'row'}
                       alignItems={'center'}
                     >
-                      <img
+                    {values.resumeUpload&&  <img
                         src={`${getMaterialFileIcon(values.resumeUpload)}`}
                         alt="icon"
                         style={{
                           width: '17px',
                           height: '17px',
                         }}
-                      />
+                      />}
                       <Typography variant={'subtitle2'} pl={'3px'}>
                         Resume
                       </Typography>
@@ -504,7 +510,7 @@ export default function RequirementsForm(props: iProps) {
                     <Box pr={1}>
                       <IconButton
                         download
-                        href={currentFile}
+                        href={currentFile.toString()}
                         size="small"
                         sx={{ height: '30px' }}
                       >
@@ -602,7 +608,7 @@ export default function RequirementsForm(props: iProps) {
                     color="primary"
                     type="button"
                     onClick={() => {
-                      setValues(viewData);
+                      setValues(viewData||{});
                       onEdit?.(false);
                     }}
                     size="small"
@@ -626,7 +632,7 @@ export default function RequirementsForm(props: iProps) {
               ) : (
                 <>
                   {!disableCreateInterview &&
-                    ['Submitted', 'Interviewed'].includes(
+                    !!viewData?.reqStatus&&['Submitted', 'Interviewed'].includes(
                       viewData.reqStatus
                     ) && (
                       <Button
@@ -712,8 +718,8 @@ export default function RequirementsForm(props: iProps) {
             selectedValue={values.reqStatus || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('reqStatus')}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'reqStatus')
+            onChange={(value) =>
+              addValue('reqStatus', value)
             }
             width={230}
             error={!!errors.reqStatus}
@@ -725,15 +731,15 @@ export default function RequirementsForm(props: iProps) {
             width={230}
             disabled={!isEditing}
             selectedValue={values.nextStep || ''}
-            onChange={(event: any) => addValue('nextStep', event.target.value)}
+            onChange={(event) => addValue('nextStep', event.target.value)}
           />
           {appliedForField}
           <CustomTextField
             label={'Rate'}
             width={230}
             disabled={!isEditing}
-            selectedValue={values.rate || ''}
-            onChange={(event: any) => addValue('rate', event.target.value)}
+            selectedValue={values.rate?.toString() || ''}
+            onChange={(event) => addValue('rate', event.target.value)}
           />
 
           <CustomSelectField
@@ -741,9 +747,9 @@ export default function RequirementsForm(props: iProps) {
             width={230}
             disabled={!isEditing}
             valueOptions={taxTypeOptions}
-            selectedValue={values.taxType || ''}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'taxType')
+            selectedValue={values.taxType?.toString() || ''}
+            onChange={(value) =>
+              addValue('taxType', value)
             }
           />
 
@@ -751,8 +757,8 @@ export default function RequirementsForm(props: iProps) {
             label={'Remote %'}
             width={230}
             disabled={!isEditing}
-            selectedValue={values.remote || ''}
-            onChange={(event: any) => addValue('remote', event.target.value)}
+            selectedValue={values.remote?.toString()  || ''}
+            onChange={(event) => addValue('remote', event.target.value)}
           />
 
           <CustomSelectField
@@ -760,9 +766,9 @@ export default function RequirementsForm(props: iProps) {
             width={230}
             disabled={!isEditing}
             valueOptions={duration}
-            selectedValue={values.duration || ''}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'duration')
+            selectedValue={values.duration?.toString() || ''}
+            onChange={(value) =>
+              addValue('duration', value)
             }
           />
 
@@ -772,13 +778,13 @@ export default function RequirementsForm(props: iProps) {
                 label={"Marketing Person's Comment"}
                 width={970}
                 selectedValue={comment}
-                onChange={(event: any) => setComment(event.target.value)}
+                onChange={(event) => setComment(event.target.value)}
               />
             )}
 
             {[...(values?.mComment || [])]
               .reverse()
-              .map((comment: any, i: number) => {
+              .map((comment, i: number) => {
                 const label = `${comment.username} . ${dayjs(
                   comment.date
                 ).format(dateFormate + ' ' + timeFormate)}`;
@@ -787,6 +793,7 @@ export default function RequirementsForm(props: iProps) {
                     key={i}
                     label={label}
                     width={970}
+                    onChange={()=>{}}
                     disabled
                     selectedValue={comment.comment}
                   />
@@ -804,7 +811,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.clientCompany || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('clientCompany', event.target.value)
             }
           />
@@ -813,7 +820,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.clientWebsite || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('clientWebsite', event.target.value)
             }
           />
@@ -822,7 +829,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.clientAddress || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('clientAddress', event.target.value)
             }
           />
@@ -831,7 +838,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.clientPerson || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('clientPerson', event.target.value)
             }
           />
@@ -840,7 +847,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.clientPhone || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('clientPhone', event.target.value)
             }
           />
@@ -851,7 +858,7 @@ export default function RequirementsForm(props: iProps) {
             selectedValue={values.clientEmail || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('clientEmail')}
-            onChange={(event: any) => handleEmail(event, 'clientEmail')}
+            onChange={({target}) => addValue('clientEmail', target.value)}
             helperText={errors.clientEmail}
             error={errors.clientEmail}
           />
@@ -867,7 +874,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.primeVendorCompany || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('primeVendorCompany', event.target.value)
             }
           />
@@ -876,7 +883,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.primeVendorWebsite || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('primeVendorWebsite', event.target.value)
             }
           />
@@ -885,7 +892,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.primeVendorName || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('primeVendorName', event.target.value)
             }
           />
@@ -894,7 +901,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.primeVendorPhone || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('primeVendorPhone', event.target.value)
             }
           />
@@ -905,7 +912,7 @@ export default function RequirementsForm(props: iProps) {
             selectedValue={values.primeVendorEmail || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('primeVendorEmail')}
-            onChange={(event: any) => handleEmail(event, 'primeVendorEmail')}
+            onChange={({target}) => addValue('primeVendorEmail', target.value)}
             helperText={errors.primeVendorEmail}
             error={errors.primeVendorEmail}
           />
@@ -922,7 +929,7 @@ export default function RequirementsForm(props: iProps) {
             selectedValue={values.vendorCompany || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('vendorCompany')}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('vendorCompany', event.target.value)
             }
             error={!!errors.vendorCompany}
@@ -933,7 +940,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.vendorWebsite || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('vendorWebsite', event.target.value)
             }
           />
@@ -943,7 +950,7 @@ export default function RequirementsForm(props: iProps) {
             selectedValue={values.vendorPersonName || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('vendorPersonName')}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('vendorPersonName', event.target.value)
             }
             error={!!errors.vendorPersonName}
@@ -954,7 +961,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.vendorPhone || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('vendorPhone', event.target.value)
             }
           />
@@ -965,7 +972,7 @@ export default function RequirementsForm(props: iProps) {
             selectedValue={values.vendorEmail || ''}
             disabled={!isEditing}
             onBlur={() => onBlur('vendorEmail')}
-            onChange={(event: any) => handleEmail(event, 'vendorEmail')}
+            onChange={({target}) => addValue('vendorEmail', target.value)}
             helperText={errors.vendorEmail}
             error={errors.vendorEmail}
           />
@@ -1013,8 +1020,8 @@ export default function RequirementsForm(props: iProps) {
             valueOptions={techStack}
             selectedValue={values.primaryTechStack || ''}
             disabled={!isEditing}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'primaryTechStack')
+            onChange={(value) =>
+              addValue('primaryTechStack', value)
             }
             width={315}
           />
@@ -1023,15 +1030,15 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.jobTitle || ''}
             disabled={!isEditing}
-            onChange={(event: any) => addValue('jobTitle', event.target.value)}
+            onChange={(event) => addValue('jobTitle', event.target.value)}
           />
           <CustomTextField
             label="Employement Type (If Mentioned)"
             width={315}
-            selectedValue={values.employmentType || ''}
+            selectedValue={values.employementType || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
-              addValue('employmentType', event.target.value)
+            onChange={(event) =>
+              addValue('employementType', event.target.value)
             }
           />
           <CustomTextField
@@ -1039,7 +1046,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.jobPortalLink || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('jobPortalLink', event.target.value)
             }
           />
@@ -1048,10 +1055,10 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.reqEnteredBy || ''}
             disabled
-            onChange={(event: any) => {
-              handleChange(event, 'reqEnteredBy');
+            onChange={(event) => {
+              addValue('reqEnteredBy', event.target.value);
               const id = user?.id;
-              handleChange({ target: { value: id } }, 'reqEnteredByRef');
+              addValue('reqEnteredByRef', id || '');
             }}
           />
           <CustomTextField
@@ -1059,7 +1066,7 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.primaryTech || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('primaryTech', event.target.value)
             }
           />
@@ -1068,18 +1075,17 @@ export default function RequirementsForm(props: iProps) {
             width={315}
             selectedValue={values.secondaryTech || ''}
             disabled={!isEditing}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('secondaryTech', event.target.value)
             }
           />
           <CustomTextField
             label="Complete Job Description"
-            multiline
             width={980}
             disabled={!isEditing}
             selectedValue={values.jobDescription || ''}
             onBlur={() => onBlur('jobDescription')}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('jobDescription', event.target.value)
             }
             error={!!errors.jobDescription}
@@ -1131,7 +1137,7 @@ export default function RequirementsForm(props: iProps) {
           </>
         )}
 
-        {showLogs && viewData._id && !isEditing && (
+        {showLogs && viewData?._id && !isEditing && (
           <>
             <Divider />
             <RequirementLogTable requirementObjectId={viewData._id} />

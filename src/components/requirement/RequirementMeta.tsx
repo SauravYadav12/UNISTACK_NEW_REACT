@@ -12,9 +12,10 @@ import { Sync } from '@mui/icons-material';
 import InterviewDrawer from '../interview/InterviewDrawer';
 import { vendorInterviewsList } from '../../services/vendorInterviewApi';
 import { archiveInterviewsList } from '../../services/archivesApi';
+import { IInterview, IRequirement, IVendor } from '../../Interfaces/types';
 
 interface iProps {
-  requirement: any;
+  requirement?: IRequirement;
   hideInterviews?: boolean;
   archive?: boolean;
   onOpenDuplicateReq: () => void;
@@ -31,20 +32,20 @@ const RequirementMeta = ({
     error,
     loadData,
     setData,
-  } = useFetchData<any[]>(findCreatedInterviews, [requirement]);
-  const [intDrawer, setIntDrawer] = useState<any>();
+  } = useFetchData<(IInterview|IVendor)[]>(findCreatedInterviews, [requirement]);
+  const [intDrawer, setIntDrawer] = useState<IInterview|IVendor>();
 
   const isDuplicate =
-    Boolean(requirement.isDuplicate) &&
-    Boolean(requirement.duplicateWith?.trim());
+    Boolean(requirement?.isDuplicate) &&
+    Boolean(requirement?.duplicateWith?.trim());
 
   const hideMyInterviews =
     hideInterviews ||
     (!createdInterviews?.length &&
-      ['New Working', 'Cancelled'].includes(requirement.reqStatus));
+      ['New Working', 'Cancelled'].includes(requirement?.reqStatus||''));
 
   async function findCreatedInterviews() {
-    const q = `reqID=${requirement.reqID}`;
+    const q = `reqID=${requirement?.reqID}`;
 
     if (archive) {
       const int = await archiveInterviewsList(q);
@@ -53,13 +54,13 @@ const RequirementMeta = ({
       return intRes;
     }
 
-    let [int, vendorInt] = await Promise.all([
+    const [int, vendorInt] = await Promise.all([
       interviewsList(q),
       vendorInterviewsList(q),
     ]);
     const intRes = int.data.data?.results || [];
     const vendorIntRes = vendorInt.data.data?.results || [];
-    return [...intRes, ...vendorIntRes];
+    return [...intRes, ...vendorIntRes] as (IInterview|IVendor)[];
   }
 
   function MyInterviews() {
@@ -97,7 +98,7 @@ const RequirementMeta = ({
           }}
           onClick={() => setIntDrawer(int)}
         >
-          {int.intId || int.testID}
+          {'intId' in int ? int.intId : int.testID}
         </Button>
       );
     });
@@ -133,7 +134,7 @@ const RequirementMeta = ({
               }}
               onClick={onOpenDuplicateReq}
             >
-              {requirement.duplicateWith}
+              {requirement?.duplicateWith}
             </Button>
           </Stack>
         )}
@@ -167,9 +168,9 @@ const RequirementMeta = ({
         onClose={() => setIntDrawer(undefined)}
         interview={intDrawer}
         setData={(cb) => {
-          const results = cb(createdInterviews || []);
+          const results = typeof cb === 'function' ? cb(createdInterviews || []) as (IInterview|IVendor)[] : cb;
           setData(results);
-          const int = results.find((i: any) => i._id === intDrawer._id);
+          const int = results?.find((i) => i._id === intDrawer?._id);
           setIntDrawer(int);
         }}
       />

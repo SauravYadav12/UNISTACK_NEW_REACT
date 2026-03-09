@@ -1,88 +1,50 @@
-import axios from 'axios';
-import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
-import { BASE_URL } from './userProfileApi';
 import {
   CreateRequirementLogPayload,
   RequirementLog,
 } from '../Interfaces/requirement';
+import { axiosClient } from '../config/axios.config';
 
 export async function requirementsList(
   query: string = '',
   signal?: AbortSignal
 ) {
-  const token = await getJwtToken();
-
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-
-  const url = `${BASE_URL}/requirements/get-requirements?${query}`;
-  const response = await axios.get<ApiQueryRes<PaginationResult>>(url, {
-    headers,
+  const url = `/requirements/get-requirements?${query}`;
+  const response = await axiosClient.get<ApiQueryRes<PaginationResult>>(url, {
     signal,
   });
   return response;
 }
 
-export async function createRequirement(data: any) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post(
-    `${BASE_URL}/requirements/create-requirement`,
-    data,
-    {
-      headers,
-    }
+export async function createRequirement(data: Record<string, unknown>) {
+  const response = await axiosClient.post(
+    `/requirements/create-requirement`,
+    data
   );
   return response;
 }
 
-export async function updateRequirement(id: any, payload: any) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch(
-    `${BASE_URL}/requirements/update-requirement/${id}`,
-    payload,
-    {
-      headers,
-    }
+export async function updateRequirement(
+  id: string,
+  payload: Record<string, unknown>
+) {
+  const response = await axiosClient.patch(
+    `/requirements/update-requirement/${id}`,
+    payload
   );
   return response;
 }
 
 export async function deleteRequirement(id: string) {
-  const token = await getJwtToken();
-  const headers = {
-    Authorization: token,
-  };
-  const response = await axios.delete(
-    `${BASE_URL}/requirements/delete-requirement/${id}`,
-    { headers }
+  const response = await axiosClient.delete(
+    `/requirements/delete-requirement/${id}`
   );
   return response;
 }
 
 export async function createRequirementLog(data: CreateRequirementLogPayload) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post(
-    `${BASE_URL}/requirements/create-log`,
-    data,
-    {
-      headers,
-    }
-  );
+  const response = await axiosClient.post(`/requirements/create-log`, data);
+
   return response;
 }
 
@@ -90,16 +52,8 @@ export async function getRequirementLogs(
   query: string = '',
   signal?: AbortSignal
 ) {
-  const token = await getJwtToken();
-
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-
-  const url = `${BASE_URL}/requirements/get-log?${query}`;
-  const response = await axios.get<ApiQueryRes<RequirementLog[]>>(url, {
-    headers,
+  const url = `/requirements/get-log?${query}`;
+  const response = await axiosClient.get<ApiQueryRes<RequirementLog[]>>(url, {
     signal,
   });
   return response;
@@ -111,23 +65,19 @@ export async function requirementCounts(
   archive: boolean = false,
   signal?: AbortSignal
 ) {
-  const token = await getJwtToken();
-
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
+  if (!date.length) {
+    return [] as ApiQueryRes<{ date: string; count: number }[]>;
+  }
 
   let dateQuery = '';
 
   date.forEach((d) => {
     dateQuery += `date=${d}&`;
   });
-  const url = `${BASE_URL}/requirements/count-by-date?${dateQuery}${filters}&timezone=${Intl.DateTimeFormat().resolvedOptions().timeZone}&archive=${archive}`;
-  const response = await axios.get<
+  const url = `/requirements/count-by-date?${dateQuery}${filters}&timezone=${Intl.DateTimeFormat().resolvedOptions().timeZone}&archive=${archive}`;
+  const response = await axiosClient.get<
     ApiQueryRes<{ date: string; count: number }[]>
   >(url, {
-    headers,
     signal,
   });
   return response.data;

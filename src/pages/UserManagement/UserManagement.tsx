@@ -6,7 +6,7 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
-import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
 import {
   Dispatch,
   ReactElement,
@@ -37,10 +37,8 @@ import { dateFormate2, timeFormate } from '../../components/constants';
 import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
 import { Sync } from '@mui/icons-material';
 import { useFetchData } from '../../hooks/fetchDataHook';
-import { iUser, UserRole } from '../../Interfaces/iUser';
+import { iUser, iUserActivity, UserRole } from '../../Interfaces/iUser';
 import UserWorkLocationSelect from '../../components/userManagement/UserWorkLocationSelect';
-import { iGridColumn } from '../../components/datagrid/DataGrid';
-import { filterOperatorsForDateField } from '../../components/datagrid/CustomToolbar';
 
 interface CustomCard {
   color: string;
@@ -60,13 +58,13 @@ function UserManagement() {
   } = useFetchData<iUser[]>(getUsersList, []);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
-  const [selectedUser, setSelectedUser] = useState<any>();
+  const [selectedUser, setSelectedUser] = useState<iUser>();
   const [open, setOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const activeUsrCount = users?.filter((user: any) => user.active).length;
-  const premiumUsrCount = users?.filter((user: any) => user.premium).length;
+  const activeUsrCount = users?.filter((user) => user.active).length;
+  const premiumUsrCount = users?.filter((user) => user.premium).length;
 
-  function viewDetails(row: any): void {
+  function viewDetails(row: iUser): void {
     setSelectedUser(row);
     setDrawerOpen(true);
   }
@@ -87,13 +85,13 @@ function UserManagement() {
     });
   }
 
-  const Columns = useMemo<iGridColumn[]>(
+  const Columns = useMemo<GridColDef<iUser>[]>(
     () => [
       {
         field: 'view',
         headerName: 'Profile',
         width: 100,
-        renderCell: (params: any) => (
+        renderCell: (params) => (
           <Button
             size="small"
             variant="contained"
@@ -111,7 +109,7 @@ function UserManagement() {
         field: 'firstName',
         headerName: 'Name',
         width: 160,
-        valueGetter: (val: any, param: iUser) => {
+        valueGetter: (val, param) => {
           return param.firstName + ' ' + param.lastName;
         },
       },
@@ -121,7 +119,7 @@ function UserManagement() {
         headerName: 'Role',
         width: 200,
         type: 'actions',
-        renderCell: (params: any) => (
+        renderCell: (params) => (
           <UserRoleSelect
             role={params.row.role as UserRole}
             userId={params.row._id}
@@ -138,7 +136,7 @@ function UserManagement() {
         headerName: 'Shift',
         width: 100,
         type: 'actions',
-        renderCell: (params: any) => (
+        renderCell: (params) => (
           <UserShiftSelect
             shift={params.row.shift}
             userId={params.row._id}
@@ -155,7 +153,7 @@ function UserManagement() {
         headerName: 'Work Location',
         width: 150,
         type: 'actions',
-        renderCell: (params: any) => (
+        renderCell: (params) => (
           <UserWorkLocationSelect
             location={params.row.workLocation}
             userId={params.row._id}
@@ -172,7 +170,7 @@ function UserManagement() {
         headerName: 'Active',
         width: 100,
         type: 'actions',
-        renderCell: (params: any) => (
+        renderCell: (params) => (
           <ActiveUserSwitch
             active={params.row.active}
             userId={params.row._id}
@@ -193,7 +191,7 @@ function UserManagement() {
         headerName: 'Can Edit Profile',
         width: 100,
         type: 'actions',
-        renderCell: (params: any) => (
+        renderCell: (params) => (
           <CanEditSwitch
             canEdit={!!params.row.canEdit}
             jUser={params.row}
@@ -220,7 +218,7 @@ function UserManagement() {
         field: 'createdAt',
         headerName: 'Created At',
         width: 200,
-        valueGetter: (params: any) =>
+        valueGetter: (params) =>
           moment(params).format(dateFormate2 + ' ' + timeFormate),
         // filterOperators: filterOperatorsForDateField,
       },
@@ -228,7 +226,7 @@ function UserManagement() {
         field: 'updatedAt',
         headerName: 'Updated At',
         width: 200,
-        valueGetter: (params: any) =>
+        valueGetter: (params) =>
           moment(params).format(dateFormate2 + ' ' + timeFormate),
         // filterOperators: filterOperatorsForDateField,
       },
@@ -240,57 +238,59 @@ function UserManagement() {
     if (!date) return;
     return moment(date).format(dateFormate2 + ' ' + timeFormate);
   };
-  const extractLocationField = (val: any, field: string) => {
-    if (!val) return;
+  const extractLocationField = (val?: string, field?: string) => {
+    if (!val || !field) return;
     val = JSON.parse(val);
+    if (!val || typeof val !== 'object' || !(field in val)) return;
     return val[field];
   };
-  const activityColumn = [
+
+  const activityColumn: GridColDef<iUserActivity>[] = [
     {
       field: 'loggedInAt',
       headerName: 'Logged-In At',
       width: 200,
-      valueGetter: (v: any) => dateFormater(v) || 'NA',
+      valueGetter: (v) => dateFormater(v) || 'NA',
     },
     {
       field: 'loggedOutAt',
       headerName: 'Logged-Out At',
       width: 200,
-      valueGetter: (v: any) => dateFormater(v) || 'NA',
+      valueGetter: (v) => dateFormater(v) || 'NA',
     },
 
     {
       field: 'ip',
       headerName: 'IP',
       width: 200,
-      valueGetter: (v: any) => v || 'NA',
+      valueGetter: (v) => v || 'NA',
     },
     {
       field: 'latitude',
       headerName: 'Latitude',
       width: 150,
-      valueGetter: (v: any, row: any) =>
+      valueGetter: (v, row) =>
         extractLocationField(row.location, 'latitude') || 'NA',
     },
     {
       field: 'longitude',
       headerName: 'Longitude',
       width: 150,
-      valueGetter: (v: any, row: any) =>
+      valueGetter: (v, row) =>
         extractLocationField(row.location, 'longitude') || 'NA',
     },
     {
       field: 'altitude',
       headerName: 'Altitude',
       width: 150,
-      valueGetter: (v: any, row: any) =>
+      valueGetter: (v, row) =>
         extractLocationField(row.location, 'altitude') || 'NA',
     },
     {
       field: 'accuracy',
       headerName: 'Accuracy',
       width: 150,
-      valueGetter: (v: any, row: any) =>
+      valueGetter: (v, row) =>
         extractLocationField(row.location, 'accuracy') || 'NA',
     },
   ];
@@ -345,7 +345,7 @@ function UserManagement() {
         loading={loading}
         rows={users || []}
         columns={Columns}
-        getRowId={(row: any) => row._id}
+        getRowId={(row) => row._id}
         slots={{ toolbar: GridToolbar }}
         slotProps={{
           toolbar: {
@@ -375,13 +375,17 @@ function UserManagement() {
       />
       <Box display={'flex'} flexDirection={'column'} height={'100%'}>
         <Grid container spacing={2}>
-          {cardObject.map((card: any) => {
+          {cardObject.map((card) => {
             return (
               <Grid key={card.title} item xs={12} sm={3} md={3} lg={3} xl={3}>
                 <BasicCard
                   color={card.color}
                   title={card.title}
-                  count={card.count ?? 'NA'}
+                  count={
+                    typeof card.count === 'number'
+                      ? card.count
+                      : parseInt(card.count || '0') || 0
+                  }
                   icon={card.icon}
                   titleColor={card.titleColor}
                 />
@@ -436,7 +440,7 @@ function UserManagement() {
                 <DataGrid
                   columns={activityColumn}
                   rows={[...(selectedUser?.activity || [])].reverse()}
-                  getRowId={(row: any) => row._id}
+                  getRowId={(row) => row._id}
                   slots={{ toolbar: GridToolbar }}
                   slotProps={{
                     toolbar: {
@@ -509,6 +513,6 @@ const MyForm = ({ user, modeState }: MyFormProps) => {
 };
 
 interface MyFormProps {
-  user: any;
+  user: iUser;
   modeState: ['view' | 'edit', Dispatch<SetStateAction<'view' | 'edit'>>];
 }

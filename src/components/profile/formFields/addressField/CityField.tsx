@@ -31,7 +31,7 @@ const CityField = ({
     }
   }, [selectedCity, selectedState]);
 
-  return !!cityList.length ? (
+  return cityList.length ? (
     <CustomSelectField
       label="City"
       valueOptions={cityList.map((c) => c.name)}
@@ -39,7 +39,7 @@ const CityField = ({
       error={!!validationError}
       helperText={validationError}
       disabled={disabled}
-      onChange={(value: any) => onChange({ target: { value } } as any)}
+      onChange={(value) => onChange({ target: { value } } as any)}
       width={180}
     />
   ) : (

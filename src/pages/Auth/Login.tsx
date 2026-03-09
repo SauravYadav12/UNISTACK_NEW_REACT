@@ -70,12 +70,12 @@ export default function Login() {
     toast.success('Login Successfull');
   }
 
-  React.useEffect((): any => {
+  React.useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
       return;
     }
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   return (
     <>
@@ -128,5 +128,5 @@ enum LoginStep {
 }
 
 interface AuthData {
-  user: any;
+  user: iUser;
 }

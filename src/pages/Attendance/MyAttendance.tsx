@@ -160,7 +160,7 @@ function MyAttendanceHistory({ users }: MyAttendanceHistoryProps) {
           value={option}
           size="small"
           onChange={(e) => {
-            setOption(e.target.value as any);
+            setOption(e.target.value as AttendanceOption);
           }}
         >
           {options.map((o, i) => {

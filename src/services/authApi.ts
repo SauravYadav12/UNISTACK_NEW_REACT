@@ -1,94 +1,57 @@
-import axios from 'axios';
 import {
   getJwtToken,
   getUserIdFromToken,
   myIpGeoLocation,
 } from '../utils/utils';
 import { iUser } from '../Interfaces/iUser';
-import { BASE_URL } from './userProfileApi';
-// import { toast } from 'react-toastify';
+import { axiosClient } from '../config/axios.config';
+import { ApiQueryRes } from '../Interfaces/apiRes';
 
-export async function signup(data: any) {
-  let headers: any = {
-    'Content-Type': 'application/json',
-  };
-  const response = await axios.post(`${BASE_URL}/users/signup`, data, {
-    headers,
-  });
+export async function signup(data: Record<string, string>) {
+  const response = await axiosClient.post(`/users/signup`, data, {});
   return response;
 }
 
 export async function login(email: string, password: string) {
-  let headers: any = {
-    'Content-Type': 'application/json',
-  };
-
   const { ip, location } = await myIpGeoLocation();
-  // if(!location){
-  //   toast.warning('Please allow location permission to proceed!')
-  //   return
-  // }
   const data = { email, password, ip, location };
-  const response = await axios.post(`${BASE_URL}/users/login`, data, {
-    headers,
-  });
+  const response = await axiosClient.post(`/users/login`, data, {});
   return response;
 }
+
 export async function logout() {
   const id = getUserIdFromToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-  };
+
   if (!id) {
     return;
   }
+
   const { ip, location } = await myIpGeoLocation();
   const data = {
     location,
     ip,
     _id: id,
   };
-  const response = await axios.post(`${BASE_URL}/users/logout`, data, {
-    headers,
-  });
+
+  const response = await axiosClient.post(`/users/logout`, data, {});
   return response;
 }
 
 export async function usersList(query = '') {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get(`${BASE_URL}/users/list?${query}`, {
-    headers,
-  });
+  const response = await axiosClient.get<{ users: iUser[] }>(`/users/list?${query}`, {});
   return response;
 }
 
-export async function updateUser(id: any, payload: any) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch(`${BASE_URL}/users/${id}`, payload, {
-    headers,
-  });
+export async function updateUser(id: string, payload: Partial<iUser>) {
+
+  const response = await axiosClient.patch(`/users/${id}`, payload, {});
   return response;
 }
 
 export async function syncIUser(id: string) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const { data } = await axios.get<{ user?: iUser; error?: string }>(
-    `${BASE_URL}/users/sync-iuser/${id}`,
-    {
-      headers,
-    }
+  const { data } = await axiosClient.get<{ user?: iUser; error?: string }>(
+    `/users/sync-iuser/${id}`,
+    {}
   );
   return data;
 }
@@ -97,29 +60,19 @@ export async function sendOtp(
   email: string,
   otpFor: 'reset-password' | 'login'
 ) {
-  let headers: any = {
-    'Content-Type': 'application/json',
-  };
-  const response = await axios.post(
-    `${BASE_URL}/users/send-${otpFor}-otp/${email}`,
+  const response = await axiosClient.post(
+    `/users/send-${otpFor}-otp/${email}`,
     {},
-    {
-      headers,
-    }
+    {}
   );
   return response;
 }
 
 export async function verifyOtp(email: string, otp: string) {
-  let headers: any = {
-    'Content-Type': 'application/json',
-  };
-  const response = await axios.post(
-    `${BASE_URL}/users/${email}/verify-otp/${otp}`,
+  const response = await axiosClient.post(
+    `/users/${email}/verify-otp/${otp}`,
     {},
-    {
-      headers,
-    }
+    {}
   );
   return response;
 }
@@ -128,15 +81,10 @@ export async function resetPassword(
   email: string,
   otp: string
 ) {
-  let headers: any = {
-    'Content-Type': 'application/json',
-  };
-  const response = await axios.post(
-    `${BASE_URL}/users/${email}/reset-password/${otp}`,
+  const response = await axiosClient.post(
+    `/users/${email}/reset-password/${otp}`,
     { password },
-    {
-      headers,
-    }
+    {}
   );
   return response;
 }

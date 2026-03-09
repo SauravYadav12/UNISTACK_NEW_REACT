@@ -29,7 +29,7 @@ export const InterviewReports = ({
         const href = `/interviews?fromDate=${fromDate}&toDate=${toDate}&marketingPersonRef=${a.id}&`;
         return (
           <Box mb={1} key={i}>
-            <CustomAccordion title={a.name}>
+            <CustomAccordion title={a.name||'Unknown'}>
               <TableContainer>
                 <Table sx={{ maxWidth: 'max-content' }}>
                   <TableBody>

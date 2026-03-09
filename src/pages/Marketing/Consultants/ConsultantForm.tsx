@@ -15,7 +15,7 @@ import {
 import examples from 'libphonenumber-js/examples.mobile.json';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import { useEffect, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -38,12 +38,14 @@ import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import { IConsultant, IConsultantProject } from '../../../Interfaces/types';
+import { toast } from 'react-toastify';
 
-const initialValues = {
+const initialValues: Partial<IConsultant> = {
   timeZone: '',
   consultantStatus: '',
   visaStatus: '',
-  projects: '',
+  projects: [],
   dob: null,
   consultantName: '',
   currentAddress: '',
@@ -65,7 +67,7 @@ const initialValues = {
 };
 
 interface iProps {
-  viewData: any;
+  viewData?: IConsultant;
   mode?: FormMode;
   isEditing?: boolean;
   onDrawerClose: () => void;
@@ -74,14 +76,16 @@ interface iProps {
 }
 export default function ConsultantForm(props: iProps) {
   const dobFormate = 'MMM DD';
-  const [values, setValues] = useState<any>(initialValues);
+  const [values, setValues] = useState<Partial<IConsultant>>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { viewData, mode, isEditing, onDrawerClose, onEdit, setResults } =
     props;
   const user = useAuth().iUser!;
-  const [projects, setProjects] = useState<any[]>([]);
-  const [errors, setErrors] = useState<{ [key: string]: any }>(
+  const [projects, setProjects] = useState<Partial<IConsultant['projects']>>(
+    []
+  );
+  const [errors, setErrors] = useState<{ [key in keyof IConsultant]?: string }>(
     convertValuesToEmptyString(initialValues)
   );
 
@@ -97,18 +101,18 @@ export default function ConsultantForm(props: iProps) {
 
   useEffect(() => {
     if (mode === 'view' || mode === 'edit') {
-      setValues(viewData);
-      setProjects(viewData.projects || []);
+      setValues(viewData||{});
+      setProjects(viewData?.projects || []);
     } else if (mode === 'add') {
       setValues(initialValues);
       setProjects([
         {
-          projectNumber: 1,
+          projectNumber: '1',
           projectName: '',
           projectCity: '',
           projectState: '',
           projectStartDate: null,
-          projectEndtDate: null,
+          projectEndDate: null,
           projectDescription: '',
           isCurrent: true,
         },
@@ -119,49 +123,51 @@ export default function ConsultantForm(props: iProps) {
 
   const handleAddProject = () => {
     setProjects([
-      ...projects,
+      ...(projects || []),
       {
-        projectNumber: projects.length + 1,
+        projectNumber: ((projects?.length ?? 0) + 1).toString(),
         projectName: '',
         projectCity: '',
         projectState: '',
-        projectStartDate: '',
-        projectEndDate: '',
+        projectStartDate: null,
+        projectEndDate: null,
         projectDescription: '',
       },
     ]);
   };
 
-  const addValue = (key: any, newValue: any, index?: number) => {
+  const addValue = (key: keyof IConsultant, newValue: string | null) => {
     const meta = consultantValidationMeta.find((m) => m.field === key);
     if (meta) {
       if (errors[key] && isFieldValid(meta, newValue)) {
         setErrors((pre) => ({ ...pre, [key]: '' }));
       }
       if (meta.transform) {
-        newValue = meta.transform(newValue);
+        newValue = meta.transform(newValue) as string;
       }
     }
 
-    if (index !== undefined) {
-      setProjects((prevProjects: any) => {
-        const updatedProjects = [...prevProjects];
-        updatedProjects[index] = {
-          ...updatedProjects[index],
-          [key]: newValue,
-        };
-        return updatedProjects;
-      });
-    } else {
-      setValues((prevValues: any) => ({ ...prevValues, [key]: newValue }));
-    }
+    setValues((prevValues) => ({ ...prevValues, [key]: newValue }));
   };
 
-  function handleChange(event: any, key: string) {
-    addValue(key, event.target.value);
+  function onProjectChange(
+    key: keyof IConsultantProject,
+    value: string | null | boolean | dayjs.Dayjs,
+    index: number
+  ) {
+    setProjects((prevProjects) => {
+      const updatedProjects = [...(prevProjects || [])];
+      updatedProjects[index] = {
+        ...updatedProjects[index],
+        [key]: value,
+      };
+      return updatedProjects;
+    });
   }
 
-  async function handleSubmitForm(event: any) {
+  async function handleSubmitForm(
+    event: KeyboardEvent | React.MouseEvent<HTMLButtonElement>
+  ) {
     event.preventDefault();
 
     if (isSubmitting) return;
@@ -175,8 +181,8 @@ export default function ConsultantForm(props: iProps) {
 
     setIsSubmitting(true);
 
-    const filteredProjects = projects.filter((project) =>
-      Object.values(project).some((val) => !!val)
+    const filteredProjects = projects?.filter(
+      (project) => !!project && Object.values(project).some((val) => !!val)
     );
     const payload = {
       ...values,
@@ -185,7 +191,7 @@ export default function ConsultantForm(props: iProps) {
     };
     try {
       const { data } = await createConsultant(payload);
-      setResults?.((pre: any) => [data.data, ...pre]);
+      setResults?.((pre) => [data.data, ...pre||[]]);
       onDrawerClose();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
@@ -194,7 +200,9 @@ export default function ConsultantForm(props: iProps) {
     }
   }
 
-  async function handleEditSubmitForm(event: any) {
+  async function handleEditSubmitForm(
+    event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent
+  ) {
     event.preventDefault();
 
     if (isSubmitting) return;
@@ -206,14 +214,14 @@ export default function ConsultantForm(props: iProps) {
     if (!isValid) return;
     setIsSubmitting(true);
 
-    const filteredProjects = projects.filter(
+    const filteredProjects = projects?.filter(
       (project) =>
-        project.projectName ||
-        project.projectCity ||
-        project.projectState ||
-        project.projectStartDate ||
-        project.projectEndDate ||
-        project.projectDescription
+        project?.projectName ||
+        project?.projectCity ||
+        project?.projectState ||
+        project?.projectStartDate ||
+        project?.projectEndDate ||
+        project?.projectDescription
     );
 
     const payload = {
@@ -221,12 +229,17 @@ export default function ConsultantForm(props: iProps) {
       projects: filteredProjects,
     };
     try {
+      if (!values._id) {
+        toast.error('Consultant ID is missing');
+        return;
+      }
+
       const { data } = await updateConsultant(values._id, payload);
-      setResults?.((pre: any) => {
-        pre = pre.map((d: any) => {
+      setResults?.((pre) => {
+        pre = pre?.map((d) => {
           if (d._id === data.data._id) return data.data;
           return d;
-        });
+        }) || [];
         return [...pre];
       });
       onDrawerClose();
@@ -237,10 +250,14 @@ export default function ConsultantForm(props: iProps) {
     }
   }
 
-  async function handleDeleteConsultant(_id: any) {
+  async function handleDeleteConsultant() {
     try {
+      if (!values._id) {
+        toast.error('Consultant ID is missing');
+        return;
+      }
       await deleteConsultant(values._id);
-      setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setResults?.((pre) => [...pre||[]].filter((p) => p._id !== values._id));
       onDrawerClose();
     } catch (error) {
       console.error('An error occurred while deleting the Consultant:', error);
@@ -255,7 +272,7 @@ export default function ConsultantForm(props: iProps) {
     setOpenAlert(false);
   };
 
-  const onBlur = (key: string) => {
+  const onBlur = (key: keyof IConsultant) => {
     const meta = consultantValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
@@ -370,41 +387,34 @@ export default function ConsultantForm(props: iProps) {
         </Grid>
         <CustomSelectField
           label="Consultant Status"
-          size="small"
           valueOptions={consultantStatusOptions}
-          selectedValue={values.consultantStatus}
+          selectedValue={values.consultantStatus || ''}
           error={!!errors.consultantStatus}
           helperText={errors.consultantStatus}
           disabled={!isEditing}
-          onChange={(value: any) =>
-            handleChange({ target: { value } }, 'consultantStatus')
-          }
+          onChange={(value) => addValue('consultantStatus', value)}
           onBlur={() => onBlur('consultantStatus')}
           width={230}
         />
         <CustomTextField
           label="Consultant Name"
           width={230}
-          selectedValue={values.consultantName}
+          selectedValue={values.consultantName || ''}
           error={!!errors.consultantName}
           helperText={errors.consultantName}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('consultantName', event.target.value)
-          }
+          onChange={(event) => addValue('consultantName', event.target.value)}
           onBlur={() => onBlur('consultantName')}
         />
         <CustomSelectField
           onBlur={() => onBlur('visaStatus')}
           label="Visa Status"
           valueOptions={visaStatusOptions}
-          selectedValue={values.visaStatus}
+          selectedValue={values.visaStatus || ''}
           error={!!errors.visaStatus}
           helperText={errors.visaStatus}
           disabled={!isEditing}
-          onChange={(value: any) =>
-            handleChange({ target: { value } }, 'visaStatus')
-          }
+          onChange={(value) => addValue('visaStatus', value)}
           width={230}
         />
         <Grid item>
@@ -416,7 +426,7 @@ export default function ConsultantForm(props: iProps) {
               label="Date of Birth"
               value={values.dob ? dayjs(values.dob) : null}
               onChange={(newValue) =>
-                addValue('dob', newValue?.format(dobFormate))
+                addValue('dob', newValue?.format(dobFormate) || '')
               }
               renderInput={(params) => (
                 <TextField
@@ -447,32 +457,28 @@ export default function ConsultantForm(props: iProps) {
         <CustomTextField
           label="Current Address"
           width={230}
-          selectedValue={values.currentAddress}
+          selectedValue={values.currentAddress || ''}
           error={!!errors.currentAddress}
           helperText={errors.currentAddress}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('currentAddress', event.target.value)
-          }
+          onChange={(event) => addValue('currentAddress', event.target.value)}
           onBlur={() => onBlur('currentAddress')}
         />
         <CustomTextField
           label="Previous Address"
           width={230}
-          selectedValue={values.previousAddress}
+          selectedValue={values.previousAddress || ''}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('previousAddress', event.target.value)
-          }
+          onChange={(event) => addValue('previousAddress', event.target.value)}
         />
         <CustomTextField
           label="Email"
           width={230}
-          selectedValue={values.email}
+          selectedValue={values.email || ''}
           error={errors.email}
           helperText={errors.email}
           disabled={!isEditing}
-          onChange={(event: any) =>
+          onChange={(event) =>
             addValue('email', event.target.value?.toLowerCase())
           }
           onBlur={() => onBlur('email')}
@@ -480,115 +486,107 @@ export default function ConsultantForm(props: iProps) {
         <PhoneField
           onBlur={() => onBlur('phone')}
           label="Phone"
-          value={values.phone}
-          errorText={errors.phone}
+          value={values.phone || ''}
+          errorText={errors.phone || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('phone', event.target.value)}
+          onChange={(value) => addValue('phone', value)}
         />
 
         <CustomSelectField
           label="Consultant Timezone"
           valueOptions={timeZoneOptions}
-          selectedValue={values.timeZone}
+          selectedValue={values.timeZone || ''}
           disabled={!isEditing}
-          onChange={(value: any) =>
-            handleChange({ target: { value } }, 'timeZone')
-          }
+          onChange={(value) => addValue('timeZone', value)}
           width={230}
         />
         <CustomTextField
           label="Degree Name"
           width={230}
-          selectedValue={values.degree}
+          selectedValue={values.degree || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('degree', event.target.value)}
+          onChange={(event) => addValue('degree', event.target.value)}
         />
         <CustomTextField
           label="University"
           width={230}
-          selectedValue={values.university}
+          selectedValue={values.university || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('university', event.target.value)}
+          onChange={(event) => addValue('university', event.target.value)}
         />
         <CustomTextField
           label="Year of Passing"
           width={230}
-          selectedValue={values.yearPassing}
+          selectedValue={values.yearPassing || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('yearPassing', event.target.value)}
+          onChange={(event) => addValue('yearPassing', event.target.value)}
         />
         <CustomTextField
           label="SSN"
           width={230}
-          selectedValue={values.ssn}
+          selectedValue={values.ssn || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('ssn', event.target.value)}
+          onChange={(event) => addValue('ssn', event.target.value)}
         />
         <CustomTextField
           label="Driving License"
           width={230}
-          selectedValue={values.dlNo}
+          selectedValue={values.dlNo || ''}
           error={!!errors.dlNo}
           helperText={errors.dlNo}
           disabled={!isEditing}
           onBlur={() => onBlur('dlNo')}
-          onChange={(event: any) => addValue('dlNo', event.target.value)}
+          onChange={(event) => addValue('dlNo', event.target.value)}
         />
         <CustomTextField
           label="Psuedo Name Of Consultant"
           width={230}
-          selectedValue={values.psuedoName}
+          selectedValue={values.psuedoName || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('psuedoName', event.target.value)}
+          onChange={(event) => addValue('psuedoName', event.target.value)}
         />
         <CustomTextField
           label="Skype-Id"
           width={230}
-          selectedValue={values.skypeId}
+          selectedValue={values.skypeId || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('skypeId', event.target.value)}
+          onChange={(event) => addValue('skypeId', event.target.value)}
         />
         <CustomTextField
           label="How did you get the VISA?"
           width={230}
-          selectedValue={values.getVisa}
+          selectedValue={values.getVisa || ''}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('getVisa', event.target.value)}
+          onChange={(event) => addValue('getVisa', event.target.value)}
         />
         <CustomTextField
           label="In which year you came to US?"
           width={230}
-          selectedValue={values.cameToUsYear}
+          selectedValue={values.cameToUsYear || ''}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('cameToUsYear', event.target.value)
-          }
+          onChange={(event) => addValue('cameToUsYear', event.target.value)}
         />
         <CustomTextField
           label="Basicly from which country?"
           width={230}
-          selectedValue={values.originCountry}
+          selectedValue={values.originCountry || ''}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('originCountry', event.target.value)
-          }
+          onChange={(event) => addValue('originCountry', event.target.value)}
         />
         <CustomTextField
           label="Why are you looking for the change?"
           width={230}
-          selectedValue={values.lookingToChange}
+          selectedValue={values.lookingToChange || ''}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('lookingToChange', event.target.value)
-          }
+          onChange={(event) => addValue('lookingToChange', event.target.value)}
         />
         {/* Section 2: Resume Info */}
-        {(isEditing || projects.length) && (
+        {(isEditing || projects?.length) && (
           <Grid item xs={12}>
             <h4>2. Resume Info</h4>
           </Grid>
         )}
-        {projects.map((project, index) => (
+        {projects?.map((project, index) => (
           <Grid key={index} container spacing={1}>
             <Grid item xs={12}>
               <h4>{`PROJECT: ${index + 1}`}</h4>
@@ -596,37 +594,37 @@ export default function ConsultantForm(props: iProps) {
             <CustomTextField
               label="Project Name"
               width={230}
-              selectedValue={project.projectName}
+              selectedValue={project?.projectName || ''}
               disabled={!isEditing}
-              onChange={(event: any) =>
-                addValue('projectName', event.target.value, index)
+              onChange={(event) =>
+                onProjectChange('projectName', event.target.value, index)
               }
             />
             <CustomTextField
               label="Project Domain"
               width={230}
-              selectedValue={project.projectDomain}
+              selectedValue={project?.projectDomain || ''}
               disabled={!isEditing}
-              onChange={(event: any) =>
-                addValue('projectDomain', event.target.value, index)
+              onChange={(event) =>
+                onProjectChange('projectDomain', event.target.value, index)
               }
             />
             <CustomTextField
               label="Project City"
               width={230}
-              selectedValue={project.projectCity}
+              selectedValue={project?.projectCity || ''}
               disabled={!isEditing}
-              onChange={(event: any) =>
-                addValue('projectCity', event.target.value, index)
+              onChange={(event) =>
+                onProjectChange('projectCity', event.target.value, index)
               }
             />
             <CustomTextField
               label="Project State"
               width={230}
-              selectedValue={project.projectState}
+              selectedValue={project?.projectState || ''}
               disabled={!isEditing}
-              onChange={(event: any) =>
-                addValue('projectState', event.target.value, index)
+              onChange={(event) =>
+                onProjectChange('projectState', event.target.value, index)
               }
             />
             <Grid item>
@@ -637,12 +635,12 @@ export default function ConsultantForm(props: iProps) {
                   disabled={!isEditing}
                   label="Project Start Date"
                   value={
-                    project.projectStartDate
+                    project?.projectStartDate
                       ? dayjs(project.projectStartDate)
                       : null
                   }
                   onChange={(newValue) => {
-                    addValue('projectStartDate', newValue, index);
+                    onProjectChange('projectStartDate', newValue, index);
                     console.log(newValue);
                   }}
                   renderInput={(params) => (
@@ -670,22 +668,22 @@ export default function ConsultantForm(props: iProps) {
                 />
               </LocalizationProvider>
             </Grid>
-            {(isEditing || project.isCurrent) && (
+            {(isEditing || project?.isCurrent) && (
               <Grid sx={{ m: 1 }}>
                 <FormControlLabel
                   sx={{ minWidth: 230 }}
                   // disabled={isSubmitting || !isEditing}
-                  control={<Switch checked={!!project.isCurrent} />}
+                  control={<Switch checked={!!project?.isCurrent} />}
                   label={`Current project`}
                   onChange={() => {
                     if (isSubmitting || !isEditing) return;
-                    addValue('isCurrent', !project.isCurrent, index);
-                    // addValue('projectEndDate', '', index);
+                    onProjectChange('isCurrent', !project?.isCurrent, index);
+                    // onProjectChange('projectEndDate', '', index);
                   }}
                 />
               </Grid>
             )}
-            {!project.isCurrent && (
+            {!project?.isCurrent && (
               <Grid item>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
@@ -694,12 +692,12 @@ export default function ConsultantForm(props: iProps) {
                     disabled={!isEditing}
                     label="Project End Date"
                     value={
-                      project.projectEndDate
+                      project?.projectEndDate
                         ? dayjs(project.projectEndDate)
                         : null
                     }
                     onChange={(newValue) =>
-                      addValue('projectEndDate', newValue, index)
+                      onProjectChange('projectEndDate', newValue, index)
                     }
                     renderInput={(params) => (
                       <TextField
@@ -731,12 +729,11 @@ export default function ConsultantForm(props: iProps) {
 
             <CustomTextField
               label="Project Description"
-              multiline
               width={970}
-              selectedValue={project.projectDescription}
+              selectedValue={project?.projectDescription || ''}
               disabled={!isEditing}
-              onChange={(event: any) =>
-                addValue('projectDescription', event.target.value, index)
+              onChange={(event) =>
+                onProjectChange('projectDescription', event.target.value, index)
               }
             />
           </Grid>
@@ -780,7 +777,7 @@ function PhoneField({
       exampleNumberLength && setMaxPhoneLength(exampleNumberLength);
       setMuiTelInputInfo(info);
     }
-    onChange({ target: { value } } as any);
+    onChange(value);
   };
   return (
     <div>
@@ -817,7 +814,7 @@ interface PhoneFieldProps {
   disabled: boolean;
   label: string;
   value: string;
-  errorText: string;
-  onChange: (e: any) => void;
+  errorText?: string;
+  onChange: (value: string) => void;
   onBlur: () => void;
 }

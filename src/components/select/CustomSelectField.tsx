@@ -4,7 +4,21 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  SelectChangeEvent,
 } from '@mui/material';
+
+
+interface iProps{
+  label: string;
+  valueOptions: string[];
+  selectedValue: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  width?: number;
+  disabled?: boolean;
+  error?: boolean;
+  helperText?: string;
+}
 
 export default function CustomSelectField({
   label,
@@ -16,8 +30,8 @@ export default function CustomSelectField({
   disabled,
   error,
   helperText,
-}: any) {
-  const handleChange = (event: any) => {
+}: iProps) {
+  const handleChange = (event: SelectChangeEvent<string>) => {
     onChange(event.target.value);
   };
 
@@ -66,14 +80,13 @@ export default function CustomSelectField({
             },
           }}
         >
-          {valueOptions.map((option: any) => (
+          {valueOptions.map((option) => (
             <MenuItem key={option} value={option}>
               {option}
             </MenuItem>
           ))}
         </Select>
         {error && <FormHelperText>{helperText}</FormHelperText>}{' '}
-        {/* Display error text */}
       </FormControl>
     </div>
   );

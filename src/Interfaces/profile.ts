@@ -45,7 +45,7 @@ export interface ProfileEmail {
   official: string;
 }
 
-type IsObject<T> = T extends object ? (T extends any[] ? false : true) : false;
+type IsObject<T> = T extends object ? (T extends unknown[] ? false : true) : false;
 
 type ObjectKeys<T> = {
   [K in keyof T]: T[K] extends object

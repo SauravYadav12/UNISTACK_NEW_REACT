@@ -1,62 +1,29 @@
-import axios from 'axios';
-import { getJwtToken } from '../utils/utils';
+
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
+import { ITeam } from '../Interfaces/types';
+import { axiosClient } from '../config/axios.config';
 
 export async function teamsList(query: string = '', signal?: AbortSignal) {
-  const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<PaginationResult>>(
-    `${BASE_URL}/teams/get-teams?${query}`,
+  const response = await axiosClient.get<ApiQueryRes<PaginationResult>>(
+    `/teams/get-teams?${query}`,
     {
-      headers,
       signal,
     }
   );
   return response;
 }
 
-export async function createTeam(data: any) {
-  const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post(`${BASE_URL}/teams/create-team`, data, {
-    headers,
-  });
+export async function createTeam(data: Record<string, unknown>) {
+  const response = await axiosClient.post<{ data: ITeam }>(`/teams/create-team`, data);
   return response;
 }
 
-export async function updateTeam(id: any, values: any) {
-  const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch(
-    `${BASE_URL}/teams/update-team/${id}`,
-    values,
-    {
-      headers,
-    }
-  );
+export async function updateTeam(id: string, values: Record<string, unknown>) {
+  const response = await axiosClient.patch<{ data: ITeam }>(`/teams/update-team/${id}`, values);
   return response;
 }
 
 export async function deleteTeam(id: string) {
-  const token = await getJwtToken();
-  const BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
-  const headers = {
-    Authorization: token,
-  };
-  const response = await axios.delete(`${BASE_URL}/teams/delete-team/${id}`, {
-    headers,
-  });
+  const response = await axiosClient.delete(`/teams/delete-team/${id}`);
   return response;
 }

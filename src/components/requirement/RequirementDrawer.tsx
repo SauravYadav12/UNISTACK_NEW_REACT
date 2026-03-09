@@ -120,7 +120,7 @@ const RequirementDrawer = ({
         onEdit={handleEdit}
         onDrawerClose={() => setMode('view')}
         setResults={(cb) => {
-          const [results] = cb([viewData]);
+          const results = typeof cb === 'function' ? cb([viewData]) : cb;
           setData(results);
         }}
       />

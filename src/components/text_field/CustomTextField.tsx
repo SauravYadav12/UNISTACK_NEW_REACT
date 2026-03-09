@@ -1,5 +1,19 @@
 import { Grid, TextField } from '@mui/material';
 
+
+interface iProps{
+  label: string;
+  width?: number|string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  selectedValue: string | number;
+  type?: string;
+  required?: boolean;
+  error?: string | boolean;
+  helperText?: string;
+}
+
 export default function CustomTextField({
   label,
   width = 350,
@@ -11,7 +25,7 @@ export default function CustomTextField({
   required,
   error = false,
   helperText = '',
-}: any) {
+}: iProps) {
   return (
     <div>
       <Grid item sx={{ m: 1, width: width }}>

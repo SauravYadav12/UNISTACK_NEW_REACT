@@ -30,7 +30,6 @@ import {
   intTypeOptions,
   intWithOptions,
   meetingTypeOptions,
-  paymentStatusOptions,
   resultOptions,
   timeZoneOptions,
 } from './interviewValues';
@@ -51,11 +50,12 @@ import { FormMode } from '../Requirements/Requirements';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { toast } from 'react-toastify';
 import ScriptBox from './ScriptBox';
+import { IInterview, IRequirement, ITeam } from '../../../Interfaces/types';
 
 interface iProps {
-  viewData: any;
-  requirement?: any;
-  teamsList: any[];
+  viewData?: IInterview;
+  requirement?: IRequirement;
+  teamsList: ITeam[];
   isEditing?: boolean;
   hideButtons?: boolean;
   mode?: FormMode;
@@ -84,8 +84,10 @@ export default function InterviewForm(props: iProps) {
     setResults,
     onCreate,
   } = props;
-  const [values, setValues] = useState<any>(interviewFormInitialValues);
-  const [errors, setErrors] = useState<{ [key: string]: any }>(
+  const [values, setValues] = useState<Partial<IInterview>>(
+    interviewFormInitialValues
+  );
+  const [errors, setErrors] = useState<{ [key: string]: string }>(
     convertValuesToEmptyString(interviewFormInitialValues)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,12 +111,12 @@ export default function InterviewForm(props: iProps) {
 
   useEffect(() => {
     if (mode === 'view' || mode === 'edit') {
-      setValues(viewData);
+      setValues(viewData || {});
     }
     setErrors(convertValuesToEmptyString(interviewFormInitialValues));
   }, [mode, viewData]);
 
-  function initializeValuesToCreateInterview(requirement: any) {
+  function initializeValuesToCreateInterview(requirement: IRequirement) {
     if (!requirement) return;
     const {
       reqID,
@@ -128,7 +130,7 @@ export default function InterviewForm(props: iProps) {
       primeVendorCompany,
       jobDescription,
     } = requirement;
-    setValues((prevValues: any) => ({
+    setValues((prevValues: Partial<IInterview>) => ({
       ...prevValues,
       consultant: appliedFor,
       consultantRef: appliedForRef,
@@ -146,7 +148,7 @@ export default function InterviewForm(props: iProps) {
     }));
   }
 
-  const addValue = (key: any, newValue: any) => {
+  const addValue = (key: keyof IInterview, newValue: unknown) => {
     const meta = interviewValidationMeta.find((m) => m.field === key);
     if (meta) {
       if (errors[key] && isFieldValid(meta, newValue)) {
@@ -157,8 +159,8 @@ export default function InterviewForm(props: iProps) {
       }
     }
 
-    setValues((pre: any) => {
-      const updatedValues: any = { ...pre, [key]: newValue };
+    setValues((pre) => {
+      const updatedValues = { ...pre, [key]: newValue };
 
       const {
         interviewWith = '',
@@ -169,7 +171,7 @@ export default function InterviewForm(props: iProps) {
         vendorCompany = '',
         primeVendorCompany = '',
         clientName = '',
-      }: any = updatedValues;
+      } = updatedValues;
 
       const subjectLine = (type: string) =>
         `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}_${type}`;
@@ -192,7 +194,9 @@ export default function InterviewForm(props: iProps) {
     });
   };
 
-  async function handleSubmitForm(event: any) {
+  async function handleSubmitForm(
+    event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent
+  ) {
     event.preventDefault();
 
     if (isSubmitting) return;
@@ -207,7 +211,7 @@ export default function InterviewForm(props: iProps) {
     setIsSubmitting(true);
     try {
       const { data } = await createInterview(values);
-      setResults?.((pre: any) => [data.data, ...pre]);
+      setResults?.((pre) => [data.data, ...pre]);
       onCreate?.();
       onDrawerClose?.();
     } catch (error) {
@@ -217,9 +221,11 @@ export default function InterviewForm(props: iProps) {
     }
   }
 
-  async function handleEditSubmitForm(event: any) {
+  async function handleEditSubmitForm(
+    event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent
+  ) {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || !values._id) return;
     const isValid = validateAllFields(
       interviewValidationMeta,
       values,
@@ -229,9 +235,9 @@ export default function InterviewForm(props: iProps) {
     setIsSubmitting(true);
     try {
       const { data } = await updateInterview(values._id, values);
-      setResults?.((pre: any) => {
-        pre = pre.map((d: any) => {
-          if (d._id === data.data._id) return data.data;
+      setResults?.((pre) => {
+        pre = pre.map((d) => {
+          if (d._id === data.data?._id) return data.data;
           return d;
         });
         return [...pre];
@@ -246,11 +252,16 @@ export default function InterviewForm(props: iProps) {
 
   const handleSaveScript = async (script: string) => {
     try {
+      if (!values._id) {
+        toast.error('Missing interview id');
+        return;
+      }
+
       const { data } = await updateInterview(values._id, { script });
       setValues({ ...values, script });
-      setResults?.((pre: any) => {
-        pre = pre.map((d: any) => {
-          if (d._id === data.data._id) return data.data;
+      setResults?.((pre) => {
+        pre = pre.map((d) => {
+          if (d._id === data.data?._id) return data.data;
           return d;
         });
         return [...pre];
@@ -261,19 +272,18 @@ export default function InterviewForm(props: iProps) {
     }
   };
 
-  async function handleDeleteInterview(_id: any) {
+  async function handleDeleteInterview() {
     try {
+      if (!values._id) {
+        toast.error('Missing interview id');
+        return;
+      }
       await deleteInterview(values._id);
-      setResults?.((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setResults?.((pre) => [...pre].filter((p) => p._id !== values._id));
       onDrawerClose?.();
     } catch (error) {
-      console.error('An error occurred while deleting the requirement:', error);
+      console.error('An error occurred while deleting the interview:', error);
     }
-  }
-
-  function handleChange(event: any, key: string) {
-    const val = event.target.value;
-    addValue(key, val);
   }
 
   const handleClickOpenAlert = () => {
@@ -284,7 +294,7 @@ export default function InterviewForm(props: iProps) {
     setOpenAlert(false);
   };
 
-  const onBlur = (key: string) => {
+  const onBlur = (key: keyof typeof values) => {
     const meta = interviewValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
@@ -342,7 +352,7 @@ export default function InterviewForm(props: iProps) {
                     color="primary"
                     type="button"
                     onClick={() => {
-                      setValues(viewData);
+                      setValues(viewData || {});
                       onEdit?.(false);
                     }}
                     size="small"
@@ -375,7 +385,7 @@ export default function InterviewForm(props: iProps) {
                   </Button>
                   {!disableGenerateScript &&
                     !['Interview Cancelled', 'Interview Tentative'].includes(
-                      values.interviewStatus
+                      values.interviewStatus || ''
                     ) && (
                       <>
                         <Button
@@ -524,9 +534,7 @@ export default function InterviewForm(props: iProps) {
             label="Time Zone"
             valueOptions={timeZoneOptions}
             selectedValue={values.timeZone || ''}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'timeZone')
-            }
+            onChange={(value) => addValue('timeZone', value)}
             width={230}
             disabled={!isEditing}
           />
@@ -535,21 +543,17 @@ export default function InterviewForm(props: iProps) {
             onBlur={() => onBlur('interviewType')}
             valueOptions={intTypeOptions}
             selectedValue={values.interviewType || ''}
-            error={errors.interviewType}
+            error={!!errors.interviewType}
             helperText={errors.interviewType}
             disabled={!isEditing}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'interviewType')
-            }
+            onChange={(value) => addValue('interviewType', value)}
             width={230}
           />
           <CustomSelectField
             label="Interview Status"
             valueOptions={intStatusOptions}
             selectedValue={values.interviewStatus || ''}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'interviewStatus')
-            }
+            onChange={(value) => addValue('interviewStatus', value)}
             width={230}
             disabled={!isEditing}
           />
@@ -557,9 +561,7 @@ export default function InterviewForm(props: iProps) {
             label="Consultant"
             width={230}
             selectedValue={values.consultant || ''}
-            onChange={(event: any) =>
-              addValue('consultant', event.target.value)
-            }
+            onChange={(event) => addValue('consultant', event.target.value)}
             disabled
           />
           <CustomTextField
@@ -567,7 +569,7 @@ export default function InterviewForm(props: iProps) {
             width={230}
             selectedValue={values.marketingPerson || ''}
             disabled
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('marketingPerson', event.target.value)
             }
           />
@@ -576,16 +578,14 @@ export default function InterviewForm(props: iProps) {
             width={230}
             selectedValue={values.vendorCompany || ''}
             disabled
-            onChange={(event: any) =>
-              addValue('vendorCompany', event.target.value)
-            }
+            onChange={(event) => addValue('vendorCompany', event.target.value)}
           />
           <CustomTextField
             label="Prime Vendor Company"
             width={230}
             selectedValue={values.primeVendorCompany || ''}
             disabled
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('primeVendorCompany', event.target.value)
             }
           />
@@ -594,11 +594,9 @@ export default function InterviewForm(props: iProps) {
             onBlur={() => onBlur('interviewWith')}
             valueOptions={intWithOptions}
             selectedValue={values.interviewWith || ''}
-            error={errors.interviewWith}
+            error={!!errors.interviewWith}
             helperText={errors.interviewWith}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'interviewWith')
-            }
+            onChange={(value) => addValue('interviewWith', value)}
             width={230}
             disabled={!isEditing}
           />
@@ -607,15 +605,13 @@ export default function InterviewForm(props: iProps) {
             width={230}
             selectedValue={values.codeLink || ''}
             disabled={!isEditing}
-            onChange={(event: any) => addValue('codeLink', event.target.value)}
+            onChange={(event) => addValue('codeLink', event.target.value)}
           />
           <CustomSelectField
             label="Result"
             valueOptions={resultOptions}
             selectedValue={values.intResult || ''}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'intResult')
-            }
+            onChange={(value) => addValue('intResult', value)}
             width={230}
             disabled={!isEditing}
           />
@@ -623,9 +619,7 @@ export default function InterviewForm(props: iProps) {
             label="Interview Round"
             valueOptions={intRoundOptions}
             selectedValue={values.interviewRound || ''}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'interviewRound')
-            }
+            onChange={(value) => addValue('interviewRound', value)}
             width={230}
             disabled={!isEditing}
           />
@@ -633,7 +627,7 @@ export default function InterviewForm(props: iProps) {
             label="Tentative Reason (if Any)"
             width={230}
             selectedValue={values.tentativeReason || ''}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('tentativeReason', event.target.value)
             }
             disabled={!isEditing}
@@ -643,11 +637,9 @@ export default function InterviewForm(props: iProps) {
             onBlur={() => onBlur('interviewViaMode')}
             valueOptions={intModeOptions}
             selectedValue={values.interviewViaMode || ''}
-            error={errors.interviewViaMode}
+            error={!!errors.interviewViaMode}
             helperText={errors.interviewViaMode}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'interviewViaMode')
-            }
+            onChange={(value) => addValue('interviewViaMode', value)}
             width={230}
             disabled={!isEditing}
           />
@@ -655,9 +647,7 @@ export default function InterviewForm(props: iProps) {
             label="Meeting type"
             valueOptions={meetingTypeOptions}
             selectedValue={values.meetingType || ''}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'meetingType')
-            }
+            onChange={(value) => addValue('meetingType', value)}
             width={230}
             disabled={!isEditing}
           />
@@ -666,22 +656,18 @@ export default function InterviewForm(props: iProps) {
             onBlur={() => onBlur('interviewDuration')}
             valueOptions={intDurationOptions}
             selectedValue={values.interviewDuration || ''}
-            error={errors.interviewDuration}
+            error={!!errors.interviewDuration}
             helperText={errors.interviewDuration}
-            onChange={(value: any) =>
-              handleChange({ target: { value } }, 'interviewDuration')
-            }
+            onChange={(value) => addValue('interviewDuration', value)}
             width={230}
             disabled={!isEditing}
           />
           <CustomTextField
             label="Remarks/Comments (if negative / if on hold / If anything else? Why?)"
-            multiline
-            rows={2}
             width={720}
             selectedValue={values.remarks || ''}
             disabled={!isEditing}
-            onChange={(event: any) => addValue('remarks', event.target.value)}
+            onChange={(event) => addValue('remarks', event.target.value)}
           />
 
           <Grid item xs={12}>
@@ -689,63 +675,45 @@ export default function InterviewForm(props: iProps) {
           </Grid>
           <CustomTextField
             label="Subject line (Enter Duration + Mode Of Interview + Interview With only)"
-            multiline
             disabled
             width={970}
             selectedValue={values.subjectLine || ' '}
-            onChange={(event: any) =>
-              addValue('subjectLine', event.target.value)
-            }
+            onChange={(event) => addValue('subjectLine', event.target.value)}
           />
           <CustomTextField
             label="Interview / interviewer / Interview Mode Details"
-            multiline
             width={970}
             disabled={!isEditing}
             selectedValue={values.interviewMode || ''}
-            onChange={(event: any) =>
-              addValue('interviewMode', event.target.value)
-            }
+            onChange={(event) => addValue('interviewMode', event.target.value)}
           />
           <CustomTextField
             label="Interview Link"
-            multiline
             width={970}
             disabled={!isEditing}
             selectedValue={values.interviewLink || ''}
-            onChange={(event: any) =>
-              addValue('interviewLink', event.target.value)
-            }
+            onChange={(event) => addValue('interviewLink', event.target.value)}
           />
           <CustomTextField
             label="Interview Focus"
-            multiline
             width={970}
             disabled={!isEditing}
             selectedValue={values.interviewFocus || ''}
-            onChange={(event: any) =>
-              addValue('interviewFocus', event.target.value)
-            }
+            onChange={(event) => addValue('interviewFocus', event.target.value)}
           />
           <CustomTextField
             label="Special Note"
-            multiline
             width={970}
             disabled={!isEditing}
             selectedValue={values.specialNote || ''}
-            onChange={(event: any) =>
-              addValue('specialNote', event.target.value)
-            }
+            onChange={(event) => addValue('specialNote', event.target.value)}
           />
           <CustomTextField
             label="Job Description"
-            multiline
             width={970}
             disabled
             selectedValue={values.jobDescription || ''}
-            onChange={(event: any) =>
-              addValue('jobDescription', event.target.value)
-            }
+            onChange={(event) => addValue('jobDescription', event.target.value)}
           />
 
           {/* Section 3: Interview Feedback */}
@@ -755,10 +723,9 @@ export default function InterviewForm(props: iProps) {
           <CustomTextField
             label="Feedback"
             width={970}
-            multiline
             disabled={!isEditing}
             selectedValue={values.interviewFeedback || ''}
-            onChange={(event: any) =>
+            onChange={(event) =>
               addValue('interviewFeedback', event.target.value)
             }
           />
@@ -767,7 +734,7 @@ export default function InterviewForm(props: iProps) {
             disabled
             width={320}
             selectedValue={values.jobTitle || ''}
-            onChange={(event: any) => addValue('jobTitle', event.target.value)}
+            onChange={(event) => addValue('jobTitle', event.target.value)}
           />
 
           <div>
@@ -804,23 +771,21 @@ export default function InterviewForm(props: iProps) {
             width={300}
             disabled
             selectedValue={values.clientName || ''}
-            onChange={(event: any) =>
-              addValue('clientName', event.target.value)
-            }
+            onChange={(event) => addValue('clientName', event.target.value)}
           />
           <CustomTextField
             label="Tax Type"
             width={320}
             disabled
-            selectedValue={values.taxType || ''}
-            onChange={(event: any) => addValue('taxType', event.target.value)}
+            selectedValue={values.taxType?.toString() || ''}
+            onChange={(event) => addValue('taxType', event.target.value)}
           />
           <CustomTextField
             label="Duration"
             width={320}
             disabled
-            selectedValue={values.duration || ''}
-            onChange={(event: any) => addValue('duration', event.target.value)}
+            selectedValue={values.duration?.toString() || ''}
+            onChange={(event) => addValue('duration', event.target.value)}
           />
 
           {/* Section 4: Interviewee Candidate Details */}
@@ -833,11 +798,11 @@ export default function InterviewForm(props: iProps) {
                 {isEditing ? (
                   <CustomSelectField
                     label="Team"
-                    valueOptions={teamsList.map((c: any) => c.teamName || '')}
+                    valueOptions={teamsList.map((c) => c.teamName || '')}
                     selectedValue={values.candidateName || ''}
-                    onChange={(value: any) => {
+                    onChange={(value) => {
                       const _id = teamsList?.find(
-                        (c: any) => c.teamName === value
+                        (c) => c.teamName === value
                       )?._id;
                       addValue('candidateName', value);
                       addValue('candidateRef', _id);
@@ -851,7 +816,7 @@ export default function InterviewForm(props: iProps) {
                     width={310}
                     disabled={!isEditing}
                     selectedValue={values.candidateName || ''}
-                    onChange={(event: any) =>
+                    onChange={(event) =>
                       addValue('candidateName', event.target.value)
                     }
                   />
@@ -861,7 +826,7 @@ export default function InterviewForm(props: iProps) {
                   width={310}
                   disabled={!isEditing}
                   selectedValue={values.teckStack || ''}
-                  onChange={(event: any) =>
+                  onChange={(event) =>
                     addValue('teckStack', event.target.value)
                   }
                 />
@@ -869,7 +834,7 @@ export default function InterviewForm(props: iProps) {
                   label="Developer Name"
                   selectedValue={values.developerName || ''}
                   disabled={!isEditing}
-                  onChange={(event: any) =>
+                  onChange={(event) =>
                     addValue('developerName', event.target.value)
                   }
                   width={310}
@@ -878,7 +843,7 @@ export default function InterviewForm(props: iProps) {
             )}
         </Grid>
       </form>
-      {scriptModal && (
+      {scriptModal && viewData && (
         <ScriptModal
           interview={{ ...viewData, ...values }}
           open={scriptModal}

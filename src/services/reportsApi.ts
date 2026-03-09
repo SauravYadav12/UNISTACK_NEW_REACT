@@ -1,34 +1,24 @@
-import axios from 'axios';
 import { ApiQueryRes } from '../Interfaces/apiRes';
-import { getJwtToken } from '../utils/utils';
 import {
   SupportReport,
   InterviewReport,
   MarketingReport,
   DashboardReport,
 } from '../Interfaces/reports';
+import { axiosClient } from '../config/axios.config';
 
-const BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
 
 export async function getReport<T>(
   type: 'marketing' | 'support' | 'interview' | 'dashboard',
   fromDate?: string,
   toDate?: string
 ) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
   let query = '';
   if (fromDate) query += `fromDate=${fromDate}&`;
   if (toDate) query += `toDate=${toDate}`;
 
-  const response = await axios.get<ApiQueryRes<T>>(
-    `${BASE_URL}/reports/${type}?${query}`,
-    {
-      headers,
-    }
+  const response = await axiosClient.get<ApiQueryRes<T>>(
+    `/reports/${type}?${query}`
   );
   return response;
 }

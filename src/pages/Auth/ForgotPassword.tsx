@@ -53,7 +53,7 @@ const ForgotPassword = () => {
       setStep(ForgotPasswordStep.VerifyOTP);
     } catch (error: any) {
       console.log(error);
-      if (error.response.data.error) {
+      if (error.response?.data?.error) {
         toast.error(error.response.data.error);
       } else {
         toast.error('Failed to send');
@@ -75,7 +75,7 @@ const ForgotPassword = () => {
       toast.success('Login Successfull');
       navigate('/dashboard');
     } catch (error: any) {
-      const message: any = error?.response?.data?.message;
+      const message: string = error?.response?.data?.message || 'Failed to login';
       toast.error(message);
     } finally {
       setLoading(false);

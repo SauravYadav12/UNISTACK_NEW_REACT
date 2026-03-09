@@ -35,7 +35,7 @@ export default function Reports() {
   const tabs: TabTypes[] = ['support', 'marketing', 'interview'];
   const [tab, setTab] = useState(0);
 
-  const onDateChange = (key: any, newValue: any) => {
+  const onDateChange = (key: string, newValue: Date | null | string) => {
     newValue = newValue ? dayjs(newValue).format(dateFormate) : null;
     setDates((prevValues) => ({
       ...prevValues,

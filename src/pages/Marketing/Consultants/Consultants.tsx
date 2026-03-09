@@ -2,7 +2,6 @@ import { Button, IconButton } from '@mui/material';
 import moment from 'moment';
 import { useState } from 'react';
 import CustomDataGrid, {
-  iGridColumn,
 } from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import ConsultantForm from './ConsultantForm';
@@ -16,12 +15,13 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
 import { FormMode } from '../Requirements/Requirements';
-import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import { GridFilterModel, GridCallbackDetails, GridColDef } from '@mui/x-data-grid';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
+import { IConsultant } from '../../../Interfaces/types';
 
 export default function Consultants() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [viewData, setViewData] = useState<any>({});
+  const [viewData, setViewData] = useState<IConsultant>();
   const [formTitle, setFormTitle] = useState('');
   const [mode, setMode] = useState<FormMode>('view');
 
@@ -41,18 +41,18 @@ export default function Consultants() {
     []
   );
 
-  const statusColor = (s: any) => {
+  const statusColor = (s: string) => {
     if (s === 'Active') {
       return 'green';
     }
     return 'red';
   };
-  const columns: readonly iGridColumn[] = [
+  const columns: GridColDef<IConsultant>[] = [
     {
       field: 'view',
       headerName: 'View',
       width: 100,
-      renderCell: (params: any) => (
+      renderCell: (params) => (
         <Button
           size="small"
           variant="contained"
@@ -71,9 +71,9 @@ export default function Consultants() {
       field: 'consultantStatus',
       headerName: 'Status',
       width: 120,
-      renderCell: (params: any) => (
-        <span style={{ color: statusColor(params.row.consultantStatus) }}>
-          {params.row.consultantStatus}
+      renderCell: ({ row }) => (
+        <span style={{ color: statusColor(row.consultantStatus||'') }}>
+          {row.consultantStatus}
         </span>
       ),
     },
@@ -88,14 +88,14 @@ export default function Consultants() {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueGetter: (params: any) => moment(params).format(dateFormate2),
+      valueGetter: (params,row) => moment(row.createdAt).format(dateFormate2),
       filterOperators: filterOperatorsForDateField,
     },
   ];
 
-  const handleViewDetails = (row: any) => {
+  const handleViewDetails = (row: IConsultant) => {
     const data = gridData?.results?.find(
-      (r: any) => r.consultantId === row.consultantId
+      (r) => r.consultantId === row.consultantId
     );
     if (!data) return;
     setViewData(data);
@@ -111,17 +111,17 @@ export default function Consultants() {
 
   const handleAddNew = () => {
     setFormTitle('Add New Consultant');
-    setViewData({});
+    setViewData(undefined);
     setMode('add');
     setDrawerOpen(true);
   };
 
   const handleCloseForm = () => {
     setDrawerOpen(false);
-    setViewData({});
+    setViewData(undefined);
   };
 
-  const handleEdit = (editMode: any) => {
+  const handleEdit = (editMode: boolean) => {
     setMode(editMode ? 'edit' : 'view');
   };
 

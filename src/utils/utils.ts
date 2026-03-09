@@ -16,8 +16,8 @@ export function isTokenExpired() {
     if (!token) {
       return true;
     }
-    const decoded: any = jwtDecode(token);
-    return decoded.exp < Date.now() / 1000;
+    const decoded = jwtDecode(token);
+    return !!decoded.exp && decoded.exp < Date.now() / 1000;
   } catch (error) {
     localStorage.removeItem('token');
     console.log(error);
@@ -31,7 +31,7 @@ export function getUserDataFromToken(): iUser | undefined {
     return;
   }
   try {
-    const decoded: any = jwtDecode(token);
+    const decoded = jwtDecode<{ user: iUser }>(token);
     return decoded?.user;
   } catch (error) {
     localStorage.removeItem('token');
@@ -63,7 +63,7 @@ export const getBlobFileByUrl = async (url?: string) => {
   }
 };
 
-export function isImage(input: any): boolean {
+export function isImage(input: unknown): boolean {
   const imageExtensions = /\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff|ico)$/i;
   const imageMimeTypes = [
     'image/jpeg',
@@ -90,7 +90,7 @@ export function isImage(input: any): boolean {
   return false;
 }
 
-export function isPDF(input: any) {
+export function isPDF(input: unknown) {
   if (input instanceof Blob) {
     return input.type === 'application/pdf';
   } else if (typeof input === 'string') {
@@ -180,17 +180,65 @@ export const labelizeKey = (key: string) =>
     )
     .join(' ');
 
-export function convertValuesToEmptyString(obj: any) {
-  obj = JSON.parse(JSON.stringify(obj));
-  const isObject = (value: any): boolean =>
-    value && typeof value === 'object' && !Array.isArray(value);
-  for (const key in obj) {
-    if (isObject(obj[key])) {
-      obj[key] = convertValuesToEmptyString(obj[key]);
+interface NestedErrorRecord<T> {
+  [key: string]: T|NestedErrorRecord<T>;
+}
+type DeepStringify<T> = {
+  [K in keyof T]: T[K] extends object ? DeepStringify<T[K]> : string;
+};
+export function convertValuesToEmptyString<T extends NestedErrorRecord<unknown>>(
+  obj: T
+) {
+  const iobj = JSON.parse(JSON.stringify(obj));
+  const isObject = (value: unknown): boolean =>
+    !!value && typeof value === 'object' && !Array.isArray(value);
+
+  for (const key in iobj) {
+    if (isObject(iobj[key])) {
+      iobj[key] = convertValuesToEmptyString(iobj[key]);
     } else {
-      obj[key] = '';
+      iobj[key] = '';
     }
   }
 
-  return obj;
+  return iobj as DeepStringify<T>&{[key: string]: string};
 }
+
+export const parseError = (error: unknown): string => {
+  console.log(error);
+  if (typeof error === 'object' && error !== null) {
+    if ('response' in error && typeof error.response === 'object') {
+      const response = error.response;
+      if (
+        typeof response === 'object' &&
+        !!response &&
+        'data' in response &&
+        typeof response.data === 'object'
+      ) {
+        const data = response.data;
+
+        if (
+          typeof data === 'object' &&
+          !!data &&
+          'message' in data &&
+          typeof data.message === 'string'
+        ) {
+          return data.message;
+        }
+        if (
+          typeof data === 'object' &&
+          !!data &&
+          'error' in data &&
+          typeof data.error === 'string'
+        ) {
+          return data.error;
+        }
+      }
+    }
+
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+  }
+  return 'An unknown error occurred';
+};

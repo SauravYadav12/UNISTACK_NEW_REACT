@@ -1,4 +1,3 @@
-import React from 'react';
 import Chart from 'react-apexcharts';
 import { useTheme } from '@mui/material/styles';
 import { Grid, Stack, Typography, Avatar, Box } from '@mui/material';
@@ -9,7 +8,7 @@ const DataCards = () => {
   const primary = theme.palette.primary.main;
   const primarylight = '#ecf2ff';
   // chart
-  const optionscolumnchart: any = {
+  const optionscolumnchart: ApexCharts.ApexOptions  = {
     chart: {
       type: 'donut',
       fontFamily: "'Plus Jakarta Sans', sans-serif;",
@@ -54,7 +53,7 @@ const DataCards = () => {
       },
     ],
   };
-  const seriescolumnchart: any = [38, 40, 25];
+  const seriescolumnchart: ApexCharts.ApexOptions['series'] = [38, 40, 25];
 
   return (
     <ChartCardWrapper title="">

@@ -1,9 +1,7 @@
 import { Button, IconButton } from '@mui/material';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import moment from 'moment';
-import CustomDataGrid, {
-  iGridColumn,
-} from '../../../components/datagrid/DataGrid';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { getSalesLeads } from '../../../services/salesLeadsApi';
 import { iSalesLead } from '../../../Interfaces/salesLeads';
@@ -21,14 +19,19 @@ import SalesLeadAssignedToSelect from '../../../components/salesLead/SalesLeadAs
 import { usersList } from '../../../services/authApi';
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { syncDataById } from '../../../utils/syncDataById';
-import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import {
+  GridFilterModel,
+  GridCallbackDetails,
+  GridColDef,
+} from '@mui/x-data-grid';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
+import { FormMode } from '../Requirements/Requirements';
 const SalesLeads = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [mode, setMode] = useState('view');
+  const [mode, setMode] = useState<FormMode>('view');
   const [isEditing, setIsEditing] = useState(false);
-  const [viewData, setViewData] = useState({});
+  const [viewData, setViewData] = useState<iSalesLead | undefined>(undefined);
   const accountsState = useFetchData(getAccountList, []);
   const { data: accounts } = accountsState;
   const {
@@ -47,12 +50,12 @@ const SalesLeads = () => {
     []
   );
 
-  const columns: readonly iGridColumn[] = [
+  const columns: GridColDef<iSalesLead>[] = [
     {
       field: 'view',
       headerName: 'View',
       width: 150,
-      renderCell: (params: any) => (
+      renderCell: (params) => (
         <Button
           size="small"
           variant="contained"
@@ -78,7 +81,7 @@ const SalesLeads = () => {
       field: 'phone',
       headerName: 'Phone',
       width: 150,
-      valueGetter: (v: any) => v || 'NA',
+      valueGetter: (v) => v || 'NA',
     },
     {
       field: 'assignedTo',
@@ -86,7 +89,7 @@ const SalesLeads = () => {
       width: 200,
 
       type: 'actions',
-      renderCell: (params: any) => (
+      renderCell: (params) => (
         <SalesLeadAssignedToSelect
           selectOptions={accounts || []}
           row={params.row}
@@ -100,7 +103,7 @@ const SalesLeads = () => {
       width: 150,
 
       type: 'actions',
-      renderCell: (params: any) => (
+      renderCell: (params) => (
         <SalesLeadStatusSelect row={params.row} setRows={setResults} />
       ),
     },
@@ -108,7 +111,7 @@ const SalesLeads = () => {
       field: 'country',
       headerName: 'Country',
       width: 150,
-      valueGetter: (params: any) =>
+      valueGetter: (params) =>
         `${Country.getCountryByCode(params)?.name} (${params})`,
     },
     { field: 'city', headerName: 'City', width: 150 },
@@ -116,7 +119,7 @@ const SalesLeads = () => {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueGetter: (params: any) => moment(params).format(dateFormate2),
+      valueGetter: (params) => moment(params).format(dateFormate2),
       filterOperators: filterOperatorsForDateField,
     },
   ];
@@ -136,26 +139,26 @@ const SalesLeads = () => {
   };
 
   const handleEdit = (row: iSalesLead) => {
-    setResults<iSalesLead>((pre) => {
-      pre = pre.map((r) => {
+    setResults((pre) => {
+      pre = pre?.map((r) => {
         if (r._id === row._id) return row;
         return r;
       });
-      return [...pre];
+      return [...pre||[]];
     });
   };
 
   const filterRows = (id: string) => {
-    setResults<iSalesLead>((pre) => {
-      pre = pre.filter((r) => r._id !== id);
-      return [...pre];
+    setResults((pre) => {
+      pre = pre?.filter((r) => r._id !== id);
+      return [...pre||[]];
     });
   };
 
   async function getAccountList() {
     const { data } = await usersList();
     const { users } = data;
-    return users.filter((u: any) => u.active) || [];
+    return users.filter((u) => u.active) || [];
   }
 
   function onReload() {

@@ -41,7 +41,7 @@ const CalendarGrid = styled(Grid)(({ theme }) => ({
   padding: '10px 0px',
 }));
 
-const DateCell = styled(Grid)(({ theme, status }: any) => ({
+const DateCell = styled(Grid)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',

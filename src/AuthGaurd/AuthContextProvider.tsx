@@ -43,7 +43,7 @@ const AuthContext = createContext({
   isModuleAllowed: () => false,
 } as DefaultContextValue);
 
-export const AuthContextProvider = ({ children }: any) => {
+export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem('token') && !isTokenExpired()
   );
@@ -74,7 +74,7 @@ export const AuthContextProvider = ({ children }: any) => {
 
   const myProfileState = useFetchData(getMyProfile, [isAuthenticated]);
 
-  const validateLogin = (token: string, user: any) => {
+  const validateLogin = (token: string, user: iUser) => {
     localStorage.setItem('token', token);
     localStorage.setItem(autoOpenAttendanceModalKey, 'true');
     setIsAuthenticated(true);
@@ -134,7 +134,7 @@ interface DefaultContextValue {
   accessControlState: iFetchData<iAccessControl | undefined>;
   isAuthenticated: boolean;
   syncIUser: () => void;
-  validateLogin: (token: string, user: any) => void;
+  validateLogin: (token: string, user: iUser) => void;
   validateLogout: () => void;
   setMyProfile: (profile: UserProfile) => void;
   isModuleAllowed: (key: string) => boolean;

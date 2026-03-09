@@ -1,7 +1,5 @@
 import { Button, IconButton } from '@mui/material';
-import CustomDataGrid, {
-  iGridColumn,
-} from '../../../components/datagrid/DataGrid';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import moment from 'moment';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import TeamsForm from './TeamsForm';
@@ -14,15 +12,21 @@ import {
 } from '../../../hooks/paginationHook';
 import SyncIcon from '@mui/icons-material/Sync';
 import { syncDataById } from '../../../utils/syncDataById';
-import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import {
+  GridFilterModel,
+  GridCallbackDetails,
+  GridColDef,
+} from '@mui/x-data-grid';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
+import { ITeam } from '../../../Interfaces/types';
+import { FormMode } from '../Requirements/Requirements';
 
 export default function Teams() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [mode, setMode] = useState('view');
+  const [mode, setMode] = useState<FormMode>('view');
   const [isEditing, setIsEditing] = useState(false);
-  const [viewData, setViewData] = useState<any>({});
+  const [viewData, setViewData] = useState<ITeam>();
 
   const {
     gridData,
@@ -40,12 +44,12 @@ export default function Teams() {
     []
   );
 
-  const columns: readonly iGridColumn[] = [
+  const columns: GridColDef<ITeam>[] = [
     {
       field: 'view',
       headerName: 'View',
       width: 150,
-      renderCell: (params: any) => (
+      renderCell: (params) => (
         <Button
           size="small"
           variant="contained"
@@ -68,20 +72,20 @@ export default function Teams() {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueGetter: (params: any) => moment(params).format(dateFormate2),
+      valueGetter: (params) => moment(params).format(dateFormate2),
       filterOperators: filterOperatorsForDateField,
     },
   ];
 
   const handleAddNew = () => {
     setFormTitle('Add New Teams');
-    setViewData({});
+    setViewData(undefined);
     setMode('add');
     setIsEditing(true);
     setDrawerOpen(true);
   };
-  const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.find((r: any) => r.teamId === row.teamId);
+  const handleViewDetails = (row: ITeam) => {
+    const data = gridData?.results?.find((r) => r.teamId === row.teamId);
     if (!data) return;
     setViewData(data);
     setFormTitle(`Team ID :- ${row.teamId}`);
@@ -96,9 +100,9 @@ export default function Teams() {
   };
   const handleCloseForm = () => {
     setDrawerOpen(false);
-    setViewData({});
+    setViewData(undefined);
   };
-  const handleEdit = (editMode: any) => {
+  const handleEdit = (editMode: boolean) => {
     setIsEditing(editMode);
     setMode(editMode ? 'edit' : 'view');
   };
@@ -108,7 +112,9 @@ export default function Teams() {
     details: GridCallbackDetails<'filter'>
   ) => {
     const iModel =
-    model.items[0]?.value || model.quickFilterValues?.length? model : initialSearchModel;
+      model.items[0]?.value || model.quickFilterValues?.length
+        ? model
+        : initialSearchModel;
     setSearchModel(iModel);
   };
 

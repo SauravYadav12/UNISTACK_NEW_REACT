@@ -1,10 +1,9 @@
-import axios from 'axios';
-import { getJwtToken } from '../utils/utils';
+
 import { UserProfile } from '../Interfaces/profile';
 import { iUser } from '../Interfaces/iUser';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
+import { axiosClient } from '../config/axios.config';
 
-export const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
 
 export async function createProfile(
   userId: string,
@@ -19,17 +18,10 @@ export async function createProfile(
     },
     name,
   };
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post<ApiQueryRes<UserProfile>>(
-    `${BASE_URL}/user-profiles`,
-    body,
-    {
-      headers,
-    }
+
+  const response = await axiosClient.post<ApiQueryRes<UserProfile>>(
+    `/user-profiles`,
+    body
   );
   return response;
 }
@@ -38,47 +30,22 @@ export async function updateProfile(
   profileId: string,
   body: Partial<UserProfile>
 ) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch<ApiQueryRes<UserProfile>>(
-    `${BASE_URL}/user-profiles/${profileId}`,
-    body,
-    {
-      headers,
-    }
+  const response = await axiosClient.patch<ApiQueryRes<UserProfile>>(
+    `/user-profiles/${profileId}`,
+    body
   );
   return response;
 }
 export async function getProfile(profileId: string) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<UserProfile>>(
-    `${BASE_URL}/user-profiles/${profileId}`,
-    {
-      headers,
-    }
+  const response = await axiosClient.get<ApiQueryRes<UserProfile>>(
+    `/user-profiles/${profileId}`
   );
   return response;
 }
 export async function getProfileByUser(user: iUser) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-
-  const { data } = await axios.get<ApiQueryRes<PaginationResult<UserProfile>>>(
-    `${BASE_URL}/user-profiles?user=${user.id}`,
-    {
-      headers,
-    }
-  );
+  const { data } = await axiosClient.get<
+    ApiQueryRes<PaginationResult<UserProfile>>
+  >(`/user-profiles?user=${user.id}`);
   const { error } = data;
   if (error) return;
   const result = data.data?.results;

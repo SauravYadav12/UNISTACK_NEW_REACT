@@ -10,7 +10,7 @@ import {
   Grid,
   TextField,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import { createTeam, deleteTeam, updateTeam } from '../../../services/teamsApi';
 import dayjs from 'dayjs';
@@ -25,6 +25,10 @@ import {
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import { ITeam } from '../../../Interfaces/types';
+import { FormMode } from '../Requirements/Requirements';
+import { toast } from 'react-toastify';
+import { SetResults } from '../../../hooks/paginationHook';
 
 const teamValidationMeta: ValidationMeta[] = [
   {
@@ -39,12 +43,21 @@ const initialValues = {
   createdBy: '',
 };
 
-export default function TeamsForm(props: any) {
-  const [values, setValues] = useState<any>(initialValues);
+interface iProps {
+  viewData?: ITeam;
+  mode: FormMode;
+  setDrawerOpen: (open: boolean) => void;
+  isEditing: boolean;
+  onEdit: (editing: boolean) => void;
+  setResults: SetResults;
+}
+
+export default function TeamsForm(props: iProps) {
+  const [values, setValues] = useState<Partial<ITeam>>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const user = useAuth().iUser!;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: any }>(
+  const [errors, setErrors] = useState<{ [key: string]: string }>(
     convertValuesToEmptyString(initialValues)
   );
   const { viewData, mode, setDrawerOpen, isEditing, onEdit, setResults } =
@@ -63,9 +76,9 @@ export default function TeamsForm(props: any) {
   useEffect(() => {
     if (!user) return;
     if (mode === 'view' || mode === 'edit') {
-      setValues(viewData);
+      setValues(viewData || {});
     } else if (mode === 'add') {
-      setValues((prevValues: any) => ({
+      setValues((prevValues) => ({
         ...prevValues,
         createdBy: user.firstName + ' ' + user.lastName,
       }));
@@ -81,7 +94,7 @@ export default function TeamsForm(props: any) {
     setOpenAlert(false);
   };
 
-  const addValue = (key: any, newValue: any) => {
+  const addValue = (key: keyof ITeam, newValue: unknown) => {
     const meta = teamValidationMeta.find((m) => m.field === key);
     if (meta) {
       if (errors[key] && isFieldValid(meta, newValue)) {
@@ -91,13 +104,15 @@ export default function TeamsForm(props: any) {
         newValue = meta.transform(newValue);
       }
     }
-    setValues((prevValues: any) => ({
+    setValues((prevValues) => ({
       ...prevValues,
       [key]: newValue,
     }));
   };
 
-  async function handleSubmitForm(event: any) {
+  async function handleSubmitForm(
+    event: React.FormEvent<HTMLButtonElement> | KeyboardEvent
+  ) {
     event.preventDefault();
 
     if (isSubmitting) return;
@@ -108,7 +123,7 @@ export default function TeamsForm(props: any) {
     setIsSubmitting(true);
     try {
       const { data } = await createTeam(values);
-      setResults((pre: any) => [data.data, ...pre]);
+      setResults((pre) => [data.data, ...pre||[]]);
       setDrawerOpen(false);
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
@@ -117,7 +132,9 @@ export default function TeamsForm(props: any) {
     }
   }
 
-  async function handleEditSubmitForm(event: any) {
+  async function handleEditSubmitForm(
+    event: React.FormEvent<HTMLButtonElement> | KeyboardEvent
+  ) {
     event.preventDefault();
     if (isSubmitting) return;
 
@@ -126,13 +143,17 @@ export default function TeamsForm(props: any) {
 
     setIsSubmitting(true);
     try {
+      if (!values._id) {
+        toast.error('Team ID is missing. Cannot update the team.');
+        return;
+      }
       const { data } = await updateTeam(values._id, values);
-      setResults((pre: any) => {
-        pre = pre.map((d: any) => {
+      setResults((pre) => {
+        pre = pre?.map((d) => {
           if (d._id === data.data._id) return data.data;
           return d;
         });
-        return [...pre];
+        return [...pre||[]];
       });
       setDrawerOpen(false);
     } catch (error) {
@@ -141,17 +162,22 @@ export default function TeamsForm(props: any) {
       setIsSubmitting(false);
     }
   }
-  async function handleDeleteTeam(_id: any) {
+  async function handleDeleteTeam() {
     try {
+      if (!values._id) {
+        toast.error('Team ID is missing. Cannot delete the team.');
+        return;
+      }
       await deleteTeam(values._id);
-      setResults((pre: any) => [...pre].filter((p) => p._id !== values._id));
+      setResults((pre) => [...pre||[]].filter((p) => p._id !== values._id));
       setDrawerOpen(false);
     } catch (error) {
-      console.error('An error occurred while deleting the requirement:', error);
+      console.error('An error occurred while deleting the team:', error);
+      toast.error('An error occurred while deleting the team.');
     }
   }
 
-  const onBlur = (key: string) => {
+  const onBlur = (key: keyof ITeam) => {
     const meta = teamValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
@@ -267,47 +293,43 @@ export default function TeamsForm(props: any) {
         <CustomTextField
           label="Team Name"
           width={320}
-          selectedValue={values.teamName}
+          selectedValue={values.teamName || ''}
           error={!!errors.teamName}
           helperText={errors.teamName}
           disabled={!isEditing}
           onBlur={() => onBlur('teamName')}
-          onChange={(event: any) => addValue('teamName', event.target.value)}
+          onChange={(event) => addValue('teamName', event.target.value)}
         />
         <CustomTextField
           onBlur={() => onBlur('teckStack')}
           label="Teck Stack"
           width={320}
-          selectedValue={values.teckStack}
+          selectedValue={values.teckStack || ''}
           error={!!errors.teckStack}
           helperText={errors.teckStack}
           disabled={!isEditing}
-          onChange={(event: any) => addValue('teckStack', event.target.value)}
+          onChange={(event) => addValue('teckStack', event.target.value)}
         />
         <CustomTextField
           onBlur={() => onBlur('developerName')}
           label="Developer Name"
           width={320}
-          selectedValue={values.developerName}
+          selectedValue={values.developerName || ''}
           error={!!errors.developerName}
           helperText={errors.developerName}
           disabled={!isEditing}
-          onChange={(event: any) =>
-            addValue('developerName', event.target.value)
-          }
+          onChange={(event) => addValue('developerName', event.target.value)}
         />
         {mode === 'view' && (
           <>
             <CustomTextField
               label="Created by"
               width={320}
-              selectedValue={values.createdBy}
+              selectedValue={values.createdBy || ''}
               error={!!errors.createdBy}
               helperText={errors.createdBy}
               disabled
-              onChange={(event: any) =>
-                addValue('createdBy', event.target.value)
-              }
+              onChange={(event) => addValue('createdBy', event.target.value)}
             />
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
@@ -316,7 +338,7 @@ export default function TeamsForm(props: any) {
                 value={values.createdAt ? dayjs(values.createdAt) : null}
                 disabled
                 onChange={(newValue) => addValue('createdAt', newValue)}
-                renderInput={(params: any) => (
+                renderInput={(params) => (
                   <TextField
                     size="small"
                     {...params}

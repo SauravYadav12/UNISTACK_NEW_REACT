@@ -10,10 +10,10 @@ const AttendanceSummary = () => {
   const theme = useTheme();
   const primary = theme.palette.primary.main;
   const primarylight = '#ecf2ff';
-  const successlight = theme.palette.success.light;
+  // const successlight = theme.palette.success.light;
 
   // chart
-  const optionscolumnchart: any = {
+  const optionscolumnchart: ApexCharts.ApexOptions = {
     chart: {
       type: 'donut',
       fontFamily: "'Plus Jakarta Sans', sans-serif;",
@@ -58,7 +58,7 @@ const AttendanceSummary = () => {
       },
     ],
   };
-  const seriescolumnchart: any = [100, 40];
+  const seriescolumnchart: number[] = [100, 40];
 
   return (
     <ChartCardWrapper title="Attendance Summary">

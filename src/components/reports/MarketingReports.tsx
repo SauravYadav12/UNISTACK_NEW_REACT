@@ -28,7 +28,7 @@ export const MarketingReports = ({
         const href = `/requirements?fromDate=${fromDate}&toDate=${toDate}&assignedToRef=${a.id}&`;
         return (
           <Box mb={1} key={i}>
-            <CustomAccordion title={a.name}>
+            <CustomAccordion title={a.name||'Unknown'}>
               <TableContainer>
                 <Table sx={{ maxWidth: 'max-content' }}>
                   <TableBody>

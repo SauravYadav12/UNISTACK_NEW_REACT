@@ -1,5 +1,5 @@
 import { Select, MenuItem } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 import { Moment } from 'moment';
 import { toast } from 'react-toastify';
@@ -56,7 +56,7 @@ const SelectAttendanceStatus = ({
       value={status || ''}
       size="small"
       onChange={(e) => {
-        onChangeAttendance(e.target.value as any);
+        onChangeAttendance(e.target.value as AttendanceStatus);
       }}
     >
       {Object.values(AttendanceStatus).map((o, i) => {

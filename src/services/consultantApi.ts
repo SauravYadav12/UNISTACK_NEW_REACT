@@ -1,70 +1,42 @@
-import axios from 'axios';
-import { getJwtToken } from '../utils/utils';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
+import { axiosClient } from '../config/axios.config';
 
 export async function consultantsList(
   query: string = '',
   signal?: AbortSignal
 ) {
-  const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<PaginationResult>>(
-    `${BASE_URL}/consultants/get-consultants?${query}`,
+  const response = await axiosClient.get<ApiQueryRes<PaginationResult>>(
+    `/consultants/get-consultants?${query}`,
     {
-      headers,
       signal,
     }
   );
   return response;
 }
 
-export async function createConsultant(data: any) {
-  const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post(
-    `${BASE_URL}/consultants/create-consultant`,
-    data,
-    {
-      headers,
-    }
+export async function createConsultant(data: Record<string, unknown>) {
+  const response = await axiosClient.post(
+    `/consultants/create-consultant`,
+    data
   );
+
   return response;
 }
 
-export async function updateConsultant(id: any, values: any) {
-  const token = await getJwtToken();
-  const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch(
-    `${BASE_URL}/consultants/update-consultant/${id}`,
-    values,
-    {
-      headers,
-    }
+export async function updateConsultant(
+  id: string,
+  values: Record<string, unknown>
+) {
+  const response = await axiosClient.patch(
+    `/consultants/update-consultant/${id}`,
+    values
   );
   return response;
 }
 
 export async function deleteConsultant(id: string) {
-  const token = await getJwtToken();
-  const BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
-  const headers = {
-    Authorization: token,
-  };
-  const response = await axios.delete(
-    `${BASE_URL}/consultants/delete-consultant/${id}`,
-    { headers }
+  const response = await axiosClient.delete(
+    `/consultants/delete-consultant/${id}`
   );
   return response;
 }

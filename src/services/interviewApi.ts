@@ -1,64 +1,40 @@
-import axios from 'axios';
-import { getJwtToken } from '../utils/utils';
+import { axiosClient } from '../config/axios.config';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
-import { BASE_URL } from './userProfileApi';
+import { IInterview } from '../Interfaces/types';
 
 export async function interviewsList(query: string = '', signal?: AbortSignal) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<PaginationResult>>(
-    `${BASE_URL}/interviews/get-interviews?${query}`,
+
+  const response = await axiosClient.get<ApiQueryRes<PaginationResult>>(
+    `/interviews/get-interviews?${query}`,
     {
-      headers,
       signal,
     }
   );
   return response;
 }
 
-export async function createInterview(data: any) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post(
-    `${BASE_URL}/interviews/create-interview`,
-    data,
-    {
-      headers,
-    }
+export async function createInterview(data: Record<string, unknown>) {
+
+  const response = await axiosClient.post<ApiQueryRes<IInterview>>(
+    `/interviews/create-interview`,
+    data
   );
   return response;
 }
 
-export async function updateInterview(id: any, values: any) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch(
-    `${BASE_URL}/interviews/update-interview/${id}`,
-    values,
-    {
-      headers,
-    }
+export async function updateInterview(id: string, values: Record<string, unknown>) {
+
+  const response = await axiosClient.patch<ApiQueryRes<IInterview>>(
+    `/interviews/update-interview/${id}`,
+    values
   );
   return response;
 }
 
 export async function deleteInterview(id: string) {
-  const token = await getJwtToken();
-  const headers = {
-    Authorization: token,
-  };
-  const response = await axios.delete(
-    `${BASE_URL}/interviews/delete-interview/${id}`,
-    { headers }
+  const response = await axiosClient.delete(
+    `/interviews/delete-interview/${id}`
   );
   return response;
 }
+

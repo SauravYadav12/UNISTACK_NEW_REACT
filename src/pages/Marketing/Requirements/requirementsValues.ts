@@ -1,4 +1,5 @@
 import { RequirementStatus } from '../../../Interfaces/reports';
+import { IRequirement } from '../../../Interfaces/types';
 import { ValidationMeta } from '../../../utils/validators';
 
 export const reqStatusOptions: RequirementStatus[] = [
@@ -20,10 +21,10 @@ export const requirementFormInitialValues = {
   primaryTechStack: '',
   resumeUpload: '',
   nextStep: '',
-  taxType: '',
-  rate: '',
-  remote: '',
-  duration: '',
+  taxType: [''],
+  rate: [''],
+  remote: [''],
+  duration: [''],
   mComment: [],
   clientCompany: '',
   clientWebsite: '',
@@ -116,7 +117,7 @@ type ReqirementStatusColors = {
   [key in RequirementStatus]: string;
 };
 
-export const reqFields = [
+export const reqFields:(keyof IRequirement)[] = [
   'reqStatus',
   'nextStep',
   'appliedFor',

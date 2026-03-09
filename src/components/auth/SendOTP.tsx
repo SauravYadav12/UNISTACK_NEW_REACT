@@ -20,8 +20,8 @@ const SendOTP = ({ emailState, onClickSendOtp }: iProps) => {
     onClickSendOtp();
   }
 
-  function onChange(e: ChangeEvent) {
-    const v = (e.target as any).value;
+  function onChange(e: ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value;
     if (validateEmail(v)) {
       setError('');
     }

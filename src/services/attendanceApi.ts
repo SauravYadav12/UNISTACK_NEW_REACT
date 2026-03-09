@@ -1,46 +1,24 @@
-import axios from 'axios';
-import { getJwtToken } from '../utils/utils';
-import { BASE_URL } from './userProfileApi';
 import { ApiQueryRes } from '../Interfaces/apiRes';
-import {
-  AttendanceStatus,
-  iAttendance,
-  iUser,
-} from '../Interfaces/iUser';
+import { AttendanceStatus, iAttendance, iUser } from '../Interfaces/iUser';
+import { axiosClient } from '../config/axios.config';
 export async function getAttendance(query = '') {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<iAttendance[]>>(
-    `${BASE_URL}/attendance?${query}`,
-
-    {
-      headers,
-    }
+  const response = await axiosClient.get<ApiQueryRes<iAttendance[]>>(
+    `/attendance?${query}`
   );
+
   return response;
 }
 export async function markAttendance(
   user: iUser,
-  date:string,
+  date: string,
   status: AttendanceStatus
 ) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post<ApiQueryRes<iAttendance>>(
-    `${BASE_URL}/attendance/`,
+  const response = await axiosClient.post<ApiQueryRes<iAttendance>>(
+    `/attendance/`,
     {
       userRef: user._id,
       date,
       status,
-    },
-    {
-      headers,
     }
   );
   return response;
@@ -50,13 +28,8 @@ export async function updateAttendance(
   attendanceRef: string,
   body: Partial<Omit<iAttendance, '_id' | 'createdAt' | 'updatedAt'>>
 ) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch<ApiQueryRes<iAttendance>>(
-    `${BASE_URL}/attendance/${attendanceRef}`,
+  const response = await axiosClient.patch<ApiQueryRes<iAttendance>>(
+    `/attendance/${attendanceRef}`,
     {
       ...body,
       ...(body.status && {
@@ -66,25 +39,11 @@ export async function updateAttendance(
         checkOut: '',
         checkIn: '',
       }),
-    },
-    {
-      headers,
     }
   );
   return response;
 }
 export async function deleteAttendance(id: string) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.delete(
-    `${BASE_URL}/attendance/${id}`,
-
-    {
-      headers,
-    }
-  );
+  const response = await axiosClient.delete(`/attendance/${id}`);
   return response;
 }

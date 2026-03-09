@@ -9,9 +9,7 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
-import CustomDataGrid, {
-  iGridColumn,
-} from '../../../components/datagrid/DataGrid';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useState } from 'react';
@@ -27,16 +25,25 @@ import {
 import { syncDataById } from '../../../utils/syncDataById';
 import { FormMode } from '../Requirements/Requirements';
 import SearchRequirement from '../Interviews/SearchRequirement';
-import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import {
+  GridFilterModel,
+  GridCallbackDetails,
+  GridColDef,
+} from '@mui/x-data-grid';
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { teamsList } from '../../../services/teamsApi';
 import { Sync } from '@mui/icons-material';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
+import {
+  InterviewStatus,
+  IRequirement,
+  IVendor,
+} from '../../../Interfaces/types';
 
 export default function TestAndVendorInterviews() {
   const [openDialog, setOpenDialog] = useState(false);
-  const [requirement, setRequirement] = useState<any>();
-  const [viewData, setViewData] = useState<any>({});
+  const [requirement, setRequirement] = useState<IRequirement>();
+  const [viewData, setViewData] = useState<IVendor>();
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -64,12 +71,12 @@ export default function TestAndVendorInterviews() {
     []
   );
 
-  const columns: readonly iGridColumn[] = [
+  const columns: GridColDef<IVendor>[] = [
     {
       field: 'view',
       headerName: 'View',
       width: 100,
-      renderCell: (params: any) => (
+      renderCell: (params) => (
         <Button
           size="small"
           variant="contained"
@@ -88,13 +95,15 @@ export default function TestAndVendorInterviews() {
       field: 'interviewStatus',
       headerName: 'Test Status',
       width: 180,
-      renderCell: (params: any) => (
+      renderCell: ({ row: { interviewStatus } }) => (
         <span
           style={{
-            color: (interviewStatusColors as any)[params.row.interviewStatus],
+            color: interviewStatus
+              ? interviewStatusColors[interviewStatus as InterviewStatus]
+              : undefined,
           }}
         >
-          {params.row.interviewStatus}
+          {interviewStatus}
         </span>
       ),
     },
@@ -102,8 +111,8 @@ export default function TestAndVendorInterviews() {
       field: 'interviewDate',
       headerName: 'Test Entered Date',
       width: 120,
-      valueGetter: (params: any) => {
-        return moment(params).format(dateFormate2);
+      valueGetter: (params, row) => {
+        return moment(row.interviewDate).format(dateFormate2);
       },
       filterOperators: filterOperatorsForDateField,
     },
@@ -117,15 +126,15 @@ export default function TestAndVendorInterviews() {
       field: 'createdAt',
       headerName: 'Created At',
       width: 180,
-      valueGetter: (params: any) => {
-        return moment(params).format(dateFormate2);
+      valueGetter: (params, row) => {
+        return moment(row.createdAt).format(dateFormate2);
       },
       filterOperators: filterOperatorsForDateField,
     },
   ];
 
-  const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.find((r: any) => r.testID === row.testID);
+  const handleViewDetails = (row: IVendor) => {
+    const data = gridData?.results?.find((r) => r.testID === row.testID);
     if (!data) return;
     setViewData(data);
     setFormTitle(`Vendor Interview ID ${row.testID}`);
@@ -138,18 +147,18 @@ export default function TestAndVendorInterviews() {
     });
   };
 
-  const handleOpenForm = (record: any) => {
+  const handleOpenForm = (record: IRequirement) => {
     setRequirement(record);
     setFormTitle('Add New Vendor Interview');
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
-    setViewData({});
+    setViewData(undefined);
   };
 
   const handleCloseForm = () => {
     setDrawerOpen(false);
-    setViewData({});
+    setViewData(undefined);
   };
   const handleClickOpen = () => {
     setOpenDialog(true);
@@ -157,7 +166,7 @@ export default function TestAndVendorInterviews() {
   const handleClose = () => {
     setOpenDialog(false);
   };
-  const handleEdit = (editMode: any) => {
+  const handleEdit = (editMode: boolean) => {
     setMode(editMode ? 'edit' : 'view');
   };
 

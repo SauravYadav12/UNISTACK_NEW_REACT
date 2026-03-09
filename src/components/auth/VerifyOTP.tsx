@@ -2,6 +2,7 @@ import { Box, TextField, Button, Typography, Grid, Link } from '@mui/material';
 import React, { FormEvent, useState } from 'react';
 import { verifyOtp } from '../../services/authApi';
 import { toast } from 'react-toastify';
+import { parseError } from '../../utils/utils';
 interface iProps {
   email: string;
   loadingState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
@@ -36,10 +37,10 @@ const VerifyOTP = ({
     try {
       const { data } = await verifyOtp(email, otp);
       onSuccess(data.token);
-    } catch (error: any) {
-      console.log(error);
-      if (error?.response?.data?.error) {
-        setError(error?.response?.data?.error);
+    } catch (error) {
+      const errorMessage = parseError(error);
+      if (errorMessage) {
+        setError(errorMessage);
         setOtp('');
       } else {
         toast.error('Failed to verify');
@@ -49,8 +50,8 @@ const VerifyOTP = ({
     }
   }
 
-  function onChange(e: any) {
-    const v = (e.target as any).value;
+  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value;
     if (validateOtp(v)) {
       setError('');
     }

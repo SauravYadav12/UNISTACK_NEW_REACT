@@ -12,7 +12,7 @@ const PositionsSummary = () => {
   const successlight = theme.palette.success.light;
 
   // chart
-  const optionscolumnchart: any = {
+  const optionscolumnchart: ApexCharts.ApexOptions = {
     chart: {
       type: 'donut',
       fontFamily: "'Plus Jakarta Sans', sans-serif;",
@@ -57,7 +57,7 @@ const PositionsSummary = () => {
       },
     ],
   };
-  const seriescolumnchart: any = [38, 40, 25];
+  const seriescolumnchart: ApexCharts.ApexOptions['series'] = [38, 40, 25];
 
   return (
     <ChartCardWrapper title="Positions Summary">

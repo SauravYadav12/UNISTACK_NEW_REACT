@@ -32,6 +32,13 @@ import dayjs from 'dayjs';
 import { uploadFile } from '../../services/storageApi';
 import { toast } from 'react-toastify';
 import { downloadFile } from '../../utils/utils';
+import {
+  IConsultant,
+  IConsultantProject,
+  IInterview,
+  IRequirement,
+  IVendor,
+} from '../../Interfaces/types';
 
 const dateFormate = 'MMM YYYY';
 
@@ -42,9 +49,9 @@ const ScriptModal = ({
   onClose,
 }: ScriptModalProps) => {
   const [saving, setSaving] = useState<boolean>(false);
-  const [requirement, setRequirement] = useState<any>();
-  const [consultant, setConsultant] = useState<any>();
-  const intId = interview.intId || interview.testID;
+  const [requirement, setRequirement] = useState<IRequirement>();
+  const [consultant, setConsultant] = useState<IConsultant>();
+  const intId = 'intId' in interview ? interview.intId : interview.testID;
   const options: Options = {
     filename: 'script.pdf',
     page: {
@@ -64,7 +71,7 @@ const ScriptModal = ({
   const { toPDF, targetRef } = usePDF({ ...options, method: 'build' });
 
   const fileInstance = async () => {
-    const d: InstanceType<typeof jsPDF> = (await toPDF()) as any;
+    const d = (await toPDF()) as unknown as InstanceType<typeof jsPDF>;
     const pdfBlob = d.output('blob');
     return new File([pdfBlob], `Script-${intId}.pdf`, {
       type: 'application/pdf',
@@ -157,7 +164,7 @@ const ScriptModal = ({
           width="210mm"
         >
           <h2 style={{ margin: 0, fontSize: 'larger' }}>
-            {!!interview.script ? 'Updated Script' : 'Script'} : {intId}
+            {interview.script ? 'Updated Script' : 'Script'} : {intId}
           </h2>
           <IconButton onClick={onClose} sx={{ height: 'fit-content' }}>
             <CloseIcon />
@@ -302,14 +309,20 @@ const ScriptModal = ({
 export default ScriptModal;
 
 interface ScriptModalProps {
-  interview: any;
+  interview: IInterview | IVendor;
   open: boolean;
   onSave: (scriptUrl: string) => Promise<void> | void;
   onClose: () => void;
 }
 
-function Header({ interview, name }: { interview: any; name: string }) {
-  const intId = interview.intId || interview.testID;
+function Header({
+  interview,
+  name,
+}: {
+  interview: IInterview | IVendor;
+  name: string;
+}) {
+  const intId = 'intId' in interview ? interview.intId : interview.testID;
   return (
     <Stack
       direction={'row'}
@@ -358,7 +371,7 @@ function Header({ interview, name }: { interview: any; name: string }) {
   );
 }
 
-function CondidateDetail({ consultant }: { consultant: any }) {
+function CondidateDetail({ consultant }: { consultant: IConsultant }) {
   const CandidateDetailsObj = {
     'Candidate Name': consultant.consultantName || 'NA',
     'Candidate Location': consultant.currentAddress || 'NA',
@@ -423,7 +436,7 @@ function CondidateDetail({ consultant }: { consultant: any }) {
   );
 }
 
-function VisaDetail({ consultant }: { consultant: any }) {
+function VisaDetail({ consultant }: { consultant: IConsultant }) {
   const details = {
     'When did he came to US': consultant.cameToUsYear || 'NA',
     'How did you get the visa': consultant.getVisa || 'NA',
@@ -535,7 +548,7 @@ function Notes({ note, poc }: { note: string; poc: string }) {
   );
 }
 
-function OverAllExperience({ projects }: { projects: any[] }) {
+function OverAllExperience({ projects }: { projects: IConsultantProject[] }) {
   return (
     <TableContainer component={Paper} sx={{ my: 1 }}>
       <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -617,7 +630,11 @@ function OverAllExperience({ projects }: { projects: any[] }) {
   );
 }
 
-function ConsultantsExperience({ projects }: { projects: any[] }) {
+function ConsultantsExperience({
+  projects,
+}: {
+  projects: IConsultantProject[];
+}) {
   return (
     <Box
       component={!projects.length ? Paper : undefined}
@@ -715,8 +732,8 @@ function InterviewDetails({
   interview,
   requirement,
 }: {
-  interview: any;
-  requirement: any;
+  interview: IInterview | IVendor;
+  requirement: IRequirement;
 }) {
   const meta = {
     'ABOUT INTERVIEW': interview.subjectLine || 'NA',
@@ -778,9 +795,9 @@ function JobDescription({
   primaryTech,
   secondaryTech,
 }: {
-  jobDescription: any;
-  primaryTech: any;
-  secondaryTech: any;
+  jobDescription?: string;
+  primaryTech?: string;
+  secondaryTech?: string;
 }) {
   return (
     <Box

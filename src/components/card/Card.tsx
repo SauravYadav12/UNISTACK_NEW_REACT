@@ -1,35 +1,41 @@
-import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-
+import Card from '@mui/material/Card';
+import CardActions from '@mui/material/CardActions';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+interface iProps {
+  color: string;
+  title: string;
+  count: number;
+  icon: JSX.Element;
+  titleColor: string;
+}
 export default function BasicCard({
   color,
   title,
   count,
   icon,
   titleColor,
-}: any) {
+}: iProps) {
   return (
     <Card
       sx={{
         minWidth: 100,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         background: color,
         border: color,
-        borderRadius: "10px",
+        borderRadius: '10px',
       }}
       variant="outlined"
     >
       <CardContent
         sx={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
         }}
       >
         <div>
@@ -41,9 +47,9 @@ export default function BasicCard({
           </Typography>
           <CardActions
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              paddingTop:0
+              display: 'flex',
+              justifyContent: 'center',
+              paddingTop: 0,
             }}
           >
             <Typography variant="h5" component="span" color={titleColor}>

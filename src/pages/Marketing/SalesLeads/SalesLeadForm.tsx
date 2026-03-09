@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Grid, Button } from '@mui/material';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import {
@@ -7,28 +7,37 @@ import {
 } from '../../../services/salesLeadsApi';
 import Comment from '../../../components/salesLead/Comment';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import {
-  SalesLeadInitialValues,
-  salesLeadInitialValues,
-  salesLeadStatusOptions,
-} from './constants';
+import { salesLeadInitialValues, salesLeadStatusOptions } from './constants';
 import { Country } from 'country-state-city';
 import AlertBox from '../../../components/alert/AlertBox';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import { FormMode } from '../Requirements/Requirements';
+import { iSalesLead } from '../../../Interfaces/salesLeads';
 
-const SalesLeadForm = (props: any) => {
-  const [values, setValues] = useState(salesLeadInitialValues);
+interface iProps {
+  viewData?: iSalesLead;
+  mode: FormMode;
+  setDrawerOpen: (open: boolean) => void;
+  isEditing: boolean;
+  onEdit: (data: iSalesLead) => void;
+  onDelete: (id: string) => void;
+}
+
+const SalesLeadForm = (props: iProps) => {
+  const [values, setValues] = useState<Partial<iSalesLead>>(
+    salesLeadInitialValues
+  );
   const [openAlert, setOpenAlert] = useState(false);
   const user = useAuth().iUser!;
   const { viewData, mode, setDrawerOpen, isEditing, onEdit, onDelete } = props;
 
   useEffect(() => {
-    setValues(viewData);
+    setValues(viewData || {});
   }, [mode, viewData]);
 
-  const addValue = (key: keyof SalesLeadInitialValues, newValue: any) => {
-    setValues((prevValues: any) => ({
+  const addValue = (key: keyof iSalesLead, newValue: string) => {
+    setValues((prevValues) => ({
       ...prevValues,
       [key]: newValue,
     }));
@@ -105,19 +114,19 @@ const SalesLeadForm = (props: any) => {
         <CustomTextField
           label="First name"
           width={220}
-          selectedValue={values.firstName}
+          selectedValue={values.firstName || ''}
           disabled
         />
         <CustomTextField
           label="Last name"
           width={220}
-          selectedValue={values.lastName}
+          selectedValue={values.lastName || ''}
           disabled
         />
         <CustomTextField
           label="Email"
           width={220}
-          selectedValue={values.email}
+          selectedValue={values.email || ''}
           disabled
         />
         <CustomTextField
@@ -130,7 +139,7 @@ const SalesLeadForm = (props: any) => {
         <CustomTextField
           label="Country"
           width={220}
-          selectedValue={`${Country.getCountryByCode(values.country)?.name} (${
+          selectedValue={`${Country.getCountryByCode(values.country || '')?.name} (${
             values.country
           })`}
           disabled
@@ -138,7 +147,7 @@ const SalesLeadForm = (props: any) => {
         <CustomTextField
           label="City"
           width={220}
-          selectedValue={values.city}
+          selectedValue={values.city || ''}
           disabled
         />
         <Grid item xs={12}>
@@ -148,7 +157,7 @@ const SalesLeadForm = (props: any) => {
           <CustomTextField
             label="Message"
             width={'98%'}
-            selectedValue={values.message}
+            selectedValue={values.message || ''}
             disabled
           />
         </Grid>
@@ -159,14 +168,14 @@ const SalesLeadForm = (props: any) => {
           label="Status"
           valueOptions={salesLeadStatusOptions}
           disabled={!isEditing}
-          selectedValue={values.status}
-          onChange={(value: any) => addValue('status', value)}
+          selectedValue={values.status || ''}
+          onChange={(value) => addValue('status', value)}
           width={220}
         />
         <CustomTextField
           label="Assigned To"
           width={220}
-          selectedValue={values.assignedTo}
+          selectedValue={values.assignedTo || ''}
           disabled
         />
 
@@ -183,7 +192,7 @@ const SalesLeadForm = (props: any) => {
             />
 
             {values.comments
-              .sort((a, b) => -1 * a.date.localeCompare(b.date))
+              ?.sort((a, b) => -1 * a.date.localeCompare(b.date))
               .map((c, i) => {
                 return <Comment key={i} disabled comment={c} />;
               })}

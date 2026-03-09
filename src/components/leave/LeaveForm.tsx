@@ -285,21 +285,21 @@ const LeaveForm = ({
           <CustomTextField
             label="Name"
             width={220}
-            selectedValue={values?.name}
+            selectedValue={values?.name|| ''}
             disabled
           />
           <CustomTextField
             label="Leave Type"
             width={220}
-            selectedValue={values?.type}
+            selectedValue={values?.type || ''}
             disabled
           />
           <CustomSelectField
             label="Status"
             valueOptions={Object.values(LeaveStatus)}
-            selectedValue={values?.status}
+            selectedValue={values?.status || ''}
             width={230}
-            onChange={(v: LeaveStatus) => handleChange('status', v)}
+            onChange={(v) => handleChange('status', v)}
             disabled={!isEditing}
           />
 
@@ -307,7 +307,7 @@ const LeaveForm = ({
             <CustomTextField
               label="Half day type"
               width={220}
-              selectedValue={values?.halfDayType}
+              selectedValue={values?.halfDayType || ''}
               disabled
             />
           )}
@@ -316,10 +316,9 @@ const LeaveForm = ({
           <Grid my={1} width={'100%'} minWidth={220}>
             <CustomTextField
               label="Reason"
-              multiline
               width={'100%'}
               disabled
-              selectedValue={values?.reason}
+              selectedValue={values?.reason || ''}
             />
           </Grid>
 
@@ -327,7 +326,6 @@ const LeaveForm = ({
             <Grid my={1} width={'100%'} minWidth={220}>
               <CustomTextField
                 label="Rejection Reason"
-                multiline
                 width={'100%'}
                 disabled={!isEditing}
                 selectedValue={values?.rejectionReason || ''}

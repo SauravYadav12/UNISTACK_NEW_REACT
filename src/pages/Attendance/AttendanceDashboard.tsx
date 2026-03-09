@@ -195,8 +195,8 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
             value={currentUser?._id}
             size="small"
             onChange={(e) => {
-              const selected = users?.find((u) => u._id === e.target.value)!;
-              setCurrentUser(selected);
+              const selected = users?.find((u) => u._id === e.target.value);
+             selected&& setCurrentUser(selected);
             }}
           >
             {users?.map((o, i) => {
@@ -301,7 +301,7 @@ function UserWiseAttendanceList({
           value={selectedOption}
           size="small"
           onChange={(e) => {
-            onChangeOption(e.target.value as any);
+            onChangeOption(e.target.value as AttendanceTableType);
           }}
         >
           {options.map((o, i) => {

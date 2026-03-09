@@ -1,4 +1,3 @@
-import React from 'react';
 import { SetResults } from '../../hooks/paginationHook';
 import { iSalesLead } from '../../Interfaces/salesLeads';
 import {
@@ -22,7 +21,7 @@ const SalesLeadAssignedToSelect = ({
     const assignedTo = selectedUsr.firstName + ' ' + selectedUsr.lastName;
     try {
       await updateSalesLead(row._id, { assignedTo, assignedToRef: _id });
-      setRows<iSalesLead>((pre) => {
+      setRows((pre:iSalesLead[]|undefined) => {
         pre =
           pre?.map((r) => {
             if (r._id === row._id) {

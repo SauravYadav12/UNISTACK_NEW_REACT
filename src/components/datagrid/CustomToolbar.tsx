@@ -15,6 +15,8 @@ import {
   GridFilterOperator,
   gridFilteredSortedRowIdsSelector,
   useGridApiContext,
+  GridToolbarProps,
+  ToolbarPropsOverrides,
 } from '@mui/x-data-grid';
 import { useDataGridContext } from '../../contextProviders/DataGridContextProvider';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -39,7 +41,9 @@ interface iProps {
     React.SetStateAction<HTMLButtonElement | null>
   >;
 }
-export default function CustomToolbar({ setFilterButtonEl }: iProps) {
+export default function CustomToolbar({
+  setFilterButtonEl,
+}: GridToolbarProps & ToolbarPropsOverrides) {
   const apiRef = useGridApiContext();
   const { isModuleAllowed } = useAuth();
   const { archiveState, disableArchiveBtnState } = useDataGridContext();
@@ -58,7 +62,7 @@ export default function CustomToolbar({ setFilterButtonEl }: iProps) {
       <GridToolbarDensitySelector
         slotProps={{ tooltip: { title: 'Change density' } }}
       />
-      <GridToolbarFilterButton ref={setFilterButtonEl}  />
+      <GridToolbarFilterButton ref={setFilterButtonEl} />
       {isArchiveModuleAllowed && typeof archive === 'boolean' && (
         <FormControlLabel
           control={
@@ -78,13 +82,20 @@ export default function CustomToolbar({ setFilterButtonEl }: iProps) {
 }
 
 interface FilterPanelDateInputProps {
-  props: any;
+  props: {
+    item: {
+      id: string;
+      field: string;
+      value?: string;
+    };
+    applyValue: (item: { id: string; field: string; value?: string }) => void;
+  };
 }
 
 export function FilterPanelDateInput({ props }: FilterPanelDateInputProps) {
   const { item, applyValue } = props;
-  const handleChange = (date: Moment) => {
-    applyValue({ ...item, value: date.format(dateFormate2) });
+  const handleChange = (date: Moment | null) => {
+    applyValue({ ...item, value: date?.format(dateFormate2) });
   };
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
@@ -138,6 +149,7 @@ export const filterOperatorsForDateField: GridFilterOperator[] = [
       };
     },
     InputComponent: (props) => {
+      console.log(props, 'date input props');
       return (
         <Box display={'flex'} alignItems={'flex-end'} height={'100%'}>
           <FilterPanelDateInput props={props} />

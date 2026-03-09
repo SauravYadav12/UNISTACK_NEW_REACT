@@ -34,11 +34,11 @@ export const consultantValidationMeta: ValidationMeta[] = [
   {
     field: 'phone',
     required: true,
-    validate: validatePhone,
+    validate: (v) => validatePhone(v as string),
   },
   {
     field: 'email',
     required: true,
-    validate: validateEmail,
+    validate: (v) => validateEmail(v as string),
   }
 ];

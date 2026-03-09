@@ -77,7 +77,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const isValid = validateAllFields(validationMeta, values, setErrors);
+    const isValid = validateAllFields(validationMeta, values as unknown as { [key: string]: unknown }, setErrors);
     if (!isValid || loading) return;
     setLoading(true);
     try {
@@ -96,23 +96,26 @@ const ApplyLeave = ({ onApplied }: iProps) => {
     }
   };
 
-  function handleChange(field: string, value: string | boolean) {
+  function handleChange(
+    field: keyof CreateLeavePayload,
+    value: string | boolean
+  ) {
     const meta = validationMeta.find((m) => m.field === field);
     if (meta) {
       if (errors[field] && isFieldValid(meta, value)) {
         setErrors((pre) => ({ ...pre, [field]: '' }));
       }
       if (meta.transform) {
-        value = meta.transform(value);
+        value = meta.transform(value) as string | boolean;
       }
     }
 
     setValues((pre) => ({ ...pre, [field]: value }));
   }
 
-  const onBlur = (key: string) => {
+  const onBlur = (key: keyof CreateLeavePayload) => {
     const meta = validationMeta.find((m) => m.field === key);
-    meta && isFieldValid(meta, (values as any)[key], setErrors);
+    meta && isFieldValid(meta, values[key], setErrors);
   };
 
   useEffect(() => {
@@ -157,7 +160,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
           value={formType}
           size="small"
           onChange={(e) => {
-            setFormType(e.target.value as any);
+            setFormType(e.target.value as iFormType);
           }}
         >
           {Object.values(iFormType).map((o, i) => {
@@ -282,7 +285,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
                   value={values.halfDayType || ''}
                   size="small"
                   onChange={(e) => {
-                    handleChange('halfDayType', e.target.value as any);
+                    handleChange('halfDayType', e.target.value);
                   }}
                 >
                   {Object.values(HalfDayType).map((o, i) => {
@@ -303,7 +306,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
               value={values.type}
               size="small"
               onChange={(e) => {
-                handleChange('type', e.target.value as any);
+                handleChange('type', e.target.value);
               }}
             >
               {Object.values(LeaveType).map((o, i) => {

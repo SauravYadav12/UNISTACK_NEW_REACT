@@ -11,7 +11,7 @@ import {
   CircularProgress,
   IconButton,
 } from '@mui/material';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { dateFormate, dateFormate2, timeFormate } from '../constants';
 import { interviewsList } from '../../services/interviewApi';
 import { interviewStatusColors } from '../../pages/Marketing/TestAndVendorInterviews/testAndViValues';
@@ -24,6 +24,7 @@ import { useFetchData } from '../../hooks/fetchDataHook';
 import { vendorInterviewsList } from '../../services/vendorInterviewApi';
 import { Sync } from '@mui/icons-material';
 import { UserRole } from '../../Interfaces/iUser';
+import { IInterview, InterviewStatus, IVendor } from '../../Interfaces/types';
 
 const TodaysInterviews = () => {
   const user = useAuth().iUser!;
@@ -37,17 +38,17 @@ const TodaysInterviews = () => {
   } = useFetchData(getInterviews, [user.shift]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [viewData, setViewData] = useState<any>();
+  const [viewData, setViewData] = useState<IInterview | IVendor>();
   const toDay = dateByUserShift(user.shift);
   const columns: {
     field: string;
     headerName: string;
-    renderCell?: (a: any) => any;
+    renderCell?: (a: IInterview | IVendor) => JSX.Element | string;
   }[] = [
     {
       field: 'view',
       headerName: 'View',
-      renderCell: (row: any) => (
+      renderCell: (row) => (
         <Button
           size="small"
           variant="contained"
@@ -65,18 +66,20 @@ const TodaysInterviews = () => {
     {
       field: 'intId',
       headerName: 'ID',
-      renderCell: (row: any) => row.intId || row.testID,
+      renderCell: (row) => ('intId' in row ? row.intId : row.testID),
     },
     {
       field: 'interviewStatus',
       headerName: 'Status',
-      renderCell: (row: any) => (
+      renderCell: ({ interviewStatus }) => (
         <span
           style={{
-            color: (interviewStatusColors as any)[row.interviewStatus],
+            color: interviewStatus
+              ? interviewStatusColors[interviewStatus as InterviewStatus]
+              : 'inherit',
           }}
         >
-          {(row.interviewStatus as string)?.replace('Interview', '')}
+          {(interviewStatus as string)?.replace('Interview', '')}
         </span>
       ),
     },
@@ -85,7 +88,7 @@ const TodaysInterviews = () => {
     {
       field: 'interviewTime',
       headerName: 'Time',
-      renderCell: (row: any) => {
+      renderCell: (row) => {
         return (
           moment(row.interviewTime, timeFormate).format(timeFormate) +
           ' ' +
@@ -99,7 +102,7 @@ const TodaysInterviews = () => {
     {
       field: 'createdAt',
       headerName: 'Created At',
-      renderCell: (row: any) => {
+      renderCell: (row) => {
         return moment(row.createdAt).format(dateFormate2);
       },
     },
@@ -107,13 +110,13 @@ const TodaysInterviews = () => {
 
   async function getInterviews() {
     const date = toDay.format(dateFormate);
-    let [int, vendorInt] = await Promise.all([
+    const [int, vendorInt] = await Promise.all([
       interviewsList('interviewDate=' + date),
       vendorInterviewsList('interviewDate=' + date),
     ]);
     const intRes = int.data.data?.results || [];
     const vendorIntRes = vendorInt.data.data?.results || [];
-    return [...intRes, ...vendorIntRes];
+    return [...intRes, ...vendorIntRes] as (IInterview | IVendor)[];
   }
 
   function MyBody() {
@@ -162,7 +165,10 @@ const TodaysInterviews = () => {
         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
       >
         {columns.map((c, i) => {
-          const val = (c.renderCell ? c.renderCell(row) : row[c.field]) || 'NA';
+          const val =
+            (c.renderCell
+              ? c.renderCell(row)
+              : row[c.field as keyof typeof row]) || 'NA';
           return (
             <TableCell
               key={i}
@@ -228,13 +234,13 @@ const TodaysInterviews = () => {
         open={Boolean(drawerOpen && viewData)}
         onClose={() => {
           setDrawerOpen(false);
-          setViewData({});
+          setViewData(undefined);
         }}
         interview={viewData}
         setData={(cb) => {
-          const results = cb(rows || []);
+          const results = typeof cb === 'function' ? cb((rows || [])) as (IInterview | IVendor)[] : cb;
           setData(results);
-          const int = results.find((i: any) => i._id === viewData._id);
+          const int = results?.find((i) => i._id === viewData?._id);
           setViewData(int);
         }}
       />

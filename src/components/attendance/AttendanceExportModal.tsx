@@ -63,7 +63,7 @@ function AttendanceExportModal({
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onDateChange = (key: any, newValue: any) => {
+  const onDateChange = (key: 'fromDate' | 'toDate', newValue: string | null) => {
     newValue = newValue ? dayjs(newValue).format(dateFormate) : null;
     setDates((prevValues) => ({
       ...prevValues,
@@ -244,5 +244,4 @@ interface ExportData {
   checkOut?: string;
   date: string;
   status: AttendanceStatus;
-  [key: string]: any;
 }

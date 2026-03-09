@@ -66,15 +66,15 @@ const ResetPassword = ({
     }
   }
 
-  function onChangePassword(e: any) {
-    const v = (e.target as any).value;
+  function onChangePassword(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value;
     if (validatePassword(v)) {
       setError((pre) => ({ ...pre, password: '' }));
     }
     setPassword(v);
   }
-  function onChangeConfirmPassword(e: any) {
-    const v = (e.target as any).value;
+  function onChangeConfirmPassword(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value;
     if (validateConfirmPassword(v)) {
       setError((pre) => ({ ...pre, confirmPassword: '' }));
     }

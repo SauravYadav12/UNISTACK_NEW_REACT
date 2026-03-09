@@ -7,7 +7,7 @@ const MonthlyProgress = () => {
   const secondarylight = '#f5fcff';
   const errorlight = '#fdede8';
 
-  const optionscolumnchart: any = {
+  const optionscolumnchart: ApexCharts.ApexOptions = {
     chart: {
       type: 'area',
       fontFamily: "'Plus Jakarta Sans', sans-serif;",
@@ -37,7 +37,7 @@ const MonthlyProgress = () => {
       theme: 'light',
     },
   };
-  const seriescolumnchart: any = [
+  const seriescolumnchart: ApexCharts.ApexOptions['series'] = [
     {
       name: '',
       color: '#bb86fc',

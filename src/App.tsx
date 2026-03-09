@@ -23,7 +23,7 @@ import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
 import AttendanceDashboard from './pages/Attendance/AttendanceDashboard';
 import MyAttendance from './pages/Attendance/MyAttendance';
 import AccessControl from './pages/AccessControl/AccessControl';
-// import Leaves from './pages/Leaves/Leaves';
+import Leaves from './pages/Leaves/Leaves';
 import {
   EmployeeModule,
   HomeModule,
@@ -32,7 +32,7 @@ import {
   SuperAdminModule,
 } from './utils/accessControlUtil';
 import ForgotPassword from './pages/Auth/ForgotPassword';
-// import LeavesManagement from './pages/Leaves/LeavesManagement';
+import LeavesManagement from './pages/Leaves/LeavesManagement';
 import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
 
 function App() {
@@ -103,8 +103,8 @@ function App() {
                     module: EmployeeModule.Leaves,
                   }}
                 >
-                  {/* <Leaves /> */}
-                  <>Coming Soon</>
+                  <Leaves />
+                  {/* <>Coming Soon</> */}
                 </ProtectedRoute>
               }
             />
@@ -250,8 +250,7 @@ function App() {
                     module: SuperAdminModule['Leaves Management'],
                   }}
                 >
-                  {/* <LeavesManagement /> */}
-                  <>Coming Soon</>
+                  <LeavesManagement />
                 </ProtectedRoute>
               }
             />

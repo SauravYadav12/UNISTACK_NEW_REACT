@@ -10,9 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import moment from 'moment';
-import CustomDataGrid, {
-  iGridColumn,
-} from '../../../components/datagrid/DataGrid';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
 import { useEffect, useState } from 'react';
 import InterviewForm from './InterviewForm';
 import CustomDrawer from '../../../components/drawer/CustomDrawer';
@@ -38,11 +36,20 @@ import { FormMode } from '../Requirements/Requirements';
 import { syncDataById } from '../../../utils/syncDataById';
 import { requirementsList } from '../../../services/requirementApi';
 import { createInterviewQueryParam } from './interviewValues';
-import { GridFilterModel, GridCallbackDetails } from '@mui/x-data-grid';
+import {
+  GridFilterModel,
+  GridCallbackDetails,
+  GridColDef,
+} from '@mui/x-data-grid';
 import { useFetchData } from '../../../hooks/fetchDataHook';
 import { teamsList } from '../../../services/teamsApi';
 import { Sync } from '@mui/icons-material';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
+import {
+  IInterview,
+  InterviewStatus,
+  IRequirement,
+} from '../../../Interfaces/types';
 
 interface Iprops {
   label: string;
@@ -53,8 +60,8 @@ export default function Interviews(props: Iprops) {
   const { isModuleAllowed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openDialog, setOpenDialog] = useState(false);
-  const [requirement, setRequirement] = useState<any>();
-  const [viewData, setViewData] = useState<any>({});
+  const [requirement, setRequirement] = useState<IRequirement>();
+  const [viewData, setViewData] = useState<IInterview>();
   const [mode, setMode] = useState<FormMode>('view');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -90,12 +97,12 @@ export default function Interviews(props: Iprops) {
     [archive, props.query]
   );
 
-  const columns: readonly iGridColumn[] = [
+  const columns: GridColDef<IInterview>[] = [
     {
       field: 'view',
       headerName: 'View',
       width: 100,
-      renderCell: (params: any) => (
+      renderCell: (params) => (
         <Button
           size="small"
           variant="contained"
@@ -114,13 +121,16 @@ export default function Interviews(props: Iprops) {
       field: 'interviewStatus',
       headerName: 'Int Status',
       width: 180,
-      renderCell: (params: any) => (
+      renderCell: ({ row: { interviewStatus } }) => (
         <span
           style={{
-            color: (interviewStatusColors as any)[params.row.interviewStatus],
+            color: interviewStatus
+              ? interviewStatusColors[interviewStatus as InterviewStatus] ||
+                'inherit'
+              : 'inherit',
           }}
         >
-          {params.row.interviewStatus}
+          {interviewStatus}
         </span>
       ),
     },
@@ -129,7 +139,7 @@ export default function Interviews(props: Iprops) {
       field: 'interviewDate',
       headerName: 'Int date',
       width: 130,
-      valueGetter: (params: any) => {
+      valueGetter: (params) => {
         return moment(params).format(dateFormate2);
       },
       filterOperators: filterOperatorsForDateField,
@@ -138,7 +148,7 @@ export default function Interviews(props: Iprops) {
       field: 'interviewTime',
       headerName: 'Int Time',
       width: 150,
-      valueGetter: (params: any, r: any) => {
+      valueGetter: (params, r) => {
         return (
           moment(params, timeFormate).format(timeFormate) +
           ' ' +
@@ -165,8 +175,8 @@ export default function Interviews(props: Iprops) {
     },
   ];
 
-  const handleViewDetails = (row: any) => {
-    const data = gridData?.results?.find((r: any) => r.intId === row.intId);
+  const handleViewDetails = (row: IInterview) => {
+    const data = gridData?.results?.find((r) => r.intId === row.intId);
     if (!data) return;
     setViewData(data);
     setFormTitle(`Interview ID ${row.intId}`);
@@ -180,13 +190,13 @@ export default function Interviews(props: Iprops) {
       });
   };
 
-  const handleOpenForm = (record: any) => {
+  const handleOpenForm = (record: IRequirement) => {
     setRequirement(record);
     setFormTitle('Add New Interview');
     setDrawerOpen(true);
     setOpenDialog(false);
     setMode('add');
-    setViewData({});
+    setViewData(undefined);
   };
   const clearReqFromParams = () => {
     setSearchParams((pre) => {
@@ -199,7 +209,7 @@ export default function Interviews(props: Iprops) {
     setDrawerOpen(false);
     clearReqFromParams();
     setRequirement(undefined);
-    setViewData({});
+    setViewData(undefined);
   };
   const handleClickOpen = () => {
     setOpenDialog(true);

@@ -1,23 +1,14 @@
-import axios from 'axios';
-import { getJwtToken } from '../utils/utils';
+
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import { iSalesLead, SalesLeadComment } from '../Interfaces/salesLeads';
-
-const BASE_URL: any = import.meta.env.VITE_API_BASE_URL;
+import { axiosClient } from '../config/axios.config';
 
 export async function getSalesLeads(query: string = '', signal?: AbortSignal) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<PaginationResult<iSalesLead>>>(
-    `${BASE_URL}/sales-leads?${query}`,
-    {
-      headers,
-      signal,
-    }
-  );
+  const response = await axiosClient.get<
+    ApiQueryRes<PaginationResult<iSalesLead>>
+  >(`/sales-leads?${query}`, {
+    signal,
+  });
   return response;
 }
 
@@ -25,62 +16,31 @@ export async function updateSalesLead(
   profileId: string,
   body: Partial<iSalesLead>
 ) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.patch<ApiQueryRes<iSalesLead>>(
-    `${BASE_URL}/sales-leads/${profileId}`,
-    body,
-    {
-      headers,
-    }
+  const response = await axiosClient.patch<ApiQueryRes<iSalesLead>>(
+    `/sales-leads/${profileId}`,
+    body
   );
   return response;
 }
 
 export async function getSalesLead(id: string) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.get<ApiQueryRes<iSalesLead>>(
-    `${BASE_URL}/sales-leads/${id}`,
-    {
-      headers,
-    }
+  const response = await axiosClient.get<ApiQueryRes<iSalesLead>>(
+    `/sales-leads/${id}`
   );
   return response;
 }
 
 export async function deleteSalesLead(id: string) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.delete(`${BASE_URL}/sales-leads/${id}`, {
-    headers,
-  });
+  const response = await axiosClient.delete(`/sales-leads/${id}`);
   return response;
 }
 export async function createComment(
   salesLeadId: string,
   comment: Omit<SalesLeadComment, '_id' | 'date'>
 ) {
-  const token = await getJwtToken();
-  let headers: any = {
-    'Content-Type': 'application/json',
-    Authorization: token,
-  };
-  const response = await axios.post<ApiQueryRes<iSalesLead>>(
-    `${BASE_URL}/sales-leads/${salesLeadId}/comments`,
-    comment,
-    {
-      headers,
-    }
+  const response = await axiosClient.post<ApiQueryRes<iSalesLead>>(
+    `/sales-leads/${salesLeadId}/comments`,
+    comment
   );
   return response;
 }
