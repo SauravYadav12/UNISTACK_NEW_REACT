@@ -24,7 +24,7 @@ const PhoneField = ({
       exampleNumberLength && setMaxPhoneLength(exampleNumberLength);
       setMuiTelInputInfo(info);
     }
-    onChange({ target: { value } } as any);
+    onChange({ target: { value } } as ChangeEvent<HTMLInputElement>);
   };
 
   return (

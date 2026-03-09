@@ -268,7 +268,7 @@ export default function Requirements() {
   };
 
   async function getAccountList() {
-    const { data } = await usersList();
+    const { data } = await usersList('active=true');
     const { users } = data;
     return users;
   }

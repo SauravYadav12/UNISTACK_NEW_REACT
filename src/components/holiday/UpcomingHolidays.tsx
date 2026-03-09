@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Box, Typography, IconButton, Divider } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { Holiday } from '../../Interfaces/holiday';
@@ -9,6 +9,7 @@ import { dateFormate2 } from '../constants';
 import { deleteHoliday } from '../../services/holidayApi';
 import { toast } from 'react-toastify';
 import ChartCardWrapper from '../dashboard/ChartCardWrapper';
+import { parseError } from '../../utils/utils';
 
 const getUpcomingAndSortedHolidays = (holidays: Holiday[]): Holiday[] => {
   const today = new Date();
@@ -36,9 +37,9 @@ const UpcomingHolidays = ({forAdmin}:iProps) => {
     try {
       await deleteHoliday(id);
       removeHoliday(id);
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.error || 'Failed');
+    } catch (error) {
+     const errorMessage =parseError(error);
+      toast.error(errorMessage);
     }
   };
 

@@ -6,7 +6,7 @@ interface State extends SnackbarOrigin {
   open: boolean;
 }
 
-export default function PositionedSnackbar({ open, message, setOpen }: any) {
+export default function PositionedSnackbar({ open, message, setOpen }: { open: boolean; message: string; setOpen: (open: boolean) => void }) {
   const [state, setState] = React.useState<State>({
     open: false,
     vertical: 'bottom',

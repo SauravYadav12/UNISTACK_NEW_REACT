@@ -1,5 +1,6 @@
 import { axiosClient } from '../config/axios.config';
 
+
 export async function uploadFile(
   file: File,
   storageType: 'gcp' | 'docn' = 'docn'
@@ -9,7 +10,12 @@ export async function uploadFile(
 
   const response = await axiosClient.post<{ data: { url: string } }>(
     `/storage/upload/${storageType}`,
-    formData
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
   );
   return response;
 }

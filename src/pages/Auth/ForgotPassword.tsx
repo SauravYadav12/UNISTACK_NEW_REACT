@@ -18,6 +18,7 @@ import ResetPassword from '../../components/auth/ResetPassword';
 import { login, sendOtp } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import { validateEmail } from '../../utils/validators';
+import { parseError } from '../../utils/utils';
 const defaultTheme = createTheme();
 
 enum ForgotPasswordStep {
@@ -51,13 +52,9 @@ const ForgotPassword = () => {
       await sendOtp(email, 'reset-password');
       toast.success('OTP sent successfully');
       setStep(ForgotPasswordStep.VerifyOTP);
-    } catch (error: any) {
-      console.log(error);
-      if (error.response?.data?.error) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('Failed to send');
-      }
+    } catch (error) {
+      const message: string = parseError(error);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -74,8 +71,8 @@ const ForgotPassword = () => {
       validateLogin(data.token, data.user);
       toast.success('Login Successfull');
       navigate('/dashboard');
-    } catch (error: any) {
-      const message: string = error?.response?.data?.message || 'Failed to login';
+    } catch (error) {
+      const message: string = parseError(error);
       toast.error(message);
     } finally {
       setLoading(false);

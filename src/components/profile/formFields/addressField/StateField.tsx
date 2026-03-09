@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { SelectChangeEvent } from '@mui/material';
 import { SectionField } from '../../../../pages/Marketing/Profile/constants';
 import CustomSelectField from '../../../select/CustomSelectField';
@@ -23,7 +23,7 @@ const StateField = ({
   const stateList = State.getStatesOfCountry(selectedCountry);
   useEffect(() => {
     if (!stateList.find((s) => s.name === selectedState)) {
-      onChange({ target: { value: '' } } as any);
+      onChange({ target: { value: '' } } as SelectChangeEvent<string>);
     }
   }, [selectedCountry]);
 
@@ -36,7 +36,9 @@ const StateField = ({
         error={error}
         helperText={helperText}
         disabled={disabled}
-        onChange={(value: any) => onChange({ target: { value } } as any)}
+        onChange={(value) =>
+          onChange({ target: { value } } as SelectChangeEvent)
+        }
         width={180}
       />
     )

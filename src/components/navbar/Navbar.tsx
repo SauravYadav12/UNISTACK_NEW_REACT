@@ -21,7 +21,14 @@ import AttendenceMenu from './AttendenceMenu';
 import AttendancePopUp from './AttendancePopUp';
 import SuperAdminMenu from './SuperAdminMenu';
 import UserMenu from './UserMenu';
-function Navbar({ sidebar, toggleSideBar }: any) {
+
+interface iProps {
+  sidebar: () => void;
+  toggleSideBar: boolean;
+}
+
+
+function Navbar({ sidebar, toggleSideBar }: iProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [width, setWidth] = React.useState(drawerWidth);

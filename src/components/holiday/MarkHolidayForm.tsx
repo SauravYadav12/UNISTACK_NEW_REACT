@@ -16,6 +16,7 @@ import { toast } from 'react-toastify';
 import { markHoliday } from '../../services/holidayApi';
 import { useHoliday } from '../../contextProviders/HolidayContextProvider';
 import { isHolidayMarked } from '../../utils/holidayUtil';
+import { parseError } from '../../utils/utils';
 
 type HolidayFormValues = {
   name: string;
@@ -105,9 +106,9 @@ const HolidayForm = ({ onClose }: iProps) => {
       data.data && addHoliday(data.data);
       toast.success('Holiday marked successfully');
       onClose();
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.error || 'Failed to mark holiday');
+    } catch (error) {
+      const errorMessage = parseError(error);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

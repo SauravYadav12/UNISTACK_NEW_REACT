@@ -14,9 +14,15 @@ import '../profile.css';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { AttachFile } from '@mui/icons-material';
 import { UserProfile } from '../../../Interfaces/profile';
-import { getBlobFileByUrl, isImage, isPDF } from '../../../utils/utils';
+import {
+  getBlobFileByUrl,
+  isImage,
+  isPDF,
+  parseError,
+} from '../../../utils/utils';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import './formFields.css';
+import { toast } from 'react-toastify';
 export default function DocumentsField({
   viewMode,
   field,
@@ -68,7 +74,9 @@ export default function DocumentsField({
 
   const removeFile = () => {
     setSelectedFile(undefined);
-    onChange(field, { target: { value: '' } } as any);
+    onChange(field, {
+      target: { value: '' },
+    } as React.ChangeEvent<HTMLInputElement>);
     onBlur && onBlur(field);
   };
   return (
@@ -113,7 +121,7 @@ export default function DocumentsField({
               justifyContent: 'center',
             }}
           >
-            {!!currentFile ? (
+            {currentFile ? (
               <SelectedFile
                 disabled={disabled}
                 hideDeleteIcon={viewMode || disabled}
@@ -176,7 +184,7 @@ export default function DocumentsField({
                       e.target.value
                     );
                   }
-                  onChange(associatedField, e as any);
+                  onChange(associatedField, e as React.ChangeEvent<HTMLInputElement>);
                 }}
                 fullWidth
                 error={!!formErrors[associatedField.fieldName]}
@@ -235,6 +243,8 @@ export const SelectedFile = ({
       setUploadingFile(true);
       await onClickUpload();
     } catch (error) {
+      const errorMessage = parseError(error);
+      toast.error(errorMessage);
     } finally {
       setUploadingFile(false);
     }
@@ -270,7 +280,9 @@ export const SelectedFile = ({
     initSelectedFile();
   }, [file]);
 
-  let { name, size } = fileMetaData(selectedFile || file);
+  const info = fileMetaData(selectedFile || file);
+  let { name } = info;
+  const { size } = info;
   if (
     name.includes('-') &&
     new Date(parseInt(name.split('-')[0])).toString() !== 'Invalid Date'
@@ -329,7 +341,7 @@ export const SelectedFile = ({
           style={{
             textTransform: 'capitalize',
             margin: 0,
-            marginTop: previewType==='icon'?'6px': '5px',
+            marginTop: previewType === 'icon' ? '6px' : '5px',
           }}
         >
           {name.slice(0, 20)}
@@ -340,7 +352,7 @@ export const SelectedFile = ({
           style={{
             margin: 0,
             fontSize: 'small',
-            marginBottom:  previewType==='icon'?'6px': '5px',
+            marginBottom: previewType === 'icon' ? '6px' : '5px',
           }}
         >
           {size ? (size / 1024).toFixed(2) + ' KB' : ''}

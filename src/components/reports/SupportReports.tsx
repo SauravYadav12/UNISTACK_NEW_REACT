@@ -81,7 +81,7 @@ export const MyDataRow = ({
   href,
 }: {
   label: string;
-  value: any;
+  value: number | string | null | undefined;
   href?: string;
 }) => {
   return (

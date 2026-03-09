@@ -27,7 +27,7 @@ const CityField = ({
     : [];
   useEffect(() => {
     if (cityList.length && !cityList.find((c) => c.name === selectedCity)) {
-      onChange({ target: { value: '' } } as any);
+      onChange({ target: { value: '' } }  as SelectChangeEvent);
     }
   }, [selectedCity, selectedState]);
 
@@ -39,7 +39,7 @@ const CityField = ({
       error={!!validationError}
       helperText={validationError}
       disabled={disabled}
-      onChange={(value) => onChange({ target: { value } } as any)}
+      onChange={(value) => onChange({ target: { value } } as SelectChangeEvent)}
       width={180}
     />
   ) : (

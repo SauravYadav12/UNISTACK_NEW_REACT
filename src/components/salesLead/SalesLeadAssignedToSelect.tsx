@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { updateSalesLead } from '../../services/salesLeadsApi';
+import { iUser } from '../../Interfaces/iUser';
 
 const SalesLeadAssignedToSelect = ({
   selectOptions,
@@ -18,10 +19,15 @@ const SalesLeadAssignedToSelect = ({
   const handleChange = async (event: SelectChangeEvent) => {
     const _id = event.target.value;
     const selectedUsr = selectOptions.find((u) => u._id === _id);
-    const assignedTo = selectedUsr.firstName + ' ' + selectedUsr.lastName;
+    const assignedTo =
+      (
+        (selectedUsr?.firstName || '') +
+        ' ' +
+        (selectedUsr?.lastName || '')
+      ).trim() || '';
     try {
       await updateSalesLead(row._id, { assignedTo, assignedToRef: _id });
-      setRows((pre:iSalesLead[]|undefined) => {
+      setRows((pre: iSalesLead[] | undefined) => {
         pre =
           pre?.map((r) => {
             if (r._id === row._id) {
@@ -67,7 +73,7 @@ const SalesLeadAssignedToSelect = ({
 
 export default SalesLeadAssignedToSelect;
 interface SalesLeadAssignedToSelectProps {
-  selectOptions: any[];
+  selectOptions: iUser[];
   row: iSalesLead;
   setRows: SetResults;
 }

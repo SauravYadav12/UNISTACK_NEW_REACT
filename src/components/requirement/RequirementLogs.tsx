@@ -102,7 +102,7 @@ function startCaseFromKey(key: string) {
 function labelForKey(key: string, overrides?: Partial<Record<string, string>>) {
   return overrides?.[key] ?? DEFAULT_LABELS[key] ?? startCaseFromKey(key);
 }
-function isEmptyValue(v: any) {
+function isEmptyValue(v: unknown) {
   if (v == null) return true;
   if (typeof v === 'string') return v.trim() === '';
   if (Array.isArray(v)) return v.length === 0;
@@ -144,7 +144,7 @@ function buildRowsForLogAtIndex(
   }
 
   keys.forEach((k) => {
-    const after = (afterObj as any)[k];
+    const after = afterObj[k];
 
     if (opts.hideEmpty && isEmptyValue(after)) return;
 
@@ -154,7 +154,7 @@ function buildRowsForLogAtIndex(
   return { rows, op };
 }
 
-function renderValue(v: any): React.ReactNode {
+function renderValue(v: unknown): React.ReactNode {
   if (v == null) return <em>—</em>;
   if (typeof v === 'boolean') return v ? 'Yes' : 'No';
   if (typeof v === 'number') return String(v);
@@ -168,10 +168,11 @@ function renderValue(v: any): React.ReactNode {
       v
     );
   }
-  if (v.comment) {
-    return v.length === 0 ? (
-      <em>—</em>
-    ) : (
+  if (
+    (Array.isArray(v) && v[0]?.comment) ||
+    (typeof v === 'object' && 'comment' in v)
+  ) {
+    return (
       <Stack direction="column" spacing={1}>
         {[v].flat().map((item, idx) => {
           if (
@@ -199,7 +200,7 @@ function renderValue(v: any): React.ReactNode {
                   <strong>{item.username}</strong> (
                   {new Date(item.date).toLocaleString()}):
                 </Typography>
-                <Typography variant="body2">{item.comment}</Typography>
+                <Typography variant="body2">{item.comment||'-'}</Typography>
               </Box>
             );
           }
