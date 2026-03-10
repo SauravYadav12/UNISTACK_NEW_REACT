@@ -13,6 +13,9 @@ export default function InterviewTabs() {
   const [value, setValue] = useState(0);
   const tabs: { label: string; status?: InterviewStatus }[] = [
     {
+      label: 'All',
+    },
+    {
       label: 'Confirmed',
       status: 'Interview Confirm',
     },
@@ -31,9 +34,6 @@ export default function InterviewTabs() {
     {
       label: 'Cancelled',
       status: 'Interview Cancelled',
-    },
-    {
-      label: 'All',
     },
   ];
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -60,10 +60,10 @@ export default function InterviewTabs() {
           onChange={handleChange}
           aria-label="basic tabs example"
           sx={{
-            '& .MuiTabs-scroller':{
-              overflowX:'auto !important',
-              scrollbarWidth:'thin'
-            }
+            '& .MuiTabs-scroller': {
+              overflowX: 'auto !important',
+              scrollbarWidth: 'thin',
+            },
           }}
         >
           {tabs.map((t, i) => {
@@ -79,8 +79,8 @@ export default function InterviewTabs() {
         const query = p.length
           ? p
           : t.status
-          ? `interviewStatus=${t.status}`
-          : '';
+            ? `interviewStatus=${t.status}`
+            : '';
         return (
           <div key={i} style={{ flex: 1, minHeight: '300px' }}>
             <Interviews

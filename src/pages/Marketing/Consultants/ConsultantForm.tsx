@@ -9,6 +9,7 @@ import {
   DialogTitle,
   FormControlLabel,
   Grid,
+  IconButton,
   Switch,
   TextField,
 } from '@mui/material';
@@ -40,6 +41,7 @@ import { FormMode } from '../Requirements/Requirements';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { IConsultant, IConsultantProject } from '../../../Interfaces/types';
 import { toast } from 'react-toastify';
+import { Delete, Remove } from '@mui/icons-material';
 
 const initialValues: Partial<IConsultant> = {
   timeZone: '',
@@ -101,7 +103,7 @@ export default function ConsultantForm(props: iProps) {
 
   useEffect(() => {
     if (mode === 'view' || mode === 'edit') {
-      setValues(viewData||{});
+      setValues(viewData || {});
       setProjects(viewData?.projects || []);
     } else if (mode === 'add') {
       setValues(initialValues);
@@ -191,7 +193,7 @@ export default function ConsultantForm(props: iProps) {
     };
     try {
       const { data } = await createConsultant(payload);
-      setResults?.((pre) => [data.data, ...pre||[]]);
+      setResults?.((pre) => [data.data, ...(pre || [])]);
       onDrawerClose();
     } catch (error) {
       console.log('An error occurred while saving the form:', error);
@@ -236,10 +238,11 @@ export default function ConsultantForm(props: iProps) {
 
       const { data } = await updateConsultant(values._id, payload);
       setResults?.((pre) => {
-        pre = pre?.map((d) => {
-          if (d._id === data.data._id) return data.data;
-          return d;
-        }) || [];
+        pre =
+          pre?.map((d) => {
+            if (d._id === data.data._id) return data.data;
+            return d;
+          }) || [];
         return [...pre];
       });
       onDrawerClose();
@@ -257,7 +260,9 @@ export default function ConsultantForm(props: iProps) {
         return;
       }
       await deleteConsultant(values._id);
-      setResults?.((pre) => [...pre||[]].filter((p) => p._id !== values._id));
+      setResults?.((pre) =>
+        [...(pre || [])].filter((p) => p._id !== values._id)
+      );
       onDrawerClose();
     } catch (error) {
       console.error('An error occurred while deleting the Consultant:', error);
@@ -589,7 +594,23 @@ export default function ConsultantForm(props: iProps) {
         {projects?.map((project, index) => (
           <Grid key={index} container spacing={1}>
             <Grid item xs={12}>
-              <h4>{`PROJECT: ${index + 1}`}</h4>
+              <Box
+                display={'flex'}
+                justifyContent={'space-between'}
+                alignItems={'center'}
+              >
+                <h4>{`PROJECT: ${index + 1}`}</h4>
+                {isEditing && (
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setProjects((pre) => pre?.filter((_, i) => i !== index));
+                    }}
+                  >
+                    <Delete />
+                  </IconButton>
+                )}
+              </Box>
             </Grid>
             <CustomTextField
               label="Project Name"
