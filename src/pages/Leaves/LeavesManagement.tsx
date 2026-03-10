@@ -1,12 +1,12 @@
 import { Box, Tabs, Tab } from '@mui/material';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import LeaveHistoryTable from '../../components/leave/LeaveHistoryTable';
 import ChartCardWrapper from '../../components/dashboard/ChartCardWrapper';
 
 type iTabs = (LeaveStatus | 'All')[];
 
 const LeavesManagement = () => {
-  const tabs: iTabs = [...Object.values(LeaveStatus), 'All'];
+  const tabs: iTabs = ['All', ...Object.values(LeaveStatus)];
   const [tab, setTab] = useState(tabs[0]);
   return (
     <>
@@ -28,7 +28,10 @@ const LeavesManagement = () => {
           return (
             <Box sx={{ py: 1, my: 2 }} key={t}>
               <ChartCardWrapper title={`${tab} Leaves`}>
-                <LeaveHistoryTable forAdmin />
+                <LeaveHistoryTable
+                  forAdmin
+                  status={t === 'All' ? undefined : t}
+                />
               </ChartCardWrapper>
             </Box>
           );

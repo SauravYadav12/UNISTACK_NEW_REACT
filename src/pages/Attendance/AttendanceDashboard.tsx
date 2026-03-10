@@ -60,11 +60,20 @@ const AttendanceDashboard = () => {
 
   return (
     <Box>
-      {users?.length && (
+      {users?.length ? (
         <MyDashBoardComponent
           users={users}
           onReload={() => usersListState.loadData()}
         />
+      ) : (
+        <>
+          <Typography textAlign={'center'}>No employees found</Typography>
+          <Box textAlign={'center'}>
+            <IconButton onClick={loadData}>
+              <Sync color="primary" />
+            </IconButton>
+          </Box>
+        </>
       )}
     </Box>
   );
@@ -196,7 +205,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
             size="small"
             onChange={(e) => {
               const selected = users?.find((u) => u._id === e.target.value);
-             selected&& setCurrentUser(selected);
+              selected && setCurrentUser(selected);
             }}
           >
             {users?.map((o, i) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -6,6 +6,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   useTheme,
   useMediaQuery,
   Box,
@@ -21,18 +22,20 @@ import { getLeaves } from '../../services/leavesApi';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { Sync } from '@mui/icons-material';
 import CustomDrawer from '../drawer/CustomDrawer';
-import LeaveForm from './LeaveForm';
 import { FormMode } from '../../pages/Marketing/Requirements/Requirements';
-import { iLeave } from '../../Interfaces/leaves';
+import { iLeave, LeaveStatus } from '../../Interfaces/leaves';
+import ViewLeaveDetails from './ViewLeaveDetails';
 
 interface iProps {
   tableContainerHeight?: number | string;
   forAdmin?: boolean;
+  status?: LeaveStatus;
 }
 
 function LeaveHistoryTable({
   tableContainerHeight = 480,
   forAdmin = false,
+  status,
 }: iProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -40,16 +43,48 @@ function LeaveHistoryTable({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<FormMode>('view');
   const [viewData, setViewData] = useState<iLeave>();
+  const rowsPerPageOptions = [10, 25, 50];
+  const [pagination, setPagination] = useState({
+    page: 0,
+    limit: rowsPerPageOptions[0],
+  });
+  const { page, limit } = pagination;
   const {
     data: leaveHistory,
     error,
     loading,
     loadData,
+    setData,
   } = useFetchData(async () => {
     if (!iUser) return;
-    const { data } = await getLeaves(forAdmin ? '' : `userRef=${iUser._id}`);
-    return data.data?.results || [];
-  }, [forAdmin, iUser]);
+    const queryParams = new URLSearchParams();
+
+    if (!forAdmin) {
+      queryParams.append('userRef', iUser._id);
+    }
+    if (status) {
+      queryParams.append('status', status);
+    }
+    queryParams.append('page', (page + 1).toString());
+    queryParams.append('limit', limit.toString());
+
+    const { data } = await getLeaves(queryParams.toString());
+    return data.data;
+  }, [forAdmin, iUser, pagination, status]);
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setPagination((prev) => ({
+      ...prev,
+      limit: parseInt(event.target.value, 10),
+      page: 0,
+    }));
+  };
 
   const columns = [
     { title: 'View' },
@@ -94,7 +129,7 @@ function LeaveHistoryTable({
         </TableRow>
       );
     }
-    if (!leaveHistory?.length) {
+    if (!leaveHistory?.results?.length) {
       return (
         <tr>
           <td colSpan={6} style={{ textAlign: 'center', padding: '10px 0px' }}>
@@ -103,7 +138,7 @@ function LeaveHistoryTable({
         </tr>
       );
     }
-    return leaveHistory?.map((leave) => (
+    return leaveHistory?.results?.map((leave) => (
       <TableRow
         key={leave._id}
         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -179,18 +214,21 @@ function LeaveHistoryTable({
         subTitle={viewData && DrawerSubtitle(viewData)}
       >
         {viewData && (
-          <LeaveForm
-            viewData={viewData}
-            {...(forAdmin && {
-              isEditing: mode === 'edit',
-              onDelete: () => {},
-              onEdit: (s) => {
-                setMode(s ? 'edit' : 'view');
-              },
-              onDrawerClose: handleDrawerClose,
-            })}
-            hideButtons={!forAdmin}
-          />
+          <>
+            <ViewLeaveDetails
+              leave={viewData}
+              onUpdate={(leave) => {
+                setData((pre) => {
+                  if (!pre) return pre;
+                  pre.results = pre.results?.map((l) =>
+                    l._id === leave._id ? leave : l
+                  );
+                  return { ...pre };
+                });
+                setViewData(leave);
+              }}
+            />
+          </>
         )}
       </CustomDrawer>
       <TableContainer
@@ -221,6 +259,17 @@ function LeaveHistoryTable({
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePagination
+        rowsPerPageOptions={rowsPerPageOptions}
+        component="div"
+        count={leaveHistory?.totalDocuments || 0}
+        rowsPerPage={limit}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        showFirstButton
+        showLastButton
+      />
     </div>
   );
 }
