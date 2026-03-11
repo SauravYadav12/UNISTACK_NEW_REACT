@@ -566,7 +566,7 @@ function OverAllExperience({ projects }: { projects: IConsultantProject[] }) {
               key={i}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
             >
-              <TableCell>{row.projectNumber}</TableCell>
+              <TableCell>{i + 1}</TableCell>
               <TableCell>
                 <Typography
                   sx={{
@@ -612,7 +612,7 @@ function OverAllExperience({ projects }: { projects: IConsultantProject[] }) {
                   variant="subtitle2"
                 >
                   {dayjs(row.projectStartDate).format(dateFormate)} -{' '}
-                  {dayjs(row.projectEndDate).format(dateFormate)}
+                  {row.isCurrent ? 'Present' : dayjs(row.projectEndDate).format(dateFormate)}
                 </Typography>
               </TableCell>
             </TableRow>
@@ -658,15 +658,14 @@ function ConsultantsExperience({
           city: e.projectCity || 'NA',
           state: e.projectState || 'NA',
           'Start Date': dayjs(e.projectStartDate).format(dateFormate) || 'NA',
-          'End Date': dayjs(e.projectEndDate).format(dateFormate) || 'NA',
+          'End Date': e.isCurrent ? 'Present' : dayjs(e.projectEndDate).format(dateFormate) || 'NA',
         };
         return (
           <Box sx={{ my: 1 }} key={i}>
             <Typography fontWeight={'500'} variant="inherit">
               Project
-              {/* {i + 1 < 10 && '0'}
-              {i + 1} */}
-              {e.projectNumber}
+              {' '}
+              {i + 1}
             </Typography>
             <Divider sx={{ width: '20%', my: 1 }} />
             <Stack direction={'row'} columnGap={1} flexWrap={'wrap'}>

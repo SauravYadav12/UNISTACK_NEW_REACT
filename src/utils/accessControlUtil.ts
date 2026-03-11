@@ -34,6 +34,7 @@ export enum SuperAdminModule {
   'Leaves Management' = 'Leaves Management',
   'Access Control' = 'Access Control',
   'User Management' = 'User Management',
+  'SalaryManagement' = 'SalaryManagement',
 }
 
 export type iAccessControl = {

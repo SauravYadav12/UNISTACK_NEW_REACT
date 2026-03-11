@@ -34,6 +34,7 @@ import {
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import LeavesManagement from './pages/Leaves/LeavesManagement';
 import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
+import Salary from './pages/Salary/Salary';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -62,6 +63,19 @@ function App() {
                   }}
                 >
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="salary"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['SalaryManagement'],
+                  }}
+                >
+                  <Salary />
                 </ProtectedRoute>
               }
             />

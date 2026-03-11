@@ -27,10 +27,10 @@ const SuperAdminMenu = ({ onClose }: iProps) => {
       module: SuperAdminModule['Access Control'],
     },
     {
-      title: 'Leaves Management',
-      route: '/leaves-management',
+      title: 'Salary Management',
+      route: '/salary',
       group: ModuleGroup['Super Admin Modules'],
-      module: SuperAdminModule['Leaves Management'],
+      module: SuperAdminModule['SalaryManagement'],
     },
   ];
   const isAllowed = pages.some((o) =>

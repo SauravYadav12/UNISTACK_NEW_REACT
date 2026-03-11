@@ -1,6 +1,5 @@
 import { Card, Stack, Typography, Box, IconButton } from '@mui/material';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
-import React from 'react';
 import { downloadFile } from '../../../utils/utils';
 
 import DownloadIcon from '@mui/icons-material/Download';
