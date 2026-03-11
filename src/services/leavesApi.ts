@@ -8,6 +8,12 @@ export async function getLeaves(query = '') {
   );
   return response;
 }
+export async function getLeave(id: string) {
+  const response = await axiosClient.get<ApiQueryRes<iLeave|null>>(
+    `/leaves/${id}`
+  );
+  return response.data.data;
+}
 
 export async function createLeave(data: CreateLeavePayload) {
   const response = await axiosClient.post<ApiQueryRes<iLeave>>(`/leaves`, data);

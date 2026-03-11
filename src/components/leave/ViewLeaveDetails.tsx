@@ -12,6 +12,7 @@ import {
   Divider,
   TextField,
   Stack,
+  CircularProgress,
 } from '@mui/material';
 import {
   CheckCircle as ApproveIcon,
@@ -67,11 +68,12 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
   const { iUser } = useAuth();
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const totalDays =
     moment(leave.endDate).diff(moment(leave.startDate), 'days') + 1;
   const handleApprove = async () => {
-    setIsSubmitting(true);
+    setIsApproving(true);
     try {
       const iLeave = await updateLeave(leave._id, {
         status: LeaveStatus.Approved,
@@ -80,7 +82,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
         onUpdate(iLeave);
       }
     } finally {
-      setIsSubmitting(false);
+      setIsApproving(false);
     }
   };
 
@@ -91,7 +93,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
   const handleRejectConfirm = async () => {
     if (!rejectReason.trim()) return;
 
-    setIsSubmitting(true);
+    setIsRejecting(true);
     try {
       const iLeave = await updateLeave(leave._id, {
         status: LeaveStatus.Rejected,
@@ -103,7 +105,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
       setShowRejectDialog(false);
       setRejectReason('');
     } finally {
-      setIsSubmitting(false);
+      setIsRejecting(false);
     }
   };
 
@@ -339,8 +341,8 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
                   onClick={handleRejectClick}
                   variant="outlined"
                   color="error"
-                  startIcon={<RejectIcon />}
-                  disabled={isSubmitting}
+                  startIcon={isRejecting ? <CircularProgress size={20} /> : <RejectIcon />}
+                  disabled={isRejecting || isApproving}
                 >
                   Reject
                 </Button>
@@ -348,8 +350,8 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
                   onClick={handleApprove}
                   variant="contained"
                   color="success"
-                  startIcon={<ApproveIcon />}
-                  disabled={isSubmitting}
+                  startIcon={isApproving ? <CircularProgress size={20} /> : <ApproveIcon />}
+                  disabled={isApproving || isRejecting}
                 >
                   Approve
                 </Button>
@@ -394,7 +396,8 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
             onClick={handleRejectConfirm}
             color="error"
             variant="contained"
-            disabled={!rejectReason.trim() || isSubmitting}
+            disabled={!rejectReason.trim() || isRejecting}
+            startIcon={isRejecting ? <CircularProgress size={20} /> : undefined}
           >
             Confirm Rejection
           </Button>

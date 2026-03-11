@@ -5,16 +5,11 @@ import LeaveHistoryTable from '../../components/leave/LeaveHistoryTable';
 import ChartCardWrapper from '../../components/dashboard/ChartCardWrapper';
 import RecentLeaveApplicationStatus from '../../components/leave/RecentLeaveApplicationStatus';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { UserRole } from '../../Interfaces/iUser';
-import LeavesManagement from './LeavesManagement';
 
 const Leaves = () => {
   const { iUser } = useAuth();
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
-  if (iUser?.role === UserRole['super-admin']) {
-    return <LeavesManagement/>
-  }
 
   return (
     <>

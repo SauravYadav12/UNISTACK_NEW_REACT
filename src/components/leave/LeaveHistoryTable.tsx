@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import {
 import moment from 'moment';
 import { dateFormate2 } from '../constants';
 import { useFetchData } from '../../hooks/fetchDataHook';
-import { getLeaves } from '../../services/leavesApi';
+import { getLeave, getLeaves } from '../../services/leavesApi';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { Sync } from '@mui/icons-material';
 import CustomDrawer from '../drawer/CustomDrawer';
@@ -27,20 +27,23 @@ import { iLeave, LeaveStatus } from '../../Interfaces/leaves';
 import ViewLeaveDetails from './ViewLeaveDetails';
 
 interface iProps {
+  defaultOpenLeaveId?: string;
   tableContainerHeight?: number | string;
   forAdmin?: boolean;
   status?: LeaveStatus;
+  onClose?: () => void;
 }
 
 function LeaveHistoryTable({
   tableContainerHeight = 480,
   forAdmin = false,
   status,
+  defaultOpenLeaveId,
+  onClose,
 }: iProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { iUser } = useAuth();
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<FormMode>('view');
   const [viewData, setViewData] = useState<iLeave>();
   const rowsPerPageOptions = [10, 25, 50];
@@ -72,6 +75,14 @@ function LeaveHistoryTable({
     return data.data;
   }, [forAdmin, iUser, pagination, status]);
 
+  useEffect(() => {
+    if (defaultOpenLeaveId) {
+      getLeave(defaultOpenLeaveId).then((leave) => {
+        if (leave) setViewData(leave);
+      });
+    }
+  }, [defaultOpenLeaveId]);
+
   const handleChangePage = (event: unknown, newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
@@ -98,8 +109,8 @@ function LeaveHistoryTable({
 
   const handleDrawerClose = () => {
     setViewData(undefined);
-    setDrawerOpen(false);
     setMode('view');
+    onClose?.();
   };
 
   function MyBody() {
@@ -151,7 +162,6 @@ function LeaveHistoryTable({
             sx={{ borderRadius: '10px' }}
             onClick={() => {
               setViewData(leave);
-              setDrawerOpen(true);
             }}
           >
             View
@@ -207,7 +217,7 @@ function LeaveHistoryTable({
   return (
     <div>
       <CustomDrawer
-        open={drawerOpen}
+        open={Boolean(viewData)}
         onClose={handleDrawerClose}
         title={viewData?.name + ' . ' + viewData?.type}
         closeOnOutSideClick={mode === 'view'}

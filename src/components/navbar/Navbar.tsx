@@ -112,7 +112,7 @@ function LeavesButton({ onClick }: LeavesButtonProp) {
     <Button
       key={'Leaves'}
       onClick={() => {
-        navigate('/leaves');
+        navigate(iUser?.role === 'super-admin' ? '/leaves-management' : '/leaves');
         onClick?.();
       }}
       sx={{ color: 'black', display: 'block' }}
