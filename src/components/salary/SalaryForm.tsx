@@ -3,14 +3,10 @@ import {
   TextField,
   Button,
   Grid,
-  Paper,
   Typography,
   Box,
-  Divider,
   CircularProgress,
   InputAdornment,
-  Card,
-  CardContent,
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +14,6 @@ import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 
-// Zod schema for salary validation
 const salarySchema = z.object({
   basicSalary: z
     .number()
@@ -45,19 +40,22 @@ const salarySchema = z.object({
     .number()
     .min(0, 'Other allowances must be positive')
     .max(2000000, 'Invalid amount'),
-  bonusLabel: z.string().optional(),
-  bonusAmount: z
-    .number()
-    .min(0, 'Bonus amount must be positive')
-    .max(2000000, 'Invalid amount'),
-  performanceIncentive: z
-    .number()
-    .min(0, 'Performance incentive must be positive')
-    .max(1000000, 'Invalid amount'),
-  overtimePay: z
-    .number()
-    .min(0, 'Overtime pay must be positive')
-    .max(500000, 'Invalid amount'),
+  bonus: z
+    .array(
+      z.object({
+        label: z.string().min(1, 'Bonus label is required'),
+        amount: z.number().min(0, 'Bonus amount must be positive'),
+      })
+    )
+    .optional(),
+  // performanceIncentive: z
+  //   .number()
+  //   .min(0, 'Performance incentive must be positive')
+  //   .max(1000000, 'Invalid amount'),
+  // overtimePay: z
+  //   .number()
+  //   .min(0, 'Overtime pay must be positive')
+  //   .max(500000, 'Invalid amount'),
   incomeTax: z
     .number()
     .min(0, 'Income tax must be positive')
@@ -97,10 +95,10 @@ const salarySchema = z.object({
     .max(500000, 'Invalid amount'),
 });
 
-type SalaryFormData = z.infer<typeof salarySchema>;
+export type SalaryStructure = z.infer<typeof salarySchema>;
 
 interface FieldConfig {
-  name: keyof SalaryFormData;
+  name: keyof SalaryStructure;
   label: string;
   type: 'number' | 'text';
   gridSize: { xs: number; md: number };
@@ -109,12 +107,11 @@ interface FieldConfig {
 }
 
 interface SalaryFormProps {
-  initialData?: Partial<SalaryFormData>;
-  onSubmit?: (data: SalaryFormData) => void;
+  initialData?: Partial<SalaryStructure>;
+  onSubmit?: (data: SalaryStructure) => void;
   onCancel?: () => void;
 }
 
-// Utility function to format numbers as INR currency
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-IN', {
     style: 'currency',
@@ -131,89 +128,74 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
   const { iUser, myProfile } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // Field configurations
   const earningsFields: FieldConfig[] = [
     {
       name: 'basicSalary',
       label: 'Basic Salary',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
     {
       name: 'hra',
       label: 'HRA (House Rent Allowance)',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
     {
       name: 'medicalAllowance',
       label: 'Medical Allowance',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
     {
       name: 'travelAllowance',
       label: 'Travel Allowance',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
     {
       name: 'foodAllowance',
       label: 'Food Allowance',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
     {
       name: 'mobileAllowance',
       label: 'Mobile/Phone Allowance',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
     {
       name: 'otherAllowances',
       label: 'Other Allowances',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
   ];
 
-  const bonusFields: FieldConfig[] = [
-    {
-      name: 'bonusLabel',
-      label: 'Bonus Label/Description',
-      type: 'text',
-      gridSize: { xs: 12, md: 6 },
-      placeholder: 'e.g., Annual Bonus, Festival Bonus',
-    },
-    {
-      name: 'bonusAmount',
-      label: 'Bonus Amount',
-      type: 'number',
-      gridSize: { xs: 12, md: 6 },
-      prefix: '₹',
-    },
-    {
-      name: 'performanceIncentive',
-      label: 'Performance Incentive',
-      type: 'number',
-      gridSize: { xs: 12, md: 6 },
-      prefix: '₹',
-    },
-    {
-      name: 'overtimePay',
-      label: 'Overtime Pay',
-      type: 'number',
-      gridSize: { xs: 12, md: 6 },
-      prefix: '₹',
-    },
-  ];
+  // const bonusFields: FieldConfig[] = [
+  //   {
+  //     name: 'performanceIncentive',
+  //     label: 'Performance Incentive',
+  //     type: 'number',
+  //     gridSize: { xs: 12, md: 6 },
+  //     prefix: '₹',
+  //   },
+  //   {
+  //     name: 'overtimePay',
+  //     label: 'Overtime Pay',
+  //     type: 'number',
+  //     gridSize: { xs: 12, md: 6 },
+  //     prefix: '₹',
+  //   },
+  // ];
 
   const deductionFields: FieldConfig[] = [
     {
@@ -248,14 +230,14 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
       name: 'lopDeduction',
       label: 'LOP (Loss of Pay) Deduction',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
     {
       name: 'otherDeductions',
       label: 'Other Deductions',
       type: 'number',
-      gridSize: { xs: 12, md: 6 },
+      gridSize: { xs: 12, md: 4 },
       prefix: '₹',
     },
   ];
@@ -284,7 +266,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     },
   ];
 
-  const defaultValues: SalaryFormData = {
+  const defaultValues: SalaryStructure = {
     basicSalary: 0,
     hra: 0,
     medicalAllowance: 0,
@@ -292,10 +274,9 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     foodAllowance: 0,
     mobileAllowance: 0,
     otherAllowances: 0,
-    bonusLabel: '',
-    bonusAmount: 0,
-    performanceIncentive: 0,
-    overtimePay: 0,
+    bonus: [],
+    // performanceIncentive: 0,
+    // overtimePay: 0,
     incomeTax: 0,
     pfContribution: 0,
     esiContribution: 0,
@@ -314,7 +295,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     watch,
     formState: { errors },
     reset,
-  } = useForm<SalaryFormData>({
+  } = useForm<SalaryStructure>({
     resolver: zodResolver(salarySchema),
     defaultValues,
   });
@@ -330,9 +311,9 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     watchedValues.foodAllowance +
     watchedValues.mobileAllowance +
     watchedValues.otherAllowances +
-    watchedValues.bonusAmount +
-    watchedValues.performanceIncentive +
-    watchedValues.overtimePay;
+    (watchedValues.bonus || []).reduce((acc, bonus) => acc + bonus.amount, 0);
+  // watchedValues.performanceIncentive +
+  // watchedValues.overtimePay;
 
   const totalDeductions =
     watchedValues.incomeTax +
@@ -351,12 +332,12 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     watchedValues.employerEsiContribution +
     watchedValues.gratuity;
 
-  const handleFormSubmit = async (data: SalaryFormData) => {
+  const handleFormSubmit = async (data: SalaryStructure) => {
     if (loading) return;
     setLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       onSubmit?.(data);
       toast.success('Salary details updated successfully!');
       reset(defaultValues);
@@ -368,7 +349,6 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     }
   };
 
-  // Reusable field renderer
   const renderField = (field: FieldConfig) => {
     const registerOptions =
       field.type === 'number' ? { valueAsNumber: true } : {};
@@ -401,21 +381,40 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, maxWidth: 1000, mx: 'auto' }}>
-      <Typography
-        variant="h5"
-        component="h2"
-        gutterBottom
-        sx={{ color: 'primary.main', fontWeight: 600 }}
-      >
-        Employee Salary Management
-      </Typography>
-      <Divider sx={{ mb: 3 }} />
-
+    <Box>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            justifyContent: 'flex-end',
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={onCancel}
+            disabled={loading}
+            size="small"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            size="small"
+          >
+            {loading ? (
+              <>
+                <CircularProgress size={20} sx={{ mr: 1 }} />
+                Saving...
+              </>
+            ) : (
+              'Save'
+            )}
+          </Button>
+        </Box>
         <Grid container spacing={3}>
-
-          {/* Earnings Section */}
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography
               variant="h6"
@@ -428,16 +427,14 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
 
           {earningsFields.map(renderField)}
 
-          {/* Bonus Section */}
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ color: 'info.main' }}>
               🎁 Bonus & Incentives
             </Typography>
           </Grid>
 
-          {bonusFields.map(renderField)}
+          {/* {bonusFields.map(renderField)} */}
 
-          {/* Deductions Section */}
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ color: 'error.main' }}>
               📉 Deductions
@@ -446,7 +443,6 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
 
           {deductionFields.map(renderField)}
 
-          {/* Employer Contributions Section */}
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography
               variant="h6"
@@ -458,161 +454,119 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
           </Grid>
 
           {employerContributionFields.map(renderField)}
-
-          {/* Summary Section */}
-          <Grid item xs={12} sx={{ mt: 3 }}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ color: 'primary.main' }}
-                >
-                  💼 Salary Summary
-                </Typography>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={3}>
-                    <Box
-                      sx={{
-                        textAlign: 'center',
-                        p: 2,
-                        bgcolor: 'info.light',
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Typography variant="subtitle2" color="info.contrastText">
-                        💼 CTC (Cost to Company)
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontWeight: 'bold',
-                          color: 'info.contrastText',
-                        }}
-                      >
-                        {formatCurrency(ctc)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <Box
-                      sx={{
-                        textAlign: 'center',
-                        p: 2,
-                        bgcolor: 'success.light',
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Typography
-                        variant="subtitle2"
-                        color="success.contrastText"
-                      >
-                        💰 Gross Salary
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontWeight: 'bold',
-                          color: 'success.contrastText',
-                        }}
-                      >
-                        {formatCurrency(grossSalary)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <Box
-                      sx={{
-                        textAlign: 'center',
-                        p: 2,
-                        bgcolor: 'error.light',
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Typography
-                        variant="subtitle2"
-                        color="error.contrastText"
-                      >
-                        📉 Total Deductions
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        sx={{ fontWeight: 'bold', color: 'error.contrastText' }}
-                      >
-                        {formatCurrency(totalDeductions)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <Box
-                      sx={{
-                        textAlign: 'center',
-                        p: 2,
-                        bgcolor: 'primary.light',
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Typography
-                        variant="subtitle2"
-                        color="primary.contrastText"
-                      >
-                        💵 Net Salary
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontWeight: 'bold',
-                          color: 'primary.contrastText',
-                        }}
-                      >
-                        {formatCurrency(netSalary)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Form Actions */}
-          <Grid item xs={12}>
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 2,
-                justifyContent: 'flex-end',
-                mt: 2,
-              }}
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ color: 'secondary.main' }}
             >
-              <Button
-                variant="outlined"
-                onClick={onCancel}
-                disabled={loading}
-                size="large"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={loading}
-                size="large"
-                sx={{ minWidth: 120 }}
-              >
-                {loading ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Salary Details'
-                )}
-              </Button>
+              💼 Salary Summary
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <Box>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={3}>
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      p: 2,
+                      bgcolor: 'info.light',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="subtitle2" color="info.contrastText">
+                      💼 CTC (Cost to Company)
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 'bold',
+                        color: 'info.contrastText',
+                      }}
+                    >
+                      {formatCurrency(ctc)}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      p: 2,
+                      bgcolor: 'success.light',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      color="success.contrastText"
+                    >
+                      💰 Gross Salary
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 'bold',
+                        color: 'success.contrastText',
+                      }}
+                    >
+                      {formatCurrency(grossSalary)}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      p: 2,
+                      bgcolor: 'error.light',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="subtitle2" color="error.contrastText">
+                      📉 Total Deductions
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 'bold', color: 'error.contrastText' }}
+                    >
+                      {formatCurrency(totalDeductions)}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      p: 2,
+                      bgcolor: 'primary.light',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      color="primary.contrastText"
+                    >
+                      💵 Net Salary
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 'bold',
+                        color: 'primary.contrastText',
+                      }}
+                    >
+                      {formatCurrency(netSalary)}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
             </Box>
           </Grid>
         </Grid>
       </form>
-    </Paper>
+    </Box>
   );
 };
 
