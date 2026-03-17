@@ -7,12 +7,27 @@ import {
   Box,
   CircularProgress,
   InputAdornment,
+  IconButton,
+  Card,
+  CardContent,
 } from '@mui/material';
+import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import {
+  earningsFormFields,
+  deductionFormFields,
+  employerFormFields,
+  SalaryFormField,
+} from './salaryFields';
+import {
+  calculateSalary,
+  formatCurrency,
+} from '../../utils/salaryCalculations';
+import salaryStructureApi from '../../services/salaryStructureApi';
 
 const salarySchema = z.object({
   basicSalary: z
@@ -97,174 +112,29 @@ const salarySchema = z.object({
 
 export type SalaryStructure = z.infer<typeof salarySchema>;
 
-interface FieldConfig {
-  name: keyof SalaryStructure;
-  label: string;
-  type: 'number' | 'text';
-  gridSize: { xs: number; md: number };
-  placeholder?: string;
-  prefix?: string;
-}
-
 interface SalaryFormProps {
   initialData?: Partial<SalaryStructure>;
+  employeeId?: string;
   onSubmit?: (data: SalaryStructure) => void;
   onCancel?: () => void;
 }
 
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  });
+// API Payload interface for salary update
+export interface SalaryUpdatePayload {
+  employeeId?: string;
+  salaryStructure: SalaryStructure;
+  updatedBy?: string;
+  updatedAt?: Date;
 }
 
 const SalaryForm: React.FC<SalaryFormProps> = ({
   initialData,
+  employeeId,
   onSubmit,
   onCancel,
 }) => {
   const { iUser, myProfile } = useAuth();
   const [loading, setLoading] = useState(false);
-
-  const earningsFields: FieldConfig[] = [
-    {
-      name: 'basicSalary',
-      label: 'Basic Salary',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'hra',
-      label: 'HRA (House Rent Allowance)',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'medicalAllowance',
-      label: 'Medical Allowance',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'travelAllowance',
-      label: 'Travel Allowance',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'foodAllowance',
-      label: 'Food Allowance',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'mobileAllowance',
-      label: 'Mobile/Phone Allowance',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'otherAllowances',
-      label: 'Other Allowances',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-  ];
-
-  // const bonusFields: FieldConfig[] = [
-  //   {
-  //     name: 'performanceIncentive',
-  //     label: 'Performance Incentive',
-  //     type: 'number',
-  //     gridSize: { xs: 12, md: 6 },
-  //     prefix: '₹',
-  //   },
-  //   {
-  //     name: 'overtimePay',
-  //     label: 'Overtime Pay',
-  //     type: 'number',
-  //     gridSize: { xs: 12, md: 6 },
-  //     prefix: '₹',
-  //   },
-  // ];
-
-  const deductionFields: FieldConfig[] = [
-    {
-      name: 'incomeTax',
-      label: 'Income Tax',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'pfContribution',
-      label: "Employee's PF Contribution",
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'esiContribution',
-      label: 'ESI Contribution',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'professionalTax',
-      label: 'Professional Tax',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'lopDeduction',
-      label: 'LOP (Loss of Pay) Deduction',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'otherDeductions',
-      label: 'Other Deductions',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-  ];
-
-  const employerContributionFields: FieldConfig[] = [
-    {
-      name: 'employerPfContribution',
-      label: 'Employer PF Contribution',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'employerEsiContribution',
-      label: 'Employer ESI Contribution',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-    {
-      name: 'gratuity',
-      label: 'Gratuity',
-      type: 'number',
-      gridSize: { xs: 12, md: 4 },
-      prefix: '₹',
-    },
-  ];
 
   const defaultValues: SalaryStructure = {
     basicSalary: 0,
@@ -295,52 +165,83 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     watch,
     formState: { errors },
     reset,
+    setValue,
+    getValues,
   } = useForm<SalaryStructure>({
     resolver: zodResolver(salarySchema),
     defaultValues,
   });
 
   const watchedValues = watch();
+  const [bonuses, setBonuses] = useState<
+    Array<{ label: string; amount: number }>
+  >(initialData?.bonus || []);
 
-  // Calculate derived values
-  const grossSalary =
-    watchedValues.basicSalary +
-    watchedValues.hra +
-    watchedValues.medicalAllowance +
-    watchedValues.travelAllowance +
-    watchedValues.foodAllowance +
-    watchedValues.mobileAllowance +
-    watchedValues.otherAllowances +
-    (watchedValues.bonus || []).reduce((acc, bonus) => acc + bonus.amount, 0);
-  // watchedValues.performanceIncentive +
-  // watchedValues.overtimePay;
+  // Bonus management functions
+  const addBonus = () => {
+    const newBonus = { label: '', amount: 0 };
+    const updatedBonuses = [...bonuses, newBonus];
+    setBonuses(updatedBonuses);
+    setValue('bonus', updatedBonuses);
+  };
 
-  const totalDeductions =
-    watchedValues.incomeTax +
-    watchedValues.pfContribution +
-    watchedValues.esiContribution +
-    watchedValues.professionalTax +
-    watchedValues.lopDeduction +
-    watchedValues.otherDeductions;
+  const removeBonus = (index: number) => {
+    const updatedBonuses = bonuses.filter((_, i) => i !== index);
+    setBonuses(updatedBonuses);
+    setValue('bonus', updatedBonuses);
+  };
 
-  const netSalary = grossSalary - totalDeductions;
+  const updateBonus = (
+    index: number,
+    field: 'label' | 'amount',
+    value: string | number
+  ) => {
+    const updatedBonuses = bonuses.map((bonus, i) =>
+      i === index ? { ...bonus, [field]: value } : bonus
+    );
+    setBonuses(updatedBonuses);
+    setValue('bonus', updatedBonuses);
+  };
 
-  // CTC calculation (Cost to Company)
-  const ctc =
-    grossSalary +
-    watchedValues.employerPfContribution +
-    watchedValues.employerEsiContribution +
-    watchedValues.gratuity;
+  // Use shared salary calculation function
+  const { grossSalary, totalDeductions, netSalary, ctc } =
+    calculateSalary(watchedValues);
+
+  const preventInvalidNumberInput = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
 
   const handleFormSubmit = async (data: SalaryStructure) => {
     if (loading) return;
     setLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      onSubmit?.(data);
+      // Create API payload
+      const payload: SalaryUpdatePayload = {
+        employeeId,
+        salaryStructure: {
+          ...data,
+          bonus: bonuses,
+        },
+        updatedBy: `${iUser?.firstName} ${iUser?.lastName}`,
+        updatedAt: new Date(),
+      };
+
+      console.log('Salary update payload:', payload);
+
+      // Call the actual API with employee ID
+      if (!employeeId) {
+        throw new Error('Employee ID is required');
+      }
+      await salaryStructureApi.save(employeeId, payload.salaryStructure);
+
+      onSubmit?.(payload.salaryStructure);
       toast.success('Salary details updated successfully!');
-      reset(defaultValues);
+      setBonuses([]);
     } catch (error) {
       console.error('Error updating salary:', error);
       toast.error('Failed to update salary details');
@@ -349,20 +250,19 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     }
   };
 
-  const renderField = (field: FieldConfig) => {
-    const registerOptions =
-      field.type === 'number' ? { valueAsNumber: true } : {};
-
+  const renderField = (field: SalaryFormField) => {
     return (
-      <Grid item xs={field.gridSize.xs} md={field.gridSize.md} key={field.name}>
+      <Grid item xs={field.gridSize.xs} md={field.gridSize.md} key={field.key}>
         <TextField
           label={field.label}
-          type={field.type}
+          type="number"
           fullWidth
           disabled={loading}
-          error={!!errors[field.name]}
-          helperText={errors[field.name]?.message}
+          error={!!errors[field.key]}
+          helperText={errors[field.key]?.message}
           placeholder={field.placeholder}
+          inputProps={{ min: 0, step: 'any' }}
+          onKeyDown={preventInvalidNumberInput}
           InputProps={
             field.prefix
               ? {
@@ -374,7 +274,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                 }
               : undefined
           }
-          {...register(field.name, registerOptions)}
+          {...register(field.key, { valueAsNumber: true })}
         />
       </Grid>
     );
@@ -395,6 +295,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
             onClick={onCancel}
             disabled={loading}
             size="small"
+            sx={{ borderRadius: 2 }}
           >
             Cancel
           </Button>
@@ -403,6 +304,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
             variant="contained"
             disabled={loading}
             size="small"
+            sx={{ borderRadius: 2 }}
           >
             {loading ? (
               <>
@@ -425,7 +327,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
             </Typography>
           </Grid>
 
-          {earningsFields.map(renderField)}
+          {earningsFormFields.map(renderField)}
 
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ color: 'info.main' }}>
@@ -433,7 +335,77 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
             </Typography>
           </Grid>
 
-          {/* {bonusFields.map(renderField)} */}
+          {/* Bonus Fields */}
+          <Grid item xs={12}>
+            <Box sx={{ mb: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={addBonus}
+                disabled={loading}
+                size="small"
+                sx={{ borderRadius: 2 }}
+              >
+                Add Bonus
+              </Button>
+            </Box>
+
+            {bonuses.map((bonus, index) => (
+              <Card key={index} variant="outlined" sx={{ mb: 2, p: 2 }}>
+                <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={5}>
+                      <TextField
+                        label="Bonus Label"
+                        value={bonus.label}
+                        onChange={(e) =>
+                          updateBonus(index, 'label', e.target.value)
+                        }
+                        fullWidth
+                        disabled={loading}
+                        size="small"
+                        placeholder="e.g., Performance Bonus, Festival Bonus"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={5}>
+                      <TextField
+                        label="Bonus Amount"
+                        type="number"
+                        value={bonus.amount}
+                        onChange={(e) =>
+                          updateBonus(
+                            index,
+                            'amount',
+                            e.target.value
+                          )
+                        }
+                        fullWidth
+                        onKeyDown={preventInvalidNumberInput}
+                        disabled={loading}
+                        size="small"
+                        inputProps={{ min: 0, step: 'any' }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">₹</InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={2}>
+                      <IconButton
+                        onClick={() => removeBonus(index)}
+                        disabled={loading}
+                        color="error"
+                        size="small"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            ))}
+          </Grid>
 
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ color: 'error.main' }}>
@@ -441,7 +413,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
             </Typography>
           </Grid>
 
-          {deductionFields.map(renderField)}
+          {deductionFormFields.map(renderField)}
 
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography
@@ -453,7 +425,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
             </Typography>
           </Grid>
 
-          {employerContributionFields.map(renderField)}
+          {employerFormFields.map(renderField)}
           <Grid item xs={12} sx={{ mt: 2 }}>
             <Typography
               variant="h6"

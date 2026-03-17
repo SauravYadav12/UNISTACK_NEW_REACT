@@ -67,7 +67,7 @@ export default function Requirements() {
     {
       field: 'view',
       headerName: 'View',
-      width: 150,
+      width: 150  ,
       renderCell: (params: any) => {
         if (params.row.dateSeparator) {
           const { count, fromDate } = params.row;
@@ -102,8 +102,8 @@ export default function Requirements() {
       filterable: false,
       sortable: false,
     },
-    { field: 'reqID', headerName: 'ID', width: 180 },
-    { field: 'assignedTo', headerName: 'Assigned to', width: 120 },
+    { field: 'reqID', headerName: 'ID', width: 100 },
+    { field: 'assignedTo', headerName: 'Assigned to', width: 150 },
     { field: 'appliedFor', headerName: 'Applied For', width: 150 },
     { field: 'clientCompany', headerName: 'Client Name', width: 150 },
     {

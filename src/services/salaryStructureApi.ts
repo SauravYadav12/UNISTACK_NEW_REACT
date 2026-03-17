@@ -18,9 +18,9 @@ export type SalaryStructRes = Pick<
 };
 
 const salaryStructureApi = {
-  async save(payload: Partial<SalaryStructure>) {
+  async save(id: string, payload: Partial<SalaryStructure>) {
     const { data } = await axiosClient.post<ApiQueryRes<SalaryStructure>>(
-      '/salary-structures',
+      `/salary-structures/${id}`,
       payload
     );
     return data.data;

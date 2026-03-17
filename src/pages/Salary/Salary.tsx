@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   Button, 
   Box, 
   Typography, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper,
-  CircularProgress,
-  Alert
+  IconButton
 } from '@mui/material';
+import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
+import { Sync } from '@mui/icons-material';
 import ViewSalaryDetails from '../../components/salary/ViewSalaryDetails';
 import CustomDrawer from '../../components/drawer/CustomDrawer';
 import { useFetchData } from '../../hooks/fetchDataHook';
@@ -27,6 +21,8 @@ const Salary = () => {
     return await salaryStructureApi.list();
   }, []);
 
+  console.log('Salary data:', data);
+
   const handleViewDetails = (row: SalaryStructRes) => {
     setSelectedSalary(row);
     setDrawerOpen(true);
@@ -37,84 +33,115 @@ const Salary = () => {
     setSelectedSalary(null);
   };
 
+  const columns = useMemo<GridColDef<SalaryStructRes>[]>(
+    () => [
+      {
+        field: 'view',
+        headerName: 'View',
+        width: 150,
+        renderCell: (params) => (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            sx={{ borderRadius: '10px' }}
+            onClick={() => handleViewDetails(params.row)}
+          >
+            View
+          </Button>
+        ),
+        filterable: false,
+        sortable: false,
+      },
+      {
+        field: 'employeeId',
+        headerName: 'Employee ID',
+        width: 250,
+      },
+      {
+        field: 'name',
+        headerName: 'Employee Name',
+        width: 200,
+      },
+      {
+        field: 'email',
+        headerName: 'Email',
+        width: 250,
+        valueGetter: (value, row) => row.email?.official || 'N/A',
+      },
+      {
+        field: 'phoneNumber',
+        headerName: 'Phone Number',
+        width: 250,
+      },
+      {
+        field: 'basicSalary',
+        headerName: 'Basic Salary',
+        width: 250,
+        valueGetter: (value, row) => {
+          const basicSalary = row.salaryStructure?.basicSalary;
+          return basicSalary ? `₹${basicSalary.toLocaleString()}` : 'N/A';
+        },
+      },
+    ],
+    []
+  );
+
+  function MySalaryTable() {
+    if (error) {
+      return (
+        <Box textAlign={'center'}>
+          <Typography color="error">{error}</Typography>
+          <IconButton onClick={loadData}>
+            <Sync color="primary" />
+          </IconButton>
+        </Box>
+      );
+    }
+
+    return (
+      <DataGrid
+        loading={loading}
+        rows={data?.results || []}
+        columns={columns}
+        getRowId={(row) => row._id}
+        slots={{ toolbar: GridToolbar }}
+        slotProps={{
+          toolbar: {
+            showQuickFilter: true,
+          },
+        }}
+        sx={{
+          flex: 1,
+          '& .MuiDataGrid-columnHeaderTitle': {
+            fontWeight: 'bold',
+            color: '#504e4e',
+          },
+          '& .MuiDataGrid-scrollbar': {
+            scrollbarWidth: 'thin',
+          },
+        }}
+      />
+    );
+  }
+
   return (
-    <Box sx={{ width: '100%', p: 2 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+    <Box display={'flex'} flexDirection={'column'} height={'100%'} sx={{ p: 2 }}>
+      <Box
+        display={'flex'}
+        justifyContent={'space-between'}
+        alignItems={'center'}
+        sx={{ mb: 2 }}
+      >
         <Typography variant="h5" fontWeight="bold">
           Salary Structures
         </Typography>
+        <IconButton onClick={loadData}>
+          <Sync color="primary" />
+        </IconButton>
       </Box>
 
-      {loading && (
-        <Box display="flex" justifyContent="center" py={4}>
-          <CircularProgress />
-        </Box>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-          <Button onClick={loadData} size="small" sx={{ ml: 2 }}>
-            Retry
-          </Button>
-        </Alert>
-      )}
-
-      {!loading && !error && (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="salary structures table">
-            <TableHead>
-              <TableRow>
-                <TableCell>View</TableCell>
-                <TableCell>Employee ID</TableCell>
-                <TableCell>Employee Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Phone Number</TableCell>
-                <TableCell>Basic Salary</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.results?.map((row) => (
-                <TableRow
-                  key={row._id}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
-                  <TableCell>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="primary"
-                      sx={{ borderRadius: '10px' }}
-                      onClick={() => handleViewDetails(row)}
-                    >
-                      View
-                    </Button>
-                  </TableCell>
-                  <TableCell>{row.employeeId}</TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.email.official}</TableCell>
-                  <TableCell>{row.phoneNumber}</TableCell>
-                  <TableCell>
-                    {row.salaryStructure?.basicSalary 
-                      ? `₹${row.salaryStructure.basicSalary.toLocaleString()}` 
-                      : 'N/A'
-                    }
-                  </TableCell>
-                </TableRow>
-              ))}
-              {data?.results?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    <Typography color="textSecondary">
-                      No salary structures found
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+      <MySalaryTable />
 
       <CustomDrawer
         open={drawerOpen}
@@ -126,10 +153,11 @@ const Salary = () => {
         {selectedSalary && (
           <ViewSalaryDetails
             salaryData={selectedSalary.salaryStructure}
+            employeeId={selectedSalary._id}
             onUpdate={(data) => {
-              // Handle salary update if needed
               console.log('Salary updated:', data);
               loadData(); // Refresh data after update
+              handleCloseDrawer(); // Close drawer after successful update
             }}
           />
         )}

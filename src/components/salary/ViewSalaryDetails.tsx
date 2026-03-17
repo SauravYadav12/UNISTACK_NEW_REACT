@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import {
-  Grid,
-  Typography,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Divider,
-} from '@mui/material';
-import { Close, Edit as EditIcon } from '@mui/icons-material';
+import { Grid, Typography, Box, Button, Divider } from '@mui/material';
+import { Edit as EditIcon } from '@mui/icons-material';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import SalaryForm, { SalaryStructure } from './SalaryForm';
-
-type FieldLabel = { key: keyof Omit<SalaryStructure, 'bonus'>; label: string };
+import {
+  calculateSalary,
+  formatCurrency,
+} from '../../utils/salaryCalculations';
+import {
+  deductionFormFields,
+  earningsFormFields,
+  employerFormFields,
+  SalaryFormField,
+} from './salaryFields';
 
 const mockSalaryData: SalaryStructure = {
   basicSalary: 0,
@@ -38,73 +38,20 @@ const mockSalaryData: SalaryStructure = {
 
 interface ViewSalaryDetailsProps {
   salaryData?: SalaryStructure;
+  employeeId?: string;
   onUpdate?: (data: SalaryStructure) => void;
 }
 
 const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
   salaryData = mockSalaryData,
+  employeeId,
   onUpdate,
 }) => {
   const { myProfile, iUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
 
-  const formatCurrency = (amount: number): string => {
-    return amount.toLocaleString('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    });
-  };
-
-  const earningsFields: FieldLabel[] = [
-    { key: 'basicSalary', label: 'Basic Salary' },
-    { key: 'hra', label: 'HRA (House Rent Allowance)' },
-    { key: 'medicalAllowance', label: 'Medical Allowance' },
-    { key: 'travelAllowance', label: 'Travel Allowance' },
-    { key: 'foodAllowance', label: 'Food Allowance' },
-    { key: 'mobileAllowance', label: 'Mobile/Phone Allowance' },
-    { key: 'otherAllowances', label: 'Other Allowances' },
-  ];
-
-  // const bonusFields: FieldLabel[] = [
-  //   { key: 'performanceIncentive', label: 'Performance Incentive' },
-  //   { key: 'overtimePay', label: 'Overtime Pay' },
-  // ];
-
-  const deductionFields: FieldLabel[] = [
-    { key: 'incomeTax', label: 'Income Tax' },
-    { key: 'pfContribution', label: "Employee's PF Contribution" },
-    { key: 'esiContribution', label: 'ESI Contribution' },
-    { key: 'professionalTax', label: 'Professional Tax' },
-    { key: 'lopDeduction', label: 'LOP Deduction' },
-    { key: 'otherDeductions', label: 'Other Deductions' },
-  ];
-
-  const employerFields: FieldLabel[] = [
-    { key: 'employerPfContribution', label: 'Employer PF Contribution' },
-    { key: 'employerEsiContribution', label: 'Employer ESI Contribution' },
-    { key: 'gratuity', label: 'Gratuity' },
-  ];
-
-  const grossSalary = earningsFields.reduce(
-    (sum, field) => sum + (salaryData[field.key] || 0),
-    0
-  );
-  // bonusFields.reduce((sum, field) => sum + (salaryData[field.key] || 0), 0);
-
-  const totalDeductions = deductionFields.reduce(
-    (sum, field) => sum + (salaryData[field.key] || 0),
-    0
-  );
-
-  const netSalary = grossSalary - totalDeductions;
-
-  const ctc =
-    grossSalary +
-    employerFields.reduce(
-      (sum, field) => sum + (salaryData[field.key] || 0),
-      0
-    );
+  const { grossSalary, totalDeductions, netSalary, ctc } =
+    calculateSalary(salaryData);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -121,7 +68,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
 
   const renderFieldSection = (
     title: string,
-    fields: FieldLabel[],
+    fields: SalaryFormField[],
     icon: string,
     color: string
   ) => (
@@ -159,6 +106,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
     return (
       <SalaryForm
         initialData={salaryData}
+        employeeId={employeeId}
         onSubmit={handleSave}
         onCancel={handleCancel}
       />
@@ -174,7 +122,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
               display: 'flex',
               justifyContent: 'flex-end',
               alignItems: 'center',
-              mb: 2,
+              // mb: 2,
               gap: 2,
             }}
           >
@@ -190,20 +138,55 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
           </Box>
         </Grid>
 
-        {renderFieldSection('Earnings', earningsFields, '💰', 'success.main')}
+        {renderFieldSection(
+          'Earnings',
+          earningsFormFields,
+          '💰',
+          'success.main'
+        )}
 
-        {/* {renderFieldSection(
-          'Bonus & Incentives',
-          bonusFields,
-          '🎁',
-          'info.main'
-        )} */}
+        {/* Bonus & Incentives Section */}
+        {salaryData.bonus &&
+          salaryData.bonus.length > 0 &&
+          salaryData.bonus.map((bonus, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{
+                  color: 'info.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                🎁 Bonus & Incentives
+              </Typography>
+              <Divider />
+              <Box
+                sx={{
+                  px: 2,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  {bonus.label || `Bonus ${index + 1}`}
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  {formatCurrency(bonus.amount)}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
 
-        {renderFieldSection('Deductions', deductionFields, '📉', 'error.main')}
+        {renderFieldSection(
+          'Deductions',
+          deductionFormFields,
+          '📉',
+          'error.main'
+        )}
 
         {renderFieldSection(
           'Employer Contributions',
-          employerFields,
+          employerFormFields,
           '🏢',
           'secondary.main'
         )}

@@ -443,7 +443,7 @@ export default function RequirementsForm(props: iProps) {
         <CustomTextField
           label="Got Requirement from"
           selectedValue={values.gotReqFrom || ''}
-          width={230}
+          width={315}
           onChange={()=>{}}
           disabled={!isEditing}
         />
@@ -1121,7 +1121,7 @@ export default function RequirementsForm(props: iProps) {
                 <strong>
                   {values.mComment && values.mComment.length > 0
                     ? values.mComment[values.mComment.length - 1].username
-                    : 'N/A'}
+                    : values.reqEnteredBy || 'N/A'}
                 </strong>
                 <span> On Date:</span>
                 <strong>
@@ -1130,7 +1130,7 @@ export default function RequirementsForm(props: iProps) {
                     ? dayjs(
                         values.mComment[values.mComment.length - 1].date
                       ).format(dateFormate + ' ' + timeFormate)
-                    : 'N/A'}
+                    : dayjs(values.createdAt).format(dateFormate + ' ' + timeFormate)}
                 </strong>
               </p>
             </div>
