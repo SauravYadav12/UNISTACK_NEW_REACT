@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Grid, Typography, Box, Button, Divider } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
-import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import SalaryForm, { SalaryStructure } from './SalaryForm';
 import {
   calculateSalary,
@@ -11,43 +10,21 @@ import {
   deductionFormFields,
   earningsFormFields,
   employerFormFields,
+  salaryDefaultValues,
   SalaryFormField,
 } from './salaryFields';
 
-const mockSalaryData: SalaryStructure = {
-  basicSalary: 0,
-  hra: 0,
-  medicalAllowance: 0,
-  travelAllowance: 0,
-  foodAllowance: 0,
-  mobileAllowance: 0,
-  otherAllowances: 0,
-  bonus: [],
-  // performanceIncentive: 0,
-  // overtimePay: 0,
-  incomeTax: 0,
-  pfContribution: 0,
-  esiContribution: 0,
-  professionalTax: 0,
-  lopDeduction: 0,
-  otherDeductions: 0,
-  employerPfContribution: 0,
-  employerEsiContribution: 0,
-  gratuity: 0,
-};
-
 interface ViewSalaryDetailsProps {
   salaryData?: SalaryStructure;
-  employeeId?: string;
+  salaryId: string;
   onUpdate?: (data: SalaryStructure) => void;
 }
 
 const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
-  salaryData = mockSalaryData,
-  employeeId,
+  salaryData = salaryDefaultValues,
+  salaryId,
   onUpdate,
 }) => {
-  const { myProfile, iUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
 
   const { grossSalary, totalDeductions, netSalary, ctc } =
@@ -106,7 +83,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
     return (
       <SalaryForm
         initialData={salaryData}
-        employeeId={employeeId}
+        salaryId={salaryId}
         onSubmit={handleSave}
         onCancel={handleCancel}
       />

@@ -16,12 +16,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
-import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
   earningsFormFields,
   deductionFormFields,
   employerFormFields,
   SalaryFormField,
+  salaryDefaultValues,
 } from './salaryFields';
 import {
   calculateSalary,
@@ -114,48 +114,21 @@ export type SalaryStructure = z.infer<typeof salarySchema>;
 
 interface SalaryFormProps {
   initialData?: Partial<SalaryStructure>;
-  employeeId?: string;
+  salaryId: string;
   onSubmit?: (data: SalaryStructure) => void;
   onCancel?: () => void;
 }
 
-// API Payload interface for salary update
-export interface SalaryUpdatePayload {
-  employeeId?: string;
-  salaryStructure: SalaryStructure;
-  updatedBy?: string;
-  updatedAt?: Date;
-}
-
 const SalaryForm: React.FC<SalaryFormProps> = ({
   initialData,
-  employeeId,
+  salaryId,
   onSubmit,
   onCancel,
 }) => {
-  const { iUser, myProfile } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const defaultValues: SalaryStructure = {
-    basicSalary: 0,
-    hra: 0,
-    medicalAllowance: 0,
-    travelAllowance: 0,
-    foodAllowance: 0,
-    mobileAllowance: 0,
-    otherAllowances: 0,
-    bonus: [],
-    // performanceIncentive: 0,
-    // overtimePay: 0,
-    incomeTax: 0,
-    pfContribution: 0,
-    esiContribution: 0,
-    professionalTax: 0,
-    lopDeduction: 0,
-    otherDeductions: 0,
-    employerPfContribution: 0,
-    employerEsiContribution: 0,
-    gratuity: 0,
+    ...salaryDefaultValues,
     ...initialData,
   };
 
@@ -164,9 +137,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     handleSubmit,
     watch,
     formState: { errors },
-    reset,
     setValue,
-    getValues,
   } = useForm<SalaryStructure>({
     resolver: zodResolver(salarySchema),
     defaultValues,
@@ -220,26 +191,9 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     setLoading(true);
 
     try {
-      // Create API payload
-      const payload: SalaryUpdatePayload = {
-        employeeId,
-        salaryStructure: {
-          ...data,
-          bonus: bonuses,
-        },
-        updatedBy: `${iUser?.firstName} ${iUser?.lastName}`,
-        updatedAt: new Date(),
-      };
+      await salaryStructureApi.save(salaryId, data);
 
-      console.log('Salary update payload:', payload);
-
-      // Call the actual API with employee ID
-      if (!employeeId) {
-        throw new Error('Employee ID is required');
-      }
-      await salaryStructureApi.save(employeeId, payload.salaryStructure);
-
-      onSubmit?.(payload.salaryStructure);
+      onSubmit?.(data);
       toast.success('Salary details updated successfully!');
       setBonuses([]);
     } catch (error) {
@@ -373,11 +327,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                         type="number"
                         value={bonus.amount}
                         onChange={(e) =>
-                          updateBonus(
-                            index,
-                            'amount',
-                            e.target.value
-                          )
+                          updateBonus(index, 'amount', e.target.value)
                         }
                         fullWidth
                         onKeyDown={preventInvalidNumberInput}

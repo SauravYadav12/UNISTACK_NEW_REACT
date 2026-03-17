@@ -11,6 +11,25 @@ export interface SalaryFormField extends SalaryField {
   placeholder?: string;
   prefix?: string;
 }
+export const salaryDefaultValues: SalaryStructure = {
+  basicSalary: 0,
+  hra: 0,
+  medicalAllowance: 0,
+  travelAllowance: 0,
+  foodAllowance: 0,
+  mobileAllowance: 0,
+  otherAllowances: 0,
+  bonus: [],
+  incomeTax: 0,
+  pfContribution: 0,
+  esiContribution: 0,
+  professionalTax: 0,
+  lopDeduction: 0,
+  otherDeductions: 0,
+  employerPfContribution: 0,
+  employerEsiContribution: 0,
+  gratuity: 0,
+};
 
 export const earningsFormFields: SalaryFormField[] = [
   {

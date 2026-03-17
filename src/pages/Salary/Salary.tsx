@@ -1,35 +1,29 @@
 import { useState, useMemo } from 'react';
-import { 
-  Button, 
-  Box, 
-  Typography, 
-  IconButton
-} from '@mui/material';
+import { Button, Box, Typography, IconButton } from '@mui/material';
 import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
 import { Sync } from '@mui/icons-material';
 import ViewSalaryDetails from '../../components/salary/ViewSalaryDetails';
 import CustomDrawer from '../../components/drawer/CustomDrawer';
 import { useFetchData } from '../../hooks/fetchDataHook';
-import salaryStructureApi, { SalaryStructRes } from '../../services/salaryStructureApi';
-
+import salaryStructureApi, {
+  SalaryStructRes,
+} from '../../services/salaryStructureApi';
 
 const Salary = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedSalary, setSelectedSalary] = useState<SalaryStructRes | null>(null);
+  const [selectedSalary, setSelectedSalary] = useState<SalaryStructRes | null>(
+    null
+  );
 
   const { data, error, loading, loadData } = useFetchData(async () => {
     return await salaryStructureApi.list();
   }, []);
 
-  console.log('Salary data:', data);
 
   const handleViewDetails = (row: SalaryStructRes) => {
     setSelectedSalary(row);
-    setDrawerOpen(true);
   };
 
   const handleCloseDrawer = () => {
-    setDrawerOpen(false);
     setSelectedSalary(null);
   };
 
@@ -126,7 +120,12 @@ const Salary = () => {
   }
 
   return (
-    <Box display={'flex'} flexDirection={'column'} height={'100%'} sx={{ p: 2 }}>
+    <Box
+      display={'flex'}
+      flexDirection={'column'}
+      height={'100%'}
+      sx={{ p: 2 }}
+    >
       <Box
         display={'flex'}
         justifyContent={'space-between'}
@@ -144,16 +143,22 @@ const Salary = () => {
       <MySalaryTable />
 
       <CustomDrawer
-        open={drawerOpen}
+        open={Boolean(selectedSalary)}
         onClose={handleCloseDrawer}
-        title={selectedSalary ? `Salary Details - ${selectedSalary.name}` : 'Salary Details'}
-        subTitle={selectedSalary ? `Employee ID: ${selectedSalary.employeeId}` : ''}
+        title={
+          selectedSalary
+            ? `Salary Details - ${selectedSalary.name}`
+            : 'Salary Details'
+        }
+        subTitle={
+          selectedSalary ? `Employee ID: ${selectedSalary.employeeId}` : ''
+        }
         closeOnOutSideClick={true}
       >
         {selectedSalary && (
           <ViewSalaryDetails
             salaryData={selectedSalary.salaryStructure}
-            employeeId={selectedSalary._id}
+            salaryId={selectedSalary._id}
             onUpdate={(data) => {
               console.log('Salary updated:', data);
               loadData(); // Refresh data after update
