@@ -126,7 +126,7 @@ const Salary = () => {
         alignItems={'center'}
         sx={{ mb: 2 }}
       >
-        <Typography variant="h5" fontWeight="bold">
+        <Typography variant="h5" sx={{ textAlign: 'center'}}>
           Salary Structures
         </Typography>
         <IconButton onClick={loadData}>
@@ -155,6 +155,10 @@ const Salary = () => {
             salaryId={selectedSalary._id}
             onUpdate={(data) => {
               console.log('Salary updated:', data);
+              setSelectedSalary(prev => prev ? {
+                ...prev,
+                salaryStructure: data
+              } : null);
               loadData();
             }}
           />

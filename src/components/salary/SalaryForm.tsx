@@ -12,7 +12,7 @@ import {
   CardContent,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
@@ -137,51 +137,25 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     handleSubmit,
     watch,
     formState: { errors },
-    setValue,
+    control,
   } = useForm<SalaryStructure>({
     resolver: zodResolver(salarySchema),
     defaultValues,
   });
 
   const watchedValues = watch();
-  const [bonuses, setBonuses] = useState<
-    Array<{ label: string; amount: number }>
-  >(initialData?.bonus || []);
+  
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'bonus',
+  });
 
-  // Bonus management functions
   const addBonus = () => {
-    const newBonus = { label: '', amount: 0 };
-    const updatedBonuses = [...bonuses, newBonus];
-    setBonuses(updatedBonuses);
-    setValue('bonus', updatedBonuses);
+    append({ label: '', amount: 0 });
   };
 
   const removeBonus = (index: number) => {
-    const updatedBonuses = bonuses.filter((_, i) => i !== index);
-    setBonuses(updatedBonuses);
-    setValue('bonus', updatedBonuses);
-  };
-
-  const updateBonus = (
-    index: number,
-    field: 'label' | 'amount',
-    value: string | number
-  ) => {
-    const updatedBonuses = bonuses.map((bonus, i) => {
-      if (i === index) {
-        if (field === 'amount') {
-          const numValue = typeof value === 'string' 
-            ? (value === '' ? 0 : parseFloat(value) || 0)
-            : value;
-          return { ...bonus, amount: numValue };
-        } else {
-          return { ...bonus, label: String(value) };
-        }
-      }
-      return bonus;
-    });
-    setBonuses(updatedBonuses);
-    setValue('bonus', updatedBonuses);
+    remove(index);
   };
 
   // Use shared salary calculation function
@@ -205,7 +179,6 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
 
       onSubmit?.(data);
       toast.success('Salary details updated successfully!');
-      setBonuses([]);
     } catch (error) {
       console.error('Error updating salary:', error);
       toast.error('Failed to update salary details');
@@ -314,42 +287,40 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
               </Button>
             </Box>
 
-            {bonuses.map((bonus, index) => (
-              <Card key={index} variant="outlined" sx={{ mb: 2, p: 2 }}>
+            {fields.map((field, index) => (
+              <Card key={field.id} variant="outlined" sx={{ mb: 2, p: 2 }}>
                 <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
                   <Grid container spacing={2} alignItems="center">
                     <Grid item xs={12} md={5}>
                       <TextField
                         label="Bonus Label"
-                        value={bonus.label}
-                        onChange={(e) =>
-                          updateBonus(index, 'label', e.target.value)
-                        }
                         fullWidth
                         disabled={loading}
                         size="small"
                         placeholder="e.g., Performance Bonus, Festival Bonus"
+                        error={!!errors.bonus?.[index]?.label}
+                        helperText={errors.bonus?.[index]?.label?.message}
+                        {...register(`bonus.${index}.label` as const)}
                       />
                     </Grid>
                     <Grid item xs={12} md={5}>
                       <TextField
                         label="Bonus Amount"
                         type="number"
-                        value={bonus.amount || ''}
-                        onChange={(e) =>
-                          updateBonus(index, 'amount', e.target.value)
-                        }
                         fullWidth
                         onKeyDown={preventInvalidNumberInput}
                         disabled={loading}
                         size="small"
                         inputProps={{ min: 0, step: 'any' }}
                         placeholder="0"
+                        error={!!errors.bonus?.[index]?.amount}
+                        helperText={errors.bonus?.[index]?.amount?.message}
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">₹</InputAdornment>
                           ),
                         }}
+                        {...register(`bonus.${index}.amount` as const, { valueAsNumber: true })}
                       />
                     </Grid>
                     <Grid item xs={12} md={2}>
