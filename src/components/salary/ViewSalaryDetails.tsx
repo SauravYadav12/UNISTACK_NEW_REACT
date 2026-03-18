@@ -122,11 +122,9 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
           'success.main'
         )}
 
-        {/* Bonus & Incentives Section */}
-        {salaryData.bonus &&
-          salaryData.bonus.length > 0 &&
-          salaryData.bonus.map((bonus, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+        {salaryData.bonus && salaryData.bonus.length > 0 && (
+          <>
+            <Grid item xs={12}>
               <Typography
                 variant="h6"
                 gutterBottom
@@ -139,20 +137,25 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
                 🎁 Bonus & Incentives
               </Typography>
               <Divider />
-              <Box
-                sx={{
-                  px: 2,
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  {bonus.label || `Bonus ${index + 1}`}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                  {formatCurrency(bonus.amount)}
-                </Typography>
-              </Box>
             </Grid>
-          ))}
+            {salaryData.bonus.map((bonus, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Box
+                  sx={{
+                    px: 2,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {bonus.label || `Bonus ${index + 1}`}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                    {formatCurrency(bonus.amount)}
+                  </Typography>
+                </Box>
+              </Grid>
+            ))}
+          </>
+        )}
 
         {renderFieldSection(
           'Deductions',

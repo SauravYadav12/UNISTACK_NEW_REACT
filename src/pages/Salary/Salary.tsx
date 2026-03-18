@@ -18,7 +18,6 @@ const Salary = () => {
     return await salaryStructureApi.list();
   }, []);
 
-
   const handleViewDetails = (row: SalaryStructRes) => {
     setSelectedSalary(row);
   };
@@ -50,7 +49,7 @@ const Salary = () => {
       {
         field: 'employeeId',
         headerName: 'Employee ID',
-        width: 250,
+        width: 220,
       },
       {
         field: 'name',
@@ -120,12 +119,7 @@ const Salary = () => {
   }
 
   return (
-    <Box
-      display={'flex'}
-      flexDirection={'column'}
-      height={'100%'}
-      sx={{ p: 2 }}
-    >
+    <Box display={'flex'} flexDirection={'column'} height={'100%'}>
       <Box
         display={'flex'}
         justifyContent={'space-between'}
@@ -161,8 +155,7 @@ const Salary = () => {
             salaryId={selectedSalary._id}
             onUpdate={(data) => {
               console.log('Salary updated:', data);
-              loadData(); // Refresh data after update
-              handleCloseDrawer(); // Close drawer after successful update
+              loadData();
             }}
           />
         )}

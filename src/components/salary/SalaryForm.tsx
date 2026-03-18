@@ -167,9 +167,19 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
     field: 'label' | 'amount',
     value: string | number
   ) => {
-    const updatedBonuses = bonuses.map((bonus, i) =>
-      i === index ? { ...bonus, [field]: value } : bonus
-    );
+    const updatedBonuses = bonuses.map((bonus, i) => {
+      if (i === index) {
+        if (field === 'amount') {
+          const numValue = typeof value === 'string' 
+            ? (value === '' ? 0 : parseFloat(value) || 0)
+            : value;
+          return { ...bonus, amount: numValue };
+        } else {
+          return { ...bonus, label: String(value) };
+        }
+      }
+      return bonus;
+    });
     setBonuses(updatedBonuses);
     setValue('bonus', updatedBonuses);
   };
@@ -325,7 +335,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                       <TextField
                         label="Bonus Amount"
                         type="number"
-                        value={bonus.amount}
+                        value={bonus.amount || ''}
                         onChange={(e) =>
                           updateBonus(index, 'amount', e.target.value)
                         }
@@ -334,6 +344,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                         disabled={loading}
                         size="small"
                         inputProps={{ min: 0, step: 'any' }}
+                        placeholder="0"
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">₹</InputAdornment>

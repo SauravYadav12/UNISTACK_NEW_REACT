@@ -20,7 +20,10 @@ export function calculateSalary(data: SalaryStructure): SalaryCalculationResult 
   // Calculate gross salary from earnings fields + bonus
   const grossSalary = 
     earningsFormFields.reduce((sum, field) => sum + (data[field.key] || 0), 0) +
-    (data.bonus || []).reduce((acc, bonus) => acc + bonus.amount, 0);
+    (data.bonus || []).reduce((acc, bonus) => {
+      const amount = typeof bonus.amount === 'number' && !isNaN(bonus.amount) ? bonus.amount : 0;
+      return acc + amount;
+    }, 0);
 
   // Calculate total deductions
   const totalDeductions = deductionFormFields.reduce(
