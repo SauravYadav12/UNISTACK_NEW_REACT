@@ -22,6 +22,7 @@ import { useAttendance } from '../../hooks/attendanceHook';
 import moment from 'moment';
 import { dateFormate } from '../../components/constants';
 import UpcomingHolidays from '../../components/holiday/UpcomingHolidays';
+import StatusLegend from '../../components/attendance/StatusLegend';
 
 const MyAttendance = () => {
   const { myAttendanceState, iUser } = useAuth();
@@ -72,6 +73,9 @@ const MyAttendance = () => {
           rowGap: 2,
         }}
       >
+       <Box width={'100%'}>
+         <StatusLegend/>
+       </Box>
         <ChartCardWrapper
           title={'Daily Attendance'}
           action={

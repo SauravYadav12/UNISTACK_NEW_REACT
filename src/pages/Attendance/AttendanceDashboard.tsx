@@ -34,7 +34,7 @@ const AttendanceDashboard = () => {
   const { data: users, loading, error, loadData } = usersListState;
 
   async function fetchUsers() {
-    const { data } = await usersList();
+    const { data } = await usersList('active=true');
     const { users } = data;
     return (users as iUser[])?.filter(
       (u) => u.role !== UserRole['super-admin']

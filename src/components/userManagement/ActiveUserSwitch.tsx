@@ -30,7 +30,7 @@ export default function ActiveUserSwitch({
           const name = `${user.firstName} ${user.lastName}`;
           await createProfile(userId, user.email, name);
         } catch (error) {
-          toast.error('Failed to create user profile!');
+          console.log('Failed to create user profile!');
         }
       }
     } catch (error) {
