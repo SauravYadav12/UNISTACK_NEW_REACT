@@ -118,7 +118,6 @@ function App() {
                   }}
                 >
                   <Leaves />
-                  {/* <>Coming Soon</> */}
                 </ProtectedRoute>
               }
             />

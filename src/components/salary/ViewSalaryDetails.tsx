@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Grid, Typography, Box, Button, Divider } from '@mui/material';
-import { Edit as EditIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Receipt as ReceiptIcon } from '@mui/icons-material';
 import SalaryForm, { SalaryStructure } from './SalaryForm';
 import {
   calculateSalary,
@@ -13,6 +13,8 @@ import {
   salaryDefaultValues,
   SalaryFormField,
 } from './salaryFields';
+import Payslip from '../../pages/Payslip/Payslip';
+import GeneratePayslip from '../payslip/ViewPayslip';
 
 interface ViewSalaryDetailsProps {
   salaryData?: SalaryStructure;
@@ -26,12 +28,21 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
   onUpdate,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isGeneratePayslipOpen, setIsGeneratePayslipOpen] = useState(false);
 
   const { grossSalary, totalDeductions, netSalary, ctc } =
     calculateSalary(salaryData);
 
   const handleEdit = () => {
     setIsEditing(true);
+  };
+
+  const handleGeneratePayslip = () => {
+    setIsGeneratePayslipOpen(true);
+  };
+
+  const handleCloseGeneratePayslip = () => {
+    setIsGeneratePayslipOpen(false);
   };
 
   const handleSave = (data: SalaryStructure) => {
@@ -103,6 +114,16 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
               gap: 2,
             }}
           >
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<ReceiptIcon />}
+              onClick={handleGeneratePayslip}
+              sx={{ borderRadius: 2 }}
+              color="success"
+            >
+              Generate Payslip
+            </Button>
             <Button
               size="small"
               variant="contained"
@@ -265,6 +286,15 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
           </Grid>
         </Grid>
       </Grid>
+
+      <Payslip/>
+
+      <GeneratePayslip
+      mode='generate'
+        salaryStructure={salaryData}
+        open={isGeneratePayslipOpen}
+        onClose={handleCloseGeneratePayslip}
+      />
     </>
   );
 };

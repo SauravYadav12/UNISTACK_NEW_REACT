@@ -14,11 +14,11 @@ import {
   Alert,
   Chip,
 } from '@mui/material';
-import PayslipPDFViewer from '../../components/payslip/PayslipPDFViewer';
 import CustomDrawer from '../../components/drawer/CustomDrawer';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import { payslipApi } from '../../services/payslipApi';
 import { Payslip as PayslipType } from '../../Interfaces/payslip';
+import ViewPayslip from '../../components/payslip/ViewPayslip';
 
 const Payslip = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -183,7 +183,7 @@ const Payslip = () => {
         }
         closeOnOutSideClick={true}
       >
-        {selectedPayslip && <PayslipPDFViewer payslipData={selectedPayslip} />}
+        {selectedPayslip && <ViewPayslip open={drawerOpen} onClose={handleCloseDrawer} mode="view" paySlip={selectedPayslip} />}
       </CustomDrawer>
     </Box>
   );
