@@ -11,6 +11,7 @@ export const intTypeOptions = [
   'Techno Managerial',
   'Non Technical',
   'Prep Call',
+  'Other',
 ];
 
 export const intStatusOptions: InterviewStatus[] = [
