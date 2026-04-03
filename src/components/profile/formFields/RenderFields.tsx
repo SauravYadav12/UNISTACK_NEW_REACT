@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import PhoneField from './PhoneField';
 import { dateFormate } from '../../constants';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
+import { UserRole } from '../../../Interfaces/iUser';
 
 const RenderFields = ({
   disabled,
@@ -25,7 +26,7 @@ const RenderFields = ({
     label = fieldName.charAt(0).toUpperCase() + fieldName.slice(1),
   } = field;
 
-  if (fieldName === 'employeeId' && user?.role !== 'super-admin') return null;
+  if (fieldName === 'employeeId' && !user?.role.includes(UserRole['super-admin'])) return null;
 
   const val = parentFieldName
     ? (myProfile as any)[parentFieldName][field.fieldName]

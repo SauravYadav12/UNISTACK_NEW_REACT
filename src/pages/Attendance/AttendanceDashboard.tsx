@@ -37,7 +37,7 @@ const AttendanceDashboard = () => {
     const { data } = await usersList('active=true');
     const { users } = data;
     return (users as iUser[])?.filter(
-      (u) => u.role !== UserRole['super-admin']
+      (u) => !u.role.includes(UserRole['super-admin'])
     );
   }
 

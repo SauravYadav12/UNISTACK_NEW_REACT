@@ -45,68 +45,68 @@ const TodaysInterviews = () => {
     headerName: string;
     renderCell?: (a: IInterview | IVendor) => JSX.Element | string;
   }[] = [
-    {
-      field: 'view',
-      headerName: 'View',
-      renderCell: (row) => (
-        <Button
-          size="small"
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: '10px' }}
-          onClick={() => {
-            setViewData(row);
-            setDrawerOpen(true);
-          }}
-        >
-          View
-        </Button>
-      ),
-    },
-    {
-      field: 'intId',
-      headerName: 'ID',
-      renderCell: (row) => ('intId' in row ? row.intId : row.testID),
-    },
-    {
-      field: 'interviewStatus',
-      headerName: 'Status',
-      renderCell: ({ interviewStatus }) => (
-        <span
-          style={{
-            color: interviewStatus
-              ? interviewStatusColors[interviewStatus as InterviewStatus]
-              : 'inherit',
-          }}
-        >
-          {(interviewStatus as string)?.replace('Interview', '')}
-        </span>
-      ),
-    },
-    { field: 'consultant', headerName: 'Consultant' },
+      {
+        field: 'view',
+        headerName: 'View',
+        renderCell: (row) => (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            sx={{ borderRadius: '10px' }}
+            onClick={() => {
+              setViewData(row);
+              setDrawerOpen(true);
+            }}
+          >
+            View
+          </Button>
+        ),
+      },
+      {
+        field: 'intId',
+        headerName: 'ID',
+        renderCell: (row) => ('intId' in row ? row.intId : row.testID),
+      },
+      {
+        field: 'interviewStatus',
+        headerName: 'Status',
+        renderCell: ({ interviewStatus }) => (
+          <span
+            style={{
+              color: interviewStatus
+                ? interviewStatusColors[interviewStatus as InterviewStatus]
+                : 'inherit',
+            }}
+          >
+            {(interviewStatus as string)?.replace('Interview', '')}
+          </span>
+        ),
+      },
+      { field: 'consultant', headerName: 'Consultant' },
 
-    {
-      field: 'interviewTime',
-      headerName: 'Time',
-      renderCell: (row) => {
-        return (
-          moment(row.interviewTime, timeFormate).format(timeFormate) +
-          ' ' +
-          (row.timeZone || '')
-        );
+      {
+        field: 'interviewTime',
+        headerName: 'Time',
+        renderCell: (row) => {
+          return (
+            moment(row.interviewTime, timeFormate).format(timeFormate) +
+            ' ' +
+            (row.timeZone || '')
+          );
+        },
       },
-    },
-    { field: 'clientName', headerName: 'Client Name' },
-    { field: 'jobTitle', headerName: 'Job Title' },
-    { field: 'marketingPerson', headerName: 'Created by' },
-    {
-      field: 'createdAt',
-      headerName: 'Created At',
-      renderCell: (row) => {
-        return moment(row.createdAt).format(dateFormate2);
+      { field: 'clientName', headerName: 'Client Name' },
+      { field: 'jobTitle', headerName: 'Job Title' },
+      { field: 'marketingPerson', headerName: 'Created by' },
+      {
+        field: 'createdAt',
+        headerName: 'Created At',
+        renderCell: (row) => {
+          return moment(row.createdAt).format(dateFormate2);
+        },
       },
-    },
-  ];
+    ];
 
   async function getInterviews() {
     const date = toDay.format(dateFormate);
@@ -190,7 +190,7 @@ const TodaysInterviews = () => {
     ));
   }
 
-  if (user?.role === UserRole.user) return null;
+  if (!user?.role.length || user?.role.some(r => r !== UserRole.user)) return null;
 
   return (
     <>

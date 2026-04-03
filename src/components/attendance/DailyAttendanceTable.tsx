@@ -281,8 +281,8 @@ function AttendanceForm({
       setLoading(true);
       const { data } = await (attendance
         ? updateAttendance(attendance._id, {
-            status: newStatus,
-          })
+          status: newStatus,
+        })
         : markAttendance(user, date.format(dateFormate), newStatus));
       data.data && onChange && onChange(data.data);
     } catch (error) {
@@ -306,7 +306,7 @@ function AttendanceForm({
         forEmployee={forEmployee}
         onChange={onChangeAttendance}
       />
-      {!forEmployee && iUser && canEditRoles.includes(iUser.role) && (
+      {!forEmployee && iUser && iUser.role.some(r=>canEditRoles.includes(r)) && (
         <Box width={'fit-content'}>
           <SelectAttendanceStatus
             attendance={attendance}
@@ -339,7 +339,7 @@ function AttendanceSwitch({
   const isTimeApplicable = !!getAttendanceStatus(user);
   const disabled = forEmployee
     ? status !== AttendanceStatus.Absent || !isTimeApplicable
-    : !canEditRoles.includes(iUser!.role) && status !== AttendanceStatus.Absent;
+    : !iUser?.role.some((r) => canEditRoles.includes(r)) && status !== AttendanceStatus.Absent;
 
   function getStatus() {
     if (!!status && status != AttendanceStatus.Absent)

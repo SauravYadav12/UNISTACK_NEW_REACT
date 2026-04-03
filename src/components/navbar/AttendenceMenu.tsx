@@ -22,7 +22,7 @@ const AttendenceMenu = ({ onClose }: iProps) => {
       group: ModuleGroup['Presence & Leave'],
       module: EmployeeModule.Attendance,
       allow: () => {
-        return me?.role !== UserRole['super-admin'];
+        return !me?.role.includes(UserRole['super-admin']);
       },
     },
     {

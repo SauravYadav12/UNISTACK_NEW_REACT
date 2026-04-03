@@ -30,7 +30,7 @@ const AttendancePopUp = () => {
     !isModuleAllowed(
       moduleKey(ModuleGroup['Presence & Leave'], EmployeeModule.Attendance)
     ) ||
-    me?.role === UserRole['super-admin']
+    me?.role.includes( UserRole['super-admin'])
   ) {
     return null;
   }

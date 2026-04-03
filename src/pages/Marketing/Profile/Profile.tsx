@@ -38,7 +38,7 @@ function Profile() {
   const [value, setValue] = React.useState(0);
   const { myProfileState, iUser } = useAuth();
 
-  const canEdit = iUser?.canEdit || iUser?.role === UserRole['super-admin'];
+  const canEdit = iUser?.canEdit || iUser?.role.includes(UserRole['super-admin']);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);

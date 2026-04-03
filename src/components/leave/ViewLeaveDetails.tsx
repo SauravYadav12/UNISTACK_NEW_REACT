@@ -334,7 +334,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
         </DialogContent>
 
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          {iUser?.role === UserRole['super-admin'] &&
+          {iUser?.role.includes(UserRole['super-admin']) &&
             leave.status === LeaveStatus.Pending && (
               <>
                 <Button

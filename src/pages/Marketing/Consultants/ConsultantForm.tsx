@@ -40,6 +40,7 @@ import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { IConsultant, IConsultantProject } from '../../../Interfaces/types';
+import { UserRole } from '../../../Interfaces/iUser';
 import { toast } from 'react-toastify';
 import { Delete, Remove } from '@mui/icons-material';
 
@@ -346,7 +347,7 @@ export default function ConsultantForm(props: iProps) {
             >
               Edit
             </Button>
-            {user.role === 'super-admin' && (
+            {user.role.includes(UserRole['super-admin']) && (
               <Button
                 variant="contained"
                 color="primary"

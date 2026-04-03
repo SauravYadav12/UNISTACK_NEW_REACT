@@ -385,7 +385,7 @@ export default function TestAndVendorForm(props: iProps) {
                       </>
                     )}
 
-                  {!disableDelete && user.role === UserRole['super-admin'] && (
+                  {!disableDelete && user.role.includes(UserRole['super-admin']) && (
                     <Button
                       variant="contained"
                       color="primary"

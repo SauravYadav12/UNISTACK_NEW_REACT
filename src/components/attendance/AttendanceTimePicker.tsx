@@ -88,7 +88,7 @@ const AttendanceTimePicker = ({
 
   if (
     attendance.status === AttendanceStatus.Absent ||
-    me?.role !== UserRole['super-admin']
+    !me?.role.includes(UserRole['super-admin'])
   )
     return;
 

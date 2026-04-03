@@ -39,6 +39,7 @@ import { Sync } from '@mui/icons-material';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import { iUser, iUserActivity, UserRole } from '../../Interfaces/iUser';
 import UserWorkLocationSelect from '../../components/userManagement/UserWorkLocationSelect';
+import { toast } from 'react-toastify';
 
 interface CustomCard {
   color: string;
@@ -59,8 +60,6 @@ function UserManagement() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [selectedUser, setSelectedUser] = useState<iUser>();
-  const [open, setOpen] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
   const activeUsrCount = users?.filter((user) => user.active).length;
   const premiumUsrCount = users?.filter((user) => user.premium).length;
 
@@ -121,12 +120,11 @@ function UserManagement() {
         type: 'actions',
         renderCell: (params) => (
           <UserRoleSelect
-            role={params.row.role as UserRole}
+            role={params.row.role}
             userId={params.row._id}
             onSuccess={(u) => {
               HandleChangeUser(u);
-              setAlertMessage(`Role updated to ${u.role}`);
-              setOpen(true);
+              toast.success(`Role updated to ${u.role.join(', ')}`);
             }}
           />
         ),
@@ -141,8 +139,7 @@ function UserManagement() {
             shift={params.row.shift}
             userId={params.row._id}
             onSuccess={(u) => {
-              setAlertMessage(`Shift updated to ${u.shift}`);
-              setOpen(true);
+              toast.success(`Shift updated to ${u.shift}`);
               HandleChangeUser(u);
             }}
           />
@@ -159,8 +156,7 @@ function UserManagement() {
             userId={params.row._id}
             onSuccess={(u) => {
               HandleChangeUser(u);
-              setAlertMessage(`Work Location updated to ${u.workLocation}`);
-              setOpen(true);
+              toast.success(`Work Location updated to ${u.workLocation}`);
             }}
           />
         ),
@@ -177,11 +173,10 @@ function UserManagement() {
             onSuccess={(u) => {
               HandleChangeUser(u);
               if (u.active) {
-                setAlertMessage('User Activated successfully');
+                toast.success('User Activated successfully');
               } else {
-                setAlertMessage('User Deactivated');
+                toast.success('User Deactivated');
               }
-              setOpen(true);
             }}
           />
         ),
@@ -197,11 +192,10 @@ function UserManagement() {
             jUser={params.row}
             onSuccess={(u) => {
               HandleChangeUser(u);
-              setOpen(true);
               if (u.canEdit) {
-                setAlertMessage('Profile edit permission granted');
+                toast.success('Profile edit permission granted');
               } else {
-                setAlertMessage('Profile edit permission revoked');
+                toast.success('Profile edit permission revoked');
               }
             }}
           />
@@ -368,11 +362,7 @@ function UserManagement() {
 
   return (
     <>
-      <PositionedSnackbar
-        open={open}
-        message={alertMessage}
-        setOpen={setOpen}
-      />
+
       <Box display={'flex'} flexDirection={'column'} height={'100%'}>
         <Grid container spacing={2}>
           {cardObject.map((card) => {

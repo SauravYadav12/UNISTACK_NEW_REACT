@@ -14,6 +14,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { FormMode } from '../Requirements/Requirements';
 import { iSalesLead } from '../../../Interfaces/salesLeads';
+import { UserRole } from '../../../Interfaces/iUser';
 
 interface iProps {
   viewData?: iSalesLead;
@@ -84,7 +85,7 @@ const SalesLeadForm = (props: iProps) => {
           marginRight: 10,
         }}
       >
-        {user.role === 'super-admin' && (
+        {user.role.includes(UserRole['super-admin']) && (
           <>
             <Button
               variant="contained"

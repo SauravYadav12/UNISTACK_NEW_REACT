@@ -96,9 +96,10 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const isModuleAllowed = (key: string) => {
     const me = iUserState.data;
     const { data } = accessControlState;
-    if (!data || !me?.role || isTokenExpired()) return false;
-    if (me.role === UserRole['super-admin']) return true;
-    return data[me.role]?.includes(key) || false;
+    if (!data || !me?.role.length || isTokenExpired()) return false;
+    if (me.role.includes(UserRole['super-admin'])) return true;
+
+    return me.role.some((role) => data[role]?.includes(key) || false);
   };
 
   return (

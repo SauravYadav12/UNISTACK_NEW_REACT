@@ -402,7 +402,7 @@ export default function InterviewForm(props: iProps) {
                         </Button>
                       </>
                     )}
-                  {!disableDelete && user?.role === 'super-admin' && (
+                  {!disableDelete && user?.role.includes(UserRole['super-admin']) && (
                     <>
                       <Button
                         variant="contained"
@@ -790,7 +790,7 @@ export default function InterviewForm(props: iProps) {
 
           {/* Section 4: Interviewee Candidate Details */}
           {user &&
-            [UserRole.admin, UserRole['super-admin']].includes(user.role) && (
+            user.role.some(role => [UserRole.admin, UserRole['super-admin']].includes(role)) && (
               <>
                 <Grid item xs={12}>
                   <h4>4. Interviewee Candidate Details</h4>

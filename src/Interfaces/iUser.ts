@@ -7,7 +7,7 @@ export interface iUser {
   _id: string;
   lastName: string;
   premium: boolean;
-  role: UserRole;
+  role: UserRole[];
   canEdit: boolean;
   shift: UserShift;
   workLocation: WorkLocation;

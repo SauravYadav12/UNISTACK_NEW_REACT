@@ -36,11 +36,6 @@ const formControlSX = {
     color: '#1976d2',
   },
 };
-interface iProps {
-  setFilterButtonEl: React.Dispatch<
-    React.SetStateAction<HTMLButtonElement | null>
-  >;
-}
 export default function CustomToolbar({
   setFilterButtonEl,
 }: GridToolbarProps & ToolbarPropsOverrides) {

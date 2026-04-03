@@ -9,6 +9,7 @@ import { getBlobFileByUrl, getFileMetaData } from '../../utils/utils';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
 import { updateProfile } from '../../services/userProfileApi';
 import './profile.css';
+import { UserRole } from '../../Interfaces/iUser';
 const Documents = () => {
   const { myProfile, iUser: user, setMyProfile } = useAuth();
   const [myDocuments, setMyDocuments] = useState<DocumentsSchema[]>([]);
@@ -114,7 +115,7 @@ const Documents = () => {
                 >
                   {label}
                 </p>
-                {user?.role === 'super-admin' && (
+                {user?.role.includes(UserRole['super-admin']) && (
                   <span
                     style={{
                       width: '20%',

@@ -26,6 +26,7 @@ import { convertValuesToEmptyString } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { ITeam } from '../../../Interfaces/types';
+import { UserRole } from '../../../Interfaces/iUser';
 import { FormMode } from '../Requirements/Requirements';
 import { toast } from 'react-toastify';
 import { SetResults } from '../../../hooks/paginationHook';
@@ -246,7 +247,7 @@ export default function TeamsForm(props: iProps) {
             >
               Edit
             </Button>
-            {user?.role === 'super-admin' && (
+            {user?.role.includes(UserRole['super-admin']) && (
               <Button
                 variant="contained"
                 color="primary"

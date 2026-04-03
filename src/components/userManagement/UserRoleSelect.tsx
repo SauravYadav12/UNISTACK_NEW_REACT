@@ -6,49 +6,97 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { updateUser } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import { iUser, UserRole } from '../../Interfaces/iUser';
+import { Checkbox, ListItemText } from '@mui/material';
 
 interface iProps {
-  role: UserRole;
+  role: UserRole[];
   userId: string;
   onSuccess: (usr: iUser) => void;
 }
 
 export default function UserRoleSelect({ role, userId, onSuccess }: iProps) {
-  const [userRole, setUserRole] = React.useState(role);
+  const [userRole, setUserRole] = React.useState<UserRole[]>(role);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const menuOpenRef = React.useRef(false);
+  const pendingUserRef = React.useRef<iUser | null>(null);
 
-  const handleChange = async (event: SelectChangeEvent) => {
+  React.useEffect(() => {
+    if (!menuOpen) {
+      setUserRole(role);
+    }
+  }, [role, menuOpen]);
+
+  const flushPendingToParent = React.useCallback(() => {
+    if (pendingUserRef.current) {
+      onSuccess(pendingUserRef.current);
+      pendingUserRef.current = null;
+    }
+  }, [onSuccess]);
+
+  const handleChange = async (event: SelectChangeEvent<UserRole[]>) => {
     const preRole = userRole;
-    const newRole = event.target.value as UserRole;
+    const raw = event.target.value;
+    const newRole =
+      typeof raw === 'string' ? (raw.split(',') as UserRole[]) : raw;
     try {
       setUserRole(newRole);
       const payload = { role: newRole };
       const { data } = await updateUser(userId, payload);
       const { user } = data;
-      onSuccess(user);
+      pendingUserRef.current = user;
+      // Avoid onSuccess while the menu is open — parent grid updates remount the cell and close the list.
+      if (!menuOpenRef.current) {
+        flushPendingToParent();
+      }
     } catch (error) {
       setUserRole(preRole);
       console.log(error);
       toast.error('failed to update');
     }
   };
+
+  const handleOpen = () => {
+    menuOpenRef.current = true;
+    setMenuOpen(true);
+  };
+
+  const handleClose = (_event: React.SyntheticEvent) => {
+    menuOpenRef.current = false;
+    setMenuOpen(false);
+    flushPendingToParent();
+  };
+
   return (
     <Box sx={{ minWidth: 120 }}>
       <FormControl fullWidth>
-        <Select
+        <Select<UserRole[]>
           sx={{
             boxShadow: 'none',
             '.MuiOutlinedInput-notchedOutline': { border: 0 },
           }}
+          id='role-select'
+          labelId='role-select-label'
+          multiple
+          open={menuOpen}
+          onOpen={handleOpen}
+          onClose={handleClose}
           value={userRole}
+          renderValue={(selected) => selected.join(', ')}
           label="Role"
           onChange={handleChange}
+          MenuProps={{
+            disableAutoFocusItem: true,
+          }}
         >
-          <MenuItem value="user">user</MenuItem>
-          <MenuItem value="admin">admin</MenuItem>
-          <MenuItem value="super-admin">super-admin</MenuItem>
-          <MenuItem value="support">support</MenuItem>
-          <MenuItem value="marketing">marketing</MenuItem>
-          <MenuItem value="hr">hr</MenuItem>
+          {Object.values(UserRole).map((r) => {
+            return (
+              <MenuItem key={r} value={r}>
+                <Checkbox checked={userRole.indexOf(r) > -1} />
+                <ListItemText primary={r} />
+              </MenuItem>
+            )
+          })}
+
         </Select>
       </FormControl>
     </Box>

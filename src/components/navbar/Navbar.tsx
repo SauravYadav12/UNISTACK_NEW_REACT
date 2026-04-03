@@ -21,6 +21,7 @@ import AttendenceMenu from './AttendenceMenu';
 import AttendancePopUp from './AttendancePopUp';
 import SuperAdminMenu from './SuperAdminMenu';
 import UserMenu from './UserMenu';
+import { UserRole } from '../../Interfaces/iUser';
 
 interface iProps {
   sidebar: () => void;
@@ -112,7 +113,7 @@ function LeavesButton({ onClick }: LeavesButtonProp) {
     <Button
       key={'Leaves'}
       onClick={() => {
-        navigate(iUser?.role === 'super-admin' ? '/leaves-management' : '/leaves');
+        navigate(iUser?.role.includes(UserRole['super-admin']) ? '/leaves-management' : '/leaves');
         onClick?.();
       }}
       sx={{ color: 'black', display: 'block' }}
