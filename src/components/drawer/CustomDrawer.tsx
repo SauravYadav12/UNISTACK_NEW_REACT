@@ -23,6 +23,9 @@ export default function CustomDrawer({
       onClose={closeOnOutSideClick ? onClose : undefined}
       anchor="right"
       open={open}
+      ModalProps={{
+        disableEnforceFocus: true,
+      }}
       sx={{
         '& .MuiDrawer-paper': {
           width: 1100,

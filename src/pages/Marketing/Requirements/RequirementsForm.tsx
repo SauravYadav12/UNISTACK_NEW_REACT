@@ -987,6 +987,7 @@ export default function RequirementsForm(props: iProps) {
             <h4>5. Job Requirement Info</h4>
           </Grid>
           <Grid>
+         
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 inputFormat={dateFormate}
@@ -1017,8 +1018,19 @@ export default function RequirementsForm(props: iProps) {
               />
             </LocalizationProvider>
           </Grid>
+          {mode === 'view' && <CustomTextField
+            label="Requirement Entered By"
+            width={315}
+            selectedValue={values.reqEnteredBy || ''}
+            disabled
+            // onChange={(event) => {
+            //   addValue('reqEnteredBy', event.target.value);
+            //   const id = user?.id;
+            //   addValue('reqEnteredByRef', id || '');
+            // }}
+          />}
           {GotReqFromField}
-          
+
           <CustomSelectField
             freeSolo
             label="Primary Tech"
@@ -1075,17 +1087,7 @@ export default function RequirementsForm(props: iProps) {
               addValue('jobPortalLink', event.target.value)
             }
           />
-          {/* <CustomTextField
-            label="Requirement Entered By"
-            width={315}
-            selectedValue={values.reqEnteredBy || ''}
-            disabled
-            onChange={(event) => {
-              addValue('reqEnteredBy', event.target.value);
-              const id = user?.id;
-              addValue('reqEnteredByRef', id || '');
-            }}
-          /> */}
+        
 
           <CustomTextField
             label="Complete Job Description"

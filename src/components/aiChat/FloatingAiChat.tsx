@@ -1,38 +1,40 @@
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Fab from '@mui/material/Fab';
 import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Zoom from '@mui/material/Zoom';
-import type { TransitionProps } from '@mui/material/transitions';
 import AutoAwesome from '@mui/icons-material/AutoAwesome';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import RemoveRounded from '@mui/icons-material/RemoveRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined';
-import { alpha, lighten } from '@mui/material/styles';
-import { keyframes } from '@mui/system';
 import { useRequirementAiChat } from '../../context/RequirementAiChatContext';
-import { DialogActions } from '@mui/material';
 import genni from '../../assets/genie-lamp.png';
+import {
+  fabGenieImgSx,
+  fabGenieWrapperSx,
+  fabSessionDotSx,
+  floatingChatFabSx,
+  floatingChatPaperSx,
+  panelDialogContentSx,
+  panelDialogTitleSx,
+  panelGeneratingOverlaySx,
+  panelHeaderActionsSx,
+  panelHeaderDragSx,
+} from './floatingAiChatStyles';
+
 const STORAGE_KEY = 'unistack.floatingAiChat.pos';
 
-/** Gentle vertical bob so the FAB reads as lightly suspended */
-const fabFloat = keyframes`
-  0%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -7px, 0);
-  }
-`;
 const ENTER_MS = 400;
 const EXIT_MS = 280;
 /** MUI Fab size="large" is 56px; default medium is also 56 for padding calc */
@@ -40,6 +42,9 @@ const FAB_SIZE = 56;
 const EDGE_PAD = 8;
 const PANEL_GAP = 12;
 const PANEL_WIDTH_SM = 520;
+/** High enough to sit above MUI Drawer (`zIndex.drawer`); avoids Modal stacking issues (panel is not a Dialog). */
+const FLOATING_CHAT_LAYER_Z = 14000;
+const FLOATING_CHAT_FAB_WHEN_OPEN_Z = FLOATING_CHAT_LAYER_Z - 1;
 
 function defaultFabPosition(vw: number, vh: number) {
   return {
@@ -97,33 +102,6 @@ function alignPanelTransformOriginToFab(panel: HTMLElement) {
   panel.style.transformOrigin = `${ox.toFixed(2)}px ${oy.toFixed(2)}px`;
 }
 
-const ChatPanelTransition = forwardRef(function ChatPanelTransition(
-  props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>
-) {
-  const { onEnter, onExit, style, ...rest } = props;
-  return (
-    <Zoom
-      ref={ref}
-      {...rest}
-      onEnter={(node, isAppearing) => {
-        alignPanelTransformOriginToFab(node as HTMLElement);
-        onEnter?.(node, isAppearing);
-      }}
-      onExit={(node) => {
-        alignPanelTransformOriginToFab(node as HTMLElement);
-        onExit?.(node);
-      }}
-      easing={{
-        enter: 'cubic-bezier(0.22, 1, 0.36, 1)',
-        exit: 'cubic-bezier(0.4, 0, 1, 1)',
-      }}
-      timeout={{ enter: ENTER_MS, exit: EXIT_MS }}
-      style={{ ...style }}
-    />
-  );
-});
-
 function FloatingAiChat() {
   const {
     jobDescription,
@@ -132,10 +110,17 @@ function FloatingAiChat() {
     setInstruction,
     generating,
     hasGenerated,
+    pendingAiPrefill,
     generateRequirement,
     resetRequirementAiChatForm,
     clearPendingAiPrefill,
   } = useRequirementAiChat();
+
+  const sessionAvailable =
+    hasGenerated ||
+    pendingAiPrefill != null ||
+    jobDescription.trim().length > 0 ||
+    instruction.trim().length > 0;
   const [open, setOpen] = useState(false);
   const [viewport, setViewport] = useState(() =>
     typeof window !== 'undefined'
@@ -184,6 +169,18 @@ function FloatingAiChat() {
   const handleMinimize = useCallback(() => {
     setOpen(false);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleMinimize();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, handleMinimize]);
 
   const handleCloseAndClear = useCallback(() => {
     setOpen(false);
@@ -342,13 +339,29 @@ function FloatingAiChat() {
     e.preventDefault();
   }, []);
 
-  return (
+  const fabAriaLabel = open
+    ? 'Close AI assistant panel'
+    : generating
+      ? 'AI assistant — generating requirement'
+      : sessionAvailable
+        ? 'Open AI assistant — session in progress'
+        : 'Open AI assistant';
+
+  const fabTitle = open
+    ? 'Click to close the panel. Drag to move the button.'
+    : generating
+      ? 'Generating requirement… Drag to move.'
+      : sessionAvailable
+        ? 'Session has draft or generated data. Click to open. Drag to move.'
+        : 'Drag to move on screen. Click to open the assistant.';
+
+  const floatingUi = (
     <>
       <Fab
         id={FLOATING_AI_CHAT_FAB_ID}
         color="primary"
-        aria-label={open ? 'Close AI assistant' : 'Open AI assistant'}
-        title="Drag to move on screen. Click to open or close."
+        aria-label={fabAriaLabel}
+        title={fabTitle}
         onPointerDown={onFabPointerDown}
         onPointerMove={onDragPointerMove}
         onPointerUp={onFabPointerUp}
@@ -360,163 +373,75 @@ function FloatingAiChat() {
             handleToggle();
           }
         }}
-        sx={(theme) => {
-          const { main, dark, contrastText } = theme.palette.primary;
-          const topTint = lighten(main, 0.26);
-          /* Stacked outer + inset shadows read as a lit, rounded 3D volume */
-          const floatShadow = [
-            `0 0 0 1px ${alpha('#000', 0.07)}`,
-            `0 1px 2px ${alpha('#000', 0.16)}`,
-            `0 4px 8px -2px ${alpha('#0f172a', 0.28)}`,
-            `0 10px 22px -4px ${alpha('#0f172a', 0.32)}`,
-            `0 22px 48px -10px ${alpha('#0f172a', 0.38)}`,
-            `0 14px 36px -8px ${alpha(main, 0.48)}`,
-            `inset 0 3px 6px ${alpha('#fff', 0.45)}`,
-            `inset 0 -4px 12px ${alpha(dark, 0.45)}`,
-            `inset 0 0 0 1px ${alpha('#fff', 0.2)}`,
-          ].join(', ');
-          const hoverShadow = [
-            `0 0 0 1px ${alpha('#000', 0.09)}`,
-            `0 2px 4px ${alpha('#000', 0.14)}`,
-            `0 8px 16px -2px ${alpha('#0f172a', 0.32)}`,
-            `0 16px 36px -6px ${alpha('#0f172a', 0.38)}`,
-            `0 30px 64px -12px ${alpha('#0f172a', 0.44)}`,
-            `0 20px 44px -10px ${alpha(main, 0.58)}`,
-            `inset 0 3px 7px ${alpha('#fff', 0.52)}`,
-            `inset 0 -3px 10px ${alpha(dark, 0.4)}`,
-            `inset 0 0 0 1px ${alpha('#fff', 0.26)}`,
-          ].join(', ');
-          const pressedShadow = [
-            `0 0 0 1px ${alpha('#000', 0.06)}`,
-            `0 1px 2px ${alpha('#000', 0.2)}`,
-            `0 3px 8px -2px ${alpha('#0f172a', 0.26)}`,
-            `0 8px 18px -4px ${alpha('#0f172a', 0.24)}`,
-            `0 6px 16px -6px ${alpha(main, 0.32)}`,
-            `inset 0 2px 4px ${alpha('#fff', 0.28)}`,
-            `inset 0 4px 14px ${alpha('#000', 0.22)}`,
-          ].join(', ');
-          return {
-            position: 'fixed',
-            left: pos.left,
-            top: pos.top,
-            zIndex: open ? theme.zIndex.modal - 1 : theme.zIndex.modal + 1,
-            color: contrastText,
-            background: `linear-gradient(165deg, ${topTint} 0%, ${main} 38%, ${dark} 100%)`,
-            border: `1px solid ${alpha('#fff', 0.35)}`,
-            boxShadow: floatShadow,
-            cursor: 'grab',
-            touchAction: 'none',
-            animation: open
-              ? 'none'
-              : `${fabFloat} 2.75s ease-in-out infinite`,
-            willChange: open ? undefined : 'transform',
-            transition: theme.transitions.create(
-              ['transform', 'box-shadow', 'filter'],
-              { duration: theme.transitions.duration.shorter }
-            ),
-            '@media (prefers-reduced-motion: reduce)': {
-              animation: 'none',
-              willChange: undefined,
-            },
-            '&:hover': {
-              animation: 'none',
-              willChange: 'transform',
-              transform: 'translateY(-5px) scale(1.04)',
-              boxShadow: hoverShadow,
-              filter: 'brightness(1.04)',
-            },
-            '&:active': {
-              animation: 'none',
-              cursor: 'grabbing',
-              transform: 'translateY(-1px) scale(1.01)',
-              boxShadow: pressedShadow,
-              filter: 'brightness(0.98)',
-            },
-          };
-        }}
+        sx={floatingChatFabSx({
+          pos,
+          open,
+          generating,
+          fabWhenOpenZ: FLOATING_CHAT_FAB_WHEN_OPEN_Z,
+        })}
       >
-        {open ? <CloseRounded /> : <img style={{ pointerEvents: 'none' }} src={genni} alt="genie-lamp" width={30} height={30} />}
+        <Box sx={fabGenieWrapperSx}>
+          <Box
+            component="img"
+            src={genni}
+            alt=""
+            aria-hidden
+            sx={fabGenieImgSx}
+          />
+          {!generating && sessionAvailable && (
+            <Box sx={fabSessionDotSx} aria-hidden />
+          )}
+        </Box>
       </Fab>
 
-      <Dialog
-        open={open}
-        onClose={handleMinimize}
-        TransitionComponent={ChatPanelTransition}
-        keepMounted={false}
-        hideBackdrop
-        disableScrollLock
-        disableEnforceFocus
-        disableAutoFocus
-        slotProps={{
-          root: {
-            style: { pointerEvents: 'none' },
-          },
+      <Zoom
+        in={open}
+        appear
+        unmountOnExit
+        timeout={{ enter: ENTER_MS, exit: EXIT_MS }}
+        easing={{
+          enter: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          exit: 'cubic-bezier(0.4, 0, 1, 1)',
         }}
-        PaperProps={{
-          'aria-modal': false,
-          elevation: 12,
-          sx: {
-            position: 'fixed',
-            ...paperHorizontal,
-            ...paperVertical,
-            m: 0,
-            width: effPanelWidth,
-            maxWidth: `calc(100vw - ${EDGE_PAD * 2}px)`,
-            maxHeight: panelMaxHeight,
-            borderRadius: 2,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            pointerEvents: 'auto',
-            zIndex: (theme) => theme.zIndex.modal + 1,
-          },
+        onEnter={(node) => {
+          alignPanelTransformOriginToFab(node as HTMLElement);
         }}
-        aria-labelledby="floating-ai-chat-title"
+        onExit={(node) => {
+          alignPanelTransformOriginToFab(node as HTMLElement);
+        }}
       >
-        <DialogTitle
-          id="floating-ai-chat-title"
-          sx={{
-            display: 'flex',
-            alignItems: 'stretch',
-            gap: 0,
-            py: 0,
-            px: 0,
-            pr: 0.5,
-          }}
+        <Paper
+          elevation={12}
+          role="dialog"
+          aria-modal={false}
+          aria-labelledby="floating-ai-chat-title"
+          sx={floatingChatPaperSx({
+            paperHorizontal,
+            paperVertical,
+            effPanelWidth,
+            panelMaxHeight,
+            edgePad: EDGE_PAD,
+            layerZ: FLOATING_CHAT_LAYER_Z,
+          })}
         >
+        <DialogTitle id="floating-ai-chat-title" sx={panelDialogTitleSx}>
           <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              py: 1.5,
-              pl: 2,
-              minWidth: 0,
-              cursor: 'grab',
-              touchAction: 'none',
-              userSelect: 'none',
-              '&:active': { cursor: 'grabbing' },
-            }}
+            sx={panelHeaderDragSx}
             onPointerDown={onHeaderPointerDown}
             onPointerMove={onDragPointerMove}
             onPointerUp={onHeaderPointerUp}
             onPointerCancel={onHeaderPointerCancel}
           >
-            <SmartToyOutlined color="primary" fontSize="small" sx={{ flexShrink: 0 }} />
+            <SmartToyOutlined
+              color="primary"
+              fontSize="small"
+              sx={{ flexShrink: 0 }}
+            />
             <Typography component="span" variant="subtitle1" fontWeight={600} noWrap>
               AI assistant
             </Typography>
           </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.25,
-              flexShrink: 0,
-              alignSelf: 'center',
-            }}
-          >
+          <Box sx={panelHeaderActionsSx}>
             <IconButton
               aria-label="Minimize — close panel but keep your draft"
               title="Minimize — close panel but keep your draft"
@@ -539,41 +464,15 @@ function FloatingAiChat() {
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'auto',
-            pb: 0
-          }}
-        >
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <DialogContent sx={panelDialogContentSx}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Paste the job description and add any extra instructions (tone,
             fields to emphasize, client naming, etc.). We will extract fields and
             open the add-requirement form with those values.
           </Typography>
-          <Stack spacing={1.5} sx={{ position: 'relative', flex: 1, }}>
+          <Stack spacing={1.5} sx={{ position: 'relative', flex: 1 }}>
             {generating && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexDirection: 'column',
-                  gap: 1,
-                  bgcolor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(0,0,0,0.55)'
-                      : 'rgba(255,255,255,0.72)',
-                  borderRadius: 1,
-                  pointerEvents: 'none',
-                }}
-              >
+              <Box sx={panelGeneratingOverlaySx}>
                 <CircularProgress size={36} />
                 <Typography variant="caption" color="text.secondary">
                   Generating requirement fields…
@@ -605,11 +504,7 @@ function FloatingAiChat() {
 
           </Stack>
         </DialogContent>
-        <DialogActions sx={{
-          pr: '36px',
-          py: '12px'
-        }}>
-
+        <DialogActions sx={{ pr: '36px', py: '12px' }}>
           {!hasGenerated ? (
             <Button
               variant="contained"
@@ -646,9 +541,16 @@ function FloatingAiChat() {
             </Button>
           )}
         </DialogActions>
-      </Dialog>
+        </Paper>
+      </Zoom>
     </>
   );
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(floatingUi, document.body);
 }
 
 export default FloatingAiChat;
