@@ -1,14 +1,16 @@
 import {
+  Autocomplete,
   FormControl,
   FormHelperText,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
+  TextField,
 } from '@mui/material';
+import { useEffect, useState, type FocusEvent } from 'react';
 
-
-interface iProps{
+interface iProps {
   label: string;
   valueOptions: string[];
   selectedValue: string;
@@ -18,7 +20,32 @@ interface iProps{
   disabled?: boolean;
   error?: boolean;
   helperText?: string;
+  /** When true, allows any typed string (MUI Autocomplete freeSolo), not only list options */
+  freeSolo?: boolean;
 }
+
+const outlinedFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '10px',
+  },
+  '& .MuiInputBase-root.MuiOutlinedInput-root.Mui-disabled': {
+    backgroundColor: '#f0f0f0',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'inherit',
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'inherit',
+  },
+  '& .MuiInputBase-input.Mui-disabled': {
+    WebkitTextFillColor: 'black',
+    backgroundColor: '#f0f0f0',
+    borderRadius: '10px',
+    textOverflow: 'clip',
+    whiteSpace: 'normal',
+    overflow: 'visible',
+  },
+} as const;
 
 export default function CustomSelectField({
   label,
@@ -30,10 +57,80 @@ export default function CustomSelectField({
   disabled,
   error,
   helperText,
+  freeSolo = false,
 }: iProps) {
+  const [inputValue, setInputValue] = useState(selectedValue);
+
+  useEffect(() => {
+    setInputValue(selectedValue);
+  }, [selectedValue]);
+
   const handleChange = (event: SelectChangeEvent<string>) => {
     onChange(event.target.value);
   };
+
+  if (freeSolo) {
+    return (
+      <div>
+        <Autocomplete
+          freeSolo
+          options={valueOptions}
+          value={selectedValue}
+          inputValue={inputValue}
+          disabled={disabled}
+          onInputChange={(_, newInputValue, reason) => {
+            if (reason === 'reset') {
+              setInputValue(selectedValue);
+              return;
+            }
+            setInputValue(newInputValue);
+          }}
+          onChange={(_, newValue) => {
+            const v = newValue == null ? '' : String(newValue);
+            onChange(v);
+          }}
+          sx={{ m: 1, width }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label={label}
+              size="small"
+              error={!!error}
+              helperText={error ? helperText : undefined}
+              multiline={disabled}
+              minRows={disabled ? 1 : undefined}
+              maxRows={disabled ? 16 : undefined}
+              InputProps={{
+                ...params.InputProps,
+              }}
+              inputProps={{
+                ...params.inputProps,
+              }}
+              sx={{
+                ...outlinedFieldSx,
+                ...(disabled && {
+                  '& .MuiOutlinedInput-root': { alignItems: 'flex-start', borderRadius: '10px', },
+                }),
+              }}
+              onBlur={(e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                params.inputProps.onBlur?.(
+                  e as FocusEvent<HTMLInputElement>
+                );
+                const raw = (e.target as HTMLInputElement).value ?? '';
+                if (raw !== selectedValue) {
+                  onChange(raw);
+                }
+                if (raw !== inputValue) {
+                  setInputValue(raw);
+                }
+                onBlur?.();
+              }}
+            />
+          )}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -50,16 +147,15 @@ export default function CustomSelectField({
           {label}
         </InputLabel>
         <Select
-          value={selectedValue||''}
+          value={selectedValue || ''}
           onBlur={onBlur}
           onChange={handleChange}
           label={label}
           disabled={disabled}
-          // sx={{ borderRadius: '10px' }}
           sx={{
             borderRadius: '10px',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: error ? 'red' : '', // Red outline on error
+              borderColor: error ? 'red' : '',
             },
             '&:hover .MuiOutlinedInput-notchedOutline': {
               borderColor: error ? 'red' : '',
@@ -68,11 +164,8 @@ export default function CustomSelectField({
               borderColor: error ? 'red' : '',
             },
             '& .MuiSelect-root': {
-              color: error ? 'red' : 'inherit', // Red text on error
+              color: error ? 'red' : 'inherit',
             },
-            // '& .Mui-disabled': {
-            //   color: 'black',
-            // },
             '& .MuiInputBase-input.Mui-disabled': {
               WebkitTextFillColor: 'black',
               backgroundColor: '#f0f0f0',

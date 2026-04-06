@@ -546,6 +546,7 @@ export default function InterviewForm(props: iProps) {
             error={!!errors.interviewType}
             helperText={errors.interviewType}
             disabled={!isEditing}
+            freeSolo
             onChange={(value) => addValue('interviewType', value)}
             width={230}
           />

@@ -4,6 +4,8 @@ import Sidebar from '../sidebar/Sidebar';
 import { useEffect, useState } from 'react';
 import './layout.css';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import FloatingAiChat from '../aiChat/FloatingAiChat';
+import { RequirementAiChatProvider } from '../../context/RequirementAiChatContext';
 
 function Layout() {
   const location = useLocation();
@@ -40,15 +42,18 @@ function Layout() {
   }, []);
 
   return (
-    <div className="layout">
-      <Navbar sidebar={handleSidebarToggle} toggleSideBar={toggleSidebar} />
-      <div className="sidebar-layout">
-        <Sidebar toggleSideBar={toggleSidebar} />
-        <div className="outlet-layout">
-          <Outlet />
+    <RequirementAiChatProvider>
+      <div className="layout">
+        <Navbar sidebar={handleSidebarToggle} toggleSideBar={toggleSidebar} />
+        <div className="sidebar-layout">
+          <Sidebar toggleSideBar={toggleSidebar} />
+          <div className="outlet-layout">
+            <Outlet />
+          </div>
         </div>
+        {location.pathname === '/requirements' && <FloatingAiChat />}
       </div>
-    </div>
+    </RequirementAiChatProvider>
   );
 }
 

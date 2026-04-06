@@ -82,3 +82,12 @@ export async function requirementCounts(
   });
   return response.data;
 }
+
+
+export async function generatePayLoadFromPrompt(content: string, instruction: string) {
+  const response = await axiosClient.post(`/requirements/extract-from-content`, {
+    content,
+    instruction,
+  });
+  return response.data.data as Record<string, unknown>;
+}

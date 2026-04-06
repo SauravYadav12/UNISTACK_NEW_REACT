@@ -14,7 +14,10 @@ import {
   requirementCounts,
   requirementsList,
 } from '../../../services/requirementApi';
-import { reqirementStatusColors } from './requirementsValues';
+import {
+  reqirementStatusColors,
+  requirementFormInitialValues,
+} from './requirementsValues';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
 import { GridCallbackDetails, GridColDef, GridFilterModel } from '@mui/x-data-grid';
@@ -42,9 +45,11 @@ import { useSearchParams } from 'react-router-dom';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 import { separateByDates } from '../../../utils/dataGrid.util';
 import { IRequirement, RequirementStatus } from '../../../Interfaces/types';
+import { useRequirementAiChat } from '../../../context/RequirementAiChatContext';
 
 export default function Requirements() {
   const { isModuleAllowed, iUser } = useAuth();
+  const { pendingAiPrefill, clearPendingAiPrefill } = useRequirementAiChat();
   const [searchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -157,6 +162,29 @@ export default function Requirements() {
   useEffect(() => {
     reload();
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!pendingAiPrefill) return;
+
+    const merged: Partial<IRequirement> = {
+      ...requirementFormInitialValues,
+      ...pendingAiPrefill,
+      reqEnteredBy: `${iUser?.firstName ?? ''} ${iUser?.lastName ?? ''}`.trim(),
+      reqEnteredByRef: `${iUser?.id ?? ''}`,
+    };
+
+    delete (merged as Partial<IRequirement & { _id?: string }>)._id;
+    delete merged.reqID;
+    delete merged.createdAt;
+    delete merged.updatedAt;
+
+    setViewData(undefined);
+    setFormTitle('Add New Requirement');
+    setMode('add');
+    setReqToCopy(merged);
+    setDrawerOpen(true);
+    clearPendingAiPrefill();
+  }, [pendingAiPrefill, iUser, clearPendingAiPrefill]);
 
   async function fetchRequirementsData(
     isArchive: boolean,
