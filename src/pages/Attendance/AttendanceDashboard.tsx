@@ -166,6 +166,23 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
     }
   }
 
+  function handleDeleteAttendance(attendanceId: string) {
+    const removeFromState = (hook: iUseAttendance) => {
+      hook.setResults((pre) => pre.filter((i) => i._id !== attendanceId));
+    };
+    const states = [
+      currentUserMonthlyAttendance,
+      currentUserTodaysAttendance,
+      usersWiseOptionBasedAttendance,
+    ];
+    if (myAttendanceState) {
+      states.push(myAttendanceState);
+    }
+    for (const hook of states) {
+      removeFromState(hook);
+    }
+  }
+
   function reload() {
     onReload();
     currentUserTodaysAttendance.loadData();
@@ -248,6 +265,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
             user={currentUser}
             attendanceState={currentUserMonthlyAttendance}
             dateState={attendanceGridMonthlyDateState}
+            onAttendanceDeleted={handleDeleteAttendance}
           />
         </Grid>
         <Grid item xs={12} lg={4} pt={0}>
@@ -270,6 +288,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
             users={users}
             attendanceState={usersWiseOptionBasedAttendance}
             onChangeAttendance={handleChangeAttendance}
+            onAttendanceDeleted={handleDeleteAttendance}
             onChangeOption={setUserWiseAttendanceOption}
             options={userWiseAttendanceOptions}
             selectedOption={userWiseAttendanceOption}
@@ -291,6 +310,7 @@ interface UserWiseAttendanceListProps {
   users: iUser[];
   attendanceState: iUseAttendance;
   onChangeAttendance?: (a: iAttendance) => void;
+  onAttendanceDeleted?: (attendanceId: string) => void;
 }
 
 function UserWiseAttendanceList({
@@ -300,6 +320,7 @@ function UserWiseAttendanceList({
   selectedOption,
   options,
   onChangeAttendance,
+  onAttendanceDeleted,
   onChangeOption,
 }: UserWiseAttendanceListProps) {
   return (
@@ -330,6 +351,7 @@ function UserWiseAttendanceList({
             users={users || []}
             attendanceState={attendanceState}
             onChange={onChangeAttendance}
+            onAttendanceDeleted={onAttendanceDeleted}
             forEmployee={false}
           />
         )}
@@ -339,6 +361,7 @@ function UserWiseAttendanceList({
             attendanceState={attendanceState}
             dateState={dateState}
             forEmployee={false}
+            onAttendanceDeleted={onAttendanceDeleted}
           />
         )}
         {selectedOption === AttendanceTableType.Monthly && (
@@ -347,6 +370,7 @@ function UserWiseAttendanceList({
             attendanceState={attendanceState}
             dateState={dateState}
             forEmployee={false}
+            onAttendanceDeleted={onAttendanceDeleted}
           />
         )}
       </>

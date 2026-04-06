@@ -30,6 +30,7 @@ interface iProps {
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   tableContainerHeight?: number;
   forEmployee: boolean;
+  onAttendanceDeleted?: (attendanceId: string) => void;
 }
 
 const WeeklyAttendanceTable = ({
@@ -38,6 +39,7 @@ const WeeklyAttendanceTable = ({
   dateState,
   forEmployee,
   tableContainerHeight = 430,
+  onAttendanceDeleted: onAttendanceDeletedProp,
 }: iProps) => {
   const [startDate, setStartDate] = dateState; // Set your desired start date for the week
   const { attendance, loading, loadData, setResults, error } = attendanceState;
@@ -45,6 +47,13 @@ const WeeklyAttendanceTable = ({
   function handleChange(att: iAttendance) {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
+
+  function handleAttendanceDeletedLocal(attendanceId: string) {
+    setResults((pre) => pre.filter((i) => i._id !== attendanceId));
+  }
+
+  const onAttendanceDeletedResolved =
+    onAttendanceDeletedProp ?? handleAttendanceDeletedLocal;
   function getWeekDates(start: Moment): Moment[] {
     const dates: Moment[] = [];
     const currentDate = start.clone();
@@ -131,6 +140,7 @@ const WeeklyAttendanceTable = ({
                       forEmployee={forEmployee}
                       date={date}
                       onChange={handleChange}
+                      onAttendanceDeleted={onAttendanceDeletedResolved}
                       user={employee}
                     />
                   </Box>

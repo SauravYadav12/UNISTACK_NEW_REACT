@@ -38,6 +38,7 @@ interface iProps {
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
   forEmployee: boolean;
   tableContainerHeight?: number;
+  onAttendanceDeleted?: (attendanceId: string) => void;
 }
 const MonthlyAttendanceTable = ({
   users,
@@ -45,6 +46,7 @@ const MonthlyAttendanceTable = ({
   dateState,
   forEmployee,
   tableContainerHeight = 430,
+  onAttendanceDeleted: onAttendanceDeletedProp,
 }: iProps) => {
   const theme = useTheme();
   const [currentDate, setCurrentDate] = dateState;
@@ -54,6 +56,13 @@ const MonthlyAttendanceTable = ({
   function handleChange(att: iAttendance) {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
+
+  function handleAttendanceDeletedLocal(attendanceId: string) {
+    setResults((pre) => pre.filter((i) => i._id !== attendanceId));
+  }
+
+  const onAttendanceDeletedResolved =
+    onAttendanceDeletedProp ?? handleAttendanceDeletedLocal;
 
   const handlePrevMonth = () => {
     setCurrentDate(currentDate.clone().subtract(1, 'month').startOf('month'));
@@ -149,6 +158,7 @@ const MonthlyAttendanceTable = ({
                         forEmployee={forEmployee}
                         date={date}
                         onChange={handleChange}
+                        onAttendanceDeleted={onAttendanceDeletedResolved}
                         user={employee}
                       />
                     </Box>

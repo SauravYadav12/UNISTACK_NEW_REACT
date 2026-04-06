@@ -1,17 +1,22 @@
 import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 import {
   Box,
+  CircularProgress,
+  IconButton,
   Popover,
   Stack,
   styled,
   Tooltip,
   Typography,
 } from '@mui/material';
+import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined';
 import { getWorkingDuration, timeByUserShift } from '../../utils/dateUtil';
 import { dateFormate, timeFormate } from '../constants';
 import moment, { Moment } from 'moment';
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 import SelectAttendanceStatus from './SelectAttendanceStatus';
+import { deleteAttendance } from '../../services/attendanceApi';
 import AttendanceTimePicker from './AttendanceTimePicker';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
@@ -28,6 +33,7 @@ interface iProps {
   label?: string;
   forEmployee?: boolean;
   onChange?: (attendance: iAttendance) => void;
+  onAttendanceDeleted?: (attendanceId: string) => void;
 }
 
 export const StatusBox = styled(Box, {
@@ -68,9 +74,11 @@ const AttendanceStatusBox = ({
   user,
   label,
   onChange,
+  onAttendanceDeleted,
 }: iProps) => {
   const { iUser } = useAuth();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -92,6 +100,22 @@ const AttendanceStatusBox = ({
       return HolidayStatus;
     }
     return attendance?.status;
+  }
+
+  async function handleClearAttendance() {
+    if (!attendance?._id || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteAttendance(attendance._id);
+      onAttendanceDeleted?.(attendance._id);
+      setAnchorEl(null);
+      toast.success('Attendance cleared');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to clear attendance');
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function tip() {
@@ -166,14 +190,40 @@ const AttendanceStatusBox = ({
           }}
         >
           <Box p={2}>
-            <Box py={1} width={'100%'}>
-              <SelectAttendanceStatus
-                attendance={attendance}
-                date={date}
-                user={user}
-                onChange={onChange}
-              />
-            </Box>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.5}
+              sx={{ py: 1, width: '100%' }}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <SelectAttendanceStatus
+                  attendance={attendance}
+                  date={date}
+                  user={user}
+                  onChange={onChange}
+                />
+              </Box>
+              {attendance && onAttendanceDeleted && (
+                <Tooltip title="Clear attendance">
+                  <span>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      disabled={deleting}
+                      onClick={() => void handleClearAttendance()}
+                      aria-label="Clear attendance"
+                    >
+                      {deleting ? (
+                        <CircularProgress color="inherit" size={18} />
+                      ) : (
+                        <DeleteOutlineOutlined fontSize="small" />
+                      )}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+            </Stack>
 
             {attendance && (
               <>

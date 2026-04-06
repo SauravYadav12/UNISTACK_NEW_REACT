@@ -54,12 +54,14 @@ interface iProps {
   user: iUser;
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
+  onAttendanceDeleted?: (attendanceId: string) => void;
 }
 
 const AttendanceGridMonthly = ({
   user,
   attendanceState,
   dateState,
+  onAttendanceDeleted: onAttendanceDeletedProp,
 }: iProps) => {
   const { attendance, loading, error, loadData, setResults } = attendanceState;
   const [currentDate, setCurrentDate] = dateState;
@@ -69,6 +71,13 @@ const AttendanceGridMonthly = ({
   function handleChange(att: iAttendance) {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
+
+  function handleAttendanceDeletedLocal(attendanceId: string) {
+    setResults((pre) => pre.filter((i) => i._id !== attendanceId));
+  }
+
+  const onAttendanceDeletedResolved =
+    onAttendanceDeletedProp ?? handleAttendanceDeletedLocal;
   const handlePrevMonth = () => {
     setCurrentDate(currentDate.clone().subtract(1, 'month').startOf('month'));
   };
@@ -116,6 +125,7 @@ const AttendanceGridMonthly = ({
             date={date}
             user={user}
             onChange={handleChange}
+            onAttendanceDeleted={onAttendanceDeletedResolved}
           />
         </DateCell>
       );

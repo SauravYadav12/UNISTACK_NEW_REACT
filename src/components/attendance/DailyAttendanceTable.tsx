@@ -46,6 +46,7 @@ interface iProps {
   forEmployee: boolean;
   tableContainerHeight?: number;
   onChange?: (a: iAttendance) => void;
+  onAttendanceDeleted?: (attendanceId: string) => void;
 }
 const DailyAttendanceTable = ({
   users,
@@ -54,6 +55,7 @@ const DailyAttendanceTable = ({
   forEmployee,
   tableContainerHeight = 480,
   onChange,
+  onAttendanceDeleted,
 }: iProps) => {
   const { iUser } = useAuth();
   const [currentDate, setCurrentDate] = dateState;
@@ -134,6 +136,7 @@ const DailyAttendanceTable = ({
                         forEmployee={forEmployee}
                         date={currentDate}
                         onChange={onChange}
+                        onAttendanceDeleted={onAttendanceDeleted}
                         user={employee}
                         attendance={att}
                       />

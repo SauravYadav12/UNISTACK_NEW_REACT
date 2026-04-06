@@ -42,6 +42,10 @@ const MyAttendance = () => {
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
 
+  function handleAttendanceDeleted(attendanceId: string) {
+    setResults((pre) => pre.filter((i) => i._id !== attendanceId));
+  }
+
   if (error) {
     return (
       <div
@@ -100,6 +104,7 @@ const MyAttendance = () => {
             tableContainerHeight={140}
             dateState={dateState}
             onChange={handleChange}
+            onAttendanceDeleted={handleAttendanceDeleted}
             users={[me]}
             attendanceState={myAttendanceState}
             forEmployee
