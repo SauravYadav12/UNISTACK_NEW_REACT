@@ -54,6 +54,8 @@ interface iProps {
   user: iUser;
   attendanceState: iUseAttendance;
   dateState: [Moment, React.Dispatch<React.SetStateAction<Moment>>];
+  /** When set (e.g. from dashboard), keeps daily/weekly/monthly list state in sync with the grid */
+  onAttendanceChange?: (attendance: iAttendance) => void;
   onAttendanceDeleted?: (attendanceId: string) => void;
 }
 
@@ -61,6 +63,7 @@ const AttendanceGridMonthly = ({
   user,
   attendanceState,
   dateState,
+  onAttendanceChange: onAttendanceChangeProp,
   onAttendanceDeleted: onAttendanceDeletedProp,
 }: iProps) => {
   const { attendance, loading, error, loadData, setResults } = attendanceState;
@@ -69,6 +72,10 @@ const AttendanceGridMonthly = ({
   const daysInMonth = currentDate.daysInMonth();
   const firstDayOfMonth = currentDate.clone().startOf('month').day(); // 0 for Sunday, 6 for Saturday
   function handleChange(att: iAttendance) {
+    if (onAttendanceChangeProp) {
+      onAttendanceChangeProp(att);
+      return;
+    }
     setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
   }
 

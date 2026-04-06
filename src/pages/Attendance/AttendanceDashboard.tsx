@@ -265,6 +265,7 @@ function MyDashBoardComponent({ users, onReload }: MyDashBoardComponentProp) {
             user={currentUser}
             attendanceState={currentUserMonthlyAttendance}
             dateState={attendanceGridMonthlyDateState}
+            onAttendanceChange={handleChangeAttendance}
             onAttendanceDeleted={handleDeleteAttendance}
           />
         </Grid>
