@@ -599,6 +599,7 @@ export default function InterviewForm(props: iProps) {
             helperText={errors.interviewWith}
             onChange={(value) => addValue('interviewWith', value)}
             width={230}
+            freeSolo
             disabled={!isEditing}
           />
           <CustomTextField
@@ -622,6 +623,7 @@ export default function InterviewForm(props: iProps) {
             selectedValue={values.interviewRound || ''}
             onChange={(value) => addValue('interviewRound', value)}
             width={230}
+            freeSolo
             disabled={!isEditing}
           />
           <CustomTextField
@@ -642,6 +644,7 @@ export default function InterviewForm(props: iProps) {
             helperText={errors.interviewViaMode}
             onChange={(value) => addValue('interviewViaMode', value)}
             width={230}
+            freeSolo
             disabled={!isEditing}
           />
           <CustomSelectField
@@ -650,6 +653,7 @@ export default function InterviewForm(props: iProps) {
             selectedValue={values.meetingType || ''}
             onChange={(value) => addValue('meetingType', value)}
             width={230}
+            freeSolo
             disabled={!isEditing}
           />
           <CustomSelectField
@@ -661,6 +665,7 @@ export default function InterviewForm(props: iProps) {
             helperText={errors.interviewDuration}
             onChange={(value) => addValue('interviewDuration', value)}
             width={230}
+            freeSolo
             disabled={!isEditing}
           />
           <CustomTextField
