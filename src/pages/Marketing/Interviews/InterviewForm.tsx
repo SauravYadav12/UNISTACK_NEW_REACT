@@ -796,7 +796,7 @@ export default function InterviewForm(props: iProps) {
 
           {/* Section 4: Interviewee Candidate Details */}
           {user &&
-            user.role.some(role => [UserRole.admin, UserRole['super-admin']].includes(role)) && (
+            user.role.some(role => [UserRole.admin, UserRole['super-admin'],UserRole.hr].includes(role)) && (
               <>
                 <Grid item xs={12}>
                   <h4>4. Interviewee Candidate Details</h4>
