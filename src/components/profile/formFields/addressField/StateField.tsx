@@ -3,6 +3,7 @@ import { SelectChangeEvent } from '@mui/material';
 import { SectionField } from '../../../../pages/Marketing/Profile/constants';
 import CustomSelectField from '../../../select/CustomSelectField';
 import { State } from 'country-state-city';
+
 interface MyProps {
   error: boolean;
   helperText: string;
@@ -12,6 +13,7 @@ interface MyProps {
   selectedState: string;
   onChange: (e: SelectChangeEvent) => void;
 }
+
 const StateField = ({
   selectedCountry,
   selectedState,
@@ -39,7 +41,7 @@ const StateField = ({
         onChange={(value) =>
           onChange({ target: { value } } as SelectChangeEvent)
         }
-        width={180}
+        fullWidth
       />
     )
   );

@@ -30,7 +30,7 @@ const PhoneField = ({
   return (
     <MuiTelInput
       disabled={disabled}
-      inputProps={{ ...field.inputAttributes, maxLength: maxPhoneLength }}
+      slotProps={{ htmlInput: { ...field.inputAttributes, maxLength: maxPhoneLength } as React.InputHTMLAttributes<HTMLInputElement> }}
       defaultCountry={disabled ? undefined : 'IN'}
       onChange={onPhoneChange}
       onBlur={() => onBlur && onBlur(field)}

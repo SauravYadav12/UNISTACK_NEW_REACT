@@ -6,15 +6,41 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { alpha, lighten } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
 
-/** Gentle vertical bob so the FAB reads as lightly suspended */
-export const fabFloat = keyframes`
-  0%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -7px, 0);
-  }
+/**
+ * Idle choreography for the roboSphere FAB. One ~14s cycle that layers:
+ *  - a gentle bob (the old `fabFloat`, kept as the baseline),
+ *  - a yawn (anticipatory squash → tall stretch → ease back) around the
+ *    middle of the cycle,
+ *  - a full 360° rotate towards the end of the cycle.
+ *
+ * Combining everything into a single keyframe sequence avoids layering two
+ * `transform`-based animations (which conflict on the same element). The
+ * rotation lands exactly on `360deg` at cycle end so the next iteration
+ * starts clean without a visible snap.
+ */
+export const fabIdleDance = keyframes`
+  /* Bob — 3 easy up-downs over the first ~45% of the cycle */
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); }
+  10%  { transform: translate3d(0, -7px, 0) rotate(0deg) scale(1, 1); }
+  20%  { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); }
+  30%  { transform: translate3d(0, -7px, 0) rotate(0deg) scale(1, 1); }
+  40%  { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); }
+
+  /* Yawn — squash-anticipation, tall-stretch peak, ease back */
+  45%  { transform: translate3d(0, 0, 0) rotate(-3deg) scale(1.06, 0.92); }
+  52%  { transform: translate3d(0, -10px, 0) rotate(4deg) scale(1.08, 1.18); }
+  57%  { transform: translate3d(0, -5px, 0) rotate(-2deg) scale(1.04, 1.08); }
+  62%  { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); }
+
+  /* 360° rotate — a slow spin with a small hover, nose ends exactly where it started */
+  70%  { transform: translate3d(0, -3px, 0) rotate(0deg) scale(1, 1); }
+  82%  { transform: translate3d(0, -3px, 0) rotate(180deg) scale(1, 1); }
+  94%  { transform: translate3d(0, -3px, 0) rotate(360deg) scale(1, 1); }
+  100% { transform: translate3d(0, 0, 0) rotate(360deg) scale(1, 1); }
 `;
+
+/** Kept as a backwards-compat alias — older imports stay valid. */
+export const fabFloat = fabIdleDance;
 
 /** While the model runs — breathe + glow on the FAB (no spinner). */
 export const fabGeneratingPulse = keyframes`
@@ -96,16 +122,18 @@ export function floatingChatFabSx(opts: {
       overflow: 'visible',
       zIndex: open ? fabWhenOpenZ : theme.zIndex.modal + 1,
       color: contrastText,
-      background: `linear-gradient(165deg, ${topTint} 0%, ${main} 38%, ${dark} 100%)`,
-      border: `1px solid ${alpha('#fff', 0.35)}`,
-      boxShadow: floatShadow,
+      background: 'transparent',
+      border: 'none',
+      boxShadow: 'none',
       cursor: 'grab',
       touchAction: 'none',
       animation: generating
         ? `${fabGeneratingPulse} 1.05s ease-in-out infinite`
         : open
           ? 'none'
-          : `${fabFloat} 2.75s ease-in-out infinite`,
+          : // Idle choreography: bob → yawn → 360° spin, on a slow 14s loop
+            // so the sphere feels alive without being distracting.
+            `${fabIdleDance} 14s ease-in-out infinite`,
       willChange: generating || !open ? 'transform' : undefined,
       transition: theme.transitions.create(
         ['transform', 'box-shadow', 'filter'],
@@ -129,58 +157,52 @@ export function floatingChatFabSx(opts: {
           display: 'none',
         },
       },
-      '&:hover': generating
-        ? {
-            boxShadow: hoverShadow,
-          }
-        : {
+      '&:hover': {
             animation: 'none',
             willChange: 'transform',
-            transform: 'translateY(-5px) scale(1.04)',
-            boxShadow: hoverShadow,
-            filter: 'brightness(1.04)',
+            transform: 'translateY(-3px) scale(1.08)',
+            background: 'transparent',
+            boxShadow: 'none',
           },
-      '&:active': generating
-        ? {
+      '&:active': {
             cursor: 'grabbing',
-          }
-        : {
-            animation: 'none',
-            cursor: 'grabbing',
-            transform: 'translateY(-1px) scale(1.01)',
-            boxShadow: pressedShadow,
-            filter: 'brightness(0.98)',
+            transform: 'scale(0.95)',
           },
-      ...(open && {
-        boxShadow: `${floatShadow}, 0 0 0 3px ${alpha('#fff', 0.45)}`,
-      }),
     };
   };
 }
 
 export const fabGenieWrapperSx: SxProps<Theme> = {
   position: 'relative',
-  width: 40,
-  height: 40,
+  // Matches the new FAB_SIZE (70). Must stay in sync with the constant in
+  // FloatingAiChat.tsx — the wrapper needs the same footprint so the sphere
+  // fills the FAB without cropping.
+  width: 70,
+  height: 70,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  overflow: 'hidden',
+  borderRadius: '50%',
 };
 
 export const fabGenieImgSx: SxProps<Theme> = {
-  width: 30,
-  height: 30,
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
   pointerEvents: 'none',
   display: 'block',
   userSelect: 'none',
+  borderRadius: '50%',
 };
 
 export const fabSessionDotSx: SxProps<Theme> = {
   position: 'absolute',
-  top: -1,
-  right: -1,
-  width: 11,
-  height: 11,
+  top: 0,
+  right: 0,
+  // Scaled proportionally with the +25% FAB size (11 → 14).
+  width: 14,
+  height: 14,
   borderRadius: '50%',
   bgcolor: 'success.light',
   border: '2px solid',

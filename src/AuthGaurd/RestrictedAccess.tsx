@@ -7,12 +7,19 @@ import {
   Grid,
   useTheme,
 } from '@mui/material';
-import { LockOutlined, ArrowBack } from '@mui/icons-material';
+import { LockOutlined, LoginOutlined } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContextProvider';
 
 export default function RestrictedAccess() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { validateLogout } = useAuth();
+
+  const handleLogin = () => {
+    validateLogout();
+    navigate('/');
+  };
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
@@ -68,13 +75,13 @@ export default function RestrictedAccess() {
         </Typography>
 
         <Grid container justifyContent="center">
-          <Grid item>
+          <Grid>
             <Button
               variant="contained"
               color="primary"
               size="large"
-              startIcon={<ArrowBack />}
-              onClick={() => navigate('/dashboard')}
+              startIcon={<LoginOutlined />}
+              onClick={handleLogin}
               sx={{
                 px: 4,
                 py: 1.5,
@@ -87,7 +94,7 @@ export default function RestrictedAccess() {
                 },
               }}
             >
-              Return to Dashboard
+              Login
             </Button>
           </Grid>
         </Grid>

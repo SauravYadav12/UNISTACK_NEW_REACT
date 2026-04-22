@@ -56,7 +56,7 @@ const SupportStats = () => {
       <CardContent sx={{ p: '30px' }}>
         <Grid container spacing={3}>
           {/* column */}
-          <Grid item xs={7} sm={7}>
+          <Grid size={{ xs: 7, sm: 7 }}>
             <Typography variant="subtitle1" fontWeight="600">
               Support Stats
             </Typography>

@@ -637,7 +637,7 @@ function ConsultantsExperience({
 }) {
   return (
     <Box
-      component={!projects.length ? Paper : undefined}
+      component={!projects.length ? Paper : 'div'}
       sx={{
         my: 1,
       }}

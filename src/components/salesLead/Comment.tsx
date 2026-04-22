@@ -35,8 +35,7 @@ const Comment = ({ onAdd, comment, disabled, createMode }: Iprops) => {
 
   return (
     <Grid
-      item
-      xs={12}
+      size={12}
       sx={{ my: 1 }}
       style={{
         padding: '0px',
@@ -45,7 +44,6 @@ const Comment = ({ onAdd, comment, disabled, createMode }: Iprops) => {
       }}
     >
       <Grid
-        item
         sx={{ m: 1, width: '100%', position: 'relative', minWidth: 300 }}
       >
         <TextField

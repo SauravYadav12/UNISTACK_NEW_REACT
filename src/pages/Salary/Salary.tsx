@@ -1,12 +1,500 @@
-import ViewSalaryDetails from "../../components/salary/ViewSalaryDetails";
+import { useMemo, useState } from 'react';
+import {
+  Box, Button, Grid, IconButton, Stack, Tooltip, Typography, alpha, Chip,
+  MenuItem, Select, FormControl, InputLabel, CircularProgress,
+} from '@mui/material';
+import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
+import moment from 'moment';
+import { toast } from 'react-toastify';
+import { motion } from 'framer-motion';
+import {
+  IconCash, IconUsers, IconCalendarEvent, IconReportMoney,
+  IconDownload, IconChevronLeft, IconChevronRight, IconEdit, IconEye,
+  IconFileInvoice,
+} from '@tabler/icons-react';
 
+import { useFetchData } from '../../hooks/fetchDataHook';
+import { tokens } from '../../theme/theme';
+import {
+  getSlipsForMonth, generateSlipsForMonth,
+  monthlyReportCsvUrl,
+} from '../../services/salaryApi';
+import { usersList } from '../../services/authApi';
+import { iUser } from '../../Interfaces/iUser';
+import { axiosClient } from '../../config/axios.config';
+import { SalarySlip } from '../../Interfaces/salary';
 
-const Salary = () => {
+interface SalaryRow {
+  rowId: string;
+  userId: string;
+  name: string;
+  employeeId: string;
+  designation: string;
+  country: 'IN' | 'US';
+  slip?: SalarySlip;
+}
+
+function sym(c?: 'INR' | 'USD') {
+  return c === 'USD' ? '$' : '\u20B9';
+}
+import SalaryConfigDialog from '../../components/salary/SalaryConfigDialog';
+import SlipPreviewDialog from '../../components/salary/SlipPreviewDialog';
+import EditSlipDialog from '../../components/salary/EditSlipDialog';
+import LeaveDeductionFormula from '../../components/salary/LeaveDeductionFormula';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import AnimatedCounter from '../../components/ui/AnimatedCounter';
+import { staggerContainer, staggerItem } from '../../theme/animations';
+
+const MotionBox = motion.create(Box);
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+export default function Salary() {
+  const now = moment();
+  const [year, setYear] = useState<number>(now.year());
+  const [month, setMonth] = useState<number>(now.month() + 1);
+  const [configUser, setConfigUser] = useState<{ id: string; name: string } | null>(null);
+  const [previewSlip, setPreviewSlip] = useState<SalarySlip | undefined>();
+  const [editingSlip, setEditingSlip] = useState<SalarySlip | undefined>();
+  const [generating, setGenerating] = useState(false);
+  const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false);
+
+  const {
+    data, loading, loadData,
+  } = useFetchData<{ users: iUser[]; slips: SalarySlip[] }>(async () => {
+    const [u, s] = await Promise.all([
+      usersList(),
+      getSlipsForMonth(year, month),
+    ]);
+    return {
+      users: (u.data.users || []).filter((x) => x.active),
+      slips: s.data || [],
+    };
+  }, [year, month]);
+
+  const rows: SalaryRow[] = useMemo(() => {
+    const users = data?.users || [];
+    const slips = data?.slips || [];
+    const slipByUser = new Map(slips.map((s) => [s.user, s]));
+    return users.map((u) => ({
+      rowId: u._id,
+      userId: u._id,
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+      employeeId: slipByUser.get(u._id)?.employeeId || '—',
+      designation: slipByUser.get(u._id)?.designation || '—',
+      country: (u.shift === 'India' ? 'IN' : 'US') as 'IN' | 'US',
+      slip: slipByUser.get(u._id),
+    }));
+  }, [data]);
+
+  const totalPayroll = rows.reduce((s, x) => s + (x.slip?.netPay || 0), 0);
+  const totalUnpaid = rows.reduce((s, x) => s + (x.slip?.leaves?.unpaidDays || 0), 0);
+  const slipCount = rows.filter((r) => r.slip).length;
+
+  function shiftMonth(delta: number) {
+    const m = moment({ year, month: month - 1 }).add(delta, 'month');
+    setYear(m.year());
+    setMonth(m.month() + 1);
+  }
+
+  async function runGenerate() {
+    setGenerating(true);
+    try {
+      const res = await generateSlipsForMonth(year, month);
+      toast.success(`Generated ${res.ok} slips${res.failed ? ` (${res.failed} failed)` : ''}`);
+      loadData();
+    } catch (e) {
+      toast.error('Failed to generate slips');
+      throw e; // keep ConfirmDialog open so admin can retry
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handleDownloadCsv() {
+    try {
+      const res = await axiosClient.get(monthlyReportCsvUrl(year, month), {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `salary-${year}-${String(month).padStart(2, '0')}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download report');
+    }
+  }
+
+  const columns: GridColDef<SalaryRow>[] = useMemo(() => [
+    {
+      field: 'name',
+      headerName: 'Employee',
+      flex: 1.2, minWidth: 180,
+      renderCell: ({ row }) => (
+        <Box>
+          <Typography sx={{ fontWeight: 600, fontSize: 13, color: tokens.colors.lightText }}>
+            {row.name}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: tokens.colors.lightTextSecondary }}>
+            {row.employeeId}
+          </Typography>
+        </Box>
+      ),
+    },
+    { field: 'designation', headerName: 'Designation', flex: 1, minWidth: 140 },
+    {
+      field: 'country', headerName: 'Shift', width: 80,
+      renderCell: ({ row }) => (
+        <Chip
+          label={row.country}
+          size="small"
+          sx={{
+            bgcolor: row.country === 'IN'
+              ? alpha(tokens.colors.pink, 0.1)
+              : alpha(tokens.colors.blue, 0.1),
+            color: row.country === 'IN' ? tokens.colors.pink : tokens.colors.blue,
+            fontWeight: 600, fontSize: 10, height: 22,
+          }}
+        />
+      ),
+    },
+    {
+      field: 'workingDays', headerName: 'Work Days', width: 100, type: 'number',
+      valueGetter: (_v, row) => row.slip?.workingDays,
+      renderCell: ({ value }) => value ?? '—',
+    },
+    {
+      field: 'presentDays', headerName: 'Present', width: 90, type: 'number',
+      valueGetter: (_v, row) => row.slip?.presentDays,
+      renderCell: ({ value }) => value ?? '—',
+    },
+    {
+      field: 'unpaid', headerName: 'Unpaid', width: 90, type: 'number',
+      valueGetter: (_v, row) => row.slip?.leaves?.unpaidDays,
+      renderCell: ({ value }) => value ?? '—',
+    },
+    {
+      field: 'gross', headerName: 'Gross', width: 120, type: 'number',
+      valueGetter: (_v, row) => row.slip?.earnings?.total,
+      renderCell: ({ value, row }) =>
+        value != null
+          ? `${sym(row.slip?.currency)}${(value as number).toLocaleString()}`
+          : '—',
+    },
+    {
+      field: 'netPay', headerName: 'Net Pay', width: 140, type: 'number',
+      valueGetter: (_v, row) => row.slip?.netPay,
+      renderCell: ({ value, row }) =>
+        value != null ? (
+          <Typography sx={{ fontWeight: 700, color: tokens.colors.lightText, fontVariantNumeric: 'tabular-nums' }}>
+            {sym(row.slip?.currency)}{(value as number).toLocaleString()}
+          </Typography>
+        ) : (
+          <Chip label="No slip" size="small" sx={{
+            bgcolor: alpha(tokens.colors.yellowDark, 0.1),
+            color: tokens.colors.yellowDark, fontWeight: 600, fontSize: 10, height: 22,
+          }} />
+        ),
+    },
+    {
+      field: 'actions', headerName: '', width: 160, sortable: false, filterable: false,
+      renderCell: ({ row }) => (
+        <Stack direction="row" spacing={0.5}>
+          <Tooltip title={row.slip ? 'View slip' : 'No slip yet'}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={!row.slip}
+                onClick={() => row.slip && setPreviewSlip(row.slip)}
+              >
+                <IconEye size={16} />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title={row.slip ? 'Edit slip (corrections)' : 'Generate the slip first'}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={!row.slip}
+                onClick={() => row.slip && setEditingSlip(row.slip)}
+                sx={{ color: tokens.colors.pink }}
+              >
+                <IconFileInvoice size={16} />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Edit salary config">
+            <IconButton size="small" onClick={() => setConfigUser({ id: row.userId, name: row.name })}>
+              <IconEdit size={16} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      ),
+    },
+  ], []);
+
+  const statCards = [
+    { title: 'Total Payroll', count: totalPayroll, prefix: '₹', icon: <IconCash size={22} />, color: tokens.colors.pink },
+    { title: 'Active Employees', count: rows.length, icon: <IconUsers size={22} />, color: tokens.colors.blue },
+    { title: 'Unpaid Days', count: totalUnpaid, icon: <IconCalendarEvent size={22} />, color: tokens.colors.yellowDark },
+    { title: 'Avg Net Pay', count: slipCount ? Math.round(totalPayroll / slipCount) : 0, prefix: '₹', icon: <IconReportMoney size={22} />, color: tokens.colors.brand },
+  ];
+
   return (
-    <>
-    {/* <ViewSalaryDetails /> */}
-    </>
-  );
-};
+    <Box>
+      {/* Hero */}
+      <MotionBox initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography variant="h1" fontWeight={700} sx={{ mb: 0.5 }}>
+              Salary{' '}
+              <Box component="span" sx={{ background: tokens.gradients.pinkBlue, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                Management
+              </Box>
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Calculate, review, and distribute monthly payroll
+            </Typography>
+          </Box>
 
-export default Salary;
+          {/* Month / Year selector */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            <IconButton onClick={() => shiftMonth(-1)} size="small">
+              <IconChevronLeft size={18} />
+            </IconButton>
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <InputLabel>Month</InputLabel>
+              <Select
+                value={month}
+                label="Month"
+                onChange={(e) => setMonth(Number(e.target.value))}
+              >
+                {MONTH_NAMES.map((m, i) => (
+                  <MenuItem key={m} value={i + 1}>{m}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel>Year</InputLabel>
+              <Select value={year} label="Year" onChange={(e) => setYear(Number(e.target.value))}>
+                {Array.from({ length: 6 }, (_, i) => now.year() - 3 + i).map((y) => (
+                  <MenuItem key={y} value={y}>{y}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <IconButton onClick={() => shiftMonth(1)} size="small">
+              <IconChevronRight size={18} />
+            </IconButton>
+          </Stack>
+        </Box>
+      </MotionBox>
+
+      {/* Stat cards */}
+      <MotionBox variants={staggerContainer} initial="initial" animate="animate" sx={{ mb: 3 }}>
+        <Grid container spacing={2}>
+          {statCards.map((c) => (
+            <Grid key={c.title} size={{ xs: 6, md: 3 }}>
+              <MotionBox
+                variants={staggerItem}
+                whileHover={{ y: -4 }}
+                sx={{
+                  p: 2.5, borderRadius: 4, bgcolor: 'background.paper',
+                  border: '1px solid', borderColor: 'divider',
+                  position: 'relative', overflow: 'hidden',
+                  transition: 'box-shadow 0.25s',
+                  '&:hover': { boxShadow: `0 8px 24px ${alpha(c.color, 0.15)}` },
+                }}
+              >
+                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, bgcolor: c.color, opacity: 0.7 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{
+                    width: 42, height: 42, borderRadius: 3,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    bgcolor: alpha(c.color, 0.1), color: c.color,
+                  }}>
+                    {c.icon}
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
+                  {c.prefix && (
+                    <Typography sx={{ fontSize: 22, fontWeight: 700, color: tokens.colors.lightText, mr: 0.25 }}>
+                      {c.prefix}
+                    </Typography>
+                  )}
+                  <AnimatedCounter
+                    value={c.count}
+                    variant="h2"
+                    fontWeight={700}
+                    color="text.primary"
+                    sx={{ lineHeight: 1 }}
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ mt: 0.5, display: 'block' }}>
+                  {c.title}
+                </Typography>
+              </MotionBox>
+            </Grid>
+          ))}
+        </Grid>
+      </MotionBox>
+
+      {/* Action strip */}
+      <MotionBox initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
+        sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Typography variant="h5" fontWeight={700} color="#2A3547">
+              {MONTH_NAMES[month - 1]} {year}
+            </Typography>
+            <LeaveDeductionFormula />
+          </Stack>
+          <Typography variant="caption" color="text.secondary">
+            {slipCount} of {rows.length} employees have slips for this month
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Button
+            variant="outlined" size="small"
+            startIcon={<IconDownload size={16} />}
+            onClick={handleDownloadCsv}
+            disabled={!slipCount}
+          >
+            Download CSV
+          </Button>
+          <Button
+            variant="contained" size="small"
+            startIcon={generating ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <IconCash size={16} />}
+            onClick={() => setGenerateConfirmOpen(true)}
+            disabled={generating}
+            sx={{ bgcolor: tokens.colors.pink, '&:hover': { bgcolor: tokens.colors.pinkDark } }}
+          >
+            {generating ? 'Generating…' : 'Generate Slips'}
+          </Button>
+        </Stack>
+      </MotionBox>
+
+      {/* Data grid */}
+      <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}
+        sx={{ minHeight: 400 }}>
+        <DataGrid
+          loading={loading}
+          rows={rows}
+          columns={columns}
+          getRowId={(row) => row.rowId}
+          slots={{ toolbar: GridToolbar }}
+          slotProps={{ toolbar: { showQuickFilter: true } }}
+          getRowHeight={() => 56}
+          sx={{
+            border: 'none', fontSize: '0.875rem',
+            '& .MuiDataGrid-toolbarContainer': {
+              px: 2.5, py: 1.5, gap: 1,
+              bgcolor: '#fff', borderRadius: '12px',
+              border: '1px solid', borderColor: 'grey.200',
+              boxShadow: '0px 7px 30px 0px rgba(90, 114, 123, 0.11)', mb: 2,
+            },
+            '& .MuiDataGrid-main': {
+              bgcolor: '#fff', borderRadius: '12px 12px 0 0',
+              border: '1px solid', borderColor: 'grey.200',
+              borderBottom: 'none',
+              boxShadow: '0px 7px 30px 0px rgba(90, 114, 123, 0.11)',
+              overflow: 'hidden',
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              bgcolor: '#F6F9FC', minHeight: '50px !important', maxHeight: '50px !important',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600, fontSize: '0.8125rem', color: '#2A3547' },
+            '& .MuiDataGrid-columnSeparator': { display: 'none' },
+            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': { outline: 'none' },
+            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': { outline: 'none' },
+            '& .MuiDataGrid-row:hover': { bgcolor: '#F6F9FC' },
+            '& .MuiDataGrid-cell': { px: 2, display: 'flex', alignItems: 'center' },
+            '& .MuiDataGrid-footerContainer': {
+              bgcolor: '#fff', borderRadius: '0 0 12px 12px',
+              border: '1px solid', borderColor: 'grey.200',
+              boxShadow: '0px 7px 30px 0px rgba(90, 114, 123, 0.11)',
+            },
+          }}
+        />
+      </MotionBox>
+
+      {configUser && (
+        <SalaryConfigDialog
+          open={!!configUser}
+          userId={configUser.id}
+          userName={configUser.name}
+          year={year}
+          month={month}
+          onClose={() => setConfigUser(null)}
+          onSaved={() => loadData()}
+        />
+      )}
+
+      <SlipPreviewDialog
+        open={!!previewSlip}
+        slip={previewSlip}
+        onClose={() => setPreviewSlip(undefined)}
+      />
+
+      <EditSlipDialog
+        open={!!editingSlip}
+        slip={editingSlip}
+        onClose={() => setEditingSlip(undefined)}
+        onSaved={() => {
+          setEditingSlip(undefined);
+          loadData();
+        }}
+      />
+
+      <ConfirmDialog
+        open={generateConfirmOpen}
+        onClose={() => setGenerateConfirmOpen(false)}
+        onConfirm={runGenerate}
+        tone="neutral"
+        title={`Generate payslips for ${MONTH_NAMES[month - 1]} ${year}?`}
+        confirmLabel="Yes, generate"
+        cancelLabel="Cancel"
+        description={
+          <Stack spacing={1.25} sx={{ textAlign: 'left' }}>
+            <Typography variant="body2" color="text.secondary">
+              Runs the payroll calculation for <strong>every active employee</strong> ({rows.length}) for <strong>{MONTH_NAMES[month - 1]} {year}</strong> and stores their payslip in the database.
+            </Typography>
+            <Box sx={{
+              p: 1.25, borderRadius: 1.5,
+              bgcolor: alpha(tokens.colors.blue, 0.06),
+              border: `1px solid ${alpha(tokens.colors.blue, 0.22)}`,
+            }}>
+              <Typography variant="caption" sx={{ color: tokens.colors.blue, fontWeight: 700, letterSpacing: 1 }}>
+                WHAT THIS USES
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 0.25, lineHeight: 1.5 }}>
+                Each slip pulls from the employee&rsquo;s saved <strong>salary config</strong> (earnings + deductions), this month&rsquo;s <strong>working days</strong> (Total days − Sat/Sun − national holidays), any approved <strong>leaves</strong> in the month, and their country&rsquo;s <strong>currency</strong>.
+              </Typography>
+            </Box>
+            <Box sx={{
+              p: 1.25, borderRadius: 1.5,
+              bgcolor: alpha(tokens.colors.success, 0.06),
+              border: `1px solid ${alpha(tokens.colors.success, 0.2)}`,
+            }}>
+              <Typography variant="caption" sx={{ color: tokens.colors.success, fontWeight: 700, letterSpacing: 1 }}>
+                SAFE TO RE-RUN
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 0.25, lineHeight: 1.5 }}>
+                Each run overwrites the existing slip for the same user + month, so you can regenerate after fixing a config or approving a late leave without creating duplicates.
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Manual edits you&rsquo;ve made to individual slips via the pencil icon <strong>will be overwritten</strong>. Re-apply those after regeneration.
+            </Typography>
+          </Stack>
+        }
+      />
+    </Box>
+  );
+}

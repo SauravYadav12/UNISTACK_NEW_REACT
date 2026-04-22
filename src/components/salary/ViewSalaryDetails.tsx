@@ -124,13 +124,13 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
 
   const renderFieldSection = (title: string, fields: any[], icon: string, color: string) => (
     <>
-      <Grid item xs={12} sx={{ mt: 2 }}>
+      <Grid size={12} sx={{ mt: 2 }}>
         <Typography variant="h6" gutterBottom sx={{ color, display: 'flex', alignItems: 'center' }}>
           {icon} {title}
         </Typography>
       </Grid>
       {fields.map((field, index) => (
-        <Grid item xs={12} sm={6} md={4} key={field.key}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={field.key}>
           <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
             <Typography variant="body2" color="text.secondary">
               {field.label}
@@ -160,7 +160,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
     <>
       <Grid container spacing={3}>
         {/* Header with Edit Button */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 600 }}>
               Salary Details
@@ -178,13 +178,13 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
         </Grid>
 
         {/* Employee Information */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Typography variant="h6" gutterBottom sx={{ color: 'text.secondary' }}>
             Employee Information
           </Typography>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Box sx={{ display: 'flex', gap: 4, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
             <Typography variant="body1">
               <strong>Employee ID:</strong> {myProfile?.employeeId || 'N/A'}
@@ -212,14 +212,14 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
         {renderFieldSection('Employer Contributions', employerFields, '🏢', 'secondary.main')}
 
         {/* Salary Summary */}
-        <Grid item xs={12} sx={{ mt: 3 }}>
+        <Grid size={12} sx={{ mt: 3 }}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
                 💼 Salary Summary
               </Typography>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.light', borderRadius: 2 }}>
                     <Typography variant="subtitle2" color="info.contrastText">
                       💼 CTC (Cost to Company)
@@ -229,7 +229,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', borderRadius: 2 }}>
                     <Typography variant="subtitle2" color="success.contrastText">
                       💰 Gross Salary
@@ -239,7 +239,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'error.light', borderRadius: 2 }}>
                     <Typography variant="subtitle2" color="error.contrastText">
                       📉 Total Deductions
@@ -249,7 +249,7 @@ const ViewSalaryDetails: React.FC<ViewSalaryDetailsProps> = ({
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', borderRadius: 2 }}>
                     <Typography variant="subtitle2" color="primary.contrastText">
                       💵 Net Salary

@@ -22,6 +22,10 @@ interface iProps {
   helperText?: string;
   /** When true, allows any typed string (MUI Autocomplete freeSolo), not only list options */
   freeSolo?: boolean;
+  /** When true, takes full width of parent instead of fixed pixel width */
+  fullWidth?: boolean;
+  /** When true, renders a red asterisk on the label to signal a required field. */
+  required?: boolean;
 }
 
 const outlinedFieldSx = {
@@ -58,7 +62,10 @@ export default function CustomSelectField({
   error,
   helperText,
   freeSolo = false,
+  fullWidth: isFullWidth = false,
+  required = false,
 }: iProps) {
+  const containerSx = isFullWidth ? { width: '100%' } : { m: 1, width };
   const [inputValue, setInputValue] = useState(selectedValue);
 
   useEffect(() => {
@@ -71,9 +78,10 @@ export default function CustomSelectField({
 
   if (freeSolo) {
     return (
-      <div>
+      <div style={isFullWidth ? { width: '100%' } : undefined}>
         <Autocomplete
           freeSolo
+          fullWidth={isFullWidth}
           options={valueOptions}
           value={selectedValue}
           inputValue={inputValue}
@@ -89,11 +97,12 @@ export default function CustomSelectField({
             const v = newValue == null ? '' : String(newValue);
             onChange(v);
           }}
-          sx={{ m: 1, width }}
+          sx={containerSx}
           renderInput={(params) => (
             <TextField
               {...params}
               label={label}
+              required={required}
               size="small"
               error={!!error}
               helperText={error ? helperText : undefined}
@@ -133,15 +142,17 @@ export default function CustomSelectField({
   }
 
   return (
-    <div>
+    <div style={isFullWidth ? { width: '100%' } : undefined}>
       <FormControl
-        sx={{ m: 1, width: width }}
+        sx={containerSx}
         size="small"
-        fullWidth
+        fullWidth={isFullWidth}
         error={!!error}
+        required={required}
       >
         <InputLabel
           id="demo-multiple-name-label"
+          required={required}
           sx={{ color: error ? 'red' : '' }}
         >
           {label}
@@ -152,6 +163,7 @@ export default function CustomSelectField({
           onChange={handleChange}
           label={label}
           disabled={disabled}
+          required={required}
           sx={{
             borderRadius: '10px',
             '& .MuiOutlinedInput-notchedOutline': {

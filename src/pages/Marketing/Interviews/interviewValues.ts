@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { dateFormate, timeFormate } from '../../../components/constants';
+import { InterviewStatus } from '../../../Interfaces/reports';
 import { ValidationMeta } from '../../../utils/validators';
 
 export const timeZoneOptions = ['EST', 'CST', 'MST', 'PST'];
@@ -9,16 +10,25 @@ export const intTypeOptions = [
   'Techno Managerial',
   'Non Technical',
   'Prep Call',
+  'Test',
   'Other',
 ];
 
-export const intStatusOptions = [
+export const intStatusOptions: InterviewStatus[] = [
   'Interview Tentative',
   'Interview Confirm',
   'Interview Cancelled',
   'Interview Re-Scheduled',
   'Interview Completed',
 ];
+
+export const interviewStatusColors: Record<InterviewStatus, string> = {
+  'Interview Confirm': '#37B7EA',
+  'Interview Tentative': '#94A3B8',
+  'Interview Cancelled': '#EF4444',
+  'Interview Completed': '#10B981',
+  'Interview Re-Scheduled': '#F59E0B',
+};
 
 export const intWithOptions = ['Client', 'IMP/PV', 'Vendor'];
 

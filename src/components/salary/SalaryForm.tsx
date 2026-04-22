@@ -374,7 +374,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
       field.type === 'number' ? { valueAsNumber: true } : {};
 
     return (
-      <Grid item xs={field.gridSize.xs} md={field.gridSize.md} key={field.name}>
+      <Grid size={{ xs: field.gridSize.xs, md: field.gridSize.md }} key={field.name}>
         <TextField
           label={field.label}
           type={field.type}
@@ -416,7 +416,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
         <Grid container spacing={3}>
 
           {/* Earnings Section */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          <Grid size={12} sx={{ mt: 2 }}>
             <Typography
               variant="h6"
               gutterBottom
@@ -429,7 +429,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
           {earningsFields.map(renderField)}
 
           {/* Bonus Section */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          <Grid size={12} sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ color: 'info.main' }}>
               🎁 Bonus & Incentives
             </Typography>
@@ -438,7 +438,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
           {bonusFields.map(renderField)}
 
           {/* Deductions Section */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          <Grid size={12} sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ color: 'error.main' }}>
               📉 Deductions
             </Typography>
@@ -447,7 +447,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
           {deductionFields.map(renderField)}
 
           {/* Employer Contributions Section */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          <Grid size={12} sx={{ mt: 2 }}>
             <Typography
               variant="h6"
               gutterBottom
@@ -460,7 +460,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
           {employerContributionFields.map(renderField)}
 
           {/* Summary Section */}
-          <Grid item xs={12} sx={{ mt: 3 }}>
+          <Grid size={12} sx={{ mt: 3 }}>
             <Card variant="outlined">
               <CardContent>
                 <Typography
@@ -471,7 +471,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                   💼 Salary Summary
                 </Typography>
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={3}>
+                  <Grid size={{ xs: 12, md: 3 }}>
                     <Box
                       sx={{
                         textAlign: 'center',
@@ -494,7 +494,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} md={3}>
+                  <Grid size={{ xs: 12, md: 3 }}>
                     <Box
                       sx={{
                         textAlign: 'center',
@@ -520,7 +520,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} md={3}>
+                  <Grid size={{ xs: 12, md: 3 }}>
                     <Box
                       sx={{
                         textAlign: 'center',
@@ -543,7 +543,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} md={3}>
+                  <Grid size={{ xs: 12, md: 3 }}>
                     <Box
                       sx={{
                         textAlign: 'center',
@@ -575,7 +575,7 @@ const SalaryForm: React.FC<SalaryFormProps> = ({
           </Grid>
 
           {/* Form Actions */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Box
               sx={{
                 display: 'flex',

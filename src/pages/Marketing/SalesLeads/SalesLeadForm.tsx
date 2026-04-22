@@ -109,7 +109,7 @@ const SalesLeadForm = (props: iProps) => {
         )}
       </Grid>
       <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <h4>1. Sender Info</h4>
         </Grid>
         <CustomTextField
@@ -151,10 +151,10 @@ const SalesLeadForm = (props: iProps) => {
           selectedValue={values.city || ''}
           disabled
         />
-        <Grid item xs={12}>
+        <Grid size={12}>
           <h4>2. Message</h4>
         </Grid>
-        <Grid item xs={12} style={{ padding: '0px', minWidth: 300 }}>
+        <Grid size={12} style={{ padding: '0px', minWidth: 300 }}>
           <CustomTextField
             label="Message"
             width={'98%'}
@@ -162,7 +162,7 @@ const SalesLeadForm = (props: iProps) => {
             disabled
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <h4>3. Status</h4>
         </Grid>
         <CustomSelectField
@@ -182,7 +182,7 @@ const SalesLeadForm = (props: iProps) => {
 
         {mode === 'view' && (
           <>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <h4>4. Comments</h4>
             </Grid>
 

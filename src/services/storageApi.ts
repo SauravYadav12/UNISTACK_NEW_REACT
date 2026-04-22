@@ -3,7 +3,13 @@ import { axiosClient } from '../config/axios.config';
 
 export async function uploadFile(
   file: File,
-  bucket?: 'script' 
+  storageType:
+    | 'gcp'
+    | 'docn'
+    | 'contract'
+    | 'invoice'
+    | 'logo'
+    | 'timesheet-screenshot' = 'docn'
 ) {
   const formData = new FormData();
   formData.append('file', file);

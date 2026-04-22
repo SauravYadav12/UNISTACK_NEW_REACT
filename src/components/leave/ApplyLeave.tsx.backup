@@ -1,0 +1,352 @@
+import { useEffect, useState } from 'react';
+import {
+  Button,
+  Grid,
+  Select,
+  MenuItem,
+  CircularProgress,
+  FormControl,
+  FormHelperText,
+  TextField,
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import ChartCardWrapper from '../dashboard/ChartCardWrapper';
+import moment from 'moment';
+import { dateFormate } from '../constants';
+import {
+  CreateLeavePayload,
+  HalfDayType,
+  iLeave,
+  LeaveType,
+} from '../../Interfaces/leaves';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { toast } from 'react-toastify';
+import { createLeave } from '../../services/leavesApi';
+
+enum iFormType {
+  FullDay = 'FullDay',
+  HalfDay = 'HalfDay',
+}
+
+interface iProps {
+  onApplied?: (l: iLeave) => void;
+}
+
+const leaveSchema = z.object({
+  userRef: z.string().min(1, 'User reference is required'),
+  name: z.string().min(1, 'Name is required'),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().optional(),
+  reason: z.string().min(1, 'Reason is required'),
+  type: z.enum(LeaveType),
+  isHalfDay: z.boolean(),
+  halfDayType: z.enum(HalfDayType).optional(),
+});
+
+type LeaveFormData = z.infer<typeof leaveSchema>;
+
+const ApplyLeave = ({ onApplied }: iProps) => {
+  const { iUser } = useAuth();
+  const [formType, setFormType] = useState<iFormType>(iFormType.FullDay);
+  const [loading, setLoading] = useState(false);
+
+  const defaultValues: LeaveFormData = {
+    userRef: iUser?._id || '',
+    name: iUser ? iUser.firstName + ' ' + iUser.lastName : '',
+    startDate: '',
+    endDate: '',
+    reason: '',
+    type: LeaveType.CasualLeave,
+    isHalfDay: false,
+    halfDayType: undefined,
+  };
+
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<LeaveFormData>({
+    resolver: zodResolver(leaveSchema),
+    defaultValues,
+  });
+
+  const watchedValues = watch();
+
+  const onSubmit = async (data: LeaveFormData) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const payload: CreateLeavePayload = {
+        ...data,
+        endDate: data.endDate || data.startDate,
+      };
+
+      if (!payload.halfDayType) delete payload.halfDayType;
+      const response = await createLeave(payload);
+      response.data.data && onApplied?.(response.data.data);
+      reset(defaultValues);
+      toast.success('Applied successfully');
+    } catch (error) {
+      console.error('Error applying for leave:', error);
+      toast.error('Failed to apply');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (iUser) {
+      setValue('userRef', iUser._id);
+      setValue('name', iUser.firstName + ' ' + iUser.lastName);
+    }
+  }, [iUser, setValue]);
+
+  useEffect(() => {
+    if (formType === iFormType.HalfDay) {
+      setValue('isHalfDay', true);
+      setValue('halfDayType', HalfDayType.FirstHalf);
+      setValue('endDate', watchedValues.startDate);
+    } else {
+      setValue('isHalfDay', false);
+      setValue('halfDayType', undefined);
+    }
+  }, [formType, setValue, watchedValues.startDate]);
+
+  function CardSubtitle() {
+    const { startDate, endDate } = watchedValues;
+    if (!startDate && !endDate) return '____//____';
+    return (
+      <>
+        {startDate === endDate ? (
+          startDate
+        ) : (
+          <>
+            {startDate || (endDate && '____//____')}
+            {endDate && ' to ' + endDate}
+          </>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <ChartCardWrapper
+      title="Apply for Leave"
+      subtitle={<CardSubtitle />}
+      action={
+        <Select
+          disabled={loading}
+          value={formType}
+          size="small"
+          onChange={(e) => {
+            setFormType(e.target.value as iFormType);
+          }}
+        >
+          {Object.values(iFormType).map((o, i) => {
+            return (
+              <MenuItem key={i} value={o}>
+                {o.replace('Day', ' Day')}
+              </MenuItem>
+            );
+          })}
+        </Select>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Grid
+          container
+          columnSpacing={1}
+          rowSpacing={2}
+          alignItems="start"
+          sx={{ mt: 3 }}
+        >
+          {!watchedValues.isHalfDay ? (
+            <>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Controller
+                  name="startDate"
+                  control={control}
+                  render={({ field }) => (
+                    <LocalizationProvider dateAdapter={AdapterMoment}>
+                      <DatePicker
+                        disabled={loading}
+                        format={dateFormate}
+                        maxDate={moment(watchedValues.endDate)}
+                        minDate={moment()}
+                        label="Start Date"
+                        value={field.value ? moment(field.value) : null}
+                        onChange={(newValue) =>
+                          field.onChange(
+                            newValue ? newValue.format(dateFormate) : ''
+                          )
+                        }
+                        slotProps={{
+                          textField: {
+                            disabled: loading,
+                            size: 'small',
+                            fullWidth: true,
+                            error: !!errors.startDate,
+                            helperText: errors.startDate?.message,
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Controller
+                  name="endDate"
+                  control={control}
+                  render={({ field }) => (
+                    <LocalizationProvider dateAdapter={AdapterMoment}>
+                      <DatePicker
+                        disabled={loading}
+                        format={dateFormate}
+                        minDate={moment(watchedValues.startDate)}
+                        label="End Date"
+                        value={field.value ? moment(field.value) : null}
+                        onChange={(newValue) =>
+                          field.onChange(
+                            newValue ? newValue.format(dateFormate) : ''
+                          )
+                        }
+                        slotProps={{
+                          textField: {
+                            disabled: loading,
+                            size: 'small',
+                            fullWidth: true,
+                            error: !!errors.endDate,
+                            helperText: errors.endDate?.message,
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
+                  )}
+                />
+              </Grid>
+            </>
+          ) : (
+            <>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Controller
+                  name="startDate"
+                  control={control}
+                  render={({ field }) => (
+                    <LocalizationProvider dateAdapter={AdapterMoment}>
+                      <DatePicker
+                        disabled={loading}
+                        format={dateFormate}
+                        minDate={moment()}
+                        label="Date"
+                        value={field.value ? moment(field.value) : null}
+                        onChange={(newValue) => {
+                          const dateValue = newValue
+                            ? newValue.format(dateFormate)
+                            : '';
+                          field.onChange(dateValue);
+                          setValue('endDate', dateValue);
+                        }}
+                        slotProps={{
+                          textField: {
+                            disabled: loading,
+                            size: 'small',
+                            fullWidth: true,
+                            error: !!errors.startDate,
+                            helperText: errors.startDate?.message,
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  error={!!errors.halfDayType}
+                >
+                  <Select
+                    disabled={loading}
+                    {...register('halfDayType')}
+                    defaultValue={HalfDayType.FirstHalf}
+                  >
+                    {Object.values(HalfDayType).map((o, i) => (
+                      <MenuItem key={i} value={o}>
+                        {o}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.halfDayType && (
+                    <FormHelperText>
+                      {errors.halfDayType.message}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+            </>
+          )}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <FormControl fullWidth size="small" error={!!errors.type}>
+              <Select
+                disabled={loading}
+                {...register('type')}
+                defaultValue={LeaveType.CasualLeave}
+              >
+                {Object.values(LeaveType).map((o, i) => (
+                  <MenuItem key={i} value={o}>
+                    {o}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.type && (
+                <FormHelperText>{errors.type.message}</FormHelperText>
+              )}
+            </FormControl>
+          </Grid>
+          <Grid size={12}>
+            <TextField
+              disabled={loading}
+              label="Reason for Leave"
+              multiline
+              minRows={4}
+              maxRows={10}
+              fullWidth
+              error={!!errors.reason}
+              helperText={errors.reason?.message}
+              {...register('reason')}
+            />
+          </Grid>
+          <Grid container size={12} justifyContent={'flex-end'}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  In Progress <CircularProgress sx={{ ml: 2 }} size={15} />
+                </>
+              ) : (
+                'Apply'
+              )}
+            </Button>
+          </Grid>
+        </Grid>
+      </form>
+    </ChartCardWrapper>
+  );
+};
+
+export default ApplyLeave;

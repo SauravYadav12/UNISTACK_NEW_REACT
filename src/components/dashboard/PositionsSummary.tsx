@@ -62,7 +62,7 @@ const PositionsSummary = () => {
   return (
     <ChartCardWrapper title="Positions Summary">
       <Grid container spacing={3}>
-        <Grid item xs={7} sm={7}>
+        <Grid size={{ xs: 7, sm: 7 }}>
           <Typography variant="h6" fontWeight="600">
             36,358
           </Typography>
@@ -107,7 +107,7 @@ const PositionsSummary = () => {
           </Stack>
         </Grid>
         {/* column */}
-        <Grid item xs={5} sm={5}>
+        <Grid size={{ xs: 5, sm: 5 }}>
           <Chart
             options={optionscolumnchart}
             series={seriescolumnchart}

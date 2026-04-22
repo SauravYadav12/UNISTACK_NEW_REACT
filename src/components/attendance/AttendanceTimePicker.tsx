@@ -7,10 +7,10 @@ import {
 import { ArrowLeft, ArrowRight } from '@mui/icons-material';
 import { Box, IconButton, Popover } from '@mui/material';
 import {
-  ClockPickerView,
   LocalizationProvider,
-  ClockPicker,
+  TimeClock,
 } from '@mui/x-date-pickers';
+import type { TimeView } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import moment, { Moment } from 'moment';
 import { toast } from 'react-toastify';
@@ -34,7 +34,7 @@ const AttendanceTimePicker = ({
   const [date, setDate] = useState<Moment | null>(iShiftDate());
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const open = Boolean(anchorEl);
-  const [view, setView] = useState<ClockPickerView>('hours');
+  const [view, setView] = useState<TimeView>('hours');
   const [loading, setLoading] = useState(false);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -143,8 +143,8 @@ const AttendanceTimePicker = ({
                 <ArrowRight />
               </IconButton>
             </Box>
-            <ClockPicker
-              date={moment(date)}
+            <TimeClock
+              value={moment(date)}
               onChange={handleChange}
               ampm
               ampmInClock

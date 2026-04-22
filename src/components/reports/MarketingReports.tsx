@@ -1,13 +1,9 @@
-import {
-  Box,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableContainer,
-} from '@mui/material';
-import CustomAccordion from '../accordion/CustomAccordion';
+import { useMemo } from 'react';
 import { MarketingReport } from '../../Interfaces/reports';
-import { MyDataRow, MyReportsProps } from './SupportReports';
+import PerformanceLeaderboard, { PerformanceRow } from './PerformanceLeaderboard';
+import { MyReportsProps } from './SupportReports';
+import { IconTargetArrow } from '@tabler/icons-react';
+import { tokens } from '../../theme/theme';
 
 export const MarketingReports = ({
   fromDate,
@@ -15,60 +11,58 @@ export const MarketingReports = ({
   report,
   loading,
 }: MyReportsProps<MarketingReport>) => {
-  if (loading)
-    return (
-      <Box className="loader" sx={{ py: 10 }}>
-        <CircularProgress />
-      </Box>
-    );
+  const rows: PerformanceRow[] = useMemo(() => {
+    return (report || []).map((a) => {
+      const base = `/requirements?fromDate=${fromDate}&toDate=${toDate}&assignedToRef=${a.id}`;
+      return {
+        id: a.id,
+        name: a.name || 'Unknown',
+        total: a.totalAssigned || 0,
+        totalHref: base,
+        breakdown: [
+          {
+            key: 'Submitted',
+            label: 'Submitted',
+            color: tokens.colors.success,
+            value: a.Submitted || 0,
+            href: `${base}&reqStatus=Submitted`,
+          },
+          {
+            key: 'Project Active',
+            label: 'Active',
+            color: tokens.colors.blue,
+            value: a['Project Active'] || 0,
+            href: `${base}&reqStatus=Project Active`,
+          },
+          {
+            key: 'Project Inactive',
+            label: 'Inactive',
+            color: tokens.colors.warning,
+            value: a['Project Inactive'] || 0,
+            href: `${base}&reqStatus=Project Inactive`,
+          },
+          {
+            key: 'Cancelled',
+            label: 'Cancelled',
+            color: tokens.colors.error,
+            value: a.Cancelled || 0,
+            href: `${base}&reqStatus=Cancelled`,
+          },
+        ],
+      };
+    });
+  }, [report, fromDate, toDate]);
 
   return (
-    <div>
-      {report?.map((a, i) => {
-        const href = `/requirements?fromDate=${fromDate}&toDate=${toDate}&assignedToRef=${a.id}&`;
-        return (
-          <Box mb={1} key={i}>
-            <CustomAccordion title={a.name||'Unknown'}>
-              <TableContainer>
-                <Table sx={{ maxWidth: 'max-content' }}>
-                  <TableBody>
-                    <MyDataRow
-                      href={href}
-                      label="Total Position Assigned"
-                      value={a.totalAssigned}
-                    />
-                    <MyDataRow
-                      href={href + `&reqStatus=Submitted`}
-                      label="Total Position Submitted"
-                      value={a.Submitted}
-                    />
-                    <MyDataRow
-                      href={href + `&reqStatus=Project Active`}
-                      label="Total Project Active"
-                      value={a['Project Active']}
-                    />
-                    <MyDataRow
-                      href={href + `&reqStatus=Project Inactive`}
-                      label="Total Project In-Active"
-                      value={a['Project Inactive']}
-                    />
-                    <MyDataRow
-                      href={href + `&reqStatus=Cancelled`}
-                      label="Total Position Cancelled"
-                      value={a.Cancelled}
-                    />
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CustomAccordion>
-          </Box>
-        );
-      })}
-      {!report?.length && !loading && (
-        <Box sx={{ textAlign: 'center', py: 10 }}>
-          <p>Not found</p>
-        </Box>
-      )}
-    </div>
+    <PerformanceLeaderboard
+      title="Marketing leaderboard"
+      subtitle="Positions assigned to each marketer"
+      totalLabel="Positions assigned"
+      rows={rows}
+      loading={loading}
+      icon={<IconTargetArrow size={18} />}
+      accentColor={tokens.colors.pink}
+      accentGradient={tokens.gradients.pinkBlue}
+    />
   );
 };

@@ -38,3 +38,26 @@ export async function deleteInterview(id: string) {
   return response;
 }
 
+/**
+ * Returns all interviews attached to this requirement AND any child
+ * assignments beneath it. Used by the parent drawer so reviewers can see
+ * per-marketer interview pipelines in one view. For legacy standalones or
+ * parents without children, this returns the same data as the regular
+ * `reqID=` filter.
+ */
+export async function interviewsByParent(reqID: string, signal?: AbortSignal) {
+  const response = await axiosClient.get<
+    ApiQueryRes<{
+      parentReqID: string;
+      children: Array<{
+        reqID: string;
+        childSuffix?: string;
+        assignedTo?: string;
+        assignedToRef?: string;
+      }>;
+      results: IInterview[];
+    }>
+  >(`/interviews/by-parent/${encodeURIComponent(reqID)}`, { signal });
+  return response;
+}
+

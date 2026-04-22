@@ -131,28 +131,19 @@ const HolidayForm = ({ onClose }: iProps) => {
       validateField(name, value);
     };
 
-  const renderDateInput = (params: any, name: 'fromDate' | 'toDate') => (
-    <TextField
-      {...params}
-      fullWidth
-      error={!!errors[name]}
-      helperText={errors[name]}
-    />
-  );
-
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           {isHoliday && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Alert severity="error">
                 The selected dates overlapping with a pre-existing holiday
                 period.
               </Alert>
             </Grid>
           )}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               label="Holiday Name"
@@ -165,7 +156,7 @@ const HolidayForm = ({ onClose }: iProps) => {
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               label="Description"
@@ -178,28 +169,40 @@ const HolidayForm = ({ onClose }: iProps) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <DatePicker
               label="Start Date"
               value={formValues.fromDate}
               onChange={handleDateChange('fromDate')}
-              renderInput={(params) => renderDateInput(params, 'fromDate')}
-              inputFormat={dateFormate2}
+              format={dateFormate2}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  error: !!errors.fromDate,
+                  helperText: errors.fromDate,
+                },
+              }}
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <DatePicker
               label="End Date"
               value={formValues.toDate}
               onChange={handleDateChange('toDate')}
               minDate={formValues.fromDate || undefined}
-              renderInput={(params) => renderDateInput(params, 'toDate')}
-              inputFormat={dateFormate2}
+              format={dateFormate2}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  error: !!errors.toDate,
+                  helperText: errors.toDate,
+                },
+              }}
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Box display="flex" justifyContent="space-between">
               <Button variant="outlined" onClick={onClose}>
                 Close

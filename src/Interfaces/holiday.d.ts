@@ -8,4 +8,7 @@ export interface Holiday {
   toDate: string;
   isHalfDay: boolean;
   halfDayType?: boolean;
+  country?: 'IN' | 'US' | 'ALL';
+  source?: 'manual' | 'system';
+  externalId?: string;
 }

@@ -3,7 +3,16 @@ import {
   CreateRequirementLogPayload,
   RequirementLog,
 } from '../Interfaces/requirement';
+import { IRequirement } from '../Interfaces/types';
 import { axiosClient } from '../config/axios.config';
+
+export interface RequirementSearchResponse {
+  parent: IRequirement;
+  assignments: IRequirement[];
+  isParent: boolean;
+  matchedReqID?: string;
+  legacySelf: boolean;
+}
 
 export async function requirementsList(
   query: string = '',
@@ -90,4 +99,40 @@ export async function generatePayLoadFromPrompt(content: string, instruction: st
     instruction,
   });
   return response.data.data as Record<string, unknown>;
+}
+
+// ── Multi-assign ─────────────────────────────────────────────────────────
+
+export async function listChildAssignments(parentReqID: string) {
+  const url = `/requirements/get-requirements?parentReqID=${encodeURIComponent(parentReqID)}`;
+  const response = await axiosClient.get<ApiQueryRes<PaginationResult>>(url);
+  return response;
+}
+
+export async function assignMarketers(
+  parentReqID: string,
+  assignments: Array<{ marketerRef: string; marketerName?: string }>
+) {
+  const response = await axiosClient.post<ApiQueryRes<IRequirement[]>>(
+    `/requirements/${encodeURIComponent(parentReqID)}/assignments`,
+    { assignments }
+  );
+  return response;
+}
+
+export async function unassignMarketer(childId: string) {
+  const response = await axiosClient.delete(
+    `/requirements/assignments/${childId}`
+  );
+  return response;
+}
+
+export async function searchRequirement(reqID: string) {
+  // Stored reqIDs are always upper-case. Normalize here so callers don't
+  // have to, and the server receives the canonical form on the wire.
+  const normalized = reqID.trim().toUpperCase();
+  const response = await axiosClient.get<ApiQueryRes<RequirementSearchResponse>>(
+    `/requirements/search/${encodeURIComponent(normalized)}`
+  );
+  return response;
 }

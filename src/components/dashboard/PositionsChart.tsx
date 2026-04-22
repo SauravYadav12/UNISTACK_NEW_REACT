@@ -16,14 +16,14 @@ const PositionsChart = () => {
   const optionscolumnchart: ApexCharts.ApexOptions = {
     chart: {
       type: 'bar',
-      fontFamily: "'Plus Jakarta Sans', sans-serif;",
-      foreColor: '#adb0bb',
+      fontFamily: "'Inter Variable', 'Inter', sans-serif",
+      foreColor: '#5A6B7F',
       toolbar: {
         show: true,
       },
       height: chartHeight,
     },
-    colors: ['#02B2AF', '#2E96FF'],
+    colors: ['#EC4599', '#37B7EA'],
     plotOptions: {
       bar: {
         horizontal: false,

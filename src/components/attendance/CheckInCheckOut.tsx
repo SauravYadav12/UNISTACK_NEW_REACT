@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
-import { Box, Button, Tooltip } from '@mui/material';
+import { Box, Button, Chip, Tooltip } from '@mui/material';
 import MarkAttendanceModal, {
   autoOpenAttendanceModalKey,
 } from '../dashboard/MarkAttendanceModal';
@@ -29,8 +29,14 @@ const CheckInCheckOut = ({
     iAttendance | undefined
   >(attendance);
 
+  // Sat/Sun are company-wide non-working days — no attendance is tracked.
+  // Hide the Mark-Attendance affordance entirely so the UI matches the
+  // server, which rejects weekend marks.
+  const isWeekend = [0, 6].includes(date.day());
+
   const showMarkAttendance =
-    !todaysAttendance || todaysAttendance.status === AttendanceStatus.Absent;
+    !isWeekend &&
+    (!todaysAttendance || todaysAttendance.status === AttendanceStatus.Absent);
 
   const disableMarkAttendance = !getAttendanceStatus(user) && !forAdmin;
 
@@ -89,6 +95,19 @@ const CheckInCheckOut = ({
 
   return (
     <>
+      {isWeekend && !todaysAttendance && (
+        <Chip
+          label="Non-working day"
+          size="small"
+          sx={{
+            bgcolor: 'rgba(3, 40, 64, 0.06)',
+            color: '#5E7687',
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            height: 24,
+          }}
+        />
+      )}
       {showMarkAttendance && (
         <>
           <Tooltip

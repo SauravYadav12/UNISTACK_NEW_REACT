@@ -134,7 +134,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
       <Box>
         <DialogContent dividers>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <InfoItem>
                 <Typography
                   variant="subtitle2"
@@ -148,7 +148,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
                 </Typography>
               </InfoItem>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <InfoItem>
                 <Typography
                   variant="subtitle2"
@@ -162,7 +162,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
                 </Typography>
               </InfoItem>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <InfoItem>
                 <Typography
                   variant="subtitle2"
@@ -179,7 +179,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
                 </Typography>
               </InfoItem>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <InfoItem>
                 <Typography
                   variant="subtitle2"
@@ -198,7 +198,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
               </InfoItem>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <InfoItem>
                 <Typography
                   variant="subtitle2"
@@ -213,7 +213,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
               </InfoItem>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <InfoItem>
                 <Typography
                   variant="subtitle2"
@@ -228,7 +228,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
               </InfoItem>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <InfoItem>
                 <Typography
                   variant="subtitle2"
@@ -243,7 +243,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
 
             {/* Attachments */}
             {leave.attachments && leave.attachments.length > 0 && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography
                   variant="subtitle2"
                   color="textSecondary"
@@ -269,11 +269,11 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
             {/* Response Details */}
             {leave.status !== LeaveStatus.Pending && (
               <>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Divider />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <InfoItem>
                     <Typography
                       variant="subtitle2"
@@ -288,7 +288,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
                   </InfoItem>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <InfoItem>
                     <Typography
                       variant="subtitle2"
@@ -307,7 +307,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
 
                 {leave.status === LeaveStatus.Rejected &&
                   leave.rejectionReason && (
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <InfoItem sx={{ backgroundColor: 'error.lighter' }}>
                         <Typography
                           variant="subtitle2"
@@ -325,7 +325,7 @@ const ViewLeaveDetails: React.FC<LeaveDetailsProps> = ({ leave, onUpdate }) => {
               </>
             )}
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="caption" color="textSecondary">
                 Request submitted on {formatDate(leave.createdAt)}
               </Typography>

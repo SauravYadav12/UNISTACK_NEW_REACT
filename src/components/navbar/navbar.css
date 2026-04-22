@@ -1,4 +1,1 @@
-.nav-heading:hover {
-  background: #37b7ea !important;
-  color: white !important;
-}
+/* Navbar styles are now handled by the theme system and sx props */

@@ -1,42 +1,26 @@
 import React, { useState } from 'react';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import Interviews from '../../pages/Marketing/Interviews/Interviews';
 import { useSearchParams } from 'react-router-dom';
 import { InterviewStatus } from '../../Interfaces/reports';
 import { createInterviewQueryParam } from '../../pages/Marketing/Interviews/interviewValues';
+import { interviewStatusColors } from '../../pages/Marketing/Interviews/interviewValues';
+
+export const interviewTabs: { label: string; status?: InterviewStatus; color: string }[] = [
+  { label: 'All', color: '#5D87FF' },
+  { label: 'Confirmed', status: 'Interview Confirm', color: interviewStatusColors['Interview Confirm'] },
+  { label: 'Completed', status: 'Interview Completed', color: interviewStatusColors['Interview Completed'] },
+  { label: 'Tentative', status: 'Interview Tentative', color: interviewStatusColors['Interview Tentative'] },
+  { label: 'Re-Scheduled', status: 'Interview Re-Scheduled', color: interviewStatusColors['Interview Re-Scheduled'] },
+  { label: 'Cancelled', status: 'Interview Cancelled', color: interviewStatusColors['Interview Cancelled'] },
+];
 
 export default function InterviewTabs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [archive, setArchive] = useState(false);
   const [value, setValue] = useState(0);
-  const tabs: { label: string; status?: InterviewStatus }[] = [
-    {
-      label: 'All',
-    },
-    {
-      label: 'Confirmed',
-      status: 'Interview Confirm',
-    },
-    {
-      label: 'Completed',
-      status: 'Interview Completed',
-    },
-    {
-      label: 'Tentative',
-      status: 'Interview Tentative',
-    },
-    {
-      label: 'Re-Scheduled',
-      status: 'Interview Re-Scheduled',
-    },
-    {
-      label: 'Cancelled',
-      status: 'Interview Cancelled',
-    },
-  ];
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+
+  const handleChange = (newValue: number) => {
     setValue(newValue);
     searchParams.toString().length && setSearchParams({});
   };
@@ -44,60 +28,32 @@ export default function InterviewTabs() {
   React.useEffect(() => {
     const interviewStatus = searchParams.get('interviewStatus');
     if (searchParams.toString().length && !interviewStatus) {
-      setValue(tabs.length - 1);
+      setValue(interviewTabs.length - 1);
       return;
     }
-    const i = tabs.findIndex((t) => t.status === interviewStatus);
+    const i = interviewTabs.findIndex((t) => t.status === interviewStatus);
     if (i >= 1) {
       setValue(i);
     }
   }, []);
+
+  const activeTab = interviewTabs[value];
+  const myParams = new URLSearchParams(searchParams);
+  myParams.delete(createInterviewQueryParam);
+  const p = myParams.toString();
+  const query = p.length ? p : activeTab.status ? `interviewStatus=${activeTab.status}` : '';
+
   return (
-    <Box display={'flex'} flexDirection={'column'} height={'100%'}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          aria-label="basic tabs example"
-          sx={{
-            '& .MuiTabs-scroller': {
-              overflowX: 'auto !important',
-              scrollbarWidth: 'thin',
-            },
-          }}
-        >
-          {tabs.map((t, i) => {
-            return <Tab key={i} label={t.label} {...a11yProps(i)} />;
-          })}
-        </Tabs>
+    <Box display="flex" flexDirection="column" height="100%">
+      <Box flex={1} minHeight="300px">
+        <Interviews
+          query={query}
+          label={activeTab.label + ' Interviews'}
+          archiveState={[archive, setArchive]}
+          activeTabIndex={value}
+          onTabChange={handleChange}
+        />
       </Box>
-      {tabs.map((t, i) => {
-        if (value !== i) return null;
-        const myParams = new URLSearchParams(searchParams);
-        myParams.delete(createInterviewQueryParam);
-        const p = myParams.toString();
-        const query = p.length
-          ? p
-          : t.status
-            ? `interviewStatus=${t.status}`
-            : '';
-        return (
-          <div key={i} style={{ flex: 1, minHeight: '300px' }}>
-            <Interviews
-              query={query}
-              label={t.label + ' Interviews'}
-              archiveState={[archive, setArchive]}
-            />
-          </div>
-        );
-      })}
     </Box>
   );
-}
-
-function a11yProps(index: number) {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
-  };
 }

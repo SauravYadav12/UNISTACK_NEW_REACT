@@ -34,77 +34,67 @@ const RenderFields = ({
   const validationError = parentFieldName
     ? (formError as any)[parentFieldName][field.fieldName]
     : (formError as any)[field.fieldName];
+
+  const inputSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '10px',
+      backgroundColor: disabled ? '#F6F9FC' : 'transparent',
+    },
+    '& .MuiInputBase-input.Mui-disabled': {
+      WebkitTextFillColor: '#2A3547',
+    },
+  };
+
   if (fieldName === 'phoneNumber' || fieldName === 'emergencyPhoneNumber') {
     return (
-      <div>
-        <Grid item sx={{ m: 1, width: 230 }}>
-          <PhoneField
-            disabled={disabled}
-            field={field}
-            label={label}
-            validationError={validationError}
-            value={val}
-            onChange={onChange}
-            onBlur={onBlur}
-          />
-        </Grid>
-      </div>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+        <PhoneField
+          disabled={disabled}
+          field={field}
+          label={label}
+          validationError={validationError}
+          value={val}
+          onChange={onChange}
+          onBlur={onBlur}
+        />
+      </Grid>
     );
   }
+
   switch (fieldType) {
     case 'text':
     case 'number':
     case 'email':
       return (
-        <div>
-          <Grid item sx={{ m: 1, width: 230 }}>
-            <TextField
-              onBlur={() => onBlur && onBlur(field)}
-              label={label}
-              type={fieldType}
-              value={val}
-              onChange={onChange}
-              disabled={disabled}
-              fullWidth
-              error={!!validationError}
-              helperText={validationError}
-              inputProps={{ ...field.inputAttributes }}
-              size="small"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '10px',
-                  backgroundColor: disabled ? '#f0f0f0' : 'transparent',
-                },
-                '& .MuiInputBase-input.Mui-disabled': {
-                  WebkitTextFillColor: 'black',
-                  backgroundColor: '#f0f0f0',
-                },
-              }}
-              multiline={fieldType === 'number' ? false : true}
-            />
-          </Grid>
-        </div>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+          <TextField
+            onBlur={() => onBlur && onBlur(field)}
+            label={label}
+            type={fieldType}
+            value={val}
+            onChange={onChange}
+            disabled={disabled}
+            fullWidth
+            error={!!validationError}
+            helperText={validationError}
+            inputProps={{ ...field.inputAttributes }}
+            size="small"
+            sx={inputSx}
+            multiline={fieldType !== 'number'}
+          />
+        </Grid>
       );
 
     case 'date':
       return (
-        <Grid
-          item
-          sx={{
-            width: 190,
-            mr: 1,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '10px',
-            },
-          }}
-        >
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
-              inputFormat={dateFormate}
+              format={dateFormate}
               onClose={() => onBlur && onBlur(field)}
               disabled={disabled}
               label={label}
-              value={myProfile.dob}
+              value={myProfile.dob ? dayjs(myProfile.dob) : null}
               onChange={(newValue) => {
                 onChange({
                   target: {
@@ -112,27 +102,18 @@ const RenderFields = ({
                   },
                 } as any);
               }}
-              renderInput={(params) => (
-                <TextField
-                  disabled={disabled}
-                  inputProps={{ ...field.inputAttributes }}
-                  onBlur={() => onBlur && onBlur(field)}
-                  size="small"
-                  {...params}
-                  error={!!validationError}
-                  helperText={validationError}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      backgroundColor: disabled ? '#f0f0f0' : 'transparent',
-                    },
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      WebkitTextFillColor: 'black',
-                      backgroundColor: '#f0f0f0',
-                    },
-                  }}
-                />
-              )}
+              slotProps={{
+                textField: {
+                  disabled,
+                  inputProps: { ...field.inputAttributes },
+                  onBlur: () => onBlur && onBlur(field),
+                  size: 'small',
+                  fullWidth: true,
+                  error: !!validationError,
+                  helperText: validationError,
+                  sx: inputSx,
+                },
+              }}
             />
           </LocalizationProvider>
         </Grid>

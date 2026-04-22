@@ -12,9 +12,19 @@ import { getRequirementLogs } from '../../services/requirementApi';
 import CustomDrawer from '../drawer/CustomDrawer';
 import RequirementLogs from './RequirementLogs';
 interface iProps {
-  requirementObjectId: string;
+  /** Fallback: exact doc-id filter — used for child / legacy records. */
+  requirementObjectId?: string;
+  /**
+   * When present, the server rolls up logs for the parent doc + every
+   * child assignment beneath it so the parent drawer shows one unified
+   * history. Takes precedence over `requirementObjectId`.
+   */
+  parentReqID?: string;
 }
-const RequirementLogTable = ({ requirementObjectId }: iProps) => {
+const RequirementLogTable = ({
+  requirementObjectId,
+  parentReqID,
+}: iProps) => {
   const {
     data: rows,
     error,
@@ -22,11 +32,12 @@ const RequirementLogTable = ({ requirementObjectId }: iProps) => {
     loadData: reload,
     setData,
   } = useFetchData(async () => {
-    const { data } = await getRequirementLogs(
-      `requirementRef=${requirementObjectId}`
-    );
+    const query = parentReqID
+      ? `parentReqID=${encodeURIComponent(parentReqID)}`
+      : `requirementRef=${requirementObjectId || ''}`;
+    const { data } = await getRequirementLogs(query);
     return data.data || [];
-  }, []);
+  }, [parentReqID, requirementObjectId]);
 
   const [view, setView] = useState<boolean>(false);
 

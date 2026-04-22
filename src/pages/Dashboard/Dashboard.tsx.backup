@@ -1,0 +1,255 @@
+import { Box, Grid, Typography, alpha, IconButton, Tooltip } from '@mui/material';
+import {
+  IconChartBar,
+  IconMicrophone,
+  IconUserCheck,
+  IconBriefcase,
+  IconUsers,
+  IconUsersGroup,
+  IconArrowUpRight,
+  IconRefresh,
+} from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { DashboardReport } from '../../Interfaces/reports';
+import { toast } from 'react-toastify';
+import { getDashboardReport } from '../../services/reportsApi';
+import TodaysInterviews from '../../components/dashboard/TodaysInterviews';
+import ChartsGrid from './ChartsGrid';
+import AnimatedCounter from '../../components/ui/AnimatedCounter';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import AiDailyBriefing from '../../components/dashboard/AiDailyBriefing';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { staggerContainer, staggerItem } from '../../theme/animations';
+import { tokens } from '../../theme/theme';
+
+const MotionBox = motion.create(Box);
+
+interface StatCard {
+  title: string;
+  count: number;
+  icon: React.ReactNode;
+  color: string;
+  trend?: string;
+}
+
+function Dashboard() {
+  const { iUser } = useAuth();
+  const [report, setReport] = useState<DashboardReport>();
+  const [loading, setLoading] = useState(true);
+
+  const statCards: StatCard[] = [
+    {
+      title: 'Requirements',
+      count: report?.totalRequirements || 0,
+      icon: <IconChartBar size={20} stroke={2} />,
+      color: tokens.colors.pink,
+    },
+    {
+      title: 'Interviews',
+      count: report?.totalInterviews || 0,
+      icon: <IconMicrophone size={20} stroke={2} />,
+      color: tokens.colors.blue,
+    },
+    {
+      title: 'Completed',
+      count: report?.totalConfirmInterviews || 0,
+      icon: <IconUserCheck size={20} stroke={2} />,
+      color: tokens.colors.success,
+    },
+    {
+      title: 'Projects',
+      count: 0,
+      icon: <IconBriefcase size={20} stroke={2} />,
+      color: tokens.colors.yellowDark,
+    },
+    {
+      title: 'Active Users',
+      count: report?.totalActiveUsers || 0,
+      icon: <IconUsersGroup size={20} stroke={2} />,
+      color: tokens.colors.brand,
+    },
+    {
+      title: 'Total Employees',
+      count: report?.totalUsers || 0,
+      icon: <IconUsers size={20} stroke={2} />,
+      color: tokens.colors.blue,
+    },
+  ];
+
+  const getMyReports = async () => {
+    try {
+      setLoading(true);
+      const { data } = await getDashboardReport();
+      setReport(data.data);
+    } catch (error) {
+      console.log(error);
+      toast.error('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getMyReports();
+  }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  if (loading) {
+    return (
+      <Box>
+        <SkeletonLoader variant="stats" count={6} />
+        <Box mt={3}><SkeletonLoader variant="card" /></Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      {/* Hero greeting section */}
+      <MotionBox
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        sx={{ mb: 3 }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+          <Box>
+            <Typography variant="h1" fontWeight={700} color="text.primary" sx={{ mb: 0.5 }}>
+              {getGreeting()},{' '}
+              <Box component="span" sx={{ background: tokens.gradients.pinkBlue, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                {iUser?.firstName || 'there'}
+              </Box>
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </Typography>
+          </Box>
+          <Tooltip title="Refresh data">
+            <IconButton onClick={getMyReports} sx={{ color: 'text.secondary' }}>
+              <IconRefresh size={20} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </MotionBox>
+
+      {/* AI Daily Briefing */}
+      <MotionBox
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        sx={{ mb: 3 }}
+      >
+        <AiDailyBriefing
+          userName={iUser?.firstName}
+          onRefresh={getMyReports}
+          insights={
+            report
+              ? [
+                  { text: `${report.totalInterviews || 0} interviews scheduled`, type: 'blue' as const },
+                  { text: `${report.totalRequirements || 0} active requirements`, type: 'pink' as const },
+                  { text: `${report.totalActiveUsers || 0} team members active`, type: 'yellow' as const },
+                  { text: `${report.totalConfirmInterviews || 0} completed this period`, type: 'default' as const },
+                ]
+              : undefined
+          }
+        />
+      </MotionBox>
+
+      {/* Stats Cards - Bolder design */}
+      <MotionBox
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        sx={{ mb: 3 }}
+      >
+        <Grid container spacing={2}>
+          {statCards.map((card) => (
+            <Grid key={card.title} size={{ xs: 6, sm: 4, md: 2 }}>
+              <MotionBox
+                variants={staggerItem}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 4,
+                  bgcolor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  cursor: 'default',
+                  transition: 'box-shadow 0.25s ease, border-color 0.25s ease',
+                  '&:hover': {
+                    boxShadow: `0 8px 24px ${alpha(card.color, 0.15)}`,
+                    borderColor: alpha(card.color, 0.3),
+                  },
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Subtle top accent */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 3,
+                    bgcolor: card.color,
+                    opacity: 0.7,
+                  }}
+                />
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: alpha(card.color, 0.1),
+                      color: card.color,
+                    }}
+                  >
+                    {card.icon}
+                  </Box>
+                  <IconArrowUpRight size={16} color={alpha(card.color, 0.4)} />
+                </Box>
+
+                <AnimatedCounter
+                  value={card.count}
+                  variant="h2"
+                  fontWeight={700}
+                  color="text.primary"
+                  sx={{ lineHeight: 1 }}
+                />
+                <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ mt: 0.5, display: 'block' }}>
+                  {card.title}
+                </Typography>
+              </MotionBox>
+            </Grid>
+          ))}
+        </Grid>
+      </MotionBox>
+
+      {/* Charts & Tables */}
+      <MotionBox
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
+        sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
+      >
+        <ChartsGrid />
+        <TodaysInterviews />
+      </MotionBox>
+    </Box>
+  );
+}
+
+export default Dashboard;

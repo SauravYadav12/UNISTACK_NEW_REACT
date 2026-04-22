@@ -1,0 +1,201 @@
+import { Box, Typography, alpha } from '@mui/material';
+import { motion } from 'framer-motion';
+import { ReactNode } from 'react';
+import { tokens } from '../../theme/theme';
+import { scaleIn } from '../../theme/animations';
+import unistack_Img from '../../assets/unistack.png';
+
+interface AuthLayoutProps {
+  children: ReactNode;
+  title?: string;
+  subtitle?: string;
+}
+
+const MotionBox = motion.create(Box);
+
+export default function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        position: 'relative',
+        overflow: 'hidden',
+        bgcolor: tokens.colors.brand,
+      }}
+    >
+      {/* Left decorative panel */}
+      <Box
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          p: 6,
+        }}
+      >
+        {/* Animated gradient orbs */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '15%',
+            left: '10%',
+            width: 300,
+            height: 300,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${alpha(tokens.colors.pink, 0.25)} 0%, transparent 70%)`,
+            filter: 'blur(60px)',
+            animation: 'float1 8s ease-in-out infinite',
+            '@keyframes float1': {
+              '0%, 100%': { transform: 'translate(0, 0)' },
+              '50%': { transform: 'translate(30px, -20px)' },
+            },
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '20%',
+            right: '15%',
+            width: 250,
+            height: 250,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${alpha(tokens.colors.blue, 0.2)} 0%, transparent 70%)`,
+            filter: 'blur(50px)',
+            animation: 'float2 10s ease-in-out infinite',
+            '@keyframes float2': {
+              '0%, 100%': { transform: 'translate(0, 0)' },
+              '50%': { transform: 'translate(-20px, 25px)' },
+            },
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '45%',
+            width: 180,
+            height: 180,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${alpha(tokens.colors.yellow, 0.15)} 0%, transparent 70%)`,
+            filter: 'blur(40px)',
+            animation: 'float3 7s ease-in-out infinite',
+            '@keyframes float3': {
+              '0%, 100%': { transform: 'translate(0, 0)' },
+              '50%': { transform: 'translate(15px, 15px)' },
+            },
+          }}
+        />
+
+        {/* Brand content */}
+        <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 400 }}>
+          <img
+            src={unistack_Img}
+            alt="UNISTACK"
+            style={{ width: 200, objectFit: 'contain', marginBottom: 32, filter: 'brightness(1.1)' }}
+          />
+          <Typography
+            variant="h3"
+            sx={{
+              background: tokens.gradients.brand,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              mb: 2,
+              fontWeight: 700,
+            }}
+          >
+            AI-Powered HR Platform
+          </Typography>
+          <Typography variant="body1" sx={{ color: alpha('#FFFFFF', 0.6), lineHeight: 1.7 }}>
+            Streamline your recruitment, attendance, and team management with intelligent automation.
+          </Typography>
+
+          {/* Brand color dots */}
+          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mt: 4 }}>
+            {[tokens.colors.pink, tokens.colors.blue, tokens.colors.yellow].map((color) => (
+              <Box
+                key={color}
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: color,
+                  boxShadow: `0 0 12px ${color}`,
+                }}
+              />
+            ))}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Right form panel */}
+      <Box
+        sx={{
+          flex: { xs: 1, md: '0 0 480px' },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+          borderRadius: { xs: 0, md: '32px 0 0 32px' },
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Subtle accent line at top */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            background: tokens.gradients.brand,
+          }}
+        />
+
+        <MotionBox
+          variants={scaleIn}
+          initial="initial"
+          animate="animate"
+          sx={{
+            width: '100%',
+            maxWidth: 380,
+            mx: 'auto',
+            px: { xs: 3, sm: 4 },
+            py: 4,
+          }}
+        >
+          {/* Mobile logo (hidden on desktop where left panel shows it) */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              justifyContent: 'center',
+              mb: 3,
+            }}
+          >
+            <img src={unistack_Img} alt="UNISTACK" style={{ width: 140, objectFit: 'contain' }} />
+          </Box>
+
+          {/* Title */}
+          {title && (
+            <Typography variant="h2" color="text.primary" mb={0.5}>
+              {title}
+            </Typography>
+          )}
+
+          {subtitle && (
+            <Typography variant="body2" color="text.secondary" mb={3.5}>
+              {subtitle}
+            </Typography>
+          )}
+
+          {children}
+        </MotionBox>
+      </Box>
+    </Box>
+  );
+}
