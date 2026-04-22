@@ -18,6 +18,7 @@ export enum MarketingModule {
 export enum HomeModule {
   'Dashboard' = 'Dashboard',
   'Profile' = 'Profile',
+  'My Documents' = 'My Documents',
 }
 export enum ArchiveModule {
   'Requirements' = 'Requirements',

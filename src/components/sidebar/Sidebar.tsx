@@ -116,6 +116,11 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       text: 'My Documents',
       icon: <IconCash size={20} />,
       path: '/my-documents',
+      // Gated by Home → My Documents so admins can revoke access via the
+      // Access Control page. The sidebar's `visibleItems` filter drops any
+      // entry whose (group, module) pair isn't allowed for the current role.
+      group: ModuleGroup.Home,
+      module: HomeModule['My Documents'],
     },
   ];
 

@@ -130,7 +130,12 @@ function AppContent() {
           <Route
             path="my-documents"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Home,
+                  module: HomeModule['My Documents'],
+                }}
+              >
                 <MyDocuments />
               </ProtectedRoute>
             }
