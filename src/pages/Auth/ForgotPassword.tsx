@@ -1,17 +1,9 @@
-import {
-  Avatar,
-  Box,
-  Container,
-  createTheme,
-  CssBaseline,
-  ThemeProvider,
-} from '@mui/material';
+import { Box, Stepper, Step, StepLabel, Link, Divider } from '@mui/material';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { IconArrowLeft } from '@tabler/icons-react';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import StorageIcon from '@mui/icons-material/Storage';
 import Loader from '../../components/loader/Loader';
-import CopyRight from '../../components/auth/CopyRight';
 import SendOTP from '../../components/auth/SendOTP';
 import VerifyOTP from '../../components/auth/VerifyOTP';
 import ResetPassword from '../../components/auth/ResetPassword';
@@ -19,13 +11,18 @@ import { login, sendOtp } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import { validateEmail } from '../../utils/validators';
 import { parseError } from '../../utils/utils';
-const defaultTheme = createTheme();
+import AuthLayout from '../../components/auth/AuthLayout';
+import { AnimatePresence, motion } from 'framer-motion';
+
+const MotionBox = motion.create(Box);
 
 enum ForgotPasswordStep {
   SendOTP = 'SendOTP',
   VerifyOTP = 'VerifyOTP',
   ResetPassword = 'ResetPassword',
 }
+
+const stepLabels = ['Email', 'Verify', 'Reset'];
 
 const ForgotPassword = () => {
   const steps = [
@@ -40,6 +37,8 @@ const ForgotPassword = () => {
   const [step, setStep] = React.useState(steps[0]);
   const navigate = useNavigate();
   const { validateLogin } = useAuth();
+
+  const activeStep = steps.indexOf(step);
 
   async function handleSendOTP() {
     const email = emailState[0];
@@ -69,7 +68,7 @@ const ForgotPassword = () => {
       setLoading(true);
       const { data } = await login(emailState[0], passwordState[0]);
       validateLogin(data.token, data.user);
-      toast.success('Login Successfull');
+      toast.success('Login Successful');
       navigate('/dashboard');
     } catch (error) {
       const message: string = parseError(error);
@@ -86,25 +85,58 @@ const ForgotPassword = () => {
   return (
     <>
       {loading && <Loader />}
-      <ThemeProvider theme={defaultTheme}>
-        <Container component="main" maxWidth="xs">
-          <CssBaseline />
-          <Box
-            sx={{
-              marginTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <Avatar sx={{ m: 1, bgcolor: '#EC4599', width: 56, height: 56 }}>
-              <StorageIcon />
-            </Avatar>
+      <AuthLayout
+        title="Reset password"
+        subtitle="We'll help you get back in"
+        chip="RECOVERY"
+        eyebrow="RECOVERY MODE · VERIFYING IDENTITY"
+        tagline={
+          <>
+            Locked out? No worries.
+            <br />
+            We'll send a secure code to your email and get you back in quickly.
+          </>
+        }
+      >
+        {/* Step indicator */}
+        <Stepper
+          activeStep={activeStep}
+          alternativeLabel
+          sx={{
+            mb: 3,
+            '& .MuiStepLabel-label': { fontSize: '0.75rem' },
+            '& .MuiStepIcon-root': { fontSize: '1.25rem' },
+            '& .MuiStepIcon-root.Mui-active': { color: 'primary.main' },
+            '& .MuiStepIcon-root.Mui-completed': { color: 'success.main' },
+          }}
+        >
+          {stepLabels.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-            {step === ForgotPasswordStep.SendOTP && (
+        <AnimatePresence mode="wait">
+          {step === ForgotPasswordStep.SendOTP && (
+            <MotionBox
+              key="send-otp"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
               <SendOTP emailState={emailState} onClickSendOtp={handleSendOTP} />
-            )}
-            {step === ForgotPasswordStep.VerifyOTP && (
+            </MotionBox>
+          )}
+          {step === ForgotPasswordStep.VerifyOTP && (
+            <MotionBox
+              key="verify-otp"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
               <VerifyOTP
                 email={emailState[0]}
                 onChangeEmail={() => setStep(ForgotPasswordStep.SendOTP)}
@@ -113,8 +145,16 @@ const ForgotPassword = () => {
                 loadingState={[loading, setLoading]}
                 onSuccess={onOtpVerifiedSuccessfully}
               />
-            )}
-            {step === ForgotPasswordStep.ResetPassword && (
+            </MotionBox>
+          )}
+          {step === ForgotPasswordStep.ResetPassword && (
+            <MotionBox
+              key="reset-password"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
               <ResetPassword
                 email={emailState[0]}
                 otp={otpState[0]}
@@ -122,12 +162,35 @@ const ForgotPassword = () => {
                 loadingState={[loading, setLoading]}
                 onSuccess={onPasswordResetSuccessfull}
               />
-            )}
-          </Box>
+            </MotionBox>
+          )}
+        </AnimatePresence>
 
-          <CopyRight />
-        </Container>
-      </ThemeProvider>
+        {/* Back-to-login footer */}
+        <Divider sx={{ mt: 3, mb: 1.5 }} />
+        <Box sx={{ textAlign: 'center' }}>
+          <Link
+            component="button"
+            type="button"
+            onClick={() => navigate('/')}
+            underline="hover"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.5,
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: 'text.secondary',
+              cursor: 'pointer',
+              transition: 'color 0.15s ease',
+              '&:hover': { color: 'primary.main' },
+            }}
+          >
+            <IconArrowLeft size={14} />
+            Back to login
+          </Link>
+        </Box>
+      </AuthLayout>
     </>
   );
 };

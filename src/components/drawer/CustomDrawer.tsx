@@ -32,6 +32,7 @@ export default function CustomDrawer({
           maxWidth: '100vw',
           left: 'auto',
           right: 0,
+          borderRadius: '16px 0 0 16px',
         },
       }}
     >

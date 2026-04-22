@@ -119,13 +119,13 @@ const AttendanceGridMonthly = ({
     const days = [];
 
     for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(<Grid item key={`empty-${i}`} />);
+      days.push(<Grid key={`empty-${i}`} />);
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
       const date = currentDate.clone().date(day);
       days.push(
-        <DateCell item key={date.toISOString()}>
+        <DateCell key={date.toISOString()}>
           <AttendanceStatusBox
             label={`${day}`}
             attendance={getAttendance(date)}

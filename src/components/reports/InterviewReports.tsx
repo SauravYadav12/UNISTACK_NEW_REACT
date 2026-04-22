@@ -1,13 +1,9 @@
-import {
-  Box,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableContainer,
-} from '@mui/material';
-import CustomAccordion from '../accordion/CustomAccordion';
+import { useMemo } from 'react';
 import { InterviewReport } from '../../Interfaces/reports';
-import { MyDataRow, MyReportsProps } from './SupportReports';
+import PerformanceLeaderboard, { PerformanceRow } from './PerformanceLeaderboard';
+import { MyReportsProps } from './SupportReports';
+import { IconCalendarEvent } from '@tabler/icons-react';
+import { tokens } from '../../theme/theme';
 
 export const InterviewReports = ({
   fromDate,
@@ -15,66 +11,65 @@ export const InterviewReports = ({
   loading,
   report,
 }: MyReportsProps<InterviewReport>) => {
-  
-  if (loading)
-    return (
-      <Box className="loader" sx={{ py: 10 }}>
-        <CircularProgress />
-      </Box>
-    );
+  const rows: PerformanceRow[] = useMemo(() => {
+    return (report || []).map((a) => {
+      const base = `/interviews?fromDate=${fromDate}&toDate=${toDate}&marketingPersonRef=${a.id}`;
+      return {
+        id: a.id,
+        name: a.name || 'Unknown',
+        total: a.totalInterviews || 0,
+        totalHref: base,
+        breakdown: [
+          {
+            key: 'Interview Confirm',
+            label: 'Confirmed',
+            color: tokens.colors.success,
+            value: a['Interview Confirm'] || 0,
+            href: `${base}&interviewStatus=Interview Confirm`,
+          },
+          {
+            key: 'Interview Tentative',
+            label: 'Tentative',
+            color: tokens.colors.warning,
+            value: a['Interview Tentative'] || 0,
+            href: `${base}&interviewStatus=Interview Tentative`,
+          },
+          {
+            key: 'Interview Completed',
+            label: 'Completed',
+            color: tokens.colors.blue,
+            value: a['Interview Completed'] || 0,
+            href: `${base}&interviewStatus=Interview Completed`,
+          },
+          {
+            key: 'Interview Re-Scheduled',
+            label: 'Re-Scheduled',
+            color: '#7C3AED',
+            value: a['Interview Re-Scheduled'] || 0,
+            href: `${base}&interviewStatus=Interview Re-Scheduled`,
+          },
+          {
+            key: 'Interview Cancelled',
+            label: 'Cancelled',
+            color: tokens.colors.error,
+            value: a['Interview Cancelled'] || 0,
+            href: `${base}&interviewStatus=Interview Cancelled`,
+          },
+        ],
+      };
+    });
+  }, [report, fromDate, toDate]);
 
   return (
-    <div>
-      {report?.map((a, i) => {
-        const href = `/interviews?fromDate=${fromDate}&toDate=${toDate}&marketingPersonRef=${a.id}&`;
-        return (
-          <Box mb={1} key={i}>
-            <CustomAccordion title={a.name||'Unknown'}>
-              <TableContainer>
-                <Table sx={{ maxWidth: 'max-content' }}>
-                  <TableBody>
-                    <MyDataRow
-                      href={href}
-                      label="Total Interviews"
-                      value={a.totalInterviews}
-                    />
-                    <MyDataRow
-                      href={href + `interviewStatus=Interview Confirm`}
-                      label="Total Interview Confirm"
-                      value={a['Interview Confirm']}
-                    />
-                    <MyDataRow
-                      href={href + `interviewStatus=Interview Tentative`}
-                      label="Total Interview Tentative"
-                      value={a['Interview Tentative']}
-                    />
-                    <MyDataRow
-                      href={href + `interviewStatus=Interview Re-Scheduled`}
-                      label="Total Interview Re-Scheduled"
-                      value={a['Interview Re-Scheduled']}
-                    />
-                    <MyDataRow
-                      href={href + `interviewStatus=Interview Completed`}
-                      label="Total Interview Completed"
-                      value={a['Interview Completed']}
-                    />
-                    <MyDataRow
-                      href={href + `interviewStatus=Interview Cancelled`}
-                      label="Total Interview Cancelled"
-                      value={a['Interview Cancelled']}
-                    />
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CustomAccordion>
-          </Box>
-        );
-      })}
-      {!report?.length && !loading && (
-        <Box sx={{ textAlign: 'center', py: 10 }}>
-          <p>Not found</p>
-        </Box>
-      )}
-    </div>
+    <PerformanceLeaderboard
+      title="Interview leaderboard"
+      subtitle="Interviews scheduled by each marketer"
+      totalLabel="Interviews scheduled"
+      rows={rows}
+      loading={loading}
+      icon={<IconCalendarEvent size={18} />}
+      accentColor="#7C3AED"
+      accentGradient="linear-gradient(135deg, #7C3AED 0%, #EC4599 100%)"
+    />
   );
 };

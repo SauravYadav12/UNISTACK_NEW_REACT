@@ -1,0 +1,231 @@
+import {
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Stack,
+  Typography,
+  alpha,
+} from '@mui/material';
+import moment from 'moment';
+import { useState } from 'react';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import CustomDrawer from '../../../components/drawer/CustomDrawer';
+import ConsultantForm from './ConsultantForm';
+import { consultantsList } from '../../../services/consultantApi';
+import { dateFormate2 } from '../../../components/constants';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
+import SyncIcon from '@mui/icons-material/Sync';
+import AddIcon from '@mui/icons-material/Add';
+import { syncDataById } from '../../../utils/syncDataById';
+import { FormMode } from '../Requirements/Requirements';
+import { GridFilterModel, GridCallbackDetails, GridColDef } from '@mui/x-data-grid';
+import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
+import { IConsultant } from '../../../Interfaces/types';
+import { tokens } from '../../../theme/theme';
+
+const consultantStatusColors: Record<string, string> = {
+  Active: '#10B981',
+  Inactive: '#EF4444',
+};
+
+export default function Consultants() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [viewData, setViewData] = useState<IConsultant>();
+  const [formTitle, setFormTitle] = useState('');
+  const [mode, setMode] = useState<FormMode>('view');
+
+  const {
+    gridData, paginationModel, error, loading,
+    setSearchModel, setPaginationModel, setGridData, reload, setResults,
+  } = usePagination({ queryFunction: consultantsList }, []);
+
+  const columns: GridColDef<IConsultant>[] = [
+    {
+      field: 'view',
+      headerName: '',
+      width: 90,
+      renderCell: (params) => (
+        <Button
+          size="small"
+          variant="contained"
+          onClick={() => handleViewDetails(params.row)}
+          sx={{
+            minWidth: 60, height: 28, fontSize: '0.75rem', fontWeight: 600,
+            textTransform: 'none', borderRadius: '7px',
+            background: 'linear-gradient(135deg, #032840 0%, #0A3555 100%)', color: '#fff', boxShadow: 'none',
+            '&:hover': { background: 'linear-gradient(135deg, #0A3555 0%, #0F4068 100%)', boxShadow: 'none' },
+          }}
+        >
+          View
+        </Button>
+      ),
+      filterable: false,
+      sortable: false,
+    },
+    {
+      field: 'consultantId',
+      headerName: 'ID',
+      width: 100,
+      renderCell: ({ row }) => (
+        <Typography
+          variant="body2" fontWeight={600}
+          sx={{ color: '#0A3555', cursor: 'pointer', '&:hover': { color: '#032840', textDecoration: 'underline' } }}
+          onClick={() => handleViewDetails(row)}
+        >
+          {row.consultantId}
+        </Typography>
+      ),
+    },
+    {
+      field: 'consultantStatus',
+      headerName: 'Status',
+      width: 120,
+      renderCell: ({ row }) => {
+        const status = row.consultantStatus || '';
+        const color = consultantStatusColors[status] || '#94A3B8';
+        return (
+          <Chip
+            label={status || 'N/A'}
+            size="small"
+            sx={{
+              bgcolor: alpha(color, 0.1), color, fontWeight: 600,
+              fontSize: '0.75rem', height: 26, borderRadius: '6px',
+              '& .MuiChip-label': { px: 1.25 },
+            }}
+          />
+        );
+      },
+    },
+    { field: 'consultantName', headerName: 'Name', width: 130 },
+    { field: 'psuedoName', headerName: 'Pseudo Name', width: 130 },
+    { field: 'visaStatus', headerName: 'Visa Status', width: 140 },
+    { field: 'degree', headerName: 'Degree', width: 140 },
+    { field: 'yearPassing', headerName: 'Passing Year', width: 120 },
+    { field: 'university', headerName: 'University', width: 140 },
+    { field: 'createdBy', headerName: 'Created By', width: 130 },
+    {
+      field: 'createdAt',
+      headerName: 'Created At',
+      width: 150,
+      valueGetter: (_params, row) => moment(row.createdAt).format(dateFormate2),
+      filterOperators: filterOperatorsForDateField,
+    },
+  ];
+
+  const handleViewDetails = (row: IConsultant) => {
+    const data = gridData?.results?.find((r) => r.consultantId === row.consultantId);
+    if (!data) return;
+    setViewData(data);
+    setFormTitle(`Consultant ID: ${row.consultantId}`);
+    setMode('view');
+    setDrawerOpen(true);
+    syncDataById(data, { queryFunction: consultantsList, setResults, setViewData });
+  };
+
+  const handleAddNew = () => {
+    setFormTitle('Add New Consultant');
+    setViewData(undefined);
+    setMode('add');
+    setDrawerOpen(true);
+  };
+
+  const handleCloseForm = () => { setDrawerOpen(false); setViewData(undefined); };
+  const handleEdit = (editMode: boolean) => setMode(editMode ? 'edit' : 'view');
+
+  const handleChangeFilterModel = (model: GridFilterModel, _: GridCallbackDetails<'filter'>) => {
+    const iModel = model.items[0]?.value || model.quickFilterValues?.length ? model : initialSearchModel;
+    setSearchModel(iModel);
+  };
+
+  const header = (
+    <>
+      {/* Left: Title + count */}
+      <Box>
+        <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+          <Typography variant="h5" fontWeight={700} color="#2A3547">
+            Consultants
+          </Typography>
+          <Chip
+            label={`${gridData?.totalDocuments ?? 0} total`}
+            size="small"
+            sx={{
+              bgcolor: '#ECF2FF', color: '#5D87FF',
+              fontWeight: 600, fontSize: '0.75rem', height: 24,
+            }}
+          />
+        </Stack>
+      </Box>
+
+      {/* Right: Actions */}
+      <Stack direction="row" alignItems="flex-start" spacing={1}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon sx={{ fontSize: '18px !important' }} />}
+          onClick={handleAddNew}
+          size="medium"
+          sx={{
+            bgcolor: tokens.colors.pink,
+            '&:hover': { bgcolor: tokens.colors.pinkDark },
+            textTransform: 'none', fontWeight: 600,
+            borderRadius: '10px', px: 2.5, py: 0.8,
+            boxShadow: 'none', fontSize: '0.875rem',
+          }}
+        >
+          Add New
+        </Button>
+        <IconButton
+          onClick={() => { setGridData(undefined); reload(); }}
+          disabled={loading}
+          sx={{
+            bgcolor: '#ECF2FF', borderRadius: '10px',
+            width: 38, height: 38,
+            '&:hover': { bgcolor: '#D6E4FF' },
+          }}
+        >
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            sx={{ color: '#5D87FF', fontSize: '20px' }}
+          />
+        </IconButton>
+      </Stack>
+    </>
+  );
+
+  return (
+    <>
+      <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
+        onFilterModelChange={handleChangeFilterModel}
+        error={error}
+        retry={reload}
+        loading={loading}
+        rows={gridData?.results || []}
+        columns={columns}
+        header={header}
+      />
+      <CustomDrawer
+        open={drawerOpen}
+        onClose={handleCloseForm}
+        title={formTitle}
+        closeOnOutSideClick={mode === 'view'}
+      >
+        <ConsultantForm
+          setResults={setResults}
+          viewData={viewData}
+          mode={mode}
+          onDrawerClose={handleCloseForm}
+          isEditing={mode !== 'view'}
+          onEdit={handleEdit}
+        />
+      </CustomDrawer>
+    </>
+  );
+}

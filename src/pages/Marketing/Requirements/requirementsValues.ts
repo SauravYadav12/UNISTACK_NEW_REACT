@@ -54,12 +54,12 @@ export const requirementFormInitialValues = {
 };
 
 export const reqirementStatusColors: ReqirementStatusColors = {
-  'New Working': '#1976D2',
-  Submitted: '#4CAF50',
-  Interviewed: '#03A9F4',
-  Cancelled: '#D32F2F',
-  'Project Active': '#9C27B0',
-  'Project Inactive': '#9E9E9E',
+  'New Working': '#37B7EA',
+  Submitted: '#10B981',
+  Interviewed: '#EC4599',
+  Cancelled: '#EF4444',
+  'Project Active': '#F59E0B',
+  'Project Inactive': '#94A3B8',
 };
 
 export const taxTypeOptions = [
@@ -165,3 +165,57 @@ export const reqFields:(keyof IRequirement)[] = [
   'isDuplicate',
   'duplicateWith',
 ];
+
+/**
+ * Field-ownership split for multi-assign.
+ *
+ * Parent-owned fields describe the shared job itself (title, JD, tech
+ * stack, employment type, job portal) plus the audit/attribution fields.
+ * These never diverge between marketers.
+ *
+ * Everything else is child-owned: per-marketer commercial terms (rate, tax,
+ * duration, remote), status + next step + comments + resume, applied-for
+ * consultant, AND — per product rule — client info, prime-vendor info, and
+ * vendor info. Each marketer may source through their own client contact
+ * or prime vendor, so those rows diverge per assignment. Children inherit
+ * the parent's initial values at creation time (see server's
+ * CHILD_COPY_FIELDS) and can diverge afterwards.
+ *
+ * The drawers use this set to route save calls: dirty fields in this set go
+ * to the parent doc; everything else goes to the child doc (or, on a
+ * standalone/legacy row, back to the row itself).
+ */
+export const PARENT_OWNED_FIELD_SET = new Set<keyof IRequirement>([
+  'jobTitle',
+  'jobDescription',
+  'employementType',
+  'jobPortalLink',
+  'primaryTech',
+  'secondaryTech',
+  'primaryTechStack',
+  'reqKeywords',
+  'recordOwner',
+  'reqEnteredBy',
+  'reqEnteredByRef',
+  'reqEnteredDate',
+  'gotReqFrom',
+  'gotOnResume',
+  'isDuplicate',
+  'duplicateWith',
+]);
+
+export function splitDirtyByOwnership(
+  dirty: Partial<IRequirement>,
+): { parent: Partial<IRequirement>; child: Partial<IRequirement> } {
+  const parent: Partial<IRequirement> = {};
+  const child: Partial<IRequirement> = {};
+  for (const k of Object.keys(dirty) as (keyof IRequirement)[]) {
+    const v = dirty[k];
+    if (PARENT_OWNED_FIELD_SET.has(k)) {
+      (parent as Record<string, unknown>)[k as string] = v;
+    } else {
+      (child as Record<string, unknown>)[k as string] = v;
+    }
+  }
+  return { parent, child };
+}

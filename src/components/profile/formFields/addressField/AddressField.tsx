@@ -1,6 +1,7 @@
 import {
   FormControl,
   FormHelperText,
+  Grid,
   InputLabel,
   MenuItem,
   Select,
@@ -27,51 +28,26 @@ const AddressField = ({
     <>
       {sectionFields.map((field, j) => {
         const { fieldName, label } = field;
-        const validationError = (formErrors as any)[parentFieldName][
-          field.fieldName
-        ];
+        const validationError = (formErrors as any)[parentFieldName][field.fieldName];
+
         if (fieldName === 'country') {
           return (
-            <div key={j}>
-              <FormControl
-                sx={{ m: 1, width: 230 }}
-                size="small"
-                fullWidth
-                error={!!validationError}
-              >
-                <InputLabel
-                  id="demo-multiple-name-label"
-                  sx={{
-                    color: validationError ? 'red' : '',
-                    textTransform: 'capitalize',
-                  }}
-                >
+            <Grid key={j} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <FormControl size="small" fullWidth error={!!validationError}>
+                <InputLabel sx={{ textTransform: 'capitalize' }}>
                   {label || fieldName}
                 </InputLabel>
                 <Select
                   value={myProfile[parentFieldName].country}
-                  onChange={(e) =>
-                    onChangeProfileValues(parentFieldName, field, e)
-                  }
+                  onChange={(e) => onChangeProfileValues(parentFieldName, field, e)}
                   label={label || fieldName}
                   disabled={disabled}
                   sx={{
                     borderRadius: '10px',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: validationError ? 'red' : '', // Red outline on error
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: validationError ? 'red' : '',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: validationError ? 'red' : '',
-                    },
-                    '& .MuiSelect-root': {
-                      color: validationError ? 'red' : 'inherit', // Red text on error
-                    },
                     '& .MuiInputBase-input.Mui-disabled': {
-                      WebkitTextFillColor: 'black',
-                      backgroundColor: '#f0f0f0',
+                      WebkitTextFillColor: '#2A3547',
+                      backgroundColor: '#F6F9FC',
+                      borderRadius: '10px',
                     },
                   }}
                 >
@@ -81,40 +57,40 @@ const AddressField = ({
                     </MenuItem>
                   ))}
                 </Select>
-                {validationError && (
-                  <FormHelperText>{validationError}</FormHelperText>
-                )}
+                {validationError && <FormHelperText>{validationError}</FormHelperText>}
               </FormControl>
-            </div>
+            </Grid>
           );
         } else if (fieldName === 'state') {
           return (
-            <StateField
-              error={!!validationError}
-              helperText={validationError}
-              disabled={disabled}
-              key={j}
-              selectedCountry={myProfile[parentFieldName].country}
-              selectedState={myProfile[parentFieldName].state}
-              onChange={(e) => onChangeProfileValues(parentFieldName, field, e)}
-              field={field}
-            />
+            <Grid key={j} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <StateField
+                error={!!validationError}
+                helperText={validationError}
+                disabled={disabled}
+                selectedCountry={myProfile[parentFieldName].country}
+                selectedState={myProfile[parentFieldName].state}
+                onChange={(e) => onChangeProfileValues(parentFieldName, field, e)}
+                field={field}
+              />
+            </Grid>
           );
         } else if (fieldName === 'city') {
           return (
-            <CityField
-              disabled={disabled}
-              key={j}
-              selectedCountry={myProfile[parentFieldName].country}
-              selectedState={myProfile[parentFieldName].state}
-              selectedCity={myProfile[parentFieldName].city}
-              onChange={(e) => onChangeProfileValues(parentFieldName, field, e)}
-              field={field}
-              myProfile={myProfile}
-              formErrors={formErrors}
-              setMyProfile={setMyProfile}
-              parentFieldName={parentFieldName}
-            />
+            <Grid key={j} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <CityField
+                disabled={disabled}
+                selectedCountry={myProfile[parentFieldName].country}
+                selectedState={myProfile[parentFieldName].state}
+                selectedCity={myProfile[parentFieldName].city}
+                onChange={(e) => onChangeProfileValues(parentFieldName, field, e)}
+                field={field}
+                myProfile={myProfile}
+                formErrors={formErrors}
+                setMyProfile={setMyProfile}
+                parentFieldName={parentFieldName}
+              />
+            </Grid>
           );
         }
 

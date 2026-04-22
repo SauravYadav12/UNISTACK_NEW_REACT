@@ -101,7 +101,7 @@ const VerifyOTP = ({
           Verify OTP
         </Button>
         <Grid container>
-          <Grid item xs>
+          <Grid size="grow">
             <Link
               onClick={onChangeEmail}
               variant="body2"
@@ -110,7 +110,7 @@ const VerifyOTP = ({
               Change email
             </Link>
           </Grid>
-          <Grid item>
+          <Grid>
             <Link
               onClick={onClickResend}
               sx={{ cursor: 'pointer' }}

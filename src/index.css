@@ -1,14 +1,115 @@
+@import '@fontsource-variable/inter';
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  /* color-scheme: light dark; */
-  /* color: rgba(255, 255, 255, 0.87); */
-  /* background-color: #242424;  */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism utility */
+.glass {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* UNISTACK brand gradient text */
+.brand-gradient-text {
+  background: linear-gradient(135deg, #EC4599 0%, #37B7EA 50%, #FCE441 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* AI gradient text (pink to blue) */
+.ai-gradient-text {
+  background: linear-gradient(135deg, #EC4599 0%, #37B7EA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* AI glow utility */
+.ai-glow {
+  box-shadow: 0 0 20px rgba(236, 69, 153, 0.3), 0 0 40px rgba(55, 183, 234, 0.15);
+}
+
+/* Subtle page transition */
+.page-content {
+  animation: pageEnter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Selection with brand pink */
+::selection {
+  background: rgba(236, 69, 153, 0.15);
+  color: inherit;
+}
+
+/* Focus visible outline with brand pink */
+:focus-visible {
+  outline: 2px solid #EC4599;
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(90, 107, 127, 0.3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(90, 107, 127, 0.3);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(90, 107, 127, 0.5);
+}
+
+/* Toastify theme overrides */
+.Toastify__toast {
+  border-radius: 12px !important;
+  font-family: 'Inter Variable', 'Inter', system-ui, sans-serif !important;
+  font-size: 0.875rem !important;
 }

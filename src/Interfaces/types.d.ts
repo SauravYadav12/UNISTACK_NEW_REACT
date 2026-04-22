@@ -79,6 +79,19 @@ export interface IRequirement {
   primaryTechStack?: string;
   isDuplicate?: string;
   duplicateWith?: string;
+  parentReqID?: string;
+  childSuffix?: string;
+  /**
+   * Populated by `GET /requirements/search/:reqID` only — inline info about
+   * the project this requirement is already attached to, if any. Used by
+   * SearchRequirement to show "Project PROJ-12 · ACME" on each assignment
+   * row and to disable the Select button inside AddProjectDialog.
+   */
+  project?: {
+    projectId?: string;
+    organizationShortCode?: string;
+    organizationName?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

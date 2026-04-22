@@ -35,7 +35,6 @@ function MyDataGrid(props: Iprops) {
     useDataGridContext();
   const [_, setiFilterModel] = useState<iFilterModel>();
   const { error, retry, paginateState, onFilterModelChange } = props;
-
   const [filterButtonEl, setFilterButtonEl] =
     React.useState<HTMLButtonElement | null>(null);
 
@@ -46,138 +45,219 @@ function MyDataGrid(props: Iprops) {
           {
             value: SearchOperator.Equals,
             label: 'Equals',
-            getApplyFilterFn() {
-              return () => true;
-            },
+            getApplyFilterFn() { return () => true; },
             InputComponent: GridFilterInputValue,
           },
           {
             value: SearchOperator.Contains,
             label: 'Contains',
-            getApplyFilterFn() {
-              return () => true;
-            },
+            getApplyFilterFn() { return () => true; },
             InputComponent: GridFilterInputValue,
           },
         ];
-        return {
-          ...column,
-          filterOperators,
-        };
+        return { ...column, filterOperators };
       }
       return column;
     });
   }, [props.columns]);
 
-  useEffect(() => {
-    disableArchiveBtnState[1](props.loading);
-  }, [props.loading]);
-
-  useEffect(() => {
-    iArchiveState[1](props.archiveState?.[0]);
-  }, [props.archiveState?.[0]]);
-
-  useEffect(() => {
-    props.archiveState?.[1](!!iArchiveState[0]);
-  }, [iArchiveState[0]]);
+  useEffect(() => { disableArchiveBtnState[1](props.loading); }, [props.loading]);
+  useEffect(() => { iArchiveState[1](props.archiveState?.[0]); }, [props.archiveState?.[0]]);
+  useEffect(() => { props.archiveState?.[1](!!iArchiveState[0]); }, [iArchiveState[0]]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Page header */}
       <Box
-        display={'flex'}
-        justifyContent={'space-between'}
-        alignContent={'center'}
-        alignItems={'center'}
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 2,
+          mb: 3,
+        }}
       >
         {props.header}
       </Box>
-      <div style={{ flex: 1, minHeight: '300px' }}>
-        <Box sx={{ height: '98%' }}>
-          <DataGrid
-            disableColumnSorting
-            isRowSelectable={(params) => !params?.row?.dateSeparator}
-            onFilterModelChange={(model, details) => {
-              setiFilterModel({ model, details });
-              onFilterModelChange?.(model, details);
-            }}
-            getRowHeight={({ model }) => (model?.dateSeparator ? 25 : null)}
-            loading={props.loading}
-            rows={props.rows}
-            columns={columns}
-            filterMode={'server'}
-            paginationMode="server"
-            rowCount={paginateState.totalRows}
-            getRowId={(row) => row._id}
-            slots={{
-              toolbar: CustomToolbar,
-              noRowsOverlay: () =>
-                error ? (
-                  <ErrorOverlay message={error} retry={retry} />
-                ) : (
-                  <GridOverlay>Not found</GridOverlay>
-                ),
-            }}
-            slotProps={{
-              pagination: {
-                component: () => (
-                  <CustomPagination
-                    paginateState={paginateState}
-                    loading={props.loading}
-                    currentRowLength={props.rows.length}
-                  />
-                ),
-                disabled: props.loading,
+
+      {/*
+        The toolbar + grid live inside one DataGrid so toolbar buttons
+        can access GridApiContext. We style them to look like two
+        separate cards by giving the toolbar its own background/radius
+        and adding visual separation.
+      */}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 400,
+          '& .MuiDataGrid-root': {
+            border: 'none',
+            bgcolor: 'transparent',
+          },
+        }}
+      >
+        <DataGrid
+          disableColumnSorting
+          isRowSelectable={(params) => !params?.row?.dateSeparator}
+          onFilterModelChange={(model, details) => {
+            setiFilterModel({ model, details });
+            onFilterModelChange?.(model, details);
+          }}
+          getRowHeight={({ model }) => (model?.dateSeparator ? 36 : 56)}
+          loading={props.loading}
+          rows={props.rows}
+          columns={columns}
+          filterMode="server"
+          paginationMode="server"
+          rowCount={paginateState.totalRows}
+          getRowId={(row) => row._id}
+          slots={{
+            toolbar: CustomToolbar,
+            noRowsOverlay: () =>
+              error ? (
+                <ErrorOverlay message={error} retry={retry} />
+              ) : (
+                <GridOverlay>
+                  <Typography variant="body2" color="text.secondary">
+                    No data available
+                  </Typography>
+                </GridOverlay>
+              ),
+          }}
+          slotProps={{
+            pagination: {
+              component: () => (
+                <CustomPagination
+                  paginateState={paginateState}
+                  loading={props.loading}
+                  currentRowLength={props.rows.length}
+                />
+              ),
+              disabled: props.loading,
+            },
+            panel: { anchorEl: filterButtonEl },
+            toolbar: { setFilterButtonEl },
+          }}
+          getRowClassName={(params) =>
+            params.row.dateSeparator ? 'date-separator-row' : ''
+          }
+          sx={{
+            border: 'none',
+            fontSize: '0.875rem',
+
+            // ── Toolbar — looks like a separate white card ──
+            '& .MuiDataGrid-toolbarContainer': {
+              px: 2.5,
+              py: 1.5,
+              gap: 1,
+              bgcolor: '#fff',
+              borderRadius: '12px',
+              border: '1px solid',
+              borderColor: 'grey.200',
+              boxShadow: '0px 7px 30px 0px rgba(90, 114, 123, 0.11)',
+              mb: 2,
+            },
+
+            // ── Main grid area (headers + rows + footer) — separate card ──
+            '& .MuiDataGrid-main': {
+              bgcolor: '#fff',
+              borderRadius: '12px 12px 0 0',
+              border: '1px solid',
+              borderColor: 'grey.200',
+              borderBottom: 'none',
+              boxShadow: '0px 7px 30px 0px rgba(90, 114, 123, 0.11)',
+              overflow: 'hidden',
+            },
+
+            // ── Column headers ──
+            '& .MuiDataGrid-columnHeaders': {
+              bgcolor: '#F6F9FC',
+              borderBottom: '1px solid',
+              borderColor: 'grey.200',
+              minHeight: '50px !important',
+              maxHeight: '50px !important',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 600,
+              fontSize: '0.8125rem',
+              color: '#2A3547',
+              letterSpacing: '0.01em',
+            },
+            '& .MuiDataGrid-columnSeparator': {
+              display: 'none',
+            },
+            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+              outline: 'none !important',
+            },
+            '& .MuiDataGrid-columnHeader': {
+              px: 2,
+            },
+
+            // ── Rows ──
+            '& .MuiDataGrid-row': {
+              fontSize: '0.875rem',
+              color: '#2A3547',
+              '&:hover': {
+                bgcolor: '#F6F9FC',
               },
-              panel: {
-                anchorEl: filterButtonEl,
+            },
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid',
+              borderColor: 'grey.100',
+              display: 'flex',
+              alignItems: 'center',
+              px: 2,
+            },
+            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+              outline: 'none !important',
+            },
+
+            // ── Date separator rows ──
+            '& .MuiDataGrid-row.date-separator-row': {
+              bgcolor: '#ECF2FF',
+              borderTop: '2px solid #D6E4FF',
+              '& .MuiDataGrid-cell': {
+                borderBottom: '1px solid #D6E4FF',
               },
-              toolbar: {
-                setFilterButtonEl,
+              '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                outline: 'none !important',
               },
-            }}
-            getRowClassName={(params) =>
-              params.row.dateSeparator ? 'date-separator-row' : ''
-            }
-            sx={{
-              '& .MuiDataGrid-columnHeaderTitle': {
-                fontWeight: 'bold',
-                color: '#504e4e',
+            },
+
+            // ── Footer — continues the card look ──
+            '& .MuiDataGrid-footerContainer': {
+              bgcolor: '#fff',
+              borderRadius: '0 0 12px 12px',
+              border: '1px solid',
+              borderColor: 'grey.200',
+              borderTop: '1px solid',
+              boxShadow: '0px 7px 30px 0px rgba(90, 114, 123, 0.11)',
+              minHeight: '56px',
+            },
+
+            // ── Scrollbar ──
+            '& .MuiDataGrid-scrollbar': {
+              scrollbarWidth: 'thin',
+            },
+
+            // ── Loading bar ──
+            '& .MuiLinearProgress-root': {
+              bgcolor: '#ECF2FF',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: '#5D87FF',
               },
-              '& .MuiDataGrid-scrollbar': {
-                scrollbarWidth: 'thin',
-              },
-              '& .MuiDataGrid-row.date-separator-row': {
-                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                  outline: 'none !important',
-                },
-                // '&:hover': {
-                //   backgroundColor: '#0000ff1a',
-                // },
-                backgroundColor: '#0000ff1a',
-              },
-              '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within':
-                {
-                  outline: 'none !important',
-                },
-            }}
-          />
-        </Box>
-      </div>
-    </div>
+            },
+          }}
+        />
+      </Box>
+    </Box>
   );
 }
 
 export default function CustomDataGrid(props: Iprops) {
   return (
-    <DataGridContextProvider
-      archiveState={props.archiveState && props.archiveState[0]}
-    >
+    <DataGridContextProvider archiveState={props.archiveState && props.archiveState[0]}>
       <MyDataGrid {...props} />
     </DataGridContextProvider>
   );
@@ -186,23 +266,14 @@ export default function CustomDataGrid(props: Iprops) {
 function ErrorOverlay({ message, retry }: CustomErrorOverlayProps) {
   return (
     <GridOverlay>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-        }}
-      >
-        <Typography color="error">{message}</Typography>
-        <IconButton onClick={retry}>
-          <SyncIcon color="primary" />
-        </IconButton>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
+        <Typography color="error" variant="body2">{message}</Typography>
+        <IconButton onClick={retry}><SyncIcon color="primary" /></IconButton>
       </div>
     </GridOverlay>
   );
 }
+
 interface Iprops {
   loading: boolean;
   error: string;
@@ -212,10 +283,7 @@ interface Iprops {
   paginateState: PaginateState;
   archiveState?: ArchiveState;
   retry: () => void;
-  onFilterModelChange?: (
-    model: GridFilterModel,
-    details: GridCallbackDetails<'filter'>
-  ) => void;
+  onFilterModelChange?: (model: GridFilterModel, details: GridCallbackDetails<'filter'>) => void;
 }
 export interface PaginateState {
   totalRows: number;
@@ -223,16 +291,7 @@ export interface PaginateState {
   onChange: (e: GridPaginationModel) => void;
 }
 export type ArchiveState = [boolean, (archive: boolean) => void];
-
-interface CustomErrorOverlayProps {
-  message: string;
-  retry: () => void;
-}
+interface CustomErrorOverlayProps { message: string; retry: () => void; }
 export interface iServerFilterOptions {
-  serverFilterOptions?: {
-    exclude?: boolean;
-    validate?: (val?: string) => boolean;
-    transform?: (val?: string) => string;
-  };
+  serverFilterOptions?: { exclude?: boolean; validate?: (val?: string) => boolean; transform?: (val?: string) => string; };
 }
-

@@ -18,27 +18,26 @@ export default function CustomPagination({
     <Stack
       direction="row"
       alignItems="center"
-      flexWrap={'wrap'}
+      flexWrap="wrap"
       spacing={2}
       sx={{
         fontSize: '0.875rem',
-        color: 'rgba(0, 0, 0, 0.87)',
-        padding: '0 16px',
+        color: '#5A6A85',
+        px: 3,
         height: '56px',
-        borderTop: '1px solid rgba(224, 224, 224, 1)',
       }}
     >
-      <Stack direction="row" alignItems="center" flexWrap={'wrap'}>
+      <Stack direction="row" alignItems="center" flexWrap="wrap">
         <Typography sx={{ fontSize: 'inherit', color: 'inherit' }}>
           Rows per page:
         </Typography>
-        <Select
+        <Select<number>
           disabled={loading}
           value={model.pageSize}
           onChange={({ target }) =>
             onChange({
               ...model,
-              pageSize: parseInt(target.value as string),
+              pageSize: Number(target.value),
               page: 1,
             })
           }
@@ -79,6 +78,12 @@ export default function CustomPagination({
         sx={{
           '& .MuiPaginationItem-root': {
             fontSize: 'inherit',
+            borderRadius: '8px',
+            '&.Mui-selected': {
+              bgcolor: '#ECF2FF',
+              color: '#5D87FF',
+              fontWeight: 600,
+            },
           },
         }}
       />

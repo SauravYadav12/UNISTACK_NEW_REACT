@@ -58,7 +58,7 @@ const DataCards = () => {
   return (
     <ChartCardWrapper title="">
       <Grid container spacing={3}>
-        <Grid item xs={7} sm={7}>
+        <Grid size={{ xs: 7, sm: 7 }}>
           <Typography variant="h6" fontWeight="400">
             User Status
           </Typography>
@@ -117,7 +117,7 @@ const DataCards = () => {
           </Stack>
         </Grid>
         {/* column */}
-        <Grid item xs={5} sm={5} alignContent={'center'}>
+        <Grid size={{ xs: 5, sm: 5 }} alignContent={'center'}>
          <Chart
             options={optionscolumnchart}
             series={seriescolumnchart}

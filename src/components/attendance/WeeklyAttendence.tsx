@@ -176,18 +176,32 @@ const WeeklyAttendanceTable = ({
         </>
       }
       action={
-        <div>
-          <IconButton onClick={handlePrevWeek} size="small">
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            mt: 1.5,
+            mr: 6,
+            borderRadius: 2.5,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: '#F6F9FC',
+            overflow: 'hidden',
+          }}
+        >
+          <IconButton onClick={handlePrevWeek} size="small" sx={{ borderRadius: 0 }}>
             <ArrowLeft />
           </IconButton>
+          <Box sx={{ width: '1px', height: 24, bgcolor: 'divider' }} />
           <IconButton
             onClick={handleNextWeek}
             size="small"
+            sx={{ borderRadius: 0 }}
             disabled={weekDates[weekDates.length - 1]?.isAfter(moment(), 'day')}
           >
             <ArrowRight />
           </IconButton>
-        </div>
+        </Box>
       }
     >
       <TableContainer

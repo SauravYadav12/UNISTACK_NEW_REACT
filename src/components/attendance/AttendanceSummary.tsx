@@ -63,7 +63,7 @@ const AttendanceSummary = () => {
   return (
     <ChartCardWrapper title="Attendance Summary">
       <Grid container spacing={3}>
-        <Grid item xs={7} sm={7}>
+        <Grid size={{ xs: 7, sm: 7 }}>
           <Typography variant="h6" fontWeight="600">
             18 days
           </Typography>
@@ -94,7 +94,7 @@ const AttendanceSummary = () => {
             </Stack>
           </Stack>
         </Grid>
-        <Grid item xs={5} sm={5}>
+        <Grid size={{ xs: 5, sm: 5 }}>
           <Chart
             options={optionscolumnchart}
             series={seriescolumnchart}

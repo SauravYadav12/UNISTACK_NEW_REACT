@@ -14,17 +14,16 @@ import {
 import { useState } from 'react';
 import { dateFormate, dateFormate2, timeFormate } from '../constants';
 import { interviewsList } from '../../services/interviewApi';
-import { interviewStatusColors } from '../../pages/Marketing/TestAndVendorInterviews/testAndViValues';
+import { interviewStatusColors } from '../../pages/Marketing/Interviews/interviewValues';
 import moment from 'moment';
 import DashboardCard from './ChartCardWrapper';
 import { dateByUserShift } from '../../utils/dateUtil';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import InterviewDrawer from '../interview/InterviewDrawer';
 import { useFetchData } from '../../hooks/fetchDataHook';
-import { vendorInterviewsList } from '../../services/vendorInterviewApi';
 import { Sync } from '@mui/icons-material';
 import { UserRole } from '../../Interfaces/iUser';
-import { IInterview, InterviewStatus, IVendor } from '../../Interfaces/types';
+import { IInterview, InterviewStatus } from '../../Interfaces/types';
 
 const TodaysInterviews = () => {
   const user = useAuth().iUser!;
@@ -38,12 +37,12 @@ const TodaysInterviews = () => {
   } = useFetchData(getInterviews, [user.shift]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [viewData, setViewData] = useState<IInterview | IVendor>();
+  const [viewData, setViewData] = useState<IInterview>();
   const toDay = dateByUserShift(user.shift);
   const columns: {
     field: string;
     headerName: string;
-    renderCell?: (a: IInterview | IVendor) => JSX.Element | string;
+    renderCell?: (a: IInterview) => JSX.Element | string;
   }[] = [
       {
         field: 'view',
@@ -66,7 +65,7 @@ const TodaysInterviews = () => {
       {
         field: 'intId',
         headerName: 'ID',
-        renderCell: (row) => ('intId' in row ? row.intId : row.testID),
+        renderCell: (row) => row.intId,
       },
       {
         field: 'interviewStatus',
@@ -82,6 +81,11 @@ const TodaysInterviews = () => {
             {(interviewStatus as string)?.replace('Interview', '')}
           </span>
         ),
+      },
+      {
+        field: 'interviewType',
+        headerName: 'Type',
+        renderCell: (row) => row.interviewType || '—',
       },
       { field: 'consultant', headerName: 'Consultant' },
 
@@ -110,13 +114,8 @@ const TodaysInterviews = () => {
 
   async function getInterviews() {
     const date = toDay.format(dateFormate);
-    const [int, vendorInt] = await Promise.all([
-      interviewsList('interviewDate=' + date),
-      vendorInterviewsList('interviewDate=' + date),
-    ]);
-    const intRes = int.data.data?.results || [];
-    const vendorIntRes = vendorInt.data.data?.results || [];
-    return [...intRes, ...vendorIntRes] as (IInterview | IVendor)[];
+    const int = await interviewsList('interviewDate=' + date);
+    return (int.data.data?.results || []) as IInterview[];
   }
 
   function MyBody() {
@@ -238,7 +237,7 @@ const TodaysInterviews = () => {
         }}
         interview={viewData}
         setData={(cb) => {
-          const results = typeof cb === 'function' ? cb((rows || [])) as (IInterview | IVendor)[] : cb;
+          const results = typeof cb === 'function' ? cb((rows || [])) as IInterview[] : cb;
           setData(results);
           const int = results?.find((i) => i._id === viewData?._id);
           setViewData(int);

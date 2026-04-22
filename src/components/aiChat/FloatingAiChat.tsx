@@ -19,7 +19,7 @@ import RemoveRounded from '@mui/icons-material/RemoveRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined';
 import { useRequirementAiChat } from '../../context/RequirementAiChatContext';
-import genni from '../../assets/genie-lamp.png';
+import genni from '../../assets/Uni-Ai.png';
 import {
   fabGenieImgSx,
   fabGenieWrapperSx,
@@ -37,8 +37,9 @@ const STORAGE_KEY = 'unistack.floatingAiChat.pos';
 
 const ENTER_MS = 400;
 const EXIT_MS = 280;
-/** MUI Fab size="large" is 56px; default medium is also 56 for padding calc */
-const FAB_SIZE = 56;
+/** MUI Fab size="large" is 56px. Bumped +25% → 70 so the roboSphere reads
+ *  as a deliberate companion presence, not a tiny "more options" button. */
+const FAB_SIZE = 70;
 const EDGE_PAD = 8;
 const PANEL_GAP = 12;
 const PANEL_WIDTH_SM = 520;

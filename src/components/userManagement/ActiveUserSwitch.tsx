@@ -1,5 +1,5 @@
 import * as React from 'react';
-import Switch from '@mui/material/Switch';
+import { Android12Switch as Switch } from '../../pages/Marketing/Profile/constants';
 import { updateUser } from '../../services/authApi';
 import { createProfile } from '../../services/userProfileApi';
 import { toast } from 'react-toastify';

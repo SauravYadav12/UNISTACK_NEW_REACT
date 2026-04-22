@@ -1,0 +1,200 @@
+import { Box, Button, Chip, IconButton, Stack, Typography } from '@mui/material';
+import CustomDataGrid from '../../../components/datagrid/DataGrid';
+import moment from 'moment';
+import CustomDrawer from '../../../components/drawer/CustomDrawer';
+import TeamsForm from './TeamsForm';
+import { useState } from 'react';
+import { teamsList } from '../../../services/teamsApi';
+import { dateFormate2 } from '../../../components/constants';
+import {
+  initialSearchModel,
+  usePagination,
+} from '../../../hooks/paginationHook';
+import SyncIcon from '@mui/icons-material/Sync';
+import AddIcon from '@mui/icons-material/Add';
+import { syncDataById } from '../../../utils/syncDataById';
+import {
+  GridFilterModel,
+  GridCallbackDetails,
+  GridColDef,
+} from '@mui/x-data-grid';
+import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
+import { ITeam } from '../../../Interfaces/types';
+import { FormMode } from '../Requirements/Requirements';
+import { tokens } from '../../../theme/theme';
+
+export default function Teams() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [mode, setMode] = useState<FormMode>('view');
+  const [isEditing, setIsEditing] = useState(false);
+  const [viewData, setViewData] = useState<ITeam>();
+
+  const {
+    gridData, paginationModel, error, loading,
+    setSearchModel, setPaginationModel, setGridData, reload, setResults,
+  } = usePagination({ queryFunction: teamsList }, []);
+
+  const columns: GridColDef<ITeam>[] = [
+    {
+      field: 'view',
+      headerName: '',
+      width: 90,
+      renderCell: (params) => (
+        <Button
+          size="small"
+          variant="contained"
+          onClick={() => handleViewDetails(params.row)}
+          sx={{
+            minWidth: 60, height: 28, fontSize: '0.75rem', fontWeight: 600,
+            textTransform: 'none', borderRadius: '7px',
+            background: 'linear-gradient(135deg, #032840 0%, #0A3555 100%)', color: '#fff', boxShadow: 'none',
+            '&:hover': { background: 'linear-gradient(135deg, #0A3555 0%, #0F4068 100%)', boxShadow: 'none' },
+          }}
+        >
+          View
+        </Button>
+      ),
+      filterable: false,
+      sortable: false,
+    },
+    {
+      field: 'teamId',
+      headerName: 'Team ID',
+      width: 140,
+      renderCell: ({ row }) => (
+        <Typography
+          variant="body2" fontWeight={600}
+          sx={{ color: '#0A3555', cursor: 'pointer', '&:hover': { color: '#032840', textDecoration: 'underline' } }}
+          onClick={() => handleViewDetails(row)}
+        >
+          {row.teamId}
+        </Typography>
+      ),
+    },
+    { field: 'teamName', headerName: 'Name', width: 150 },
+    { field: 'teckStack', headerName: 'Tech Stack', width: 160 },
+    { field: 'developerName', headerName: 'Developer', width: 150 },
+    { field: 'createdBy', headerName: 'Created By', width: 140 },
+    {
+      field: 'createdAt',
+      headerName: 'Created At',
+      width: 150,
+      valueGetter: (params) => moment(params).format(dateFormate2),
+      filterOperators: filterOperatorsForDateField,
+    },
+  ];
+
+  const handleAddNew = () => {
+    setFormTitle('Add New Team');
+    setViewData(undefined);
+    setMode('add');
+    setIsEditing(true);
+    setDrawerOpen(true);
+  };
+
+  const handleViewDetails = (row: ITeam) => {
+    const data = gridData?.results?.find((r) => r.teamId === row.teamId);
+    if (!data) return;
+    setViewData(data);
+    setFormTitle(`Team ID: ${row.teamId}`);
+    setMode('view');
+    setIsEditing(false);
+    setDrawerOpen(true);
+    syncDataById(data, { queryFunction: teamsList, setResults, setViewData });
+  };
+
+  const handleCloseForm = () => { setDrawerOpen(false); setViewData(undefined); };
+  const handleEdit = (editMode: boolean) => { setIsEditing(editMode); setMode(editMode ? 'edit' : 'view'); };
+
+  const handleChangeFilterModel = (model: GridFilterModel, _: GridCallbackDetails<'filter'>) => {
+    const iModel = model.items[0]?.value || model.quickFilterValues?.length ? model : initialSearchModel;
+    setSearchModel(iModel);
+  };
+
+  const header = (
+    <>
+      <Box>
+        <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+          <Typography variant="h5" fontWeight={700} color="#2A3547">
+            Teams
+          </Typography>
+          <Chip
+            label={`${gridData?.totalDocuments ?? 0} total`}
+            size="small"
+            sx={{
+              bgcolor: '#ECF2FF', color: '#5D87FF',
+              fontWeight: 600, fontSize: '0.75rem', height: 24,
+            }}
+          />
+        </Stack>
+      </Box>
+
+      <Stack direction="row" alignItems="flex-start" spacing={1}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon sx={{ fontSize: '18px !important' }} />}
+          onClick={handleAddNew}
+          size="medium"
+          sx={{
+            bgcolor: tokens.colors.pink,
+            '&:hover': { bgcolor: tokens.colors.pinkDark },
+            textTransform: 'none', fontWeight: 600,
+            borderRadius: '10px', px: 2.5, py: 0.8,
+            boxShadow: 'none', fontSize: '0.875rem',
+          }}
+        >
+          Add New
+        </Button>
+        <IconButton
+          onClick={() => { setGridData(undefined); reload(); }}
+          disabled={loading}
+          sx={{
+            bgcolor: '#ECF2FF', borderRadius: '10px',
+            width: 38, height: 38,
+            '&:hover': { bgcolor: '#D6E4FF' },
+          }}
+        >
+          <SyncIcon
+            className={loading ? 'sync-icon-loading' : ''}
+            sx={{ color: '#5D87FF', fontSize: '20px' }}
+          />
+        </IconButton>
+      </Stack>
+    </>
+  );
+
+  return (
+    <>
+      <CustomDataGrid
+        paginateState={{
+          totalRows: gridData?.totalDocuments || 0,
+          model: paginationModel,
+          onChange: setPaginationModel,
+        }}
+        onFilterModelChange={handleChangeFilterModel}
+        error={error}
+        retry={reload}
+        loading={loading}
+        header={header}
+        columns={columns}
+        rows={gridData?.results || []}
+      />
+      <CustomDrawer
+        open={drawerOpen}
+        onClose={handleCloseForm}
+        title={formTitle}
+        closeOnOutSideClick={mode === 'view'}
+      >
+        <TeamsForm
+          setResults={setResults}
+          viewData={viewData}
+          mode={mode}
+          setDrawerOpen={setDrawerOpen}
+          isEditing={isEditing}
+          onEdit={handleEdit}
+        />
+      </CustomDrawer>
+    </>
+  );
+}

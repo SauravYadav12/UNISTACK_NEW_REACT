@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogActions,
   Grid,
-  TextField,
   Box,
   CircularProgress,
 } from '@mui/material';
@@ -63,11 +62,11 @@ function AttendanceExportModal({
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onDateChange = (key: 'fromDate' | 'toDate', newValue: string | null) => {
-    newValue = newValue ? dayjs(newValue).format(dateFormate) : null;
+  const onDateChange = (key: 'fromDate' | 'toDate', newValue: dayjs.Dayjs | null) => {
+    const formatted = newValue ? newValue.format(dateFormate) : null;
     setDates((prevValues) => ({
       ...prevValues,
-      [key]: newValue,
+      [key]: formatted,
     }));
   };
 
@@ -144,7 +143,6 @@ function AttendanceExportModal({
     return (
       <>
         <Grid
-          item
           sx={{
             width: 190,
             mr: 1,
@@ -155,23 +153,21 @@ function AttendanceExportModal({
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
-              inputFormat={dateFormate}
-              maxDate={toDate}
+              format={dateFormate}
+              maxDate={toDate ? dayjs(toDate) : undefined}
               label="From Date"
               value={fromDate ? dayjs(fromDate) : null}
               onChange={(newValue) => onDateChange('fromDate', newValue)}
-              renderInput={(params) => (
-                <TextField
-                  size="small"
-                  {...params}
-                  error={!fromDate || !dayjs(fromDate).isValid()}
-                />
-              )}
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  error: !fromDate || !dayjs(fromDate).isValid(),
+                },
+              }}
             />
           </LocalizationProvider>
         </Grid>
         <Grid
-          item
           sx={{
             width: 190,
             mr: 1,
@@ -182,18 +178,17 @@ function AttendanceExportModal({
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
-              inputFormat={dateFormate}
-              minDate={fromDate}
+              format={dateFormate}
+              minDate={fromDate ? dayjs(fromDate) : undefined}
               label="To Date"
               value={toDate ? dayjs(toDate) : null}
               onChange={(newValue) => onDateChange('toDate', newValue)}
-              renderInput={(params) => (
-                <TextField
-                  size="small"
-                  {...params}
-                  error={!toDate || !dayjs(toDate).isValid()}
-                />
-              )}
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  error: !toDate || !dayjs(toDate).isValid(),
+                },
+              }}
             />
           </LocalizationProvider>
         </Grid>

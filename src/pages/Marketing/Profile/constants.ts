@@ -240,35 +240,39 @@ export interface DocumentSectionField extends AssociatedField {
   accept?: 'image/*' | '.pdf';
 }
 
-export const Android12Switch = styled(Switch)(({ theme }) => ({
-  padding: 8,
-  '& .MuiSwitch-track': {
-    borderRadius: 22 / 2,
-    '&::before, &::after': {
-      content: '""',
-      position: 'absolute',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      width: 16,
-      height: 16,
-    },
-    '&::before': {
-      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 24 24"><path fill="${encodeURIComponent(
-        theme.palette.getContrastText(theme.palette.primary.main)
-      )}" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>')`,
-      left: 12,
-    },
-    '&::after': {
-      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 24 24"><path fill="${encodeURIComponent(
-        theme.palette.getContrastText(theme.palette.primary.main)
-      )}" d="M19,13H5V11H19V13Z" /></svg>')`,
-      right: 12,
+export const Android12Switch = styled(Switch)(() => ({
+  width: 40,
+  height: 22,
+  padding: 0,
+  display: 'inline-flex',
+  overflow: 'visible',
+  '& .MuiSwitch-switchBase': {
+    padding: 0,
+    top: 1,
+    left: 1,
+    '&.Mui-checked': {
+      transform: 'translateX(18px)',
+      '& + .MuiSwitch-track': {
+        backgroundColor: '#EC4599',
+        opacity: 1,
+      },
+      '& .MuiSwitch-thumb': {
+        backgroundColor: '#37B7EA',
+      },
     },
   },
+  '& .MuiSwitch-track': {
+    borderRadius: 8,
+    height: 14,
+    marginTop: 4,
+    backgroundColor: '#D1D5DB',
+    opacity: 1,
+  },
   '& .MuiSwitch-thumb': {
-    boxShadow: 'none',
-    width: 16,
-    height: 16,
-    margin: 2,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+    width: 20,
+    height: 20,
+    backgroundColor: '#FFFFFF',
+    border: '1px solid #D1D5DB',
   },
 }));

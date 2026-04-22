@@ -195,13 +195,27 @@ const MonthlyAttendanceTable = ({
         </>
       }
       action={
-        <div>
-          <IconButton onClick={handlePrevMonth} size="small">
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            mt: 1.5,
+            mr: 6,
+            borderRadius: 2.5,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: '#F6F9FC',
+            overflow: 'hidden',
+          }}
+        >
+          <IconButton onClick={handlePrevMonth} size="small" sx={{ borderRadius: 0 }}>
             <ArrowLeft />
           </IconButton>
+          <Box sx={{ width: '1px', height: 24, bgcolor: 'divider' }} />
           <IconButton
             onClick={handleNextMonth}
             size="small"
+            sx={{ borderRadius: 0 }}
             disabled={currentDate.isAfter(
               moment().subtract(1, 'month').endOf('month'),
               'month'
@@ -209,7 +223,7 @@ const MonthlyAttendanceTable = ({
           >
             <ArrowRight />
           </IconButton>
-        </div>
+        </Box>
       }
     >
       <TableContainer

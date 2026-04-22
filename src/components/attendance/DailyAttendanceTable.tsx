@@ -189,40 +189,62 @@ const DailyAttendanceTable = ({
       p={'0px'}
       boxShadow={false}
       subtitle={
-        <>
-          <Stack
-            direction={'row'}
-            alignItems={'center'}
-            gap={1}
-            justifyContent={'center'}
-          >
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 2,
+            py: 1,
+            mt: 1.5,
+            borderRadius: 2.5,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: '#F6F9FC',
+          }}
+        >
+          <Typography variant="body2" fontWeight={600} color="#2A3547">
             {currentDate.format('dddd, YYYY MMMM DD')}
-            {!forEmployee && (
-              <DatePickerButton
-                tableType={AttendanceTableType.Daily}
-                dateState={dateState}
-              />
-            )}
-          </Stack>
-        </>
+          </Typography>
+          {!forEmployee && (
+            <DatePickerButton
+              tableType={AttendanceTableType.Daily}
+              dateState={dateState}
+            />
+          )}
+        </Box>
       }
       action={
         <>
           {!forEmployee && (
-            <div>
-              <IconButton onClick={preDay} size="small">
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                mt: 1.5,
+                mr: 6,
+                borderRadius: 2.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: '#F6F9FC',
+                overflow: 'hidden',
+              }}
+            >
+              <IconButton onClick={preDay} size="small" sx={{ borderRadius: 0 }}>
                 <ArrowLeft />
               </IconButton>
+              <Box sx={{ width: '1px', height: 24, bgcolor: 'divider' }} />
               <IconButton
                 onClick={nextDay}
                 size="small"
+                sx={{ borderRadius: 0 }}
                 disabled={currentDate.isAfter(
                   dateByUserShift(iUser!.shift).subtract(1, 'day')
                 )}
               >
                 <ArrowRight />
               </IconButton>
-            </div>
+            </Box>
           )}
         </>
       }

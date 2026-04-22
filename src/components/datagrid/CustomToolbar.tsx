@@ -1,4 +1,5 @@
-import { FormControlLabel, Switch, Box, TextField } from '@mui/material';
+import { FormControlLabel, Box } from '@mui/material';
+import { Android12Switch } from '../../pages/Marketing/Profile/constants';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
   ArchiveModule,
@@ -25,17 +26,6 @@ import { dateFormate2 } from '../constants';
 import moment, { Moment } from 'moment';
 import { SearchOperator } from '../../hooks/paginationHook';
 
-const formControlSX = {
-  '& .MuiFormControlLabel-label': {
-    fontFamily: `"Roboto", "Helvetica", "Arial", sans-serif`,
-    fontWeight: 500,
-    fontSize: '0.8125rem',
-    lineHeight: 1.75,
-    letterSpacing: '0.02857em',
-    textTransform: 'uppercase',
-    color: '#1976d2',
-  },
-};
 export default function CustomToolbar({
   setFilterButtonEl,
 }: GridToolbarProps & ToolbarPropsOverrides) {
@@ -52,7 +42,22 @@ export default function CustomToolbar({
   );
 
   return (
-    <GridToolbarContainer>
+    <GridToolbarContainer
+      sx={{
+        '& .MuiButton-root': {
+          color: '#5A6A85',
+          fontSize: '0.8125rem',
+          fontWeight: 500,
+          textTransform: 'none',
+          borderRadius: '8px',
+          px: 1.5,
+          '&:hover': {
+            bgcolor: '#ECF2FF',
+            color: '#5D87FF',
+          },
+        },
+      }}
+    >
       <GridToolbarColumnsButton />
       <GridToolbarDensitySelector
         slotProps={{ tooltip: { title: 'Change density' } }}
@@ -61,28 +66,61 @@ export default function CustomToolbar({
       {isArchiveModuleAllowed && typeof archive === 'boolean' && (
         <FormControlLabel
           control={
-            <Switch checked={archive} disabled={disableArchiveBtnState[0]} />
+            <Android12Switch
+              checked={archive}
+              disabled={disableArchiveBtnState[0]}
+            />
           }
-          label={`Archive`}
+          label="Archive"
           onChange={() => setArchive?.(!archive)}
-          sx={formControlSX}
+          sx={{
+            ml: 0.5,
+            '& .MuiFormControlLabel-label': {
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: '#5A6A85',
+            },
+          }}
         />
       )}
       <GridToolbarExport csvOptions={csvOptions} />
       <Box sx={{ flexGrow: 1 }} />
 
-      <GridToolbarQuickFilter />
+      <GridToolbarQuickFilter
+        placeholder="Search requirements..."
+        sx={{
+          '& .MuiInputBase-root': {
+            fontSize: '0.875rem',
+            borderRadius: '8px',
+            bgcolor: '#F6F9FC',
+            border: '1px solid',
+            borderColor: 'grey.200',
+            px: 1.5,
+            minWidth: 220,
+            transition: 'all 0.2s',
+            '&:focus-within': {
+              borderColor: '#5D87FF',
+              bgcolor: '#fff',
+              boxShadow: '0 0 0 3px rgba(93, 135, 255, 0.1)',
+            },
+            '& .MuiInputBase-input': {
+              py: 0.75,
+              '&::placeholder': {
+                color: '#9CA3AF',
+                opacity: 1,
+              },
+            },
+            '&::before, &::after': { display: 'none' },
+          },
+        }}
+      />
     </GridToolbarContainer>
   );
 }
 
 interface FilterPanelDateInputProps {
   props: {
-    item: {
-      id: string;
-      field: string;
-      value?: string;
-    };
+    item: { id: string; field: string; value?: string };
     applyValue: (item: { id: string; field: string; value?: string }) => void;
   };
 }
@@ -95,37 +133,23 @@ export function FilterPanelDateInput({ props }: FilterPanelDateInputProps) {
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
       <DatePicker
-        {...props}
-        value={item.value || null}
+        value={item.value ? moment(item.value) : null}
         onChange={handleChange}
-        renderInput={(params) => (
-          <TextField
-            error={!moment(item.value).isValid()}
-            helperText={!moment(item.value).isValid() ? 'Invalid date' : ''}
-            size="small"
-            {...params}
-            sx={{
+        format={dateFormate2}
+        slotProps={{
+          textField: {
+            error: !moment(item.value).isValid(),
+            helperText: !moment(item.value).isValid() ? 'Invalid date' : '',
+            size: 'small',
+            sx: {
               '& .MuiOutlinedInput-root': {
-                fieldset: {
-                  borderColor: 'transparent',
-                  borderBottomColor: 'black',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'white',
-                  borderBottomColor: 'black',
-                  borderBottomWidth: '2px',
-                },
-                '&.Mui-focused fieldset': {
-                  borderBottomColor: 'black',
-                  borderLeftColor: 'transparent',
-                  borderTopColor: 'transparent',
-                  borderRightColor: 'transparent',
-                },
+                fieldset: { borderColor: 'transparent', borderBottomColor: 'black' },
+                '&:hover fieldset': { borderColor: 'white', borderBottomColor: 'black', borderBottomWidth: '2px' },
+                '&.Mui-focused fieldset': { borderBottomColor: 'black', borderLeftColor: 'transparent', borderTopColor: 'transparent', borderRightColor: 'transparent' },
               },
-            }}
-          />
-        )}
-        inputFormat={dateFormate2}
+            },
+          },
+        }}
       />
     </LocalizationProvider>
   );
@@ -136,20 +160,13 @@ export const filterOperatorsForDateField: GridFilterOperator[] = [
     label: 'Equals',
     value: SearchOperator.Equals,
     getApplyFilterFn: (filterItem) => {
-      if (!filterItem.value) {
-        return null;
-      }
-      return (params) => {
-        return filterItem.value == params;
-      };
+      if (!filterItem.value) return null;
+      return (params) => filterItem.value == params;
     },
-    InputComponent: (props) => {
-      console.log(props, 'date input props');
-      return (
-        <Box display={'flex'} alignItems={'flex-end'} height={'100%'}>
-          <FilterPanelDateInput props={props} />
-        </Box>
-      );
-    },
+    InputComponent: (props) => (
+      <Box display="flex" alignItems="flex-end" height="100%">
+        <FilterPanelDateInput props={props} />
+      </Box>
+    ),
   },
 ];

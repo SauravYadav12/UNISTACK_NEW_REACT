@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -10,13 +11,14 @@ import {
   FormControlLabel,
   Grid,
   IconButton,
-  Switch,
   TextField,
+  Typography,
+  alpha,
 } from '@mui/material';
 import examples from 'libphonenumber-js/examples.mobile.json';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import React, { FormEvent, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -31,6 +33,7 @@ import {
   deleteConsultant,
   updateConsultant,
 } from '../../../services/consultantApi';
+import { Android12Switch } from '../Profile/constants';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
@@ -42,31 +45,14 @@ import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { IConsultant, IConsultantProject } from '../../../Interfaces/types';
 import { UserRole } from '../../../Interfaces/iUser';
 import { toast } from 'react-toastify';
-import { Delete, Remove } from '@mui/icons-material';
+import { IconTrash, IconPlus } from '@tabler/icons-react';
 
 const initialValues: Partial<IConsultant> = {
-  timeZone: '',
-  consultantStatus: '',
-  visaStatus: '',
-  projects: [],
-  dob: null,
-  consultantName: '',
-  currentAddress: '',
-  previousAddress: '',
-  email: '',
-  phone: '',
-  degree: '',
-  university: '',
-  yearPassing: '',
-  ssn: '',
-  dlNo: '',
-  psuedoName: '',
-  skypeId: '',
-  getVisa: '',
-  cameToUsYear: '',
-  originCountry: '',
-  lookingToChange: '',
-  createdBy: '',
+  timeZone: '', consultantStatus: '', visaStatus: '', projects: [],
+  dob: null, consultantName: '', currentAddress: '', previousAddress: '',
+  email: '', phone: '', degree: '', university: '', yearPassing: '',
+  ssn: '', dlNo: '', psuedoName: '', skypeId: '', getVisa: '',
+  cameToUsYear: '', originCountry: '', lookingToChange: '', createdBy: '',
 };
 
 interface iProps {
@@ -77,28 +63,42 @@ interface iProps {
   onEdit?: (editMode: boolean) => void;
   setResults?: SetResults;
 }
+
+const pickerSx = {
+  '& .MuiOutlinedInput-root': { borderRadius: '10px' },
+  '& .MuiOutlinedInput-root.Mui-disabled': { backgroundColor: '#F6F9FC' },
+  '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' },
+};
+
+function SectionCard({ number, title, action, children }: { number: number; title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Box sx={{ borderRadius: 3, border: '1px solid', borderColor: 'grey.200', overflow: 'hidden' }}>
+      <Box sx={{ px: 2.5, py: 1.5, bgcolor: '#F6F9FC', borderBottom: '1px solid', borderColor: 'grey.200', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Chip label={number} size="small" sx={{ bgcolor: '#032840', color: '#fff', fontWeight: 700, fontSize: '0.75rem', height: 24, minWidth: 24 }} />
+          <Typography variant="body1" fontWeight={600} color="#2A3547">{title}</Typography>
+        </Box>
+        {action}
+      </Box>
+      <Box sx={{ p: 2.5 }}>
+        <Grid container spacing={2}>{children}</Grid>
+      </Box>
+    </Box>
+  );
+}
+
 export default function ConsultantForm(props: iProps) {
   const dobFormate = 'MMM DD';
   const [values, setValues] = useState<Partial<IConsultant>>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { viewData, mode, isEditing, onDrawerClose, onEdit, setResults } =
-    props;
+  const { viewData, mode, isEditing, onDrawerClose, onEdit, setResults } = props;
   const user = useAuth().iUser!;
-  const [projects, setProjects] = useState<Partial<IConsultant['projects']>>(
-    []
-  );
-  const [errors, setErrors] = useState<{ [key in keyof IConsultant]?: string }>(
-    convertValuesToEmptyString(initialValues)
-  );
+  const [projects, setProjects] = useState<Partial<IConsultant['projects']>>([]);
+  const [errors, setErrors] = useState<{ [key in keyof IConsultant]?: string }>(convertValuesToEmptyString(initialValues));
 
   useHardKeySubmit(
-    {
-      onSubmit: (e) => {
-        mode === 'add' && handleSubmitForm(e);
-        mode === 'edit' && handleEditSubmitForm(e);
-      },
-    },
+    { onSubmit: (e) => { mode === 'add' && handleSubmitForm(e); mode === 'edit' && handleEditSubmitForm(e); } },
     [values, mode, viewData, isEditing, errors]
   );
 
@@ -108,18 +108,10 @@ export default function ConsultantForm(props: iProps) {
       setProjects(viewData?.projects || []);
     } else if (mode === 'add') {
       setValues(initialValues);
-      setProjects([
-        {
-          projectNumber: '1',
-          projectName: '',
-          projectCity: '',
-          projectState: '',
-          projectStartDate: null,
-          projectEndDate: null,
-          projectDescription: '',
-          isCurrent: true,
-        },
-      ]);
+      setProjects([{
+        projectNumber: '1', projectName: '', projectCity: '', projectState: '',
+        projectStartDate: null, projectEndDate: null, projectDescription: '', isCurrent: true,
+      }]);
     }
     setErrors(convertValuesToEmptyString(initialValues));
   }, [viewData, mode]);
@@ -129,12 +121,8 @@ export default function ConsultantForm(props: iProps) {
       ...(projects || []),
       {
         projectNumber: ((projects?.length ?? 0) + 1).toString(),
-        projectName: '',
-        projectCity: '',
-        projectState: '',
-        projectStartDate: null,
-        projectEndDate: null,
-        projectDescription: '',
+        projectName: '', projectCity: '', projectState: '',
+        projectStartDate: null, projectEndDate: null, projectDescription: '',
       },
     ]);
   };
@@ -142,693 +130,287 @@ export default function ConsultantForm(props: iProps) {
   const addValue = (key: keyof IConsultant, newValue: string | null) => {
     const meta = consultantValidationMeta.find((m) => m.field === key);
     if (meta) {
-      if (errors[key] && isFieldValid(meta, newValue)) {
-        setErrors((pre) => ({ ...pre, [key]: '' }));
-      }
-      if (meta.transform) {
-        newValue = meta.transform(newValue) as string;
-      }
+      if (errors[key] && isFieldValid(meta, newValue)) setErrors((pre) => ({ ...pre, [key]: '' }));
+      if (meta.transform) newValue = meta.transform(newValue) as string;
     }
-
-    setValues((prevValues) => ({ ...prevValues, [key]: newValue }));
+    setValues((prev) => ({ ...prev, [key]: newValue }));
   };
 
-  function onProjectChange(
-    key: keyof IConsultantProject,
-    value: string | null | boolean | dayjs.Dayjs,
-    index: number
-  ) {
-    setProjects((prevProjects) => {
-      const updatedProjects = [...(prevProjects || [])];
-      updatedProjects[index] = {
-        ...updatedProjects[index],
-        [key]: value,
-      };
-      return updatedProjects;
+  function onProjectChange(key: keyof IConsultantProject, value: string | null | boolean | dayjs.Dayjs, index: number) {
+    setProjects((prev) => {
+      const updated = [...(prev || [])];
+      updated[index] = { ...updated[index], [key]: value };
+      return updated;
     });
   }
 
-  async function handleSubmitForm(
-    event: KeyboardEvent | React.MouseEvent<HTMLButtonElement>
-  ) {
+  async function handleSubmitForm(event: KeyboardEvent | React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
-
     if (isSubmitting) return;
-
-    const isValid = validateAllFields(
-      consultantValidationMeta,
-      values,
-      setErrors
-    );
-    if (!isValid) return;
-
+    if (!validateAllFields(consultantValidationMeta, values, setErrors)) return;
     setIsSubmitting(true);
-
-    const filteredProjects = projects?.filter(
-      (project) => !!project && Object.values(project).some((val) => !!val)
-    );
-    const payload = {
-      ...values,
-      projects: filteredProjects,
-      createdBy: user.firstName,
-    };
+    const filteredProjects = projects?.filter((project) => !!project && Object.values(project).some((val) => !!val));
+    const payload = { ...values, projects: filteredProjects, createdBy: user.firstName };
     try {
       const { data } = await createConsultant(payload);
       setResults?.((pre) => [data.data, ...(pre || [])]);
       onDrawerClose();
-    } catch (error) {
-      console.log('An error occurred while saving the form:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (error) { console.log('Error saving:', error); }
+    finally { setIsSubmitting(false); }
   }
 
-  async function handleEditSubmitForm(
-    event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent
-  ) {
+  async function handleEditSubmitForm(event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent) {
     event.preventDefault();
-
     if (isSubmitting) return;
-    const isValid = validateAllFields(
-      consultantValidationMeta,
-      values,
-      setErrors
-    );
-    if (!isValid) return;
+    if (!validateAllFields(consultantValidationMeta, values, setErrors)) return;
     setIsSubmitting(true);
-
     const filteredProjects = projects?.filter(
-      (project) =>
-        project?.projectName ||
-        project?.projectCity ||
-        project?.projectState ||
-        project?.projectStartDate ||
-        project?.projectEndDate ||
-        project?.projectDescription
+      (p) => p?.projectName || p?.projectCity || p?.projectState || p?.projectStartDate || p?.projectEndDate || p?.projectDescription
     );
-
-    const payload = {
-      ...values,
-      projects: filteredProjects,
-    };
+    const payload = { ...values, projects: filteredProjects };
     try {
-      if (!values._id) {
-        toast.error('Consultant ID is missing');
-        return;
-      }
-
+      if (!values._id) { toast.error('Consultant ID is missing'); return; }
       const { data } = await updateConsultant(values._id, payload);
-      setResults?.((pre) => {
-        pre =
-          pre?.map((d) => {
-            if (d._id === data.data._id) return data.data;
-            return d;
-          }) || [];
-        return [...pre];
-      });
+      setResults?.((pre) => pre?.map((d) => d._id === data.data._id ? data.data : d) || []);
       onDrawerClose();
-    } catch (error) {
-      console.log('An error occurred while updating the form:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (error) { console.log('Error updating:', error); }
+    finally { setIsSubmitting(false); }
   }
 
   async function handleDeleteConsultant() {
+    if (!values._id) { toast.error('Consultant ID is missing'); return; }
     try {
-      if (!values._id) {
-        toast.error('Consultant ID is missing');
-        return;
-      }
       await deleteConsultant(values._id);
-      setResults?.((pre) =>
-        [...(pre || [])].filter((p) => p._id !== values._id)
-      );
+      setResults?.((pre) => [...(pre || [])].filter((p) => p._id !== values._id));
       onDrawerClose();
-    } catch (error) {
-      console.error('An error occurred while deleting the Consultant:', error);
-    }
+    } catch (error) { console.error('Error deleting:', error); }
   }
-
-  const handleClickOpenAlert = () => {
-    setOpenAlert(true);
-  };
-
-  const handleClickCloseAlert = () => {
-    setOpenAlert(false);
-  };
 
   const onBlur = (key: keyof IConsultant) => {
     const meta = consultantValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
-  if (!values)
-    return (
-      <Box className="loader" sx={{ py: 10 }}>
-        <CircularProgress size={25} />
-      </Box>
-    );
+
+  if (!values) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress size={25} /></Box>;
+
   return (
-    <form style={{ margin: '0 20px' }}>
-      <Grid
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: 1,
-          marginRight: 10,
-        }}
-      >
+    <form onSubmit={(e) => { e.preventDefault(); mode === 'add' && handleSubmitForm(e as any); mode === 'edit' && handleEditSubmitForm(e as any); }}>
+
+      {/* ── Top bar: Action buttons ── */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 3, pb: 2.5, borderBottom: '1px solid', borderColor: 'grey.200' }}>
         {mode === 'add' ? (
-          <Button
-            variant="contained"
-            color="primary"
-            type="submit"
-            onClick={handleSubmitForm}
-            size="small"
-            sx={{ borderRadius: '10px' }}
-          >
-            Submit
+          <Button variant="contained" type="submit" disabled={isSubmitting} size="small" sx={{ bgcolor: '#032840', color: '#fff', '&:hover': { bgcolor: '#0A3555' }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2.5, boxShadow: 'none' }}>
+            {isSubmitting ? <><CircularProgress style={{ color: '#fff', width: 14, height: 14 }} /><span style={{ paddingLeft: 6 }}>Saving</span></> : 'Submit'}
           </Button>
         ) : isEditing ? (
           <>
-            <Button
-              variant="contained"
-              color="primary"
-              type="button"
-              onClick={() => {
-                onEdit?.(false);
-              }}
-              size="small"
-              sx={{ borderRadius: '10px' }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              type="submit"
-              onClick={handleEditSubmitForm}
-              size="small"
-              sx={{ borderRadius: '10px' }}
-            >
-              Submit
+            <Button variant="outlined" size="small" onClick={() => onEdit?.(false)} sx={{ borderColor: 'grey.300', color: '#5A6A85', textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2 }}>Cancel</Button>
+            <Button variant="contained" type="submit" size="small" disabled={isSubmitting} sx={{ bgcolor: '#032840', color: '#fff', '&:hover': { bgcolor: '#0A3555' }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2.5, boxShadow: 'none' }}>
+              {isSubmitting ? <><CircularProgress style={{ color: '#fff', width: 14, height: 14 }} /><span style={{ paddingLeft: 6 }}>Saving</span></> : 'Submit'}
             </Button>
           </>
         ) : (
           <>
-            <Button
-              variant="contained"
-              color="primary"
-              type="button"
-              onClick={() => onEdit?.(true)}
-              size="small"
-              sx={{ borderRadius: '10px' }}
-            >
-              Edit
-            </Button>
+            <Button variant="contained" size="small" onClick={() => onEdit?.(true)} sx={{ bgcolor: '#032840', color: '#fff', '&:hover': { bgcolor: '#0A3555' }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2.5, boxShadow: 'none' }}>Edit</Button>
             {user.role.includes(UserRole['super-admin']) && (
-              <Button
-                variant="contained"
-                color="primary"
-                type="button"
-                size="small"
-                sx={{ borderRadius: '10px' }}
-                onClick={handleClickOpenAlert}
-              >
-                Delete
-              </Button>
+              <Button variant="outlined" size="small" onClick={() => setOpenAlert(true)} sx={{ borderColor: alpha('#EF4444', 0.3), color: '#EF4444', '&:hover': { borderColor: '#EF4444', bgcolor: alpha('#EF4444', 0.04) }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2 }}>Delete</Button>
             )}
-            <Dialog
-              open={openAlert}
-              onClose={handleClickCloseAlert}
-              aria-labelledby="alert-dialog-title"
-              aria-describedby="alert-dialog-description"
-            >
-              <DialogTitle id="alert-dialog-title">
-                {'Delete Consultant?'}
-              </DialogTitle>
-              <DialogContent>
-                <DialogContentText id="alert-dialog-description">
-                  Are you sure you want to delete this Consultant? This action
-                  cannot be undone.
-                </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleClickCloseAlert} autoFocus>
-                  Disagree
-                </Button>
-                <Button onClick={handleDeleteConsultant} autoFocus>
-                  Agree
-                </Button>
-              </DialogActions>
-            </Dialog>
           </>
         )}
-      </Grid>
-      <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-        {/* Section 1: Consultant Info */}
-        <Grid item xs={12}>
-          <h4>1. Consultant Info</h4>
-        </Grid>
-        <CustomSelectField
-          label="Consultant Status"
-          valueOptions={consultantStatusOptions}
-          selectedValue={values.consultantStatus || ''}
-          error={!!errors.consultantStatus}
-          helperText={errors.consultantStatus}
-          disabled={!isEditing}
-          onChange={(value) => addValue('consultantStatus', value)}
-          onBlur={() => onBlur('consultantStatus')}
-          width={230}
-        />
-        <CustomTextField
-          label="Consultant Name"
-          width={230}
-          selectedValue={values.consultantName || ''}
-          error={!!errors.consultantName}
-          helperText={errors.consultantName}
-          disabled={!isEditing}
-          onChange={(event) => addValue('consultantName', event.target.value)}
-          onBlur={() => onBlur('consultantName')}
-        />
-        <CustomSelectField
-          onBlur={() => onBlur('visaStatus')}
-          label="Visa Status"
-          valueOptions={visaStatusOptions}
-          selectedValue={values.visaStatus || ''}
-          error={!!errors.visaStatus}
-          helperText={errors.visaStatus}
-          disabled={!isEditing}
-          onChange={(value) => addValue('visaStatus', value)}
-          width={230}
-        />
-        <Grid item>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              views={['month', 'day']}
-              inputFormat={dobFormate}
-              disabled={!isEditing}
-              label="Date of Birth"
-              value={values.dob ? dayjs(values.dob) : null}
-              onChange={(newValue) =>
-                addValue('dob', newValue?.format(dobFormate) || '')
-              }
-              renderInput={(params) => (
-                <TextField
-                  onBlur={() => onBlur('dob')}
-                  size="small"
-                  {...params}
-                  error={!!errors.dob}
-                  helperText={errors.dob}
-                  disabled={!isEditing}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
-                    },
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      WebkitTextFillColor: 'black',
-                      backgroundColor: '#f0f0f0',
-                      borderRadius: '10px',
-                    },
-                    width: 230,
-                    mr: 1,
-                  }}
-                />
-              )}
-            />
-          </LocalizationProvider>
-        </Grid>
-        <CustomTextField
-          label="Current Address"
-          width={230}
-          selectedValue={values.currentAddress || ''}
-          error={!!errors.currentAddress}
-          helperText={errors.currentAddress}
-          disabled={!isEditing}
-          onChange={(event) => addValue('currentAddress', event.target.value)}
-          onBlur={() => onBlur('currentAddress')}
-        />
-        <CustomTextField
-          label="Previous Address"
-          width={230}
-          selectedValue={values.previousAddress || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('previousAddress', event.target.value)}
-        />
-        <CustomTextField
-          label="Email"
-          width={230}
-          selectedValue={values.email || ''}
-          error={errors.email}
-          helperText={errors.email}
-          disabled={!isEditing}
-          onChange={(event) =>
-            addValue('email', event.target.value?.toLowerCase())
-          }
-          onBlur={() => onBlur('email')}
-        />
-        <PhoneField
-          onBlur={() => onBlur('phone')}
-          label="Phone"
-          value={values.phone || ''}
-          errorText={errors.phone || ''}
-          disabled={!isEditing}
-          onChange={(value) => addValue('phone', value)}
-        />
+      </Box>
 
-        <CustomSelectField
-          label="Consultant Timezone"
-          valueOptions={timeZoneOptions}
-          selectedValue={values.timeZone || ''}
-          disabled={!isEditing}
-          onChange={(value) => addValue('timeZone', value)}
-          width={230}
-        />
-        <CustomTextField
-          label="Degree Name"
-          width={230}
-          selectedValue={values.degree || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('degree', event.target.value)}
-        />
-        <CustomTextField
-          label="University"
-          width={230}
-          selectedValue={values.university || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('university', event.target.value)}
-        />
-        <CustomTextField
-          label="Year of Passing"
-          width={230}
-          selectedValue={values.yearPassing || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('yearPassing', event.target.value)}
-        />
-        <CustomTextField
-          label="SSN"
-          width={230}
-          selectedValue={values.ssn || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('ssn', event.target.value)}
-        />
-        <CustomTextField
-          label="Driving License"
-          width={230}
-          selectedValue={values.dlNo || ''}
-          error={!!errors.dlNo}
-          helperText={errors.dlNo}
-          disabled={!isEditing}
-          onBlur={() => onBlur('dlNo')}
-          onChange={(event) => addValue('dlNo', event.target.value)}
-        />
-        <CustomTextField
-          label="Psuedo Name Of Consultant"
-          width={230}
-          selectedValue={values.psuedoName || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('psuedoName', event.target.value)}
-        />
-        <CustomTextField
-          label="Skype-Id"
-          width={230}
-          selectedValue={values.skypeId || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('skypeId', event.target.value)}
-        />
-        <CustomTextField
-          label="How did you get the VISA?"
-          width={230}
-          selectedValue={values.getVisa || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('getVisa', event.target.value)}
-        />
-        <CustomTextField
-          label="In which year you came to US?"
-          width={230}
-          selectedValue={values.cameToUsYear || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('cameToUsYear', event.target.value)}
-        />
-        <CustomTextField
-          label="Basicly from which country?"
-          width={230}
-          selectedValue={values.originCountry || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('originCountry', event.target.value)}
-        />
-        <CustomTextField
-          label="Why are you looking for the change?"
-          width={230}
-          selectedValue={values.lookingToChange || ''}
-          disabled={!isEditing}
-          onChange={(event) => addValue('lookingToChange', event.target.value)}
-        />
-        {/* Section 2: Resume Info */}
-        {(isEditing || projects?.length) && (
-          <Grid item xs={12}>
-            <h4>2. Resume Info</h4>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+        {/* ── Section 1: Consultant Info ── */}
+        <SectionCard number={1} title="Consultant Info">
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <CustomSelectField label="Consultant Status" valueOptions={consultantStatusOptions} selectedValue={values.consultantStatus || ''} error={!!errors.consultantStatus} helperText={errors.consultantStatus} disabled={!isEditing} onChange={(v) => addValue('consultantStatus', v)} onBlur={() => onBlur('consultantStatus')} fullWidth />
           </Grid>
-        )}
-        {projects?.map((project, index) => (
-          <Grid key={index} container spacing={1}>
-            <Grid item xs={12}>
-              <Box
-                display={'flex'}
-                justifyContent={'space-between'}
-                alignItems={'center'}
+          <CustomTextField label="Consultant Name" fullWidth selectedValue={values.consultantName || ''} error={!!errors.consultantName} helperText={errors.consultantName} disabled={!isEditing} onChange={(e) => addValue('consultantName', e.target.value)} onBlur={() => onBlur('consultantName')} />
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <CustomSelectField onBlur={() => onBlur('visaStatus')} label="Visa Status" valueOptions={visaStatusOptions} selectedValue={values.visaStatus || ''} error={!!errors.visaStatus} helperText={errors.visaStatus} disabled={!isEditing} onChange={(v) => addValue('visaStatus', v)} fullWidth />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker views={['month', 'day']} format={dobFormate} disabled={!isEditing} label="Date of Birth"
+                value={values.dob ? dayjs(values.dob) : null}
+                onChange={(v) => addValue('dob', v?.format(dobFormate) || '')}
+                slotProps={{ textField: { onBlur: () => onBlur('dob'), size: 'small', fullWidth: true, error: !!errors.dob, helperText: errors.dob, disabled: !isEditing, sx: pickerSx } }} />
+            </LocalizationProvider>
+          </Grid>
+          <CustomTextField label="Current Address" fullWidth selectedValue={values.currentAddress || ''} error={!!errors.currentAddress} helperText={errors.currentAddress} disabled={!isEditing} onChange={(e) => addValue('currentAddress', e.target.value)} onBlur={() => onBlur('currentAddress')} />
+          <CustomTextField label="Previous Address" fullWidth selectedValue={values.previousAddress || ''} disabled={!isEditing} onChange={(e) => addValue('previousAddress', e.target.value)} />
+          <CustomTextField label="Email" fullWidth selectedValue={values.email || ''} error={errors.email} helperText={errors.email} disabled={!isEditing} onChange={(e) => addValue('email', e.target.value?.toLowerCase())} onBlur={() => onBlur('email')} />
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <PhoneField onBlur={() => onBlur('phone')} label="Phone" value={values.phone || ''} errorText={errors.phone || ''} disabled={!isEditing} onChange={(v) => addValue('phone', v)} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <CustomSelectField label="Consultant Timezone" valueOptions={timeZoneOptions} selectedValue={values.timeZone || ''} disabled={!isEditing} onChange={(v) => addValue('timeZone', v)} fullWidth />
+          </Grid>
+          <CustomTextField label="Degree Name" fullWidth selectedValue={values.degree || ''} disabled={!isEditing} onChange={(e) => addValue('degree', e.target.value)} />
+          <CustomTextField label="University" fullWidth selectedValue={values.university || ''} disabled={!isEditing} onChange={(e) => addValue('university', e.target.value)} />
+          <CustomTextField label="Year of Passing" fullWidth selectedValue={values.yearPassing || ''} disabled={!isEditing} onChange={(e) => addValue('yearPassing', e.target.value)} />
+          <CustomTextField label="SSN" fullWidth selectedValue={values.ssn || ''} disabled={!isEditing} onChange={(e) => addValue('ssn', e.target.value)} />
+          <CustomTextField label="Driving License" fullWidth selectedValue={values.dlNo || ''} error={!!errors.dlNo} helperText={errors.dlNo} disabled={!isEditing} onBlur={() => onBlur('dlNo')} onChange={(e) => addValue('dlNo', e.target.value)} />
+          <CustomTextField label="Pseudo Name" fullWidth selectedValue={values.psuedoName || ''} disabled={!isEditing} onChange={(e) => addValue('psuedoName', e.target.value)} />
+          <CustomTextField label="Skype ID" fullWidth selectedValue={values.skypeId || ''} disabled={!isEditing} onChange={(e) => addValue('skypeId', e.target.value)} />
+          <CustomTextField label="How did you get the VISA?" fullWidth selectedValue={values.getVisa || ''} disabled={!isEditing} onChange={(e) => addValue('getVisa', e.target.value)} />
+          <CustomTextField label="Year came to US" fullWidth selectedValue={values.cameToUsYear || ''} disabled={!isEditing} onChange={(e) => addValue('cameToUsYear', e.target.value)} />
+          <CustomTextField label="Country of Origin" fullWidth selectedValue={values.originCountry || ''} disabled={!isEditing} onChange={(e) => addValue('originCountry', e.target.value)} />
+          <CustomTextField label="Reason for Change" fullWidth selectedValue={values.lookingToChange || ''} disabled={!isEditing} onChange={(e) => addValue('lookingToChange', e.target.value)} />
+        </SectionCard>
+
+        {/* ── Section 2: Projects ── */}
+        {(isEditing || !!projects?.length) && (
+          <SectionCard
+            number={2}
+            title="Projects"
+            action={isEditing ? (
+              <Button
+                variant="outlined" size="small" startIcon={<IconPlus size={14} />}
+                onClick={handleAddProject}
+                sx={{ borderColor: 'grey.300', color: '#5A6A85', textTransform: 'none', fontWeight: 600, borderRadius: '8px', fontSize: '0.75rem', py: 0.5 }}
               >
-                <h4>{`PROJECT: ${index + 1}`}</h4>
-                {isEditing && (
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setProjects((pre) => pre?.filter((_, i) => i !== index));
+                Add Project
+              </Button>
+            ) : undefined}
+          >
+            <Grid size={12}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {projects?.length === 0 && (
+                  <Typography variant="body2" color="text.secondary" textAlign="center" py={3}>No projects added yet</Typography>
+                )}
+                {projects?.map((project, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      borderRadius: 2.5,
+                      border: '1px solid',
+                      borderColor: 'grey.200',
+                      overflow: 'hidden',
                     }}
                   >
-                    <Delete />
-                  </IconButton>
-                )}
+                    {/* Project header */}
+                    <Box sx={{ px: 2, py: 1, bgcolor: alpha('#F6F9FC', 0.6), borderBottom: '1px solid', borderColor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" fontWeight={600} color="#5A6A85">
+                        Project {index + 1}
+                      </Typography>
+                      {isEditing && (
+                        <IconButton size="small" onClick={() => setProjects((pre) => pre?.filter((_, i) => i !== index))} sx={{ color: '#EF4444', '&:hover': { bgcolor: alpha('#EF4444', 0.08) } }}>
+                          <IconTrash size={15} />
+                        </IconButton>
+                      )}
+                    </Box>
+
+                    {/* Project fields */}
+                    <Box sx={{ p: 2 }}>
+                      <Grid container spacing={2}>
+                        <CustomTextField label="Project Name" fullWidth selectedValue={project?.projectName || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectName', e.target.value, index)} />
+                        <CustomTextField label="Project Domain" fullWidth selectedValue={project?.projectDomain || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectDomain', e.target.value, index)} />
+                        <CustomTextField label="Project City" fullWidth selectedValue={project?.projectCity || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectCity', e.target.value, index)} />
+                        <CustomTextField label="Project State" fullWidth selectedValue={project?.projectState || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectState', e.target.value, index)} />
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                          <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker views={['month', 'year']} disabled={!isEditing} label="Project Start Date"
+                              value={project?.projectStartDate ? dayjs(project.projectStartDate) : null}
+                              onChange={(v) => onProjectChange('projectStartDate', v, index)}
+                              slotProps={{ textField: { size: 'small', fullWidth: true, disabled: !isEditing, sx: pickerSx } }} />
+                          </LocalizationProvider>
+                        </Grid>
+                        {!project?.isCurrent && (
+                          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                              <DatePicker views={['month', 'year']} disabled={!isEditing} label="Project End Date"
+                                value={project?.projectEndDate ? dayjs(project.projectEndDate) : null}
+                                onChange={(v) => onProjectChange('projectEndDate', v, index)}
+                                slotProps={{ textField: { size: 'small', fullWidth: true, disabled: !isEditing, sx: pickerSx } }} />
+                            </LocalizationProvider>
+                          </Grid>
+                        )}
+                        {(isEditing || project?.isCurrent) && (
+                          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', height: '100%', pl: 1 }}>
+                              <FormControlLabel
+                                control={<Android12Switch checked={!!project?.isCurrent} disabled={!isEditing || isSubmitting} />}
+                                label={<Typography variant="body2" color="text.secondary">Current Project</Typography>}
+                                onChange={() => {
+                                  if (isSubmitting || !isEditing) return;
+                                  onProjectChange('isCurrent', !project?.isCurrent, index);
+                                }}
+                              />
+                            </Box>
+                          </Grid>
+                        )}
+                        <Grid size={12}>
+                          <TextField
+                            label="Project Description"
+                            value={project?.projectDescription || ''}
+                            disabled={!isEditing}
+                            fullWidth
+                            size="small"
+                            multiline
+                            minRows={2}
+                            onChange={(e) => onProjectChange('projectDescription', e.target.value, index)}
+                            sx={{
+                              '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' },
+                              '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' },
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Box>
+                ))}
               </Box>
             </Grid>
-            <CustomTextField
-              label="Project Name"
-              width={230}
-              selectedValue={project?.projectName || ''}
-              disabled={!isEditing}
-              onChange={(event) =>
-                onProjectChange('projectName', event.target.value, index)
-              }
-            />
-            <CustomTextField
-              label="Project Domain"
-              width={230}
-              selectedValue={project?.projectDomain || ''}
-              disabled={!isEditing}
-              onChange={(event) =>
-                onProjectChange('projectDomain', event.target.value, index)
-              }
-            />
-            <CustomTextField
-              label="Project City"
-              width={230}
-              selectedValue={project?.projectCity || ''}
-              disabled={!isEditing}
-              onChange={(event) =>
-                onProjectChange('projectCity', event.target.value, index)
-              }
-            />
-            <CustomTextField
-              label="Project State"
-              width={230}
-              selectedValue={project?.projectState || ''}
-              disabled={!isEditing}
-              onChange={(event) =>
-                onProjectChange('projectState', event.target.value, index)
-              }
-            />
-            <Grid item>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  views={['month', 'year']}
-                  // inputFormat={dateFormate}
-                  disabled={!isEditing}
-                  label="Project Start Date"
-                  value={
-                    project?.projectStartDate
-                      ? dayjs(project.projectStartDate)
-                      : null
-                  }
-                  onChange={(newValue) => {
-                    onProjectChange('projectStartDate', newValue, index);
-                    console.log(newValue);
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      size="small"
-                      {...params}
-                      disabled={!isEditing}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '10px',
-                          backgroundColor: !isEditing
-                            ? '#f0f0f0'
-                            : 'transparent',
-                        },
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          WebkitTextFillColor: 'black',
-                          backgroundColor: '#f0f0f0',
-                          borderRadius: '10px',
-                        },
-                        width: 230,
-                        mr: 1,
-                      }}
-                    />
-                  )}
-                />
-              </LocalizationProvider>
-            </Grid>
-            {(isEditing || project?.isCurrent) && (
-              <Grid sx={{ m: 1 }}>
-                <FormControlLabel
-                  sx={{ minWidth: 230 }}
-                  // disabled={isSubmitting || !isEditing}
-                  control={<Switch checked={!!project?.isCurrent} />}
-                  label={`Current project`}
-                  onChange={() => {
-                    if (isSubmitting || !isEditing) return;
-                    onProjectChange('isCurrent', !project?.isCurrent, index);
-                    // onProjectChange('projectEndDate', '', index);
-                  }}
-                />
-              </Grid>
-            )}
-            {!project?.isCurrent && (
-              <Grid item>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                    // inputFormat={dateFormate}
-                    views={['month', 'year']}
-                    disabled={!isEditing}
-                    label="Project End Date"
-                    value={
-                      project?.projectEndDate
-                        ? dayjs(project.projectEndDate)
-                        : null
-                    }
-                    onChange={(newValue) =>
-                      onProjectChange('projectEndDate', newValue, index)
-                    }
-                    renderInput={(params) => (
-                      <TextField
-                        size="small"
-                        {...params}
-                        disabled={!isEditing}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '10px',
-                            backgroundColor: !isEditing
-                              ? '#f0f0f0'
-                              : 'transparent',
-                          },
-                          '& .MuiInputBase-input.Mui-disabled': {
-                            WebkitTextFillColor: 'black',
-                            backgroundColor: '#f0f0f0',
-                            borderRadius: '10px',
-                          },
-                          width: 230,
-                          mr: 1,
-                          mb: 1,
-                        }}
-                      />
-                    )}
-                  />
-                </LocalizationProvider>
-              </Grid>
-            )}
+          </SectionCard>
+        )}
+      </Box>
 
-            <CustomTextField
-              label="Project Description"
-              width={970}
-              selectedValue={project?.projectDescription || ''}
-              disabled={!isEditing}
-              onChange={(event) =>
-                onProjectChange('projectDescription', event.target.value, index)
-              }
-            />
-          </Grid>
-        ))}
-
-        {/* Button to add new project */}
-        <Grid item xs={12} style={{ marginTop: '10px' }}>
-          {isEditing && (
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleAddProject}
-              sx={{ borderRadius: '10px' }}
-            >
-              Add New Project
-            </Button>
-          )}
-        </Grid>
-      </Grid>
+      {/* Delete confirmation */}
+      <Dialog open={openAlert} onClose={() => setOpenAlert(false)} sx={{ '& .MuiDialog-paper': { borderRadius: '16px' } }}>
+        <DialogTitle sx={{ fontWeight: 700, color: '#2A3547' }}>Delete Consultant?</DialogTitle>
+        <DialogContent><DialogContentText>Are you sure you want to delete this Consultant? This action cannot be undone.</DialogContentText></DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setOpenAlert(false)} sx={{ textTransform: 'none', color: '#5A6A85' }}>Cancel</Button>
+          <Button onClick={handleDeleteConsultant} variant="contained" sx={{ bgcolor: '#EF4444', '&:hover': { bgcolor: '#DC2626' }, textTransform: 'none', boxShadow: 'none', borderRadius: '8px' }}>Delete</Button>
+        </DialogActions>
+      </Dialog>
     </form>
   );
 }
 
-function PhoneField({
-  disabled,
-  onChange,
-  onBlur,
-  label,
-  value,
-  errorText,
-}: PhoneFieldProps) {
+function PhoneField({ disabled, onChange, onBlur, label, value, errorText }: PhoneFieldProps) {
   const [maxPhoneLength, setMaxPhoneLength] = useState(15);
   const [muiTelInputInfo, setMuiTelInputInfo] = useState<MuiTelInputInfo>();
 
   const onPhoneChange = (value: string, info: MuiTelInputInfo) => {
     if (info.countryCode && info.countryCode !== muiTelInputInfo?.countryCode) {
-      const exampleNumberLength = getExampleNumber(
-        info.countryCode,
-        examples
-      )?.formatInternational().length;
+      const exampleNumberLength = getExampleNumber(info.countryCode, examples)?.formatInternational().length;
       exampleNumberLength && setMaxPhoneLength(exampleNumberLength);
       setMuiTelInputInfo(info);
     }
     onChange(value);
   };
+
   return (
-    <div>
-      <Grid item sx={{ width: 230, m: 1 }}>
-        <MuiTelInput
-          disabled={disabled}
-          inputProps={{ maxLength: maxPhoneLength }}
-          defaultCountry={'US'}
-          onChange={onPhoneChange}
-          onBlur={() => onBlur && onBlur()}
-          label={label}
-          value={value}
-          fullWidth
-          error={!!errorText}
-          helperText={errorText}
-          size="small"
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '10px',
-              backgroundColor: disabled ? '#f0f0f0' : 'transparent',
-            },
-            '& .MuiInputBase-input.Mui-disabled': {
-              WebkitTextFillColor: 'black',
-              backgroundColor: '#f0f0f0',
-            },
-          }}
-        />
-      </Grid>
-    </div>
+    <MuiTelInput
+      disabled={disabled}
+      slotProps={{ htmlInput: { maxLength: maxPhoneLength } as React.InputHTMLAttributes<HTMLInputElement> }}
+      defaultCountry="US"
+      onChange={onPhoneChange}
+      onBlur={() => onBlur && onBlur()}
+      label={label}
+      value={value}
+      fullWidth
+      error={!!errorText}
+      helperText={errorText}
+      size="small"
+      sx={{
+        '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: disabled ? '#F6F9FC' : 'transparent' },
+        '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' },
+      }}
+    />
   );
 }
 

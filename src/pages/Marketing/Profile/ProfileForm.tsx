@@ -1,9 +1,14 @@
 import {
+  Box,
   Button,
+  Chip,
   CircularProgress,
   FormControlLabel,
   Grid,
   SelectChangeEvent,
+  Switch,
+  Typography,
+  alpha,
 } from '@mui/material';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { UserProfile } from '../../../Interfaces/profile';
@@ -21,6 +26,7 @@ import DocumentsField from '../../../components/profile/formFields/DocumentsFiel
 import { uploadFile } from '../../../services/storageApi';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
+import { tokens } from '../../../theme/theme';
 
 const ProfileForm = ({
   viewMode,
@@ -54,9 +60,7 @@ const ProfileForm = ({
     try {
       const { data } = await uploadFile(file);
       onChangeProfileValues(undefined, field, {
-        target: {
-          value: data.data.url,
-        },
+        target: { value: data.data.url },
       } as ChangeEvent<HTMLInputElement>);
       setSelectedBlobFiles((pre) =>
         pre.filter((f) => f.field.fieldName !== field.fieldName)
@@ -81,10 +85,8 @@ const ProfileForm = ({
       toast.error('Invalid submission');
       return;
     }
-
     setIsFormSubmitting(true);
     const payload = { ...myProfile };
-
     if (selectedBlobFiles.length) {
       const res = await uploadUnsavedFiles();
       for (const element of res) {
@@ -92,7 +94,6 @@ const ProfileForm = ({
         payload[element.field.fieldName] = element.value;
       }
     }
-
     try {
       const { data } = await updateProfile(myProfile._id, payload);
       if (data.error || !data.data) {
@@ -128,7 +129,6 @@ const ProfileForm = ({
     parentFieldName = field.parentFieldName || parentFieldName;
     label = label || fieldName;
     label = label[0].toUpperCase() + label.slice(1);
-
     const setMessage = (val: string) => {
       if (
         (inputAttributes?.required && !val) ||
@@ -143,7 +143,6 @@ const ProfileForm = ({
         message = '';
       }
     };
-
     if (parentFieldName) {
       const val = value || (myProfile as any)[parentFieldName][fieldName];
       setMessage(val);
@@ -159,10 +158,7 @@ const ProfileForm = ({
       const val = value || (myProfile as any)[fieldName];
       setMessage(val);
       applyErrors &&
-        setFormErrors((pre) => ({
-          ...pre,
-          [fieldName]: message,
-        }));
+        setFormErrors((pre) => ({ ...pre, [fieldName]: message }));
     }
     return isValueValid;
   };
@@ -177,12 +173,9 @@ const ProfileForm = ({
       });
     });
     documentFormSection.map((field) => {
-      if (!validateField(field)) {
+      if (!validateField(field)) isAllValuesValid = false;
+      if (field.associatedField && !validateField(field.associatedField))
         isAllValuesValid = false;
-      }
-      if (field.associatedField && !validateField(field.associatedField)) {
-        isAllValuesValid = false;
-      }
     });
     return isAllValuesValid;
   };
@@ -210,10 +203,7 @@ const ProfileForm = ({
           },
         };
       }
-      return {
-        ...profile,
-        [field.fieldName]: e.target.value,
-      };
+      return { ...profile, [field.fieldName]: e.target.value };
     });
     const errorMessage = parentFieldName
       ? (formErrors as any)[parentFieldName][field.fieldName]
@@ -225,63 +215,42 @@ const ProfileForm = ({
       validateField(field, parentFieldName, e.target.value);
     }
   };
+
   const handleChangeBlobFile = (field: DocumentSectionField, file?: File) => {
     setSelectedBlobFiles((pre) => {
       pre = pre.filter((pf) => pf.field.fieldName !== field.fieldName);
       return [...pre, { field, value: file }];
     });
   };
+
   const applySameAddress = () => {
     const address = myProfile[primaryAddress];
-    setMyProfile((pre) => {
-      return {
-        ...pre,
-        [secondryAddress]: { ...address },
-      };
-    });
+    setMyProfile((pre) => ({ ...pre, [secondryAddress]: { ...address } }));
   };
 
   const handleSameAddressCheckBox = () => {
     setIsBothAddressSame((pre) => {
-      if (!pre) {
-        applySameAddress();
-      }
+      if (!pre) applySameAddress();
       return !pre;
     });
   };
 
   useHardKeySubmit(
-    {
-      onSubmit: (e) => {
-        submitForm();
-      },
-    },
-    [
-      myProfile,
-      formErrors,
-      isFormSubmitting,
-      selectedBlobFiles,
-      isBothAddressSame,
-      viewMode,
-      template,
-    ]
+    { onSubmit: () => { submitForm(); } },
+    [myProfile, formErrors, isFormSubmitting, selectedBlobFiles, isBothAddressSame, viewMode, template]
   );
 
   useEffect(() => {
     const templateCopy: UserProfile = { ...template };
     if (!viewMode) {
-      templateCopy.permanentAddress.country =
-        templateCopy.permanentAddress.country || 'IN';
-      templateCopy.communicationAddress.country =
-        templateCopy.communicationAddress.country || 'IN';
+      templateCopy.permanentAddress.country = templateCopy.permanentAddress.country || 'IN';
+      templateCopy.communicationAddress.country = templateCopy.communicationAddress.country || 'IN';
     }
     setMyProfile(templateCopy);
   }, [template]);
 
   useEffect(() => {
-    if (isBothAddressSame) {
-      applySameAddress();
-    }
+    if (isBothAddressSame) applySameAddress();
   }, [myProfile[primaryAddress], isBothAddressSame]);
 
   return (
@@ -292,22 +261,222 @@ const ProfileForm = ({
           validateForm() && submitForm();
         }}
       >
-        <Grid
+        {/* Form sections */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {profileFormSections.map((section, i) => {
+            const { sectionTitle, sectionFields, parentFieldName } = section;
+            const isAddress =
+              parentFieldName === 'permanentAddress' ||
+              parentFieldName === 'communicationAddress';
+
+            return (
+              <Box
+                key={i}
+                sx={{
+                  borderRadius: 3,
+                  border: '1px solid',
+                  borderColor: 'grey.200',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Section header */}
+                <Box
+                  sx={{
+                    px: 2.5,
+                    py: 1.5,
+                    bgcolor: '#F6F9FC',
+                    borderBottom: '1px solid',
+                    borderColor: 'grey.200',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                  }}
+                >
+                  <Chip
+                    label={i + 1}
+                    size="small"
+                    sx={{
+                      bgcolor: '#032840',
+                      color: '#fff',
+                      fontWeight: 700,
+                      fontSize: '0.75rem',
+                      height: 24,
+                      minWidth: 24,
+                    }}
+                  />
+                  <Typography variant="body1" fontWeight={600} color="#2A3547">
+                    {sectionTitle}
+                  </Typography>
+                  {isAddress && isBothAddressSame && parentFieldName !== primaryAddress && (
+                    <Chip
+                      label={`Same as ${primaryAddress.split('Address')[0]} address`}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha('#10B981', 0.1),
+                        color: '#10B981',
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        height: 22,
+                      }}
+                    />
+                  )}
+                </Box>
+
+                {/* Section fields */}
+                <Box sx={{ p: 2.5 }}>
+                  {isAddress ? (
+                    <>
+                      <Grid container spacing={2} sx={{ maxWidth: '100%' }}>
+                        <AddressField
+                          formErrors={formErrors}
+                          disabled={
+                            (parentFieldName !== primaryAddress && isBothAddressSame) ||
+                            isFormSubmitting ||
+                            !!viewMode
+                          }
+                          parentFieldName={parentFieldName}
+                          myProfile={myProfile}
+                          sectionFields={sectionFields}
+                          onChangeProfileValues={onChangeProfileValues}
+                          setMyProfile={setMyProfile}
+                        />
+                      </Grid>
+                      {!viewMode && parentFieldName !== primaryAddress && (
+                        <FormControlLabel
+                          disabled={isFormSubmitting}
+                          control={<Android12Switch checked={isBothAddressSame} />}
+                          label={
+                            <Typography variant="body2" color="text.secondary">
+                              Same as {primaryAddress.split('Address')[0]} address
+                            </Typography>
+                          }
+                          onChange={() => handleSameAddressCheckBox()}
+                          sx={{ mt: 1.5 }}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <Grid container spacing={2} sx={{ maxWidth: '100%' }}>
+                      {sectionFields.map((field, j) => (
+                        <RenderFields
+                          formError={formErrors}
+                          disabled={isFormSubmitting || !!viewMode}
+                          key={j}
+                          parentFieldName={parentFieldName || field.parentFieldName}
+                          field={field}
+                          setMyProfile={setMyProfile}
+                          myProfile={myProfile}
+                          onChange={(e) =>
+                            onChangeProfileValues(
+                              parentFieldName || field.parentFieldName,
+                              field,
+                              e
+                            )
+                          }
+                          onBlur={() => onBlurFields(field, section.parentFieldName)}
+                        />
+                      ))}
+                    </Grid>
+                  )}
+                </Box>
+              </Box>
+            );
+          })}
+
+          {/* Documents section */}
+          {documentFormSection.length > 0 && (
+            <Box
+              sx={{
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 1.5,
+                  bgcolor: '#F6F9FC',
+                  borderBottom: '1px solid',
+                  borderColor: 'grey.200',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                }}
+              >
+                <Chip
+                  label={profileFormSections.length + 1}
+                  size="small"
+                  sx={{
+                    bgcolor: '#032840',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    height: 24,
+                    minWidth: 24,
+                  }}
+                />
+                <Typography variant="body1" fontWeight={600} color="#2A3547">
+                  {documentSectionHeader || 'Documents'}
+                </Typography>
+              </Box>
+
+              <Box sx={{ p: 2.5, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                {documentFormSection.map((field, i) => {
+                  const selectedFile = selectedBlobFiles.find(
+                    (f) => f.field.fieldName === field.fieldName
+                  );
+                  return (
+                    <DocumentsField
+                      viewMode={viewMode}
+                      disabled={isFormSubmitting || !!viewMode}
+                      selectedFile={selectedFile?.value}
+                      setSelectedFile={(f) => handleChangeBlobFile(field, f)}
+                      onUpload={(f) => handleMyDocumentUpload(field, f)}
+                      key={i}
+                      field={field}
+                      onChange={(f, e) => onChangeProfileValues(undefined, f, e)}
+                      myProfile={myProfile}
+                      onBlur={(f) => onBlurFields(f)}
+                      formErrors={formErrors}
+                    />
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
+        </Box>
+
+        {/* Action buttons at the bottom */}
+        <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            gap: 1,
-            marginRight: 10,
+            gap: 1.5,
+            mt: 4,
+            mb: 2,
+            pt: 3,
+            borderTop: '1px solid',
+            borderColor: 'grey.200',
           }}
         >
           {viewMode ? (
             <Button
               variant="contained"
-              color="primary"
               type="button"
-              size="small"
-              sx={{ borderRadius: '10px' }}
+              size="medium"
+              sx={{
+                bgcolor: '#032840',
+                color: '#fff',
+                '&:hover': { bgcolor: '#0A3555' },
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: '10px',
+                px: 3,
+                boxShadow: 'none',
+              }}
               onClick={onClickEdit}
               disabled={isFormSubmitting}
             >
@@ -316,11 +485,18 @@ const ProfileForm = ({
           ) : (
             <>
               <Button
-                variant="contained"
-                color="error"
+                variant="outlined"
                 type="button"
-                size="small"
-                sx={{ borderRadius: '10px' }}
+                size="medium"
+                sx={{
+                  borderColor: 'grey.300',
+                  color: '#5A6A85',
+                  '&:hover': { borderColor: 'grey.400', bgcolor: '#F6F9FC' },
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: '10px',
+                  px: 3,
+                }}
                 onClick={onClickCancel}
                 disabled={isFormSubmitting}
               >
@@ -328,10 +504,18 @@ const ProfileForm = ({
               </Button>
               <Button
                 variant="contained"
-                color="primary"
                 type="submit"
-                size="small"
-                sx={{ borderRadius: '10px' }}
+                size="medium"
+                sx={{
+                  bgcolor: '#032840',
+                  color: '#fff',
+                  '&:hover': { bgcolor: '#0A3555' },
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: '10px',
+                  px: 3,
+                  boxShadow: 'none',
+                }}
                 onClick={() => validateForm()}
                 disabled={isFormSubmitting}
               >
@@ -339,153 +523,14 @@ const ProfileForm = ({
                   'Submit'
                 ) : (
                   <>
-                    <CircularProgress
-                      style={{
-                        color: '#1976d2',
-                        width: '14px',
-                        height: '14px',
-                      }}
-                    />
-                    <span style={{ paddingLeft: '5px' }}>Submitting</span>
+                    <CircularProgress style={{ color: '#fff', width: '16px', height: '16px' }} />
+                    <span style={{ paddingLeft: '8px' }}>Submitting</span>
                   </>
                 )}
               </Button>
             </>
           )}
-        </Grid>
-
-        {profileFormSections.map((section, i) => {
-          const { sectionTitle, sectionFields, parentFieldName } = section;
-
-          if (
-            parentFieldName === 'permanentAddress' ||
-            parentFieldName === 'communicationAddress'
-          ) {
-            return (
-              <div key={i}>
-                <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-                  <Grid item xs={12}>
-                    <h4>
-                      {i + 1}. {sectionTitle}{' '}
-                      {isBothAddressSame &&
-                        parentFieldName !== primaryAddress && (
-                          <span style={{ color: 'green', fontWeight: 'bold' }}>
-                            {' '}
-                            {`: Same as ${
-                              primaryAddress.split('Address')[0]
-                            } address`}
-                          </span>
-                        )}
-                    </h4>
-                  </Grid>
-
-                  <AddressField
-                    formErrors={formErrors}
-                    key={i}
-                    disabled={
-                      (parentFieldName !== primaryAddress &&
-                        isBothAddressSame) ||
-                      isFormSubmitting ||
-                      !!viewMode
-                    }
-                    parentFieldName={parentFieldName}
-                    myProfile={myProfile}
-                    sectionFields={sectionFields}
-                    onChangeProfileValues={onChangeProfileValues}
-                    setMyProfile={setMyProfile}
-                  />
-                </Grid>
-                {!viewMode && parentFieldName !== primaryAddress && (
-                  <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-                    <Grid item xs={12}>
-                      <FormControlLabel
-                        disabled={isFormSubmitting}
-                        control={
-                          <Android12Switch checked={isBothAddressSame} />
-                        }
-                        label={`Is ${
-                          parentFieldName.split('Address')[0]
-                        } address same as ${
-                          primaryAddress.split('Address')[0]
-                        } address`}
-                        onChange={() => handleSameAddressCheckBox()}
-                      />
-                    </Grid>
-                  </Grid>
-                )}
-              </div>
-            );
-          }
-          return (
-            <Grid key={i} container spacing={1} sx={{ maxWidth: '100%' }}>
-              <Grid item xs={12}>
-                <h4>
-                  {i + 1}. {sectionTitle}
-                </h4>
-              </Grid>
-
-              {sectionFields.map((field, j) => {
-                return (
-                  <RenderFields
-                    formError={formErrors}
-                    disabled={isFormSubmitting || !!viewMode}
-                    key={j}
-                    parentFieldName={parentFieldName || field.parentFieldName}
-                    field={field}
-                    setMyProfile={setMyProfile}
-                    myProfile={myProfile}
-                    onChange={(e) =>
-                      onChangeProfileValues(
-                        parentFieldName || field.parentFieldName,
-                        field,
-                        e
-                      )
-                    }
-                    onBlur={() => onBlurFields(field, section.parentFieldName)}
-                  />
-                );
-              })}
-            </Grid>
-          );
-        })}
-
-        {documentFormSection.length && (
-          <>
-            <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-              <Grid item xs={12}>
-                <h4>
-                  {profileFormSections.length + 1}.{' '}
-                  {documentSectionHeader || 'Documents'}
-                </h4>
-              </Grid>
-            </Grid>
-
-            <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-              {documentFormSection.map((field, i) => {
-                const selectedFile = selectedBlobFiles.find(
-                  (f) => f.field.fieldName === field.fieldName
-                );
-                return (
-                  <DocumentsField
-                    viewMode={viewMode}
-                    disabled={isFormSubmitting || !!viewMode}
-                    selectedFile={selectedFile?.value}
-                    setSelectedFile={(f) => handleChangeBlobFile(field, f)}
-                    onUpload={(f) => handleMyDocumentUpload(field, f)}
-                    key={i}
-                    field={field}
-                    onChange={(f, e) => {
-                      onChangeProfileValues(undefined, f, e);
-                    }}
-                    myProfile={myProfile}
-                    onBlur={(f) => onBlurFields(f)}
-                    formErrors={formErrors}
-                  />
-                );
-              })}
-            </Grid>
-          </>
-        )}
+        </Box>
       </form>
     )
   );

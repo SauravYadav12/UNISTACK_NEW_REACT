@@ -17,7 +17,6 @@ import SignUp from './pages/Auth/Signup';
 import { AuthContextProvider, useAuth } from './AuthGaurd/AuthContextProvider';
 import ProtectedRoute from './AuthGaurd/ProtectedRoute';
 import UserManagement from './pages/UserManagement/UserManagement';
-import TestAndVendorInterviews from './pages/Marketing/TestAndVendorInterviews/TestAndVendorInterviews';
 import InterviewTabs from './components/interview/InterviewTabs';
 import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
 import AttendanceDashboard from './pages/Attendance/AttendanceDashboard';
@@ -35,250 +34,293 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import LeavesManagement from './pages/Leaves/LeavesManagement';
 import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
 import Salary from './pages/Salary/Salary';
+import Projects from './pages/Marketing/Projects/Projects';
+import PerformancePage from './pages/Performance/PerformancePage';
+import MyDocuments from './pages/Documents/MyDocuments';
+import { AiProvider } from './context/AiContext';
+import { RequirementAiChatProvider } from './context/RequirementAiChatContext';
+import FloatingAiChat from './components/aiChat/FloatingAiChat';
+import CommandPalette from './components/commandPalette/CommandPalette';
 
+// Outer shell — sets up providers only
 function App() {
-  const { isAuthenticated } = useAuth();
   return (
     <AuthContextProvider>
       <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route
-              path="dashboard"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Home,
-                    module: HomeModule.Dashboard,
-                  }}
-                >
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="salary"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup['Super Admin Modules'],
-                    module: SuperAdminModule['SalaryManagement'],
-                  }}
-                >
-                  <Salary />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="profile"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Home,
-                    module: HomeModule.Profile,
-                  }}
-                >
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="attendance/my-attendance"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup['Presence & Leave'],
-                    module: EmployeeModule.Attendance,
-                  }}
-                >
-                  <HolidayContextProvider>
-                    <MyAttendance />
-                  </HolidayContextProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="leaves"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup['Presence & Leave'],
-                    module: EmployeeModule.Leaves,
-                  }}
-                >
-                  <Leaves />
-                  {/* <>Coming Soon</> */}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="requirements"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Marketing,
-                    module: MarketingModule.Requirements,
-                  }}
-                >
-                  <Requirements />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="interviews"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Marketing,
-                    module: MarketingModule.Interviews,
-                  }}
-                >
-                  <InterviewTabs />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="testandvendorinterviews"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Marketing,
-                    module: MarketingModule['Test And VI'],
-                  }}
-                >
-                  <TestAndVendorInterviews />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="consultants"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Marketing,
-                    module: MarketingModule.Consultants,
-                  }}
-                >
-                  <Consultants />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="teams"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Marketing,
-                    module: MarketingModule.Teams,
-                  }}
-                >
-                  <Teams />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="reports"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Marketing,
-                    module: MarketingModule.Reports,
-                  }}
-                >
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="sales-leads"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup.Marketing,
-                    module: MarketingModule['Sales Leads'],
-                  }}
-                >
-                  <SalesLead />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="user-management"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup['Super Admin Modules'],
-                    module: SuperAdminModule['User Management'],
-                  }}
-                >
-                  <UserManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="access-control"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup['Super Admin Modules'],
-                    module: SuperAdminModule['Access Control'],
-                  }}
-                >
-                  <AccessControl />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="attendance/dashboard"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup['Super Admin Modules'],
-                    module: SuperAdminModule['Attendance Dashboard'],
-                  }}
-                >
-                  <HolidayContextProvider>
-                    <AttendanceDashboard />
-                  </HolidayContextProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="leaves-management"
-              element={
-                <ProtectedRoute
-                  meta={{
-                    group: ModuleGroup['Super Admin Modules'],
-                    module: SuperAdminModule['Leaves Management'],
-                  }}
-                >
-                  <LeavesManagement />
-                </ProtectedRoute>
-              }
-            />
-          </Route>
-
-          {isAuthenticated ? (
-            <Route
-              path="dashboard"
-              element={<Navigate to="/dashboard" replace />}
-            />
-          ) : null}
-        </Routes>
+        <AiProvider>
+          <RequirementAiChatProvider>
+            <AppContent />
+          </RequirementAiChatProvider>
+        </AiProvider>
       </Router>
     </AuthContextProvider>
+  );
+}
+
+// Inner component — can safely read useAuth() since it's inside AuthContextProvider
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Home,
+                  module: HomeModule.Dashboard,
+                }}
+              >
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="salary"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Super Admin Modules'],
+                  module: SuperAdminModule['SalaryManagement'],
+                }}
+              >
+                <Salary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="projects"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Super Admin Modules'],
+                  module: SuperAdminModule['Projects'],
+                }}
+              >
+                <Projects />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="performance"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Super Admin Modules'],
+                  module: SuperAdminModule['Performance'],
+                }}
+              >
+                <PerformancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="my-documents"
+            element={
+              <ProtectedRoute>
+                <MyDocuments />
+              </ProtectedRoute>
+            }
+          />
+          {/* Back-compat: old /my-salary bookmarks continue to work. */}
+          <Route path="my-salary" element={<Navigate to="/my-documents" replace />} />
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Home,
+                  module: HomeModule.Profile,
+                }}
+              >
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="attendance/my-attendance"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Presence & Leave'],
+                  module: EmployeeModule.Attendance,
+                }}
+              >
+                <HolidayContextProvider>
+                  <MyAttendance />
+                </HolidayContextProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leaves"
+            element={<Navigate to="/leaves-management" replace />}
+          />
+          <Route
+            path="requirements"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Marketing,
+                  module: MarketingModule.Requirements,
+                }}
+              >
+                <Requirements />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="interviews"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Marketing,
+                  module: MarketingModule.Interviews,
+                }}
+              >
+                <InterviewTabs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="consultants"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Marketing,
+                  module: MarketingModule.Consultants,
+                }}
+              >
+                <Consultants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teams"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Marketing,
+                  module: MarketingModule.Teams,
+                }}
+              >
+                <Teams />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Marketing,
+                  module: MarketingModule.Reports,
+                }}
+              >
+                <Reports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="sales-leads"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Marketing,
+                  module: MarketingModule['Sales Leads'],
+                }}
+              >
+                <SalesLead />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="user-management"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Super Admin Modules'],
+                  module: SuperAdminModule['User Management'],
+                }}
+              >
+                <UserManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="access-control"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Super Admin Modules'],
+                  module: SuperAdminModule['Access Control'],
+                }}
+              >
+                <AccessControl />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/dashboard"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Super Admin Modules'],
+                  module: SuperAdminModule['Attendance Dashboard'],
+                }}
+              >
+                <HolidayContextProvider>
+                  <AttendanceDashboard />
+                </HolidayContextProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leaves-management"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Presence & Leave'],
+                  module: EmployeeModule.Leaves,
+                }}
+              >
+                <LeavesManagement />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+
+        {isAuthenticated ? (
+          <Route
+            path="dashboard"
+            element={<Navigate to="/dashboard" replace />}
+          />
+        ) : null}
+      </Routes>
+
+      {/* Global AI components — only visible after authentication */}
+      {isAuthenticated && (
+        <>
+          <CommandPalette />
+          <FloatingAiChat />
+        </>
+      )}
+    </>
   );
 }
 

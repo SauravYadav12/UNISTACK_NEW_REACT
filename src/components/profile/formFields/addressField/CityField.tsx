@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
-import { SelectChangeEvent } from '@mui/material';
+import { SelectChangeEvent, TextField } from '@mui/material';
 import { SectionField } from '../../../../pages/Marketing/Profile/constants';
 import CustomSelectField from '../../../select/CustomSelectField';
 import { State, City } from 'country-state-city';
 import { UserProfile } from '../../../../Interfaces/profile';
-import RenderFields from '../RenderFields';
 
 const CityField = ({
   field,
@@ -15,7 +14,6 @@ const CityField = ({
   onChange,
   disabled,
   formErrors,
-  setMyProfile,
   myProfile,
 }: MyProps) => {
   const validationError = (formErrors as any)[parentFieldName][field.fieldName];
@@ -25,9 +23,10 @@ const CityField = ({
   const cityList = stateData
     ? City.getCitiesOfState(selectedCountry, stateData.isoCode)
     : [];
+
   useEffect(() => {
     if (cityList.length && !cityList.find((c) => c.name === selectedCity)) {
-      onChange({ target: { value: '' } }  as SelectChangeEvent);
+      onChange({ target: { value: '' } } as SelectChangeEvent);
     }
   }, [selectedCity, selectedState]);
 
@@ -40,20 +39,28 @@ const CityField = ({
       helperText={validationError}
       disabled={disabled}
       onChange={(value) => onChange({ target: { value } } as SelectChangeEvent)}
-      width={180}
+      fullWidth
     />
   ) : (
-    <>
-      <RenderFields
-        formError={formErrors}
-        disabled={disabled}
-        parentFieldName={parentFieldName}
-        field={field}
-        setMyProfile={setMyProfile}
-        myProfile={myProfile}
-        onChange={(e) => onChange(e)}
-      />
-    </>
+    <TextField
+      label="City"
+      value={selectedCity || ''}
+      onChange={(e) => onChange({ target: { value: e.target.value } } as SelectChangeEvent)}
+      disabled={disabled}
+      fullWidth
+      size="small"
+      error={!!validationError}
+      helperText={validationError}
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          borderRadius: '10px',
+          backgroundColor: disabled ? '#F6F9FC' : 'transparent',
+        },
+        '& .MuiInputBase-input.Mui-disabled': {
+          WebkitTextFillColor: '#2A3547',
+        },
+      }}
+    />
   );
 };
 

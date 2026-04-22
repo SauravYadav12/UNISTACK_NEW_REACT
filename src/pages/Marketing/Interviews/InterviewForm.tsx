@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -9,6 +10,8 @@ import {
   DialogTitle,
   Grid,
   TextField,
+  Typography,
+  alpha,
 } from '@mui/material';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
@@ -41,7 +44,7 @@ import {
 import { dateFormate, timeFormate } from '../../../components/constants';
 import ScriptModal from '../../../components/interview/ScriptModal';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
-import { convertValuesToEmptyString, downloadFile } from '../../../utils/utils';
+import { convertValuesToEmptyString } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { UserRole } from '../../../Interfaces/iUser';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
@@ -51,6 +54,7 @@ import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { toast } from 'react-toastify';
 import ScriptBox from './ScriptBox';
 import { IInterview, IRequirement, ITeam } from '../../../Interfaces/types';
+import { tokens } from '../../../theme/theme';
 
 interface iProps {
   viewData?: IInterview;
@@ -68,28 +72,34 @@ interface iProps {
   setResults?: SetResults;
 }
 
+const pickerSx = {
+  '& .MuiOutlinedInput-root': { borderRadius: '10px' },
+  '& .MuiOutlinedInput-root.Mui-disabled': { backgroundColor: '#F6F9FC' },
+  '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' },
+};
+
+function SectionCard({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ borderRadius: 3, border: '1px solid', borderColor: 'grey.200', overflow: 'hidden' }}>
+      <Box sx={{ px: 2.5, py: 1.5, bgcolor: '#F6F9FC', borderBottom: '1px solid', borderColor: 'grey.200', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Chip label={number} size="small" sx={{ bgcolor: '#032840', color: '#fff', fontWeight: 700, fontSize: '0.75rem', height: 24, minWidth: 24 }} />
+        <Typography variant="body1" fontWeight={600} color="#2A3547">{title}</Typography>
+      </Box>
+      <Box sx={{ p: 2.5 }}>
+        <Grid container spacing={2}>{children}</Grid>
+      </Box>
+    </Box>
+  );
+}
+
 export default function InterviewForm(props: iProps) {
   const {
-    viewData,
-    requirement,
-    teamsList,
-    mode = 'view',
-    isEditing = false,
-    hideButtons = false,
-    disableGenerateScript,
-    disableDelete,
-    archive,
-    onEdit,
-    onDrawerClose,
-    setResults,
-    onCreate,
+    viewData, requirement, teamsList, mode = 'view', isEditing = false,
+    hideButtons = false, disableGenerateScript, disableDelete, archive,
+    onEdit, onDrawerClose, setResults, onCreate,
   } = props;
-  const [values, setValues] = useState<Partial<IInterview>>(
-    interviewFormInitialValues
-  );
-  const [errors, setErrors] = useState<{ [key: string]: string }>(
-    convertValuesToEmptyString(interviewFormInitialValues)
-  );
+  const [values, setValues] = useState<Partial<IInterview>>(interviewFormInitialValues);
+  const [errors, setErrors] = useState<{ [key: string]: string }>(convertValuesToEmptyString(interviewFormInitialValues));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
   const [scriptModal, setScriptModal] = useState(false);
@@ -97,807 +107,240 @@ export default function InterviewForm(props: iProps) {
   const user = useAuth().iUser;
 
   useHardKeySubmit(
-    {
-      onSubmit: (e) => {
-        mode === 'add' && handleSubmitForm(e);
-        mode === 'edit' && handleEditSubmitForm(e);
-      },
-    },
+    { onSubmit: (e) => { mode === 'add' && handleSubmitForm(e); mode === 'edit' && handleEditSubmitForm(e); } },
     [values, errors, isEditing, hideButtons, mode, viewData, requirement]
   );
-  useEffect(() => {
-    requirement && initializeValuesToCreateInterview(requirement);
-  }, [requirement]);
 
+  useEffect(() => { requirement && initializeValuesToCreateInterview(requirement); }, [requirement]);
   useEffect(() => {
-    if (mode === 'view' || mode === 'edit') {
-      setValues(viewData || {});
-    }
+    if (mode === 'view' || mode === 'edit') setValues(viewData || {});
     setErrors(convertValuesToEmptyString(interviewFormInitialValues));
   }, [mode, viewData]);
 
-  function initializeValuesToCreateInterview(requirement: IRequirement) {
-    if (!requirement) return;
-    const {
-      reqID,
-      appliedFor,
-      appliedForRef,
-      clientCompany,
-      duration,
-      taxType,
-      jobTitle,
-      vendorCompany,
-      primeVendorCompany,
-      jobDescription,
-    } = requirement;
-    setValues((prevValues: Partial<IInterview>) => ({
-      ...prevValues,
-      consultant: appliedFor,
-      consultantRef: appliedForRef,
-      clientName: clientCompany,
-      reqID,
-      vendorCompany,
-      primeVendorCompany,
-      jobDescription,
-      jobTitle,
-      duration,
-      taxType,
+  function initializeValuesToCreateInterview(req: IRequirement) {
+    if (!req) return;
+    setValues((prev) => ({
+      ...prev, consultant: req.appliedFor, consultantRef: req.appliedForRef,
+      clientName: req.clientCompany, reqID: req.reqID, vendorCompany: req.vendorCompany,
+      primeVendorCompany: req.primeVendorCompany, jobDescription: req.jobDescription,
+      jobTitle: req.jobTitle, duration: req.duration, taxType: req.taxType,
       interviewStatus: intStatusOptions[0] || '',
-      marketingPerson: `${user?.firstName} ${user?.lastName}`,
-      marketingPersonRef: user?.id,
+      marketingPerson: `${user?.firstName} ${user?.lastName}`, marketingPersonRef: user?.id,
     }));
   }
 
   const addValue = (key: keyof IInterview, newValue: unknown) => {
     const meta = interviewValidationMeta.find((m) => m.field === key);
     if (meta) {
-      if (errors[key] && isFieldValid(meta, newValue)) {
-        setErrors((pre) => ({ ...pre, [key]: '' }));
-      }
-      if (meta.transform) {
-        newValue = meta.transform(newValue);
-      }
+      if (errors[key] && isFieldValid(meta, newValue)) setErrors((pre) => ({ ...pre, [key]: '' }));
+      if (meta.transform) newValue = meta.transform(newValue);
     }
-
     setValues((pre) => {
-      const updatedValues = { ...pre, [key]: newValue };
-
-      const {
-        interviewWith = '',
-        interviewDuration = '',
-        interviewType = '',
-        interviewViaMode = '',
-        meetingType = '',
-        vendorCompany = '',
-        primeVendorCompany = '',
-        clientName = '',
-      } = updatedValues;
-
-      const subjectLine = (type: string) =>
-        `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}_${type}`;
-
-      if (interviewWith === 'Vendor') {
-        updatedValues.subjectLine = subjectLine(
-          `Interview_With_Vendor_${vendorCompany}`
-        );
-      } else if (interviewWith === 'IMP/PV') {
-        updatedValues.subjectLine = subjectLine(
-          `Interview_With_IMP/PV_${primeVendorCompany}`
-        );
-      } else if (interviewWith === 'Client') {
-        updatedValues.subjectLine = subjectLine(
-          `Interview_With_Client_${clientName}`
-        );
-      }
-
-      return { ...updatedValues };
+      const u = { ...pre, [key]: newValue };
+      const { interviewWith = '', interviewDuration = '', interviewType = '', interviewViaMode = '', meetingType = '', vendorCompany = '', primeVendorCompany = '', clientName = '' } = u;
+      const sl = (t: string) => `${interviewDuration}_${interviewType}_${interviewViaMode}_${meetingType}_${t}`;
+      if (interviewWith === 'Vendor') u.subjectLine = sl(`Interview_With_Vendor_${vendorCompany}`);
+      else if (interviewWith === 'IMP/PV') u.subjectLine = sl(`Interview_With_IMP/PV_${primeVendorCompany}`);
+      else if (interviewWith === 'Client') u.subjectLine = sl(`Interview_With_Client_${clientName}`);
+      return u;
     });
   };
 
-  async function handleSubmitForm(
-    event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent
-  ) {
+  async function handleSubmitForm(event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent) {
     event.preventDefault();
-
     if (isSubmitting) return;
-
-    const isValid = validateAllFields(
-      interviewValidationMeta,
-      values,
-      setErrors
-    );
-    if (!isValid) return;
-
+    if (!validateAllFields(interviewValidationMeta, values, setErrors)) return;
     setIsSubmitting(true);
-    try {
-      const { data } = await createInterview(values);
-      setResults?.((pre) => [data.data, ...pre]);
-      onCreate?.();
-      onDrawerClose?.();
-    } catch (error) {
-      console.log('An error occurred while saving the form:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    try { const { data } = await createInterview(values); setResults?.((pre) => [data.data, ...pre]); onCreate?.(); onDrawerClose?.(); }
+    catch (e) { console.log('Error saving:', e); } finally { setIsSubmitting(false); }
   }
 
-  async function handleEditSubmitForm(
-    event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent
-  ) {
+  async function handleEditSubmitForm(event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent) {
     event.preventDefault();
     if (isSubmitting || !values._id) return;
-    const isValid = validateAllFields(
-      interviewValidationMeta,
-      values,
-      setErrors
-    );
-    if (!isValid) return;
+    if (!validateAllFields(interviewValidationMeta, values, setErrors)) return;
     setIsSubmitting(true);
-    try {
-      const { data } = await updateInterview(values._id, values);
-      setResults?.((pre) => {
-        pre = pre.map((d) => {
-          if (d._id === data.data?._id) return data.data;
-          return d;
-        });
-        return [...pre];
-      });
-      onDrawerClose?.();
-    } catch (error) {
-      console.log('An error occurred while updating the form:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    try { const { data } = await updateInterview(values._id, values); setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d)); onDrawerClose?.(); }
+    catch (e) { console.log('Error updating:', e); } finally { setIsSubmitting(false); }
   }
 
   const handleSaveScript = async (script: string) => {
-    try {
-      if (!values._id) {
-        toast.error('Missing interview id');
-        return;
-      }
-
-      const { data } = await updateInterview(values._id, { script });
-      setValues({ ...values, script });
-      setResults?.((pre) => {
-        pre = pre.map((d) => {
-          if (d._id === data.data?._id) return data.data;
-          return d;
-        });
-        return [...pre];
-      });
-    } catch (error) {
-      toast.error('Failed to save');
-      console.log('An error occurred while updating script field:', error);
-    }
+    if (!values._id) { toast.error('Missing interview id'); return; }
+    try { const { data } = await updateInterview(values._id, { script }); setValues({ ...values, script }); setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d)); }
+    catch { toast.error('Failed to save'); }
   };
 
   async function handleDeleteInterview() {
-    try {
-      if (!values._id) {
-        toast.error('Missing interview id');
-        return;
-      }
-      await deleteInterview(values._id);
-      setResults?.((pre) => [...pre].filter((p) => p._id !== values._id));
-      onDrawerClose?.();
-    } catch (error) {
-      console.error('An error occurred while deleting the interview:', error);
-    }
+    if (!values._id) { toast.error('Missing interview id'); return; }
+    try { await deleteInterview(values._id); setResults?.((pre) => pre.filter((p) => p._id !== values._id)); onDrawerClose?.(); }
+    catch (e) { console.error('Error deleting:', e); }
   }
-
-  const handleClickOpenAlert = () => {
-    setOpenAlert(true);
-  };
-
-  const handleClickCloseAlert = () => {
-    setOpenAlert(false);
-  };
 
   const onBlur = (key: keyof typeof values) => {
     const meta = interviewValidationMeta.find((m) => m.field === key);
     meta && isFieldValid(meta, values[key], setErrors);
   };
 
-  if (!values)
-    return (
-      <Box className="loader" sx={{ py: 10 }}>
-        <CircularProgress size={25} />
-      </Box>
-    );
+  if (!values) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress size={25} /></Box>;
+
   return (
     <>
-      <form style={{ margin: '0 20px' }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap-reverse',
-            rowGap: '20px',
-          }}
-        >
-          <Box>
-            {!!values?.script && mode === 'view' && (
-              <ScriptBox scriptUrl={values.script} />
-            )}
-          </Box>
+      <form onSubmit={(e) => { e.preventDefault(); mode === 'add' && handleSubmitForm(e as any); mode === 'edit' && handleEditSubmitForm(e as any); }}>
 
+        {/* ── Top bar: Script + Action buttons ── */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 3, pb: 2.5, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+          <Box>
+            {!!values?.script && mode === 'view' && <ScriptBox scriptUrl={values.script} />}
+          </Box>
           {!hideButtons && (
-            <Grid
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                flexWrap: 'wrap',
-                gap: 1,
-                marginRight: 10,
-              }}
-            >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               {mode === 'add' ? (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                  onClick={handleSubmitForm}
-                  size="small"
-                  sx={{ borderRadius: '10px' }}
-                >
-                  Submit
+                <Button variant="contained" type="submit" disabled={isSubmitting} size="small" sx={{ bgcolor: '#032840', color: '#fff', '&:hover': { bgcolor: '#0A3555' }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2.5, boxShadow: 'none' }}>
+                  {isSubmitting ? <><CircularProgress style={{ color: '#fff', width: 14, height: 14 }} /><span style={{ paddingLeft: 6 }}>Saving</span></> : 'Submit'}
                 </Button>
               ) : isEditing ? (
                 <>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="button"
-                    onClick={() => {
-                      setValues(viewData || {});
-                      onEdit?.(false);
-                    }}
-                    size="small"
-                    sx={{ borderRadius: '10px' }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="submit"
-                    onClick={handleEditSubmitForm}
-                    size="small"
-                    sx={{ borderRadius: '10px' }}
-                  >
-                    Submit
+                  <Button variant="outlined" size="small" onClick={() => { setValues(viewData || {}); onEdit?.(false); }} sx={{ borderColor: 'grey.300', color: '#5A6A85', textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2 }}>Cancel</Button>
+                  <Button variant="contained" type="submit" size="small" disabled={isSubmitting} sx={{ bgcolor: '#032840', color: '#fff', '&:hover': { bgcolor: '#0A3555' }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2.5, boxShadow: 'none' }}>
+                    {isSubmitting ? <><CircularProgress style={{ color: '#fff', width: 14, height: 14 }} /><span style={{ paddingLeft: 6 }}>Saving</span></> : 'Submit'}
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="button"
-                    onClick={() => onEdit?.(true)}
-                    size="small"
-                    sx={{ borderRadius: '10px' }}
-                  >
-                    Edit
-                  </Button>
-                  {!disableGenerateScript &&
-                    !['Interview Cancelled', 'Interview Tentative'].includes(
-                      values.interviewStatus || ''
-                    ) && (
-                      <>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          type="button"
-                          onClick={() => setScriptModal(true)}
-                          size="small"
-                          sx={{ borderRadius: '10px' }}
-                        >
-                          {values.script
-                            ? 'Re-generate scirpt'
-                            : 'Generate script'}
-                        </Button>
-                      </>
-                    )}
+                  <Button variant="contained" size="small" onClick={() => onEdit?.(true)} sx={{ bgcolor: '#032840', color: '#fff', '&:hover': { bgcolor: '#0A3555' }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2.5, boxShadow: 'none' }}>Edit</Button>
+                  {!disableGenerateScript && !['Interview Cancelled', 'Interview Tentative'].includes(values.interviewStatus || '') && (
+                    <Button variant="outlined" size="small" onClick={() => setScriptModal(true)} sx={{ borderColor: tokens.colors.blue, color: tokens.colors.blue, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2 }}>
+                      {values.script ? 'Re-generate Script' : 'Generate Script'}
+                    </Button>
+                  )}
                   {!disableDelete && user?.role.includes(UserRole['super-admin']) && (
-                    <>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        type="button"
-                        size="small"
-                        sx={{ borderRadius: '10px' }}
-                        onClick={handleClickOpenAlert}
-                      >
-                        Delete
-                      </Button>
-                      <Dialog
-                        open={openAlert}
-                        onClose={handleClickCloseAlert}
-                        aria-labelledby="alert-dialog-title"
-                        aria-describedby="alert-dialog-description"
-                      >
-                        <DialogTitle id="alert-dialog-title">
-                          {'Delete Interview?'}
-                        </DialogTitle>
-                        <DialogContent>
-                          <DialogContentText id="alert-dialog-description">
-                            Are you sure you want to delete this Interview? This
-                            action cannot be undone.
-                          </DialogContentText>
-                        </DialogContent>
-                        <DialogActions>
-                          <Button onClick={handleClickCloseAlert}>
-                            Disagree
-                          </Button>
-                          <Button onClick={handleDeleteInterview} autoFocus>
-                            Agree
-                          </Button>
-                        </DialogActions>
-                      </Dialog>
-                    </>
+                    <Button variant="outlined" size="small" onClick={() => setOpenAlert(true)} sx={{ borderColor: alpha('#EF4444', 0.3), color: '#EF4444', '&:hover': { borderColor: '#EF4444', bgcolor: alpha('#EF4444', 0.04) }, textTransform: 'none', fontWeight: 600, borderRadius: '8px', px: 2 }}>Delete</Button>
                   )}
                 </>
               )}
-            </Grid>
+            </Box>
           )}
         </Box>
-        <Grid container spacing={1} sx={{ maxWidth: '100%' }}>
-          {/* Section 1: Interview Details */}
-          <Grid item xs={12}>
-            <h4>1. Interview Details</h4>
-          </Grid>
-          <Grid>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                // onClose={() => onBlur('interviewDate')}
-                inputFormat={dateFormate}
-                disabled={!isEditing}
-                label="Interview Date"
-                value={
-                  values.interviewDate ? dayjs(values.interviewDate) : null
-                }
-                onChange={(newValue) => addValue('interviewDate', newValue)}
-                renderInput={(params) => (
-                  <TextField
-                    onBlur={() => onBlur('interviewDate')}
-                    size="small"
-                    {...params}
-                    error={!!errors.interviewDate}
-                    helperText={errors.interviewDate}
-                    disabled={!isEditing}
-                    sx={{
-                      width: 230,
-                      mr: 1,
-                      mt: 1,
-                      ml: 1,
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '10px',
-                        backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
-                      },
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        WebkitTextFillColor: 'black',
-                        backgroundColor: '#f0f0f0',
-                        borderRadius: '10px',
-                      },
-                    }}
-                  />
-                )}
-              />
-            </LocalizationProvider>
-          </Grid>
-          <Grid>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <TimePicker
-                onClose={() => onBlur('interviewTime')}
-                disabled={!isEditing}
-                inputFormat={timeFormate}
-                label="Interview Time"
-                value={
-                  values.interviewTime
-                    ? dayjs(values.interviewTime, timeFormate)
-                    : null
-                }
-                onChange={(newValue) => addValue('interviewTime', newValue)}
-                renderInput={(params) => (
-                  <TextField
-                    onBlur={() => onBlur('interviewTime')}
-                    size="small"
-                    {...params}
-                    error={!!errors.interviewTime}
-                    helperText={errors.interviewTime}
-                    disabled={!isEditing}
-                    sx={{
-                      width: 230,
-                      mr: 1,
-                      mt: 1,
-                      ml: 1,
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '10px',
-                        backgroundColor: !isEditing ? '#f0f0f0' : 'transparent',
-                      },
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        WebkitTextFillColor: 'black',
-                        backgroundColor: '#f0f0f0',
-                        borderRadius: '10px',
-                      },
-                    }}
-                  />
-                )}
-              />
-            </LocalizationProvider>
-          </Grid>
-          <CustomSelectField
-            label="Time Zone"
-            valueOptions={timeZoneOptions}
-            selectedValue={values.timeZone || ''}
-            onChange={(value) => addValue('timeZone', value)}
-            width={230}
-            disabled={!isEditing}
-          />
-          <CustomSelectField
-            label="Interview Type"
-            onBlur={() => onBlur('interviewType')}
-            valueOptions={intTypeOptions}
-            selectedValue={values.interviewType || ''}
-            error={!!errors.interviewType}
-            helperText={errors.interviewType}
-            disabled={!isEditing}
-            freeSolo
-            onChange={(value) => addValue('interviewType', value)}
-            width={230}
-          />
-          <CustomSelectField
-            label="Interview Status"
-            valueOptions={intStatusOptions}
-            selectedValue={values.interviewStatus || ''}
-            onChange={(value) => addValue('interviewStatus', value)}
-            width={230}
-            disabled={!isEditing}
-          />
-          <CustomTextField
-            label="Consultant"
-            width={230}
-            selectedValue={values.consultant || ''}
-            onChange={(event) => addValue('consultant', event.target.value)}
-            disabled
-          />
-          <CustomTextField
-            label="Marketing Person"
-            width={230}
-            selectedValue={values.marketingPerson || ''}
-            disabled
-            onChange={(event) =>
-              addValue('marketingPerson', event.target.value)
-            }
-          />
-          <CustomTextField
-            label="Vendor Company"
-            width={230}
-            selectedValue={values.vendorCompany || ''}
-            disabled
-            onChange={(event) => addValue('vendorCompany', event.target.value)}
-          />
-          <CustomTextField
-            label="Prime Vendor Company"
-            width={230}
-            selectedValue={values.primeVendorCompany || ''}
-            disabled
-            onChange={(event) =>
-              addValue('primeVendorCompany', event.target.value)
-            }
-          />
-          <CustomSelectField
-            label="Interview With"
-            onBlur={() => onBlur('interviewWith')}
-            valueOptions={intWithOptions}
-            selectedValue={values.interviewWith || ''}
-            error={!!errors.interviewWith}
-            helperText={errors.interviewWith}
-            onChange={(value) => addValue('interviewWith', value)}
-            width={230}
-            freeSolo
-            disabled={!isEditing}
-          />
-          <CustomTextField
-            label="Submitted Any Code(if Yes Enter the Link)"
-            width={230}
-            selectedValue={values.codeLink || ''}
-            disabled={!isEditing}
-            onChange={(event) => addValue('codeLink', event.target.value)}
-          />
-          <CustomSelectField
-            label="Result"
-            valueOptions={resultOptions}
-            selectedValue={values.intResult || ''}
-            onChange={(value) => addValue('intResult', value)}
-            width={230}
-            disabled={!isEditing}
-          />
-          <CustomSelectField
-            label="Interview Round"
-            valueOptions={intRoundOptions}
-            selectedValue={values.interviewRound || ''}
-            onChange={(value) => addValue('interviewRound', value)}
-            width={230}
-            freeSolo
-            disabled={!isEditing}
-          />
-          <CustomTextField
-            label="Tentative Reason (if Any)"
-            width={230}
-            selectedValue={values.tentativeReason || ''}
-            onChange={(event) =>
-              addValue('tentativeReason', event.target.value)
-            }
-            disabled={!isEditing}
-          />
-          <CustomSelectField
-            label="Interview via Mode"
-            onBlur={() => onBlur('interviewViaMode')}
-            valueOptions={intModeOptions}
-            selectedValue={values.interviewViaMode || ''}
-            error={!!errors.interviewViaMode}
-            helperText={errors.interviewViaMode}
-            onChange={(value) => addValue('interviewViaMode', value)}
-            width={230}
-            freeSolo
-            disabled={!isEditing}
-          />
-          <CustomSelectField
-            label="Meeting type"
-            valueOptions={meetingTypeOptions}
-            selectedValue={values.meetingType || ''}
-            onChange={(value) => addValue('meetingType', value)}
-            width={230}
-            freeSolo
-            disabled={!isEditing}
-          />
-          <CustomSelectField
-            label="Interview Duration"
-            onBlur={() => onBlur('interviewDuration')}
-            valueOptions={intDurationOptions}
-            selectedValue={values.interviewDuration || ''}
-            error={!!errors.interviewDuration}
-            helperText={errors.interviewDuration}
-            onChange={(value) => addValue('interviewDuration', value)}
-            width={230}
-            freeSolo
-            disabled={!isEditing}
-          />
-          <CustomTextField
-            label="Remarks/Comments (if negative / if on hold / If anything else? Why?)"
-            width={720}
-            selectedValue={values.remarks || ''}
-            disabled={!isEditing}
-            onChange={(event) => addValue('remarks', event.target.value)}
-          />
 
-          <Grid item xs={12}>
-            <h4>2. Details of Interview</h4>
-          </Grid>
-          <CustomTextField
-            label="Subject line (Enter Duration + Mode Of Interview + Interview With only)"
-            disabled
-            width={970}
-            selectedValue={values.subjectLine || ' '}
-            onChange={(event) => addValue('subjectLine', event.target.value)}
-          />
-          <CustomTextField
-            label="Interview / interviewer / Interview Mode Details"
-            width={970}
-            disabled={!isEditing}
-            selectedValue={values.interviewMode || ''}
-            onChange={(event) => addValue('interviewMode', event.target.value)}
-          />
-          <CustomTextField
-            label="Interview Link"
-            width={970}
-            disabled={!isEditing}
-            selectedValue={values.interviewLink || ''}
-            onChange={(event) => addValue('interviewLink', event.target.value)}
-          />
-          <CustomTextField
-            label="Interview Focus"
-            width={970}
-            disabled={!isEditing}
-            selectedValue={values.interviewFocus || ''}
-            onChange={(event) => addValue('interviewFocus', event.target.value)}
-          />
-          <CustomTextField
-            label="Special Note"
-            width={970}
-            disabled={!isEditing}
-            selectedValue={values.specialNote || ''}
-            onChange={(event) => addValue('specialNote', event.target.value)}
-          />
-          <CustomTextField
-            label="Job Description"
-            width={970}
-            disabled
-            selectedValue={values.jobDescription || ''}
-            onChange={(event) => addValue('jobDescription', event.target.value)}
-          />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-          {/* Section 3: Interview Feedback */}
-          <Grid item xs={12}>
-            <h4>3. Interview Feedback</h4>
-          </Grid>
-          <CustomTextField
-            label="Feedback"
-            width={970}
-            disabled={!isEditing}
-            selectedValue={values.interviewFeedback || ''}
-            onChange={(event) =>
-              addValue('interviewFeedback', event.target.value)
-            }
-          />
-          <CustomTextField
-            label="Job Title"
-            disabled
-            width={320}
-            selectedValue={values.jobTitle || ''}
-            onChange={(event) => addValue('jobTitle', event.target.value)}
-          />
+          {/* ── Section 1: Interview Details ── */}
+          <SectionCard number={1} title="Interview Details">
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker format={dateFormate} disabled={!isEditing} label="Interview Date"
+                  value={values.interviewDate ? dayjs(values.interviewDate) : null}
+                  onChange={(v) => addValue('interviewDate', v)}
+                  slotProps={{ textField: { onBlur: () => onBlur('interviewDate'), size: 'small', fullWidth: true, error: !!errors.interviewDate, helperText: errors.interviewDate, disabled: !isEditing, sx: pickerSx } }} />
+              </LocalizationProvider>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <TimePicker onClose={() => onBlur('interviewTime')} disabled={!isEditing} format={timeFormate} label="Interview Time"
+                  value={values.interviewTime ? dayjs(values.interviewTime, timeFormate) : null}
+                  onChange={(v) => addValue('interviewTime', v)}
+                  slotProps={{ textField: { onBlur: () => onBlur('interviewTime'), size: 'small', fullWidth: true, error: !!errors.interviewTime, helperText: errors.interviewTime, disabled: !isEditing, sx: pickerSx } }} />
+              </LocalizationProvider>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Time Zone" valueOptions={timeZoneOptions} selectedValue={values.timeZone || ''} onChange={(v) => addValue('timeZone', v)} fullWidth disabled={!isEditing} /></Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Interview Type" onBlur={() => onBlur('interviewType')} valueOptions={intTypeOptions} selectedValue={values.interviewType || ''} error={!!errors.interviewType} helperText={errors.interviewType} disabled={!isEditing} freeSolo onChange={(v) => addValue('interviewType', v)} fullWidth /></Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Interview Status" valueOptions={intStatusOptions} selectedValue={values.interviewStatus || ''} onChange={(v) => addValue('interviewStatus', v)} fullWidth disabled={!isEditing} /></Grid>
+            <CustomTextField label="Consultant" fullWidth selectedValue={values.consultant || ''} disabled onChange={(e) => addValue('consultant', e.target.value)} />
+            <CustomTextField label="Marketing Person" fullWidth selectedValue={values.marketingPerson || ''} disabled onChange={(e) => addValue('marketingPerson', e.target.value)} />
+            <CustomTextField label="Vendor Company" fullWidth selectedValue={values.vendorCompany || ''} disabled onChange={(e) => addValue('vendorCompany', e.target.value)} />
+            <CustomTextField label="Prime Vendor Company" fullWidth selectedValue={values.primeVendorCompany || ''} disabled onChange={(e) => addValue('primeVendorCompany', e.target.value)} />
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Interview With" onBlur={() => onBlur('interviewWith')} valueOptions={intWithOptions} selectedValue={values.interviewWith || ''} error={!!errors.interviewWith} helperText={errors.interviewWith} onChange={(v) => addValue('interviewWith', v)} fullWidth freeSolo disabled={!isEditing} /></Grid>
+            <CustomTextField label="Code Link" fullWidth selectedValue={values.codeLink || ''} disabled={!isEditing} onChange={(e) => addValue('codeLink', e.target.value)} />
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Result" valueOptions={resultOptions} selectedValue={values.intResult || ''} onChange={(v) => addValue('intResult', v)} fullWidth disabled={!isEditing} /></Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Interview Round" valueOptions={intRoundOptions} selectedValue={values.interviewRound || ''} onChange={(v) => addValue('interviewRound', v)} fullWidth freeSolo disabled={!isEditing} /></Grid>
+            <CustomTextField label="Tentative Reason" fullWidth selectedValue={values.tentativeReason || ''} onChange={(e) => addValue('tentativeReason', e.target.value)} disabled={!isEditing} />
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Interview via Mode" onBlur={() => onBlur('interviewViaMode')} valueOptions={intModeOptions} selectedValue={values.interviewViaMode || ''} error={!!errors.interviewViaMode} helperText={errors.interviewViaMode} onChange={(v) => addValue('interviewViaMode', v)} fullWidth freeSolo disabled={!isEditing} /></Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Meeting Type" valueOptions={meetingTypeOptions} selectedValue={values.meetingType || ''} onChange={(v) => addValue('meetingType', v)} fullWidth freeSolo disabled={!isEditing} /></Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><CustomSelectField label="Interview Duration" onBlur={() => onBlur('interviewDuration')} valueOptions={intDurationOptions} selectedValue={values.interviewDuration || ''} error={!!errors.interviewDuration} helperText={errors.interviewDuration} onChange={(v) => addValue('interviewDuration', v)} fullWidth freeSolo disabled={!isEditing} /></Grid>
+            <Grid size={12}>
+              <TextField label="Remarks / Comments" value={values.remarks || ''} disabled={!isEditing} fullWidth size="small" multiline minRows={2} onChange={(e) => addValue('remarks', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+          </SectionCard>
 
-          <div>
-            <Grid item sx={{ m: 1, width: 320, position: 'relative' }}>
-              <MyButtonLayer onClick={() => setReqDrawer(values.reqID)} />
+          {/* ── Section 2: Details of Interview ── */}
+          <SectionCard number={2} title="Details of Interview">
+            <Grid size={12}>
+              <TextField label="Subject Line" value={values.subjectLine || ''} disabled fullWidth size="small" multiline sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: '#F6F9FC' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Interview / Interviewer / Mode Details" value={values.interviewMode || ''} disabled={!isEditing} fullWidth size="small" multiline onChange={(e) => addValue('interviewMode', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Interview Link" value={values.interviewLink || ''} disabled={!isEditing} fullWidth size="small" multiline onChange={(e) => addValue('interviewLink', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Interview Focus" value={values.interviewFocus || ''} disabled={!isEditing} fullWidth size="small" multiline onChange={(e) => addValue('interviewFocus', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Special Note" value={values.specialNote || ''} disabled={!isEditing} fullWidth size="small" multiline onChange={(e) => addValue('specialNote', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Job Description" value={values.jobDescription || ''} disabled fullWidth size="small" multiline minRows={2} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: '#F6F9FC' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+          </SectionCard>
+
+          {/* ── Section 3: Interview Feedback ── */}
+          <SectionCard number={3} title="Interview Feedback">
+            <Grid size={12}>
+              <TextField label="Feedback" value={values.interviewFeedback || ''} disabled={!isEditing} fullWidth size="small" multiline minRows={2} onChange={(e) => addValue('interviewFeedback', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' } }} />
+            </Grid>
+            <CustomTextField label="Job Title" fullWidth disabled selectedValue={values.jobTitle || ''} onChange={(e) => addValue('jobTitle', e.target.value)} />
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <TextField
-                label={'Req ID'}
-                value={values.reqID || ''}
-                disabled
-                fullWidth
-                size="small"
+                label="Req ID" value={values.reqID || ''} disabled fullWidth size="small"
+                onClick={() => setReqDrawer(values.reqID)}
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '10px',
-                    backgroundColor: '#f0f0f0',
-                    textDecoration: 'underline',
-                    textUnderlineOffset: '4px',
-                    color: '#1976d2',
-                  },
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    fontSize: 'small',
-                    fontWeight: 600,
-                    WebkitTextFillColor: '#1976d2',
-                    backgroundColor: '#f0f0f0',
-                  },
+                  cursor: 'pointer',
+                  '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: '#F6F9FC', cursor: 'pointer' },
+                  '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#0A3555', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px' },
                 }}
-                multiline={true}
               />
             </Grid>
-          </div>
+            <CustomTextField label="Client Name" fullWidth disabled selectedValue={values.clientName || ''} onChange={(e) => addValue('clientName', e.target.value)} />
+            <CustomTextField label="Tax Type" fullWidth disabled selectedValue={values.taxType?.toString() || ''} onChange={(e) => addValue('taxType', e.target.value)} />
+            <CustomTextField label="Duration" fullWidth disabled selectedValue={values.duration?.toString() || ''} onChange={(e) => addValue('duration', e.target.value)} />
+          </SectionCard>
 
-          <CustomTextField
-            label="Client Name"
-            width={300}
-            disabled
-            selectedValue={values.clientName || ''}
-            onChange={(event) => addValue('clientName', event.target.value)}
-          />
-          <CustomTextField
-            label="Tax Type"
-            width={320}
-            disabled
-            selectedValue={values.taxType?.toString() || ''}
-            onChange={(event) => addValue('taxType', event.target.value)}
-          />
-          <CustomTextField
-            label="Duration"
-            width={320}
-            disabled
-            selectedValue={values.duration?.toString() || ''}
-            onChange={(event) => addValue('duration', event.target.value)}
-          />
-
-          {/* Section 4: Interviewee Candidate Details */}
-          {user &&
-            user.role.some(role => [UserRole.admin, UserRole['super-admin'],UserRole.hr].includes(role)) && (
-              <>
-                <Grid item xs={12}>
-                  <h4>4. Interviewee Candidate Details</h4>
+          {/* ── Section 4: Interviewee Candidate Details ── */}
+          {user && user.role.some(role => [UserRole.admin, UserRole['super-admin'], UserRole.hr].includes(role)) && (
+            <SectionCard number={4} title="Interviewee Candidate Details">
+              {isEditing ? (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <CustomSelectField label="Team" valueOptions={teamsList.map((c) => c.teamName || '')} selectedValue={values.candidateName || ''} onChange={(v) => { const _id = teamsList?.find((c) => c.teamName === v)?._id; addValue('candidateName', v); addValue('candidateRef', _id); }} fullWidth />
                 </Grid>
-                {isEditing ? (
-                  <CustomSelectField
-                    label="Team"
-                    valueOptions={teamsList.map((c) => c.teamName || '')}
-                    selectedValue={values.candidateName || ''}
-                    onChange={(value) => {
-                      const _id = teamsList?.find(
-                        (c) => c.teamName === value
-                      )?._id;
-                      addValue('candidateName', value);
-                      addValue('candidateRef', _id);
-                      console.log({ _id });
-                    }}
-                    width={310}
-                  />
-                ) : (
-                  <CustomTextField
-                    label="Team"
-                    width={310}
-                    disabled={!isEditing}
-                    selectedValue={values.candidateName || ''}
-                    onChange={(event) =>
-                      addValue('candidateName', event.target.value)
-                    }
-                  />
-                )}
-                <CustomTextField
-                  label="Teck Stack"
-                  width={310}
-                  disabled={!isEditing}
-                  selectedValue={values.teckStack || ''}
-                  onChange={(event) =>
-                    addValue('teckStack', event.target.value)
-                  }
-                />
-                <CustomTextField
-                  label="Developer Name"
-                  selectedValue={values.developerName || ''}
-                  disabled={!isEditing}
-                  onChange={(event) =>
-                    addValue('developerName', event.target.value)
-                  }
-                  width={310}
-                />
-              </>
-            )}
-        </Grid>
+              ) : (
+                <CustomTextField label="Team" fullWidth disabled={!isEditing} selectedValue={values.candidateName || ''} onChange={(e) => addValue('candidateName', e.target.value)} />
+              )}
+              <CustomTextField label="Tech Stack" fullWidth disabled={!isEditing} selectedValue={values.teckStack || ''} onChange={(e) => addValue('teckStack', e.target.value)} />
+              <CustomTextField label="Developer Name" fullWidth selectedValue={values.developerName || ''} disabled={!isEditing} onChange={(e) => addValue('developerName', e.target.value)} />
+            </SectionCard>
+          )}
+
+        </Box>
       </form>
+
       {scriptModal && viewData && (
-        <ScriptModal
-          interview={{ ...viewData, ...values }}
-          open={scriptModal}
-          onClose={() => setScriptModal(!scriptModal)}
-          onSave={handleSaveScript}
-        />
+        <ScriptModal interview={{ ...viewData, ...values }} open={scriptModal} onClose={() => setScriptModal(!scriptModal)} onSave={handleSaveScript} />
       )}
 
       {values.reqID && (
-        <RequirementDrawer
-          open={Boolean(reqDrawer)}
-          onClose={() => setReqDrawer(undefined)}
-          reqID={values.reqID}
-          archive={archive}
-          hideButtons={archive}
-        />
+        <RequirementDrawer open={Boolean(reqDrawer)} onClose={() => setReqDrawer(undefined)} reqID={values.reqID} archive={archive} hideButtons={archive} />
       )}
-    </>
-  );
-}
 
-interface MyButtonLayer {
-  onClick: () => void;
-}
-function MyButtonLayer({ onClick }: MyButtonLayer) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        top: 0,
-        left: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <span
-        onClick={onClick}
-        style={{
-          height: '23px',
-          background: 'transparent',
-          width: '95%',
-          zIndex: 1,
-          cursor: 'pointer',
-        }}
-      ></span>
-    </div>
+      {/* Delete confirmation */}
+      <Dialog open={openAlert} onClose={() => setOpenAlert(false)} sx={{ '& .MuiDialog-paper': { borderRadius: '16px' } }}>
+        <DialogTitle sx={{ fontWeight: 700, color: '#2A3547' }}>Delete Interview?</DialogTitle>
+        <DialogContent><DialogContentText>Are you sure you want to delete this Interview? This action cannot be undone.</DialogContentText></DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setOpenAlert(false)} sx={{ textTransform: 'none', color: '#5A6A85' }}>Cancel</Button>
+          <Button onClick={handleDeleteInterview} variant="contained" sx={{ bgcolor: '#EF4444', '&:hover': { bgcolor: '#DC2626' }, textTransform: 'none', boxShadow: 'none', borderRadius: '8px' }}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

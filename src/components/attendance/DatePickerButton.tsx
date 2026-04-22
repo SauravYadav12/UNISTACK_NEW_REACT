@@ -1,5 +1,5 @@
 import { InsertInvitation } from '@mui/icons-material';
-import { Box, IconButton, Popover, styled, TextField } from '@mui/material';
+import { Box, IconButton, Popover, styled } from '@mui/material';
 import {
   LocalizationProvider,
   PickersDay,
@@ -28,10 +28,9 @@ const DatePickerButton = ({ dateState, tableType }: iProps) => {
   };
 
   const renderWeekPickerDay = (
-    date: moment.Moment,
-    selectedDates: Array<moment.Moment | null>,
     pickersDayProps: PickersDayProps<moment.Moment>
   ) => {
+    const date = pickersDayProps.day;
     if (!currentDate) {
       return <PickersDay {...pickersDayProps} />;
     }
@@ -54,8 +53,7 @@ const DatePickerButton = ({ dateState, tableType }: iProps) => {
     );
   };
   function handleChange(
-    value: moment.Moment | null,
-    keyboardInputValue?: string
+    value: moment.Moment | null
   ) {
     if (!value) return;
     if (tableType === AttendanceTableType.Weekly) {
@@ -79,13 +77,11 @@ const DatePickerButton = ({ dateState, tableType }: iProps) => {
       >
         <LocalizationProvider dateAdapter={AdapterMoment}>
           <StaticDatePicker
-            displayStaticWrapperAs="desktop"
             value={currentDate}
             onChange={handleChange}
-            renderInput={(params) => <TextField {...params} />}
             maxDate={dateByUserShift(usr.shift)}
             {...(tableType === AttendanceTableType.Weekly && {
-              renderDay: renderWeekPickerDay,
+              slots: { day: renderWeekPickerDay },
             })}
             {...(tableType === AttendanceTableType.Monthly && {
               openTo: 'month',

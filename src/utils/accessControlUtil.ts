@@ -10,7 +10,6 @@ export enum ModuleGroup {
 export enum MarketingModule {
   'Requirements' = 'Requirements',
   'Interviews' = 'Interviews',
-  'Test And VI' = 'Test And VI',
   'Consultants' = 'Consultants',
   'Teams' = 'Teams',
   'Reports' = 'Reports',
@@ -35,6 +34,11 @@ export enum SuperAdminModule {
   'Access Control' = 'Access Control',
   'User Management' = 'User Management',
   'SalaryManagement' = 'SalaryManagement',
+  'Projects' = 'Projects',
+  'Organizations' = 'Organizations',
+  'Invoice Email Templates' = 'Invoice Email Templates',
+  'Timesheet Approvals' = 'Timesheet Approvals',
+  'Performance' = 'Performance',
 }
 
 export type iAccessControl = {

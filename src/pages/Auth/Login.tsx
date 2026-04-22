@@ -1,22 +1,19 @@
 import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
-import CssBaseline from '@mui/material/CssBaseline';
-import Box from '@mui/material/Box';
-import StorageIcon from '@mui/icons-material/Storage';
-import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { sendOtp } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import Loader from '../../components/loader/Loader';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import CopyRight from '../../components/auth/CopyRight';
 import VerifyUser from '../../components/auth/VerifyUser';
 import VerifyOTP from '../../components/auth/VerifyOTP';
 import { validateEmail } from '../../utils/validators';
 import { iUser } from '../../Interfaces/iUser';
+import AuthLayout from '../../components/auth/AuthLayout';
+import { AnimatePresence, motion } from 'framer-motion';
 
-const defaultTheme = createTheme();
+const MotionBox = motion.create(Box);
+
 export default function Login() {
   const loginSteps = Object.values(LoginStep);
   const [step, setStep] = React.useState(loginSteps[0]);
@@ -54,7 +51,13 @@ export default function Login() {
     await handleSendOTP();
   }
 
-  async function onUserVerifiedSuccessfully(user: iUser) {
+  async function onUserVerifiedSuccessfully(user: iUser, token?: string) {
+    if (token) {
+      validateLogin(token, user);
+      navigate('/dashboard');
+      toast.success('Login Successful');
+      return;
+    }
     await handleSendOTP();
     setAuthData({ user });
   }
@@ -67,7 +70,7 @@ export default function Login() {
     const { user } = authData;
     validateLogin(token, user);
     navigate('/dashboard');
-    toast.success('Login Successfull');
+    toast.success('Login Successful');
   }
 
   React.useEffect(() => {
@@ -80,31 +83,36 @@ export default function Login() {
   return (
     <>
       {loading && <Loader />}
-      <ThemeProvider theme={defaultTheme}>
-        <Container component="main" maxWidth="xs">
-          <CssBaseline />
-          <Box
-            sx={{
-              marginTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <Avatar sx={{ m: 1, bgcolor: '#EC4599', width: 56, height: 56 }}>
-              <StorageIcon />
-            </Avatar>
-
-            {step === LoginStep.VerifyUser && (
+      <AuthLayout
+        title="Welcome back"
+        subtitle="Sign in to your account to continue"
+      >
+        <AnimatePresence mode="wait">
+          {step === LoginStep.VerifyUser && (
+            <MotionBox
+              key="verify-user"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
               <VerifyUser
                 emailState={emailState}
                 passwordState={passwordState}
                 loadingState={[loading, setLoading]}
                 onSuccess={onUserVerifiedSuccessfully}
               />
-            )}
+            </MotionBox>
+          )}
 
-            {step === LoginStep.VerifyOTP && (
+          {step === LoginStep.VerifyOTP && (
+            <MotionBox
+              key="verify-otp"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
               <VerifyOTP
                 email={emailState[0]}
                 loadingState={[loading, setLoading]}
@@ -113,11 +121,10 @@ export default function Login() {
                 onResendOtp={resendOtp}
                 onSuccess={onOtpVerifiedSuccessfully}
               />
-            )}
-          </Box>
-          <CopyRight />
-        </Container>
-      </ThemeProvider>
+            </MotionBox>
+          )}
+        </AnimatePresence>
+      </AuthLayout>
     </>
   );
 }
