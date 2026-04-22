@@ -83,7 +83,7 @@ const ScriptModal = ({
     try {
       setSaving(true);
       const pdfFile = await fileInstance();
-      const { data } = await uploadFile(pdfFile, 'gcp');
+      const { data } = await uploadFile(pdfFile, 'script');
       await onSave(data.data.url);
       toast.success('Script: saved successfully');
     } catch (error) {

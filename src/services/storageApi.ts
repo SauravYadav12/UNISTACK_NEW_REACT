@@ -15,7 +15,7 @@ export async function uploadFile(
   formData.append('file', file);
 
   const response = await axiosClient.post<{ data: { url: string } }>(
-    `/storage/upload/${storageType}`,
+    `/storage/upload/docn?bucket=${bucket || ''}`,
     formData,
     {
       headers: {
