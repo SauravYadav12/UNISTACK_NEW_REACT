@@ -398,12 +398,12 @@ export default function ProjectDrawer({
                   </Grid>
 
                   {/* ── Billing target ─────────────────────────────────────
-                      Drives the "Bill to" card on InvoicePreview. Whichever
-                      party is selected here is the one whose company name +
-                      address get rendered into every generated invoice for
-                      this project. The three address inputs let admins keep
-                      separate mailing addresses per party so switching the
-                      Bill-To target doesn't require re-typing the address. */}
+                      Drives the "Bill to" card on InvoicePreview. Picking a
+                      party here switches which of the three stored addresses
+                      (clientAddress / vendorAddress / primeVendorAddress)
+                      shows up — and edits in this single field route to the
+                      matching setter so each party keeps its own address
+                      under the hood without bloating the form. */}
                   <Grid size={{ xs: 12 }}>
                     <Box
                       sx={{
@@ -438,7 +438,6 @@ export default function ProjectDrawer({
                           e.target.value as 'Client' | 'Vendor' | 'Prime Vendor'
                         )
                       }
-                      helperText="Which party receives the invoice"
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                     >
                       <MenuItem value="Client">Client</MenuItem>
@@ -446,50 +445,28 @@ export default function ProjectDrawer({
                       <MenuItem value="Prime Vendor">Prime Vendor</MenuItem>
                     </TextField>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
+                  <Grid size={{ xs: 12, sm: 8 }}>
                     <TextField
-                      label="Client address"
+                      label={`${billToCustomer} address`}
                       fullWidth
                       size="small"
                       multiline
                       minRows={2}
-                      value={clientAddress}
-                      onChange={(e) => setClientAddress(e.target.value)}
-                      helperText={
-                        billToCustomer === 'Client' ? 'Active on invoice' : ' '
+                      value={
+                        billToCustomer === 'Vendor'
+                          ? vendorAddress
+                          : billToCustomer === 'Prime Vendor'
+                            ? primeVendorAddress
+                            : clientAddress
                       }
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
-                      label="Vendor address"
-                      fullWidth
-                      size="small"
-                      multiline
-                      minRows={2}
-                      value={vendorAddress}
-                      onChange={(e) => setVendorAddress(e.target.value)}
-                      helperText={
-                        billToCustomer === 'Vendor' ? 'Active on invoice' : ' '
-                      }
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField
-                      label="Prime vendor address"
-                      fullWidth
-                      size="small"
-                      multiline
-                      minRows={2}
-                      value={primeVendorAddress}
-                      onChange={(e) => setPrimeVendorAddress(e.target.value)}
-                      helperText={
-                        billToCustomer === 'Prime Vendor'
-                          ? 'Active on invoice'
-                          : ' '
-                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (billToCustomer === 'Vendor') setVendorAddress(v);
+                        else if (billToCustomer === 'Prime Vendor')
+                          setPrimeVendorAddress(v);
+                        else setClientAddress(v);
+                      }}
+                      helperText="This address renders on the invoice"
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                     />
                   </Grid>
