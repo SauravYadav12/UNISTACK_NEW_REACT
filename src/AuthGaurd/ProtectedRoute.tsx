@@ -16,7 +16,9 @@ const ProtectedRoute = ({ meta, children }: ProtectedRouteProps) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    // Send straight to /login rather than the marketing Landing page — the
+    // user was trying to use the app, not shop for it.
+    return <Navigate to="/login" replace />;
   }
 
   if (!isAllowed) {
