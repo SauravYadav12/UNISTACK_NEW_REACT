@@ -18,7 +18,9 @@ export default function RestrictedAccess() {
 
   const handleLogin = () => {
     validateLogout();
-    navigate('/');
+    // Restricted-access click on "Login" means the user wants to re-auth.
+    // Go to /login directly; the marketing Landing would be a detour.
+    navigate('/login');
   };
 
   return (
