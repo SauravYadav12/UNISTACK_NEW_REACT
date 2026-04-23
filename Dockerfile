@@ -31,9 +31,33 @@ RUN npm ci --no-audit --no-fund \
 # out so they don't poison this copy.
 COPY . .
 
+# ── Build-time env vars for Vite ─────────────────────────────────────────
+# Vite inlines `import.meta.env.VITE_*` at BUILD time — the browser never
+# reads env vars at runtime. Values must therefore be present inside this
+# build stage, not just in the runtime container. On DigitalOcean App
+# Platform that means:
+#   1. Declare the env var in the app spec with scope `BUILD_TIME` (or
+#      `RUN_AND_BUILD_TIME`). Runtime-only scope won't reach `npm run build`.
+#   2. DO passes build-time env vars as Docker build args — we re-export
+#      them as ENV below so Vite actually sees them during the build.
+#
+# Add new entries here whenever you introduce another VITE_* env var.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 # Vite + tsc can be memory-hungry on big projects; generous cap avoids
 # `JavaScript heap out of memory` on small build runners.
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Fail-fast sanity check — if the env var is empty the resulting bundle
+# would silently ship with an undefined API base URL (what caused the
+# "Missing environment variables" runtime error). Better to refuse to
+# build than to push a broken bundle.
+RUN if [ -z "$VITE_API_BASE_URL" ]; then \
+      echo "❌ VITE_API_BASE_URL is empty at build time." >&2 ; \
+      echo "   Set it in the DO App Platform app spec with scope BUILD_TIME (or RUN_AND_BUILD_TIME)." >&2 ; \
+      exit 1 ; \
+    fi
 
 RUN npm run build
 
