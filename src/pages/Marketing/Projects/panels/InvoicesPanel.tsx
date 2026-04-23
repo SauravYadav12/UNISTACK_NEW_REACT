@@ -1,6 +1,8 @@
 import {
+  Autocomplete,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -297,11 +299,21 @@ function InvoiceModal({
   });
   const previewRef = useRef<HTMLDivElement | null>(null);
 
-  // Email editor + confirm flow state for the Raise action
+  // Email editor + confirm flow state. The same dialog now backs both flows:
+  //   - 'raise'  → Draft → Raised, calls raiseInvoice on confirm
+  //   - 'resend' → Raised/Due, calls resendInvoiceEmail on confirm
+  // Dialog UI branches on `dialogMode` for title, button label, and which
+  // server endpoint runs.
   const [emailOpen, setEmailOpen] = useState(false);
-  const [emailForm, setEmailForm] = useState({
-    to: '',
-    cc: '',
+  const [dialogMode, setDialogMode] = useState<'raise' | 'resend'>('raise');
+  const [emailForm, setEmailForm] = useState<{
+    to: string[];
+    cc: string[];
+    subject: string;
+    body: string;
+  }>({
+    to: [],
+    cc: [],
     subject: '',
     body: '',
   });
@@ -363,24 +375,48 @@ function InvoiceModal({
     }
   }
 
-  /** Pre-fill + open the email-editor dialog. Recipients default to whichever
-   *  flags are set on the project; admin edits here before we send.
+  /** Pre-fill + open the email-editor dialog.
+   *
+   *  - In `raise` mode (Draft → Raised), recipients default to whichever
+   *    flags are set on the project's invoiceRecipients.
+   *  - In `resend` mode (already Raised/Due), recipients default to the
+   *    invoice's last-send `emailedTo` / `emailedCc` so the operator edits
+   *    the actual previous message instead of the project defaults.
+   *
    *  Also fetches the month's screenshots so the attachments preview shows
    *  the admin exactly what will ride along with the email. */
-  async function handleOpenEmailEditor() {
-    const toDefaults: string[] = [];
-    const flags = project.invoiceRecipients;
-    if (flags?.client && project.clientEmail) toDefaults.push(project.clientEmail);
-    if (flags?.vendor && project.vendorEmail) toDefaults.push(project.vendorEmail);
-    if (flags?.primeVendor && project.primeVendorEmail)
-      toDefaults.push(project.primeVendorEmail);
-    (flags?.customEmails || []).forEach((e) => toDefaults.push(e));
+  async function handleOpenEmailEditor(mode: 'raise' | 'resend' = 'raise') {
+    setDialogMode(mode);
+
+    let toDefaults: string[] = [];
+    let ccDefaults: string[] = [];
+    let subjectDefault = `Invoice ${inv.invoiceNumber} — ${inv.organizationName}`;
+    let bodyDefault = `Hi,\n\nPlease find attached invoice ${inv.invoiceNumber} for ${inv.periodMonth}.\n\nThanks.`;
+
+    if (mode === 'resend') {
+      // Restore the actual previous send so the operator edits exactly what
+      // was last delivered. Fall back to project flags when the invoice was
+      // raised before this metadata existed (legacy rows).
+      toDefaults = (inv.emailedTo || []).filter(Boolean);
+      ccDefaults = (inv.emailedCc || []).filter(Boolean);
+      if (inv.emailedSubject) subjectDefault = inv.emailedSubject;
+      if (inv.emailedBody) bodyDefault = inv.emailedBody;
+    }
+
+    if (toDefaults.length === 0) {
+      const flags = project.invoiceRecipients;
+      if (flags?.client && project.clientEmail) toDefaults.push(project.clientEmail);
+      if (flags?.vendor && project.vendorEmail) toDefaults.push(project.vendorEmail);
+      if (flags?.primeVendor && project.primeVendorEmail)
+        toDefaults.push(project.primeVendorEmail);
+      (flags?.customEmails || []).forEach((e) => toDefaults.push(e));
+    }
 
     setEmailForm({
-      to: toDefaults.join(', '),
-      cc: '',
-      subject: `Invoice ${inv.invoiceNumber} — ${inv.organizationName}`,
-      body: `Hi,\n\nPlease find attached invoice ${inv.invoiceNumber} for ${inv.periodMonth}.\n\nThanks.`,
+      to: toDefaults,
+      cc: ccDefaults,
+      subject: subjectDefault,
+      body: bodyDefault,
     });
     setEmailOpen(true);
 
@@ -400,10 +436,7 @@ function InvoiceModal({
 
   /** Second step — admin confirms the recipient + amount before we actually send. */
   function handleProceedToConfirm() {
-    const tos = emailForm.to
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length);
+    const tos = emailForm.to.map((s) => s.trim()).filter(Boolean);
     if (tos.length === 0 || !tos.every((e) => e.includes('@'))) {
       toast.error('Enter at least one valid recipient in "To"');
       return;
@@ -411,12 +444,14 @@ function InvoiceModal({
     setEmailConfirmOpen(true);
   }
 
-  /** Final step — actually raise the invoice: render PDF, upload, call API. */
-  async function handleRaise() {
+  /** Final step — render PDF, upload, then either raise or resend depending
+   *  on which mode the dialog opened in. Same UX, different endpoint. */
+  async function handleSendFromDialog() {
     setRaising(true);
     try {
-      // Persist any dirty draft first so the PDF reflects the final state.
-      if (dirty && draft) {
+      // For raise: persist any dirty draft first so the PDF reflects the
+      // final state. Resend skips this — the invoice is already raised.
+      if (dialogMode === 'raise' && dirty && draft) {
         const save = await updateInvoice(inv._id, draft);
         if (save.data?.data) onUpdated(save.data.data);
       }
@@ -437,29 +472,40 @@ function InvoiceModal({
           }
         }
       } catch (e) {
-        console.warn('PDF render/upload failed — raising without attachment', e);
+        console.warn('PDF render/upload failed — sending without attachment', e);
       }
 
-      const toList = emailForm.to.split(',').map((s) => s.trim()).filter(Boolean);
-      const ccList = emailForm.cc.split(',').map((s) => s.trim()).filter(Boolean);
+      const toList = emailForm.to.map((s) => s.trim()).filter(Boolean);
+      const ccList = emailForm.cc.map((s) => s.trim()).filter(Boolean);
 
-      const res = await raiseInvoice(inv._id, {
-        pdfUrl,
-        to: toList,
-        cc: ccList,
-        subject: emailForm.subject,
-        body: emailForm.body,
-      });
+      const res =
+        dialogMode === 'raise'
+          ? await raiseInvoice(inv._id, {
+              pdfUrl,
+              to: toList,
+              cc: ccList,
+              subject: emailForm.subject,
+              body: emailForm.body,
+            })
+          : await resendInvoiceEmail(inv._id, {
+              pdfUrl,
+              to: toList,
+              cc: ccList,
+              subject: emailForm.subject,
+              body: emailForm.body,
+            });
       if (res.data?.data) {
         onUpdated(res.data.data);
-        toast.success('Invoice raised + emailed');
+        toast.success(
+          dialogMode === 'raise' ? 'Invoice raised + emailed' : 'Email sent'
+        );
         setEmailConfirmOpen(false);
         setEmailOpen(false);
       }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Raise failed';
+        (dialogMode === 'raise' ? 'Raise failed' : 'Resend failed');
       toast.error(msg);
     } finally {
       setRaising(false);
@@ -497,16 +543,12 @@ function InvoiceModal({
     setPendingDelete(false);
   }
 
-  async function handleResend() {
-    try {
-      const res = await resendInvoiceEmail(inv._id);
-      if (res.data?.data) {
-        onUpdated(res.data.data);
-        toast.success('Email sent');
-      }
-    } catch {
-      toast.error('Could not resend');
-    }
+  /** Resend hops back into the same compose dialog used for Raise — mode
+   *  switches to 'resend', which prefills To/CC/Subject/Body from the
+   *  invoice's last-send metadata so the operator edits the actual previous
+   *  message instead of starting from project defaults. */
+  function handleResend() {
+    handleOpenEmailEditor('resend');
   }
 
   async function handleDownload() {
@@ -688,7 +730,7 @@ function InvoiceModal({
             </Button>
             <Button
               variant="contained"
-              onClick={handleOpenEmailEditor}
+              onClick={() => handleOpenEmailEditor('raise')}
               disabled={raising}
               startIcon={<IconSend size={14} />}
               sx={{
@@ -851,28 +893,34 @@ function InvoiceModal({
             borderColor: 'grey.200',
           }}
         >
-          <IconSend size={16} /> Compose email
+          <IconSend size={16} />
+          {dialogMode === 'resend' ? 'Resend email' : 'Compose email'}
+          {dialogMode === 'resend' && inv.emailedAt && (
+            <Typography
+              variant="caption"
+              sx={{
+                ml: 1,
+                color: tokens.colors.lightTextSecondary,
+                fontWeight: 600,
+              }}
+            >
+              · last sent {moment(inv.emailedAt).format('MMM D, YYYY h:mm A')}
+            </Typography>
+          )}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={1.5} sx={{ mt: 1 }}>
-            <TextField
-              size="small"
-              label="To (comma-separated)"
+            <EmailChipInput
+              label="To"
               value={emailForm.to}
-              onChange={(e) =>
-                setEmailForm((s) => ({ ...s, to: e.target.value }))
-              }
-              helperText="At least one valid email"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              onChange={(v) => setEmailForm((s) => ({ ...s, to: v }))}
+              helperText="Enter, Tab, or comma adds an address. At least one valid email required."
             />
-            <TextField
-              size="small"
-              label="CC (comma-separated)"
+            <EmailChipInput
+              label="CC"
               value={emailForm.cc}
-              onChange={(e) =>
-                setEmailForm((s) => ({ ...s, cc: e.target.value }))
-              }
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              onChange={(v) => setEmailForm((s) => ({ ...s, cc: v }))}
+              helperText="Optional"
             />
             <TextField
               size="small"
@@ -1086,12 +1134,14 @@ function InvoiceModal({
         </DialogActions>
       </Dialog>
 
-      {/* Step 2 of raise: final confirmation */}
+      {/* Step 2 of send: final confirmation. Same dialog backs raise + resend. */}
       <ConfirmDialog
         open={emailConfirmOpen}
         onClose={() => setEmailConfirmOpen(false)}
-        onConfirm={handleRaise}
-        title="Send this invoice?"
+        onConfirm={handleSendFromDialog}
+        title={
+          dialogMode === 'resend' ? 'Resend this invoice?' : 'Send this invoice?'
+        }
         description={
           <Box>
             <Typography variant="body2" sx={{ mb: 1 }}>
@@ -1111,7 +1161,8 @@ function InvoiceModal({
             >
               {project.vendorCompany || project.clientCompany || 'Recipient'}
               {' — '}
-              {emailForm.to}
+              {emailForm.to.join(', ')}
+              {emailForm.cc.length > 0 && ` · cc ${emailForm.cc.join(', ')}`}
             </Box>
             <Typography sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
               Total:{' '}
@@ -1148,4 +1199,137 @@ function sumLineItems(items: { amount: number }[]): number {
     0
   );
   return Math.round(s * 100) / 100;
+}
+
+// ─── Chip-style email input ────────────────────────────────────────────────
+//
+// Used by the compose dialog for both `To` and `CC` fields. The user types
+// addresses naturally; on Enter, Tab, comma, semicolon, or blur we commit
+// whatever's in the input as a chip. Invalid (non-email) entries are kept as
+// red outlined chips so the operator notices and fixes them — we don't
+// silently drop typos. Click the X on any chip to remove it.
+//
+// Backed by MUI Autocomplete in `multiple freeSolo` mode, which gives chip
+// rendering, keyboard navigation, and the standard X-to-remove behavior for
+// free. Tab + blur commit are added on top because Autocomplete handles
+// Enter natively but not those.
+
+function isLikelyEmail(s: string): boolean {
+  // Loose validator — same shape the server enforces (`includes("@")`) plus a
+  // dot somewhere after to catch the most common typos. Not a full RFC 5322,
+  // intentionally; the goal is operator-feedback, not bouncing bad input.
+  return /\S+@\S+\.\S+/.test(s);
+}
+
+function EmailChipInput({
+  label,
+  value,
+  onChange,
+  helperText,
+}: {
+  label: string;
+  value: string[];
+  onChange: (next: string[]) => void;
+  helperText?: string;
+}) {
+  const [input, setInput] = useState('');
+
+  // Split a freeform string into one-or-more email candidates, trim, dedup
+  // against the current value, and append.
+  const commitInput = (raw: string) => {
+    const parts = raw
+      .split(/[\s,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length === 0) return;
+    const seen = new Set(value);
+    const next = [...value];
+    for (const p of parts) {
+      if (!seen.has(p)) {
+        seen.add(p);
+        next.push(p);
+      }
+    }
+    onChange(next);
+    setInput('');
+  };
+
+  return (
+    <Autocomplete
+      multiple
+      freeSolo
+      // No suggestion list — operators paste / type addresses themselves.
+      options={[] as string[]}
+      value={value}
+      inputValue={input}
+      onInputChange={(_, v, reason) => {
+        // 'reset' fires when Autocomplete clears the input after Enter — we
+        // already cleared via setInput('') in commit, so let it through but
+        // ignore so we don't fight it.
+        if (reason === 'reset') return;
+        setInput(v);
+      }}
+      onChange={(_, v) => {
+        // Triggered by the built-in Enter / chip-delete paths. Always trust
+        // the array Autocomplete hands us; commitInput doesn't run here.
+        onChange(v as string[]);
+      }}
+      renderTags={(values, getTagProps) =>
+        values.map((option, index) => {
+          const valid = isLikelyEmail(option);
+          const tagProps = getTagProps({ index });
+          return (
+            <Chip
+              {...tagProps}
+              key={tagProps.key}
+              label={option}
+              size="small"
+              variant={valid ? 'filled' : 'outlined'}
+              sx={{
+                fontWeight: 600,
+                bgcolor: valid
+                  ? alpha(tokens.colors.blue, 0.12)
+                  : 'transparent',
+                color: valid ? tokens.colors.blueDark : '#B91C1C',
+                borderColor: valid
+                  ? alpha(tokens.colors.blue, 0.3)
+                  : '#FCA5A5',
+                '& .MuiChip-deleteIcon': {
+                  color: valid ? tokens.colors.blueDark : '#B91C1C',
+                  '&:hover': {
+                    color: valid ? tokens.colors.pinkDark : '#7F1D1D',
+                  },
+                },
+              }}
+            />
+          );
+        })
+      }
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          size="small"
+          label={label}
+          helperText={helperText}
+          // Tab and the typed delimiters (comma, semicolon) commit whatever
+          // is in the input as a chip. Enter is handled by Autocomplete
+          // natively. Blur also commits so a half-typed address doesn't get
+          // silently lost when the user clicks elsewhere.
+          onKeyDown={(e) => {
+            if (
+              (e.key === 'Tab' || e.key === ',' || e.key === ';') &&
+              input.trim()
+            ) {
+              e.preventDefault();
+              commitInput(input);
+            }
+          }}
+          onBlur={() => {
+            if (input.trim()) commitInput(input);
+          }}
+          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+        />
+      )}
+    />
+  );
 }

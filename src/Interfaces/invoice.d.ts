@@ -39,6 +39,14 @@ export interface IInvoice {
   paymentNotes?: string;
 
   emailedTo: string[];
+  /** CC list from the most recent send. The Resend dialog uses this to
+   *  rebuild the To/CC split; without it CC addresses would land in the
+   *  To field on resend. */
+  emailedCc?: string[];
+  /** Subject + body from the last send — restored verbatim into the Resend
+   *  compose dialog so the operator edits the same message that went out. */
+  emailedSubject?: string;
+  emailedBody?: string;
   emailedAt?: string;
   dueNotifiedAt?: string;
 

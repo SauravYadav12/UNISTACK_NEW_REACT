@@ -81,13 +81,29 @@ export async function markInvoiceUnpaid(id: string) {
   );
 }
 
+/**
+ * Resend the invoice email. The compose dialog gathers the full payload
+ * (To/CC chips, edited subject + body, freshly-rendered PDF URL) so the
+ * server doesn't need to reach back into the project's recipient flags.
+ *
+ * `recipientOverride` is kept as a deprecated alias for `to` so any direct
+ * API tooling that pre-dates the dialog continues to work.
+ */
 export async function resendInvoiceEmail(
   id: string,
-  recipientOverride?: string[]
+  payload?: {
+    to?: string[];
+    cc?: string[];
+    subject?: string;
+    body?: string;
+    pdfUrl?: string;
+    /** @deprecated pass `to` instead. */
+    recipientOverride?: string[];
+  }
 ) {
   return axiosClient.post<ApiQueryRes<IInvoice>>(
     `/invoices/${id}/resend-email`,
-    { recipientOverride }
+    payload || {}
   );
 }
 
