@@ -19,7 +19,11 @@ import {
   FormSections,
   SectionField,
 } from './constants';
-import { updateProfile } from '../../../services/userProfileApi';
+import {
+  createUserProfile,
+  updateProfile,
+} from '../../../services/userProfileApi';
+import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import AddressField from '../../../components/profile/formFields/addressField/AddressField';
 import RenderFields from '../../../components/profile/formFields/RenderFields';
 import DocumentsField from '../../../components/profile/formFields/DocumentsField';
@@ -38,6 +42,9 @@ const ProfileForm = ({
   onClickCancel,
   onSubmitSuccessfully,
 }: MyProps) => {
+  // Read the logged-in user so first-time profile creation (no `_id` on
+  // the template) can stamp the profile with a `user` ownership ref.
+  const { iUser } = useAuth();
   const [myProfile, setMyProfile] = useState<UserProfile>(template);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState(
@@ -95,7 +102,22 @@ const ProfileForm = ({
       }
     }
     try {
-      const { data } = await updateProfile(myProfile._id, payload);
+      // Branch on `_id`: update an existing profile, or create one the
+      // first time the user hits Save. Super-admin / newly-created
+      // accounts often land on this form with no profile doc yet — an
+      // update to /user-profiles/ (empty id) 404s, so create instead.
+      const hasProfileId = !!myProfile._id;
+      const createBody: Partial<UserProfile> = {
+        ...payload,
+        // If the template didn't carry a `user` (common when the admin
+        // opens a never-profiled user), fall back to the logged-in
+        // user's id so the profile is at least self-owned. Prevents
+        // orphan docs.
+        user: payload.user || iUser?._id || '',
+      };
+      const { data } = hasProfileId
+        ? await updateProfile(myProfile._id, payload)
+        : await createUserProfile(createBody);
       if (data.error || !data.data) {
         toast.error(data.error || 'Something went wrong');
         return;

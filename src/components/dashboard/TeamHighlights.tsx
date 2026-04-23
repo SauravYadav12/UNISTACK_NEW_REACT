@@ -124,14 +124,31 @@ export default function TeamHighlights() {
         p: { xs: 2, sm: 2.5 },
       }}
     >
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={1.5}
-        sx={{ mb: 2 }}
+      {/* Header — a flex row that WRAPS to column when the *container* is
+          narrow. Viewport-based breakpoints don't work here because the
+          widget often lives inside a 2-col dashboard grid, so it can be
+          ~400px wide on a 1200px viewport and the old `sm` row layout
+          would squash the title into a one-word-per-line column. */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1.5,
+          rowGap: 1.25,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 2,
+        }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.25}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.25}
+          // Claim remaining row space so the title has room, but allow
+          // shrinking (minWidth: 0) so `noWrap` truncates cleanly instead
+          // of pushing the tabs off-row.
+          sx={{ flex: '1 1 240px', minWidth: 0 }}
+        >
           <Box
             sx={{
               width: 36,
@@ -142,20 +159,38 @@ export default function TeamHighlights() {
               justifyContent: 'center',
               background: 'linear-gradient(135deg, #FCE441 0%, #F59E0B 100%)',
               color: '#7C5800',
+              flexShrink: 0,
             }}
           >
             <IconTrophy size={18} />
           </Box>
-          <Box>
-            <Typography variant="h6" fontWeight={700}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="h6" fontWeight={700} noWrap>
               Team highlights
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{ display: 'block' }}
+            >
               Top 5 · this month · composite score
             </Typography>
           </Box>
         </Stack>
-        <Stack direction="row" spacing={0.5} sx={{ bgcolor: alpha(tokens.colors.brand, 0.04), p: 0.5, borderRadius: 2 }}>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            bgcolor: alpha(tokens.colors.brand, 0.04),
+            p: 0.5,
+            borderRadius: 2,
+            // Tabs never shrink — if the row gets too tight, the header
+            // wraps (via the parent's `flexWrap: 'wrap'`) and the tabs
+            // drop to the next line at full size.
+            flexShrink: 0,
+          }}
+        >
           {([
             { key: 'marketing', label: 'Marketing', icon: <IconTargetArrow size={14} /> },
             { key: 'support', label: 'Support', icon: <IconHeadset size={14} /> },
@@ -167,6 +202,7 @@ export default function TeamHighlights() {
                 onClick={() => setTab(t.key)}
                 role="button"
                 tabIndex={0}
+                aria-label={t.label}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -184,6 +220,7 @@ export default function TeamHighlights() {
                   gap: 0.5,
                   fontSize: '0.75rem',
                   fontWeight: 600,
+                  whiteSpace: 'nowrap',
                   color: active ? '#fff' : 'text.secondary',
                   background: active ? tokens.gradients.pinkBlue : 'transparent',
                   transition: 'all 0.2s ease',
@@ -196,7 +233,7 @@ export default function TeamHighlights() {
             );
           })}
         </Stack>
-      </Stack>
+      </Box>
 
       {loading ? (
         <Stack spacing={1.5}>

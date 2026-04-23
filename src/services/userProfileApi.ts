@@ -26,6 +26,20 @@ export async function createProfile(
   return response;
 }
 
+/**
+ * Create a UserProfile with an arbitrary body. Used by the Profile form on
+ * the first save for a user that doesn't have a profile doc yet (e.g., a
+ * freshly-created super-admin). Pairs with `updateProfile` — the form
+ * picks one based on whether `_id` is populated.
+ */
+export async function createUserProfile(body: Partial<UserProfile>) {
+  const response = await axiosClient.post<ApiQueryRes<UserProfile>>(
+    `/user-profiles`,
+    body,
+  );
+  return response;
+}
+
 export async function updateProfile(
   profileId: string,
   body: Partial<UserProfile>

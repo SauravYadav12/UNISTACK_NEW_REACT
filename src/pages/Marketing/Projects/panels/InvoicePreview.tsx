@@ -88,6 +88,37 @@ const InvoicePreview = forwardRef<HTMLDivElement, Props>(function InvoicePreview
       : `${project.paymentTerms.preset} days`
     : 'Net 30 days';
 
+  // Resolve which party shows on the "Bill to" card. The admin picks this in
+  // the Project Overview's billing-target strip; the rest of the invoice is
+  // unaffected (organization "From" stays the issuing org, Vendor / Prime
+  // Vendor still appear as MetaBits below for context). Defaults to Client
+  // for backward compatibility with projects that pre-date the field.
+  const billTo = project.billToCustomer || 'Client';
+  const billToName =
+    billTo === 'Vendor'
+      ? project.vendorCompany
+      : billTo === 'Prime Vendor'
+        ? project.primeVendorCompany
+        : project.clientCompany;
+  const billToAddress =
+    billTo === 'Vendor'
+      ? project.vendorAddress
+      : billTo === 'Prime Vendor'
+        ? project.primeVendorAddress
+        : project.clientAddress;
+  const billToContact =
+    billTo === 'Vendor'
+      ? project.vendorPersonName
+      : billTo === 'Prime Vendor'
+        ? project.primeVendorName
+        : project.clientPerson;
+  const billToEmail =
+    billTo === 'Vendor'
+      ? project.vendorEmail
+      : billTo === 'Prime Vendor'
+        ? project.primeVendorEmail
+        : project.clientEmail;
+
   return (
     <Box
       ref={ref}
@@ -225,12 +256,12 @@ const InvoicePreview = forwardRef<HTMLDivElement, Props>(function InvoicePreview
             accent="blue"
           />
           <PartyCard
-            title="Bill to"
-            name={project.clientCompany || '—'}
+            title={`Bill to · ${billTo}`}
+            name={billToName || '—'}
             lines={[
-              project.clientAddress,
-              project.clientPerson && `Attn · ${project.clientPerson}`,
-              project.clientEmail && `Email · ${project.clientEmail}`,
+              billToAddress,
+              billToContact && `Attn · ${billToContact}`,
+              billToEmail && `Email · ${billToEmail}`,
             ]}
             accent="pink"
           />
