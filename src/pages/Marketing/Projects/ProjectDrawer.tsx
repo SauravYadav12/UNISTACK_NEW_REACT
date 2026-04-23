@@ -401,31 +401,12 @@ export default function ProjectDrawer({
                       Drives the "Bill to" card on InvoicePreview. Picking a
                       party here switches which of the three stored addresses
                       (clientAddress / vendorAddress / primeVendorAddress)
-                      shows up — and edits in this single field route to the
+                      shows up — edits in this single field route to the
                       matching setter so each party keeps its own address
-                      under the hood without bloating the form. */}
-                  <Grid size={{ xs: 12 }}>
-                    <Box
-                      sx={{
-                        mt: 0.5,
-                        pt: 1.5,
-                        borderTop: `1px dashed ${alpha(tokens.colors.pink, 0.3)}`,
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: tokens.colors.pinkDark,
-                          fontWeight: 800,
-                          letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
-                          fontSize: '0.68rem',
-                        }}
-                      >
-                        Billing target — appears on invoice "Bill to"
-                      </Typography>
-                    </Box>
-                  </Grid>
+                      under the hood without bloating the form.
+                      Address is single-line so it height-aligns with the
+                      Select; long postal lines still wrap visually but don't
+                      blow up the strip. */}
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       select
@@ -447,11 +428,9 @@ export default function ProjectDrawer({
                   </Grid>
                   <Grid size={{ xs: 12, sm: 8 }}>
                     <TextField
-                      label={`${billToCustomer} address`}
+                      label={`${billToCustomer} address — appears on invoice`}
                       fullWidth
                       size="small"
-                      multiline
-                      minRows={2}
                       value={
                         billToCustomer === 'Vendor'
                           ? vendorAddress
@@ -466,7 +445,6 @@ export default function ProjectDrawer({
                           setPrimeVendorAddress(v);
                         else setClientAddress(v);
                       }}
-                      helperText="This address renders on the invoice"
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                     />
                   </Grid>
