@@ -8,10 +8,23 @@ WORKDIR /app
 # and `npm ci` has everything it needs to produce a deterministic tree.
 COPY package.json package-lock.json ./
 
-# `npm ci` installs from the lockfile exactly — prevents the "works locally,
-# fails in Docker because a new transitive version was resolved" class of
-# build break. `--no-audit --no-fund` keeps the CI log tidy.
-RUN npm ci --no-audit --no-fund
+# Install strategy:
+#   1. Try `npm ci` first — it installs the exact tree from the lockfile,
+#      which prevents "works locally, fails on CI because a new transitive
+#      version was resolved" bugs (the Mongoose typings story from before).
+#   2. If `npm ci` fails (usually because package.json drifted from
+#      package-lock.json — someone committed package.json without
+#      regenerating the lockfile), fall back to `npm install` so the
+#      build still goes through. We log a WARN so the drift is visible in
+#      the build output and can be cleaned up later.
+#
+# This keeps the deterministic-build benefit on the happy path while not
+# blocking a deploy on a lockfile-sync mistake.
+RUN npm ci --no-audit --no-fund \
+  || ( \
+    echo "⚠️  npm ci failed (package.json / package-lock.json out of sync). Falling back to npm install. Resync the lockfile locally and commit it to restore deterministic builds." \
+    && npm install --no-audit --no-fund \
+  )
 
 # Copy source after the install layer so routine code edits don't bust the
 # cached deps. A sibling .dockerignore keeps local node_modules/.git/dist
