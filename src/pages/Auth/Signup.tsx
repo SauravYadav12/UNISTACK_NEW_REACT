@@ -67,7 +67,7 @@ export default function SignUp() {
           if (res.status === 200) {
             toast.success(res?.data?.message);
             setLoading(false);
-            navigate('/');
+            navigate('/login');
           }
         } else {
           toast.error('Please accept the terms and conditions');
@@ -204,7 +204,7 @@ export default function SignUp() {
             <Link
               component="button"
               type="button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/login')}
               variant="body2"
               underline="hover"
             >

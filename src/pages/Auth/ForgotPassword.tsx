@@ -172,7 +172,7 @@ const ForgotPassword = () => {
           <Link
             component="button"
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/login')}
             underline="hover"
             sx={{
               display: 'inline-flex',

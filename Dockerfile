@@ -1,37 +1,39 @@
-# Use an official Node.js runtime as a parent image
+# ────────────────────────────────────────────────────────────────────────────
+# Build stage: install deps + run vite build
+# ────────────────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS build
-
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy BOTH manifest + lockfile up front so the install layer caches well
+# and `npm ci` has everything it needs to produce a deterministic tree.
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm install
+# `npm ci` installs from the lockfile exactly — prevents the "works locally,
+# fails in Docker because a new transitive version was resolved" class of
+# build break. `--no-audit --no-fund` keeps the CI log tidy.
+RUN npm ci --no-audit --no-fund
 
-# Copy the rest of the application code
+# Copy source after the install layer so routine code edits don't bust the
+# cached deps. A sibling .dockerignore keeps local node_modules/.git/dist
+# out so they don't poison this copy.
 COPY . .
 
+# Vite + tsc can be memory-hungry on big projects; generous cap avoids
+# `JavaScript heap out of memory` on small build runners.
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
-# Build the Vite app
 RUN npm run build
 
-# Use a lightweight web server to serve the static files
+# ────────────────────────────────────────────────────────────────────────────
+# Runtime stage: slim Nginx serving the built static assets
+# ────────────────────────────────────────────────────────────────────────────
 FROM nginx:alpine
 
-# Remove default Nginx static files
+# Replace default Nginx document root with the built SPA.
 RUN rm -rf /usr/share/nginx/html/*
-
-# Copy custom Nginx configuration (if you have one, otherwise you can omit this line)
 COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copy the build files from the previous stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80 for the web server
 EXPOSE 8080
 
-# Start Nginx server
 CMD ["nginx", "-g", "daemon off;"]

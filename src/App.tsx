@@ -37,6 +37,7 @@ import Salary from './pages/Salary/Salary';
 import Projects from './pages/Marketing/Projects/Projects';
 import PerformancePage from './pages/Performance/PerformancePage';
 import MyDocuments from './pages/Documents/MyDocuments';
+import Landing from './pages/Landing/Landing';
 import { AiProvider } from './context/AiContext';
 import { RequirementAiChatProvider } from './context/RequirementAiChatContext';
 import FloatingAiChat from './components/aiChat/FloatingAiChat';
@@ -64,11 +65,17 @@ function AppContent() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Login />} />
+        {/* Public landing — pitches the product to unauthed visitors;
+            authed visitors are redirected to /dashboard inside Landing. */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* Pathless layout route — children carry their own paths (e.g.
+            `dashboard` → /dashboard) and render inside <Layout/>. Keeping
+            this pathless avoids colliding with the public `/` → Landing
+            route declared above. */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
               <Layout />
