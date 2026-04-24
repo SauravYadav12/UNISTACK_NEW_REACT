@@ -22,7 +22,6 @@ import dayjs from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 import { AttachFile, Sync } from '@mui/icons-material';
 import DownloadIcon from '@mui/icons-material/Download';
 import { getMaterialFileIcon } from 'file-extension-icon-js';
@@ -47,6 +46,10 @@ import AssignRequirementDrawer from '../../../components/requirement/AssignRequi
 import MarketerAssignmentCard from '../../../components/requirement/MarketerAssignmentCard';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementAiSuggestions from '../../../components/requirement/RequirementAiSuggestions';
+import CustomDrawer from '../../../components/drawer/CustomDrawer';
+import InterviewForm from '../Interviews/InterviewForm';
+import { teamsList as fetchTeamsList } from '../../../services/teamsApi';
+import { ITeam } from '../../../Interfaces/types';
 import { dateFormate } from '../../../components/constants';
 
 import {
@@ -94,7 +97,6 @@ import { IConsultant, IRequirement } from '../../../Interfaces/types';
 
 import { FormMode } from './Requirements';
 import { tokens } from '../../../theme/theme';
-import { createInterviewQueryParam } from '../Interviews/interviewValues';
 
 // ── Employement type options (legacy let this be a free string, keep options light) ──
 const employementTypeOptions = ['Full-Time', 'Contract', 'Part-Time', 'C2H'];
@@ -268,7 +270,15 @@ export default function RequirementsForm(props: Props) {
   const [removingChildId, setRemovingChildId] = useState<string | null>(null);
   const [parentDrawerOpen, setParentDrawerOpen] = useState(false);
 
-  const navigate = useNavigate();
+  // Inline "Create Interview" drawer — opens the InterviewForm right from
+  // the requirement context with the current viewData already seeded, so
+  // the marketer/support operator never leaves the requirement they're
+  // looking at. No SearchRequirement popup is needed because the context
+  // is already known.
+  const [createInterviewOpen, setCreateInterviewOpen] = useState(false);
+  const [teamsForInterview, setTeamsForInterview] = useState<ITeam[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+
   const currentFile =
     file ||
     (values?.resumeUpload && urlValidator(values.resumeUpload)
@@ -551,13 +561,29 @@ export default function RequirementsForm(props: Props) {
     return false;
   };
 
-  function handlecreateInterview() {
+  async function handlecreateInterview() {
     try {
       if (!viewData?._id) return toast.error('Missing requirement id');
-      navigate(`/interviews?${createInterviewQueryParam}=${viewData.reqID}`);
+
+      // Open the inline InterviewForm drawer immediately for responsiveness.
+      // The form needs a teams list for the "Team" Autocomplete; we fetch it
+      // on first open and cache it on the component so re-opening is free.
+      setCreateInterviewOpen(true);
+      if (teamsForInterview.length === 0 && !teamsLoading) {
+        setTeamsLoading(true);
+        try {
+          const { data } = await fetchTeamsList(`limit=5000`);
+          setTeamsForInterview(data?.data?.results || []);
+        } catch (err) {
+          console.error('Failed to load teams for interview form', err);
+          toast.error('Failed to load team list');
+        } finally {
+          setTeamsLoading(false);
+        }
+      }
     } catch (error) {
-      toast.error('Failed to create interview');
-      console.error('An error occurred while creating the interview:', error);
+      toast.error('Failed to open interview form');
+      console.error('An error occurred while opening the interview form:', error);
     }
   }
 
@@ -1886,6 +1912,47 @@ export default function RequirementsForm(props: Props) {
           reqID={viewData.parentReqID}
           archive={archive}
         />
+      )}
+
+      {/* ── Inline Create-Interview drawer ──
+          Opens a full InterviewForm with the current requirement (this child
+          record, if viewing a child — parent reqID otherwise) already seeded
+          into the form values via InterviewForm's `requirement` prop. No
+          SearchRequirement popup is needed — the context is known.
+
+          On successful save InterviewForm calls `onDrawerClose` and we close
+          this drawer. The user stays on their current requirement page. */}
+      {viewData && (
+        <CustomDrawer
+          open={createInterviewOpen}
+          onClose={() => setCreateInterviewOpen(false)}
+          title={`New interview · ${viewData.reqID}`}
+          closeOnOutSideClick
+        >
+          {teamsLoading ? (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: 240,
+              }}
+            >
+              <CircularProgress size={28} />
+            </Box>
+          ) : (
+            <InterviewForm
+              mode="add"
+              isEditing
+              requirement={viewData as IRequirement}
+              teamsList={teamsForInterview}
+              onDrawerClose={() => setCreateInterviewOpen(false)}
+              onCreate={() => {
+                toast.success('Interview created');
+              }}
+            />
+          )}
+        </CustomDrawer>
       )}
     </>
   );

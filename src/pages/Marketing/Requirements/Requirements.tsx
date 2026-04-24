@@ -646,6 +646,47 @@ export default function Requirements() {
         );
       },
     },
+    // Assigned-to + Applied-for sit next to Status so a child row's three
+    // key workpoints (state, owner, consultant) line up as a scannable
+    // left-anchored block before the wider job/client columns.
+    // Parents-with-children render em-dashes here for the same reason they
+    // render em-dash in Status — those fields roll up to the children.
+    {
+      field: 'assignedTo',
+      headerName: 'Assigned To',
+      width: 170,
+      renderCell: ({ row }) => {
+        if (row.dateSeparator) return null;
+        const cachedKids = childrenMap.get(row.reqID || '');
+        const hasChildren = !!cachedKids && cachedKids.length > 0;
+        if (!row.isChildRow && !row.parentReqID && hasChildren) {
+          return (
+            <Typography variant="caption" color="text.disabled">
+              —
+            </Typography>
+          );
+        }
+        return <PersonPill name={row.assignedTo} />;
+      },
+    },
+    {
+      field: 'appliedFor',
+      headerName: 'Applied For',
+      width: 170,
+      renderCell: ({ row }) => {
+        if (row.dateSeparator) return null;
+        const cachedKids = childrenMap.get(row.reqID || '');
+        const hasChildren = !!cachedKids && cachedKids.length > 0;
+        if (!row.isChildRow && !row.parentReqID && hasChildren) {
+          return (
+            <Typography variant="caption" color="text.disabled">
+              —
+            </Typography>
+          );
+        }
+        return <PersonPill name={row.appliedFor} />;
+      },
+    },
     {
       field: 'jobTitle',
       headerName: 'Job Title',
@@ -800,24 +841,11 @@ export default function Requirements() {
         );
       },
     },
-    {
-      field: 'assignedTo',
-      headerName: 'Assigned To',
-      width: 180,
-      renderCell: ({ row }) => {
-        if (row.dateSeparator) return null;
-        const cachedKids = childrenMap.get(row.reqID || '');
-        const hasChildren = !!cachedKids && cachedKids.length > 0;
-        if (!row.isChildRow && !row.parentReqID && hasChildren) {
-          return (
-            <Typography variant="caption" color="text.disabled">
-              —
-            </Typography>
-          );
-        }
-        return <PersonPill name={row.assignedTo} />;
-      },
-    },
+    // NOTE: the old `assignedTo` column that used to live here was moved
+    // to right after Status (see above) — kept an em-dash parent behaviour
+    // intact, just repositioned. A new `appliedFor` column was added
+    // beside it so the child-row scan-line now reads: ID · Status ·
+    // Owner · Consultant · Job · Company.
     {
       field: 'reqEnteredBy',
       headerName: 'Created By',

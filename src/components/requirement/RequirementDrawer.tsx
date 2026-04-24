@@ -124,8 +124,12 @@ const RequirementDrawer = ({
       <RequirementsForm
         showLogs
         disableCopyRequirement
-        disableCreateInterview
         disableDelete
+        // Create-interview stays enabled — marketers opening their own
+        // child via "View record" on MarketerAssignmentCard need the same
+        // Submitted-status shortcut that's available in the main grid
+        // drawer. The button opens InterviewForm inline so the marketer
+        // never leaves their current context.
         hideButtons={hideButtons}
         accounts={accounts || []}
         consultants={consultants || []}
