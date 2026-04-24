@@ -905,8 +905,13 @@ export default function RequirementsForm(props: Props) {
                     Edit
                   </Button>
 
+                  {/* Create-interview is available on child rows too —
+                      each marketer-owned child carries its own reqStatus and
+                      the interview naturally references that child's reqID
+                      (e.g. REQ-04-A), so the downstream Interviews lookup
+                      resolves correctly. Copy/Delete remain gated below
+                      because those mutate parent-owned shared fields. */}
                   {!disableCreateInterview &&
-                    !isChildRecord &&
                     !!viewData?.reqStatus &&
                     ['Submitted', 'Interviewed'].includes(viewData.reqStatus) && (
                       <Button

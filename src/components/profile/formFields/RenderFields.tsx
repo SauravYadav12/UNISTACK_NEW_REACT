@@ -95,6 +95,13 @@ const RenderFields = ({
               disabled={disabled}
               label={label}
               value={myProfile.dob ? dayjs(myProfile.dob) : null}
+              // The only `date` field rendered by this component is Date of
+              // Birth — enforce the 18-year minimum age at the picker level
+              // so the calendar itself greys out today and any date within
+              // the last 18 years. Typed input is also caught by the field
+              // meta's `customValidation` (see Profile/constants.ts).
+              disableFuture
+              maxDate={dayjs().subtract(18, 'years')}
               onChange={(newValue) => {
                 onChange({
                   target: {

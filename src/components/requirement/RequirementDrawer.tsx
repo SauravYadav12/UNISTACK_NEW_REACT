@@ -104,7 +104,22 @@ const RequirementDrawer = ({
         </Box>
       );
     }
-    if (!viewData) return;
+    // Guard rail — if the fetch finished cleanly but returned no row (e.g. a
+    // server filter silently dropped the document, as happened when the
+    // parent-hiding branch clobbered "Edit on parent" lookups), render a
+    // clear empty state with a reload button instead of a silent blank body.
+    if (!viewData) {
+      return (
+        <Box textAlign={'center'} sx={{ py: 6 }}>
+          <Typography color="text.secondary">
+            Requirement {reqID} couldn&apos;t be loaded.
+          </Typography>
+          <IconButton onClick={handleReload}>
+            <Sync color="primary" />
+          </IconButton>
+        </Box>
+      );
+    }
     return (
       <RequirementsForm
         showLogs

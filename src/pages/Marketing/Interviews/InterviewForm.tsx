@@ -291,15 +291,24 @@ export default function InterviewForm(props: iProps) {
             </Grid>
             <CustomTextField label="Job Title" fullWidth disabled selectedValue={values.jobTitle || ''} onChange={(e) => addValue('jobTitle', e.target.value)} />
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                label="Req ID" value={values.reqID || ''} disabled fullWidth size="small"
-                onClick={() => setReqDrawer(values.reqID)}
-                sx={{
-                  cursor: 'pointer',
-                  '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: '#F6F9FC', cursor: 'pointer' },
-                  '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#0A3555', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px' },
-                }}
-              />
+              {/* Wrapper owns the click — MUI sets `pointer-events: none`
+                  on a disabled input, so an `onClick` on the TextField
+                  never fired on the value area (only the narrow label).
+                  The outer Box receives the click and we let events pass
+                  through the TextField via `pointerEvents: 'none'`. */}
+              <Box
+                onClick={() => values.reqID && setReqDrawer(values.reqID)}
+                sx={{ cursor: values.reqID ? 'pointer' : 'default' }}
+              >
+                <TextField
+                  label="Req ID" value={values.reqID || ''} disabled fullWidth size="small"
+                  sx={{
+                    pointerEvents: 'none',
+                    '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: '#F6F9FC' },
+                    '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#0A3555', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' },
+                  }}
+                />
+              </Box>
             </Grid>
             <CustomTextField label="Client Name" fullWidth disabled selectedValue={values.clientName || ''} onChange={(e) => addValue('clientName', e.target.value)} />
             <CustomTextField label="Tax Type" fullWidth disabled selectedValue={values.taxType?.toString() || ''} onChange={(e) => addValue('taxType', e.target.value)} />

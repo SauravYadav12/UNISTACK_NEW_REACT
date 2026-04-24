@@ -96,8 +96,14 @@ export const profileFormSections: FormSections[] = [
         fieldName: 'dob',
         fieldType: 'date',
         label: 'Date of Birth',
+        // Guards both picker-selected and typed-in dates. The picker itself
+        // already blocks anything from (today − 18 years) forward via the
+        // `maxDate` prop in RenderFields, but a user can still type into
+        // the field — so we re-check the 18-year minimum here.
         customValidation: (val) => {
-          return dayjs(val, 'YYYY-MM-DD', false).isValid();
+          const d = dayjs(val, 'YYYY-MM-DD', true);
+          if (!d.isValid()) return false;
+          return d.isBefore(dayjs().subtract(18, 'years'));
         },
       },
       {

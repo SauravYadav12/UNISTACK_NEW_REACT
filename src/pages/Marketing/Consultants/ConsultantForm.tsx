@@ -15,10 +15,9 @@ import {
   Typography,
   alpha,
 } from '@mui/material';
-import examples from 'libphonenumber-js/examples.mobile.json';
 import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -37,7 +36,6 @@ import { Android12Switch } from '../Profile/constants';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import { MuiTelInput, MuiTelInputInfo } from 'mui-tel-input';
-import { getExampleNumber } from 'libphonenumber-js';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
@@ -96,6 +94,24 @@ export default function ConsultantForm(props: iProps) {
   const user = useAuth().iUser!;
   const [projects, setProjects] = useState<Partial<IConsultant['projects']>>([]);
   const [errors, setErrors] = useState<{ [key in keyof IConsultant]?: string }>(convertValuesToEmptyString(initialValues));
+
+  // Projects in display order — entries flagged `isCurrent` float to the
+  // top so a consultant's ongoing engagement is visible at a glance. We
+  // hand back an array of original indices (not a reordered project array)
+  // so onProjectChange / delete handlers can keep mutating state at the
+  // correct underlying position — the visual ordering is decoupled from
+  // the stored order.
+  const orderedIndices = useMemo(() => {
+    const list = projects || [];
+    const idx = list.map((_, i) => i);
+    idx.sort((a, b) => {
+      const ac = list[a]?.isCurrent ? 1 : 0;
+      const bc = list[b]?.isCurrent ? 1 : 0;
+      if (ac !== bc) return bc - ac; // current first
+      return a - b;                   // stable otherwise (preserve insertion)
+    });
+    return idx;
+  }, [projects]);
 
   useHardKeySubmit(
     { onSubmit: (e) => { mode === 'add' && handleSubmitForm(e); mode === 'edit' && handleEditSubmitForm(e); } },
@@ -280,9 +296,15 @@ export default function ConsultantForm(props: iProps) {
                 {projects?.length === 0 && (
                   <Typography variant="body2" color="text.secondary" textAlign="center" py={3}>No projects added yet</Typography>
                 )}
-                {projects?.map((project, index) => (
+                {orderedIndices.map((origIndex, displayIndex) => {
+                  // `project` reads from the real state; `origIndex` is the
+                  // stable underlying position used for every mutation so
+                  // sorting never misroutes a change. `displayIndex` drives
+                  // the "Project N" header so it matches visual order.
+                  const project = projects?.[origIndex];
+                  return (
                   <Box
-                    key={index}
+                    key={origIndex}
                     sx={{
                       borderRadius: 2.5,
                       border: '1px solid',
@@ -293,10 +315,15 @@ export default function ConsultantForm(props: iProps) {
                     {/* Project header */}
                     <Box sx={{ px: 2, py: 1, bgcolor: alpha('#F6F9FC', 0.6), borderBottom: '1px solid', borderColor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Typography variant="body2" fontWeight={600} color="#5A6A85">
-                        Project {index + 1}
+                        Project {displayIndex + 1}
+                        {project?.isCurrent && (
+                          <Typography component="span" variant="caption" sx={{ ml: 1, color: '#EC4599', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                            · Current
+                          </Typography>
+                        )}
                       </Typography>
                       {isEditing && (
-                        <IconButton size="small" onClick={() => setProjects((pre) => pre?.filter((_, i) => i !== index))} sx={{ color: '#EF4444', '&:hover': { bgcolor: alpha('#EF4444', 0.08) } }}>
+                        <IconButton size="small" onClick={() => setProjects((pre) => pre?.filter((_, i) => i !== origIndex))} sx={{ color: '#EF4444', '&:hover': { bgcolor: alpha('#EF4444', 0.08) } }}>
                           <IconTrash size={15} />
                         </IconButton>
                       )}
@@ -305,15 +332,15 @@ export default function ConsultantForm(props: iProps) {
                     {/* Project fields */}
                     <Box sx={{ p: 2 }}>
                       <Grid container spacing={2}>
-                        <CustomTextField label="Project Name" fullWidth selectedValue={project?.projectName || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectName', e.target.value, index)} />
-                        <CustomTextField label="Project Domain" fullWidth selectedValue={project?.projectDomain || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectDomain', e.target.value, index)} />
-                        <CustomTextField label="Project City" fullWidth selectedValue={project?.projectCity || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectCity', e.target.value, index)} />
-                        <CustomTextField label="Project State" fullWidth selectedValue={project?.projectState || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectState', e.target.value, index)} />
+                        <CustomTextField label="Project Name" fullWidth selectedValue={project?.projectName || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectName', e.target.value, origIndex)} />
+                        <CustomTextField label="Project Domain" fullWidth selectedValue={project?.projectDomain || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectDomain', e.target.value, origIndex)} />
+                        <CustomTextField label="Project City" fullWidth selectedValue={project?.projectCity || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectCity', e.target.value, origIndex)} />
+                        <CustomTextField label="Project State" fullWidth selectedValue={project?.projectState || ''} disabled={!isEditing} onChange={(e) => onProjectChange('projectState', e.target.value, origIndex)} />
                         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                           <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker views={['month', 'year']} disabled={!isEditing} label="Project Start Date"
                               value={project?.projectStartDate ? dayjs(project.projectStartDate) : null}
-                              onChange={(v) => onProjectChange('projectStartDate', v, index)}
+                              onChange={(v) => onProjectChange('projectStartDate', v, origIndex)}
                               slotProps={{ textField: { size: 'small', fullWidth: true, disabled: !isEditing, sx: pickerSx } }} />
                           </LocalizationProvider>
                         </Grid>
@@ -322,7 +349,7 @@ export default function ConsultantForm(props: iProps) {
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                               <DatePicker views={['month', 'year']} disabled={!isEditing} label="Project End Date"
                                 value={project?.projectEndDate ? dayjs(project.projectEndDate) : null}
-                                onChange={(v) => onProjectChange('projectEndDate', v, index)}
+                                onChange={(v) => onProjectChange('projectEndDate', v, origIndex)}
                                 slotProps={{ textField: { size: 'small', fullWidth: true, disabled: !isEditing, sx: pickerSx } }} />
                             </LocalizationProvider>
                           </Grid>
@@ -335,7 +362,7 @@ export default function ConsultantForm(props: iProps) {
                                 label={<Typography variant="body2" color="text.secondary">Current Project</Typography>}
                                 onChange={() => {
                                   if (isSubmitting || !isEditing) return;
-                                  onProjectChange('isCurrent', !project?.isCurrent, index);
+                                  onProjectChange('isCurrent', !project?.isCurrent, origIndex);
                                 }}
                               />
                             </Box>
@@ -350,7 +377,7 @@ export default function ConsultantForm(props: iProps) {
                             size="small"
                             multiline
                             minRows={2}
-                            onChange={(e) => onProjectChange('projectDescription', e.target.value, index)}
+                            onChange={(e) => onProjectChange('projectDescription', e.target.value, origIndex)}
                             sx={{
                               '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !isEditing ? '#F6F9FC' : 'transparent' },
                               '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#2A3547' },
@@ -360,7 +387,8 @@ export default function ConsultantForm(props: iProps) {
                       </Grid>
                     </Box>
                   </Box>
-                ))}
+                  );
+                })}
               </Box>
             </Grid>
           </SectionCard>
@@ -380,23 +408,20 @@ export default function ConsultantForm(props: iProps) {
   );
 }
 
-function PhoneField({ disabled, onChange, onBlur, label, value, errorText }: PhoneFieldProps) {
-  const [maxPhoneLength, setMaxPhoneLength] = useState(15);
-  const [muiTelInputInfo, setMuiTelInputInfo] = useState<MuiTelInputInfo>();
+// See PhoneField.tsx (shared profile version) for why this is a static cap.
+// The prior country-specific `getExampleNumber(...).formatInternational().length`
+// logic produced cap values ~3 digits short on India, blocking valid inputs.
+const MAX_PHONE_LENGTH = 20;
 
-  const onPhoneChange = (value: string, info: MuiTelInputInfo) => {
-    if (info.countryCode && info.countryCode !== muiTelInputInfo?.countryCode) {
-      const exampleNumberLength = getExampleNumber(info.countryCode, examples)?.formatInternational().length;
-      exampleNumberLength && setMaxPhoneLength(exampleNumberLength);
-      setMuiTelInputInfo(info);
-    }
+function PhoneField({ disabled, onChange, onBlur, label, value, errorText }: PhoneFieldProps) {
+  const onPhoneChange = (value: string, _info: MuiTelInputInfo) => {
     onChange(value);
   };
 
   return (
     <MuiTelInput
       disabled={disabled}
-      slotProps={{ htmlInput: { maxLength: maxPhoneLength } as React.InputHTMLAttributes<HTMLInputElement> }}
+      slotProps={{ htmlInput: { maxLength: MAX_PHONE_LENGTH } as React.InputHTMLAttributes<HTMLInputElement> }}
       defaultCountry="US"
       onChange={onPhoneChange}
       onBlur={() => onBlur && onBlur()}

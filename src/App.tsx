@@ -38,6 +38,13 @@ import Projects from './pages/Marketing/Projects/Projects';
 import PerformancePage from './pages/Performance/PerformancePage';
 import MyDocuments from './pages/Documents/MyDocuments';
 import Landing from './pages/Landing/Landing';
+import LegalPage from './pages/Legal/LegalPage';
+import {
+  PRIVACY_CONTENT,
+  TERMS_CONTENT,
+  SECURITY_CONTENT,
+  STATUS_CONTENT,
+} from './pages/Legal/legalContent';
 import { AiProvider } from './context/AiContext';
 import { RequirementAiChatProvider } from './context/RequirementAiChatContext';
 import FloatingAiChat from './components/aiChat/FloatingAiChat';
@@ -71,6 +78,22 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* Public legal / policy pages — always reachable, no auth gate.
+            Each route renders the shared LegalPage shell with a content blob
+            from legalContent.ts. */}
+        <Route
+          path="/privacy"
+          element={<LegalPage content={PRIVACY_CONTENT} />}
+        />
+        <Route path="/terms" element={<LegalPage content={TERMS_CONTENT} />} />
+        <Route
+          path="/security"
+          element={<LegalPage content={SECURITY_CONTENT} />}
+        />
+        <Route
+          path="/status"
+          element={<LegalPage content={STATUS_CONTENT} />}
+        />
         {/* Pathless layout route — children carry their own paths (e.g.
             `dashboard` → /dashboard) and render inside <Layout/>. Keeping
             this pathless avoids colliding with the public `/` → Landing
