@@ -957,24 +957,11 @@ export default function RequirementsForm(props: Props) {
                       </Button>
                     )}
 
-                  {!disableCopyRequirement && !isChildRecord && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<IconCopy size={16} />}
-                      onClick={() => setCopyAlert(true)}
-                      sx={{
-                        borderColor: 'grey.300',
-                        color: '#5A6A85',
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        borderRadius: '8px',
-                        px: 2,
-                      }}
-                    >
-                      Copy
-                    </Button>
-                  )}
+                  {/* Copy button intentionally hidden for all roles —
+                      see note in Requirements.tsx grid actions column. The
+                      underlying setCopyAlert/onCopy/handleCopyRequirement
+                      machinery + confirm dialog stay in place so flipping
+                      this back later is a one-block JSX restore. */}
 
                   {!disableDelete && isSuperAdmin && (
                     <Button
@@ -1244,9 +1231,22 @@ export default function RequirementsForm(props: Props) {
             <SectionCard
               number={2}
               title={`Marketer Assignments (${children.length})`}
-              right={
-                isParentEditor &&
-                !archive && (
+              right={(() => {
+                if (archive) return null;
+                // Parent-editors (admin / support / super-admin) always see
+                // the button — they manage the full marketer roster.
+                // A marketing-role user sees the button as a self-assign
+                // shortcut, but only while they haven't already been
+                // assigned to this parent — once they have a child, there's
+                // nothing for them to do here. AssignRequirementDrawer
+                // detects the role itself and renders the right mode.
+                const isCurrentMarketerAssigned = children.some(
+                  (c) => c.assignedToRef && c.assignedToRef === user.id
+                );
+                const isMarketing = userRoles.includes(UserRole.marketing);
+                const canSelfAssign = isMarketing && !isCurrentMarketerAssigned;
+                if (!isParentEditor && !canSelfAssign) return null;
+                return (
                   <Button
                     size="small"
                     variant="contained"
@@ -1266,10 +1266,10 @@ export default function RequirementsForm(props: Props) {
                       },
                     }}
                   >
-                    Assign
+                    {isParentEditor ? 'Assign' : 'Assign me'}
                   </Button>
-                )
-              }
+                );
+              })()}
             >
               <Grid size={12}>
                 {loadingChildren ? (

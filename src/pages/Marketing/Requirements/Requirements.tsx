@@ -877,27 +877,10 @@ export default function Requirements() {
           isParentEditor && !archive && !row.isChildRow && !row.parentReqID;
         return (
           <Stack direction="row" spacing={0.25} alignItems="center">
-            {!archive && (
-              <Tooltip title="Copy this requirement">
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setViewData(row);
-                    handleCopyRow(row);
-                  }}
-                  sx={{
-                    color: '#5A6A85',
-                    '&:hover': {
-                      bgcolor: 'rgba(55, 183, 234, 0.08)',
-                      color: '#1A9FD4',
-                    },
-                  }}
-                >
-                  <IconCopy size={16} />
-                </IconButton>
-              </Tooltip>
-            )}
+            {/* Copy IconButton intentionally hidden for all roles. The
+                underlying handleCopyRow / handleCopy / reqToCopy plumbing
+                stays in place so this is a one-block JSX restore if we
+                want to expose copy again. */}
             {canAssign && (
               <Tooltip title="Assign marketers">
                 <IconButton
