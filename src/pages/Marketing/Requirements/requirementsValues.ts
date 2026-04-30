@@ -4,6 +4,7 @@ import { ValidationMeta } from '../../../utils/validators';
 
 export const reqStatusOptions: RequirementStatus[] = [
   'New Working',
+  'Submission In Progress',
   'Submitted',
   'Interviewed',
   'Cancelled',
@@ -55,6 +56,7 @@ export const requirementFormInitialValues = {
 
 export const reqirementStatusColors: ReqirementStatusColors = {
   'New Working': '#1976D2',
+  'Submission In Progress': '#F59E0B',
   Submitted: '#4CAF50',
   Interviewed: '#03A9F4',
   Cancelled: '#D32F2F',
