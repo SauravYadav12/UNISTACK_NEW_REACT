@@ -38,11 +38,16 @@ export const MarketingReports = ({
                       value={a.totalAssigned}
                     />
                     <MyDataRow
+                      href={href}
+                      label="Total Submission In Progress"
+                      value={a['Submission In Progress']}
+                    />
+                    <MyDataRow
                       href={href + `&reqStatus=Submitted`}
                       label="Total Position Submitted"
                       value={a.Submitted}
                     />
-                    <MyDataRow
+                    {/* <MyDataRow
                       href={href + `&reqStatus=Project Active`}
                       label="Total Project Active"
                       value={a['Project Active']}
@@ -51,7 +56,7 @@ export const MarketingReports = ({
                       href={href + `&reqStatus=Project Inactive`}
                       label="Total Project In-Active"
                       value={a['Project Inactive']}
-                    />
+                    /> */}
                     <MyDataRow
                       href={href + `&reqStatus=Cancelled`}
                       label="Total Position Cancelled"
