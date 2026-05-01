@@ -51,6 +51,7 @@ interface NavItem extends Item {
 
 const reqStatusOptions: RequirementStatus[] = [
   'New Working',
+  'Submission In Progress',
   'Submitted',
   'Interviewed',
   'Cancelled',
@@ -140,6 +141,8 @@ function Sidebar({ toggleSideBar }: any) {
     switch (status) {
       case 'New Working':
         return <AcUnit style={{ color: '#1976D2' }} fontSize="small" />;
+      case 'Submission In Progress':
+        return <PostAdd style={{ color: '#F59E0B' }} fontSize="small" />;
       case 'Submitted':
         return (
           <WorkspacePremium style={{ color: '#4CAF50' }} fontSize="small" />
