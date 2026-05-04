@@ -481,11 +481,29 @@ export default function Requirements() {
       width: 90,
       filterable: false,
       sortable: false,
+      // Span every column to the right when this row is a date separator
+      // so the date+count label has the full grid width to render in
+      // (instead of being clipped to the 90px View column, where it was
+      // truncating "MAY 04 2026" to "MAY 04 20"). Numbers count from
+      // this column inclusive — view + reqID + reqStatus + assignedTo +
+      // appliedFor + jobTitle + clientCompany + primeVendorCompany +
+      // vendorCompany + reqEnteredBy + createdAt + actions = 12.
+      // Note: MUI's `colSpan` callback receives positional args
+      // `(value, row, column, apiRef)` — destructuring `{ row }` here
+      // would crash with "Cannot destructure 'row' of 'undefined'".
+      colSpan: (_value, row) =>
+        (row as Row | undefined)?.dateSeparator ? 12 : 1,
       renderCell: ({ row }) => {
         if (row.dateSeparator) {
           const { count = 0, fromDate } = row;
+          const countLabel = count <= 9 ? `0${count}` : `${count}`;
           return (
-            <Box display="flex" alignItems="center" height="25px">
+            <Box
+              display="flex"
+              alignItems="center"
+              height="25px"
+              sx={{ gap: 0.75 }}
+            >
               <Typography
                 sx={{
                   fontSize: '0.72rem',
@@ -496,9 +514,27 @@ export default function Requirements() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {fromDate ? moment(fromDate).format(dateFormate2) : ''} ·{' '}
-                {count <= 9 ? `0${count}` : count}
+                {fromDate ? moment(fromDate).format(dateFormate2) : ''}
               </Typography>
+              {/* Count chip — brand pink against the blue date so the
+                  daily total reads as a separate, scannable accent. */}
+              <Box
+                component="span"
+                sx={{
+                  px: 0.75,
+                  py: 0.125,
+                  borderRadius: 1,
+                  bgcolor: alpha('#EC4599', 0.14),
+                  color: '#DB2777',
+                  fontSize: '0.7rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.08em',
+                  whiteSpace: 'nowrap',
+                  border: `1px solid ${alpha('#EC4599', 0.3)}`,
+                }}
+              >
+                {countLabel}
+              </Box>
             </Box>
           );
         }
