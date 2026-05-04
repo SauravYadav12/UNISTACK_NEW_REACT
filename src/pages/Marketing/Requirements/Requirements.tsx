@@ -647,8 +647,14 @@ export default function Requirements() {
       width: 160,
       renderCell: ({ row }) => {
         if (row.dateSeparator) return null;
+        // Same two-source check as the chevron / AssignedTo / AppliedFor
+        // columns. Server stamps `row.hasChildren` on every parent row that
+        // has at least one child — primary signal even before the user
+        // expands. Cache fallback covers in-session expansions for parents
+        // that picked up children after the initial page load.
         const cachedKids = childrenMap.get(row.reqID || '');
-        const hasChildren = !!cachedKids && cachedKids.length > 0;
+        const hasChildren =
+          !!row.hasChildren || (!!cachedKids && cachedKids.length > 0);
         // Parent-with-children: no status (rollup belongs to children).
         if (!row.isChildRow && !row.parentReqID && hasChildren) {
           return (
