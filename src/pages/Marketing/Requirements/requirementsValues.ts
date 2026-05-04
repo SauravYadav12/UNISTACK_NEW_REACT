@@ -4,6 +4,11 @@ import { ValidationMeta } from '../../../utils/validators';
 
 export const reqStatusOptions: RequirementStatus[] = [
   'New Working',
+  // Manual operator-set transitional state — picks up where "New Working"
+  // ends and signals the consultant is actively being prepared / packaged
+  // before the formal submission. Sits between New Working and Submitted
+  // so the dropdown mirrors the natural workflow.
+  'Submission in progress',
   'Submitted',
   'Interviewed',
   'Cancelled',
@@ -55,6 +60,9 @@ export const requirementFormInitialValues = {
 
 export const reqirementStatusColors: ReqirementStatusColors = {
   'New Working': '#37B7EA',
+  // Teal bridges the cyan-blue of "New Working" and the green of "Submitted"
+  // so the chip itself reads as a transition state on the pipeline strip.
+  'Submission in progress': '#14B8A6',
   Submitted: '#10B981',
   Interviewed: '#EC4599',
   Cancelled: '#EF4444',

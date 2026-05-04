@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import {
   IconLayoutGrid,
   IconPlayerPlay,
+  IconClockHour4,
   IconSend,
   IconUsersGroup,
   IconX,
@@ -31,6 +32,11 @@ const STATUS_META: Record<
     label: 'New Working',
     color: '#37B7EA',
     icon: <IconPlayerPlay size={16} />,
+  },
+  'Submission in progress': {
+    label: 'In Progress',
+    color: '#14B8A6',
+    icon: <IconClockHour4 size={16} />,
   },
   Submitted: {
     label: 'Submitted',
@@ -62,6 +68,7 @@ const STATUS_META: Record<
 const STATUS_ORDER: (keyof typeof STATUS_META)[] = [
   'All',
   'New Working',
+  'Submission in progress',
   'Submitted',
   'Interviewed',
   'Project Active',
