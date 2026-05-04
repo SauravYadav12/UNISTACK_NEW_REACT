@@ -212,18 +212,56 @@ export const PARENT_OWNED_FIELD_SET = new Set<keyof IRequirement>([
   'duplicateWith',
 ]);
 
+/**
+ * Fields that are editable on BOTH the parent and each child, where the
+ * change stays on whichever record was open when the edit happened. This
+ * lets a marketer override the client / prime-vendor / vendor contact for
+ * just their assignment (a different recruiter at the same client, a
+ * different prime, etc.) without overwriting the parent's canonical info,
+ * AND lets support / admin keep the parent's record clean.
+ *
+ * Routing: dirty values land in the `shared` bucket of `splitDirtyByOwnership`
+ * and are then merged into the patch for whichever doc the form is saving
+ * (parent OR child).
+ */
+export const SHARED_EDITABLE_FIELD_SET = new Set<keyof IRequirement>([
+  'clientCompany',
+  'clientWebsite',
+  'clientAddress',
+  'clientPerson',
+  'clientPhone',
+  'clientEmail',
+  'primeVendorCompany',
+  'primeVendorWebsite',
+  'primeVendorName',
+  'primeVendorPhone',
+  'primeVendorEmail',
+  'vendorCompany',
+  'vendorWebsite',
+  'vendorPersonName',
+  'vendorPhone',
+  'vendorEmail',
+]);
+
 export function splitDirtyByOwnership(
   dirty: Partial<IRequirement>,
-): { parent: Partial<IRequirement>; child: Partial<IRequirement> } {
+): {
+  parent: Partial<IRequirement>;
+  child: Partial<IRequirement>;
+  shared: Partial<IRequirement>;
+} {
   const parent: Partial<IRequirement> = {};
   const child: Partial<IRequirement> = {};
+  const shared: Partial<IRequirement> = {};
   for (const k of Object.keys(dirty) as (keyof IRequirement)[]) {
     const v = dirty[k];
-    if (PARENT_OWNED_FIELD_SET.has(k)) {
+    if (SHARED_EDITABLE_FIELD_SET.has(k)) {
+      (shared as Record<string, unknown>)[k as string] = v;
+    } else if (PARENT_OWNED_FIELD_SET.has(k)) {
       (parent as Record<string, unknown>)[k as string] = v;
     } else {
       (child as Record<string, unknown>)[k as string] = v;
     }
   }
-  return { parent, child };
+  return { parent, child, shared };
 }

@@ -426,10 +426,17 @@ export default function Requirements() {
         if (row.dateSeparator) return null;
         if (row.isChildRow) return null;
         if (row.parentReqID) return null; // child surfaced by filter — no chevron
-        const isLoading = loadingChildrenFor.has(row.reqID || '');
-        const isOpen = expandedParents.has(row.reqID || '');
+        // Render the chevron only on parents that actually have children.
+        // The server stamps `hasChildren: true` in `getAllRrequirements`;
+        // already-expanded rows fall back to the cached children count so
+        // the chevron stays visible after the first expand even if the
+        // server flag drifts. Legacy standalone parents never qualify.
         const cached = childrenMap.get(row.reqID || '');
         const count = cached?.length ?? 0;
+        const hasChildren = !!row.hasChildren || count > 0;
+        if (!hasChildren) return null;
+        const isLoading = loadingChildrenFor.has(row.reqID || '');
+        const isOpen = expandedParents.has(row.reqID || '');
         return (
           <Stack direction="row" alignItems="center" spacing={0.25}>
             <IconButton

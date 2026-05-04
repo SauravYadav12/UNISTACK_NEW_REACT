@@ -69,6 +69,7 @@ import {
   reqStatusOptions,
   requirementFormInitialValues,
   requirementValidationMeta,
+  SHARED_EDITABLE_FIELD_SET,
   splitDirtyByOwnership,
   taxTypeOptions,
   techStack,
@@ -467,13 +468,19 @@ export default function RequirementsForm(props: Props) {
     delete payload.mComment;
     payload = getChangedFields(viewData || {}, payload, reqFields);
 
-    // Ownership split — parent-only fields stay on the parent; child-only on the child.
+    // Ownership split. Three buckets:
+    //   - parent  → fields that only live on the parent (jobTitle, jobDescription, …)
+    //   - child   → fields that only live on the child (reqStatus, mComment, …)
+    //   - shared  → fields editable on both records, applied to whichever
+    //               doc the form is currently saving (client / prime / vendor info).
+    // A child record gets `child + shared`; a parent-with-children gets
+    // `parent + shared`. Standalone records save everything as-is.
     if (isChildRecord) {
-      const { child } = splitDirtyByOwnership(payload);
-      payload = child;
+      const { child, shared } = splitDirtyByOwnership(payload);
+      payload = { ...child, ...shared };
     } else if (isParentWithChildren) {
-      const { parent } = splitDirtyByOwnership(payload);
-      payload = parent;
+      const { parent, shared } = splitDirtyByOwnership(payload);
+      payload = { ...parent, ...shared };
     }
 
     if (comment.trim().length) {
@@ -550,14 +557,20 @@ export default function RequirementsForm(props: Props) {
 
   // For parent-with-children editing: disable parent-owned fields if we're
   // looking at a child; disable child-owned fields if we're looking at a
-  // parent in view. Legacy/standalone = everything editable.
+  // parent in view — except for shared-editable fields (client / prime
+  // vendor / vendor info) which both parent and child can edit, with the
+  // change persisting on whichever record was open. Legacy/standalone =
+  // everything editable.
   const isParentOwned = (key: keyof IRequirement) =>
     PARENT_OWNED_FIELD_SET.has(key);
+  const isSharedEditable = (key: keyof IRequirement) =>
+    SHARED_EDITABLE_FIELD_SET.has(key);
 
   const fieldDisabled = (key: keyof IRequirement) => {
     if (!isEditing) return true;
+    if (isSharedEditable(key)) return false; // both sides can edit; routing happens at save
     if (isChildRecord && isParentOwned(key)) return true; // child can't touch parent fields
-    if (isParentWithChildren && !isParentOwned(key)) return true; // parent can't touch child fields
+    if (isParentWithChildren && !isParentOwned(key)) return true; // parent can't touch child-only fields
     return false;
   };
 

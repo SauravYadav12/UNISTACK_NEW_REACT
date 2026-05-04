@@ -81,6 +81,12 @@ export interface IRequirement {
   duplicateWith?: string;
   parentReqID?: string;
   childSuffix?: string;
+  /** Server-enriched flag on parent rows — `true` when at least one child
+   *  row exists with `parentReqID === this.reqID`. The grid uses it to
+   *  render the expand chevron only on parents that actually have
+   *  children, so legacy standalone parents stay clean. Always set on the
+   *  server response; never persisted on the doc itself. */
+  hasChildren?: boolean;
   /**
    * Populated by `GET /requirements/search/:reqID` only — inline info about
    * the project this requirement is already attached to, if any. Used by
