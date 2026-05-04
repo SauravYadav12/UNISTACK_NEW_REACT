@@ -87,9 +87,15 @@ const STATUS_ORDER: (keyof typeof STATUS_META)[] = [
   'Cancelled',
 ];
 
-// Tiles that don't act as status filters — they're informational only and
-// shouldn't drive the grid's reqStatus query when clicked.
-const INFO_ONLY_TILES = new Set<keyof typeof STATUS_META>(['AllAssigned']);
+/**
+ * Sentinel `activeStatus` value the parent component uses to mark the
+ * "All Assigned" tile as active. Not a real reqStatus — when this value
+ * comes back through `onStatusChange`, the parent should swap to the
+ * children-only grid view (server `?onlyChildren=true`) instead of
+ * setting `reqStatus`. Exported so callers reference one constant
+ * instead of duplicating the magic string.
+ */
+export const ASSIGNED_VIEW_KEY = '__assigned__';
 
 interface Props {
   /** Currently active status filter (empty string = All) */
@@ -160,13 +166,23 @@ export default function PipelineSnapshot({
         // their own denominators, not slices of the parent total.
         const isSummary = s === 'All' || s === 'AllAssigned';
         const pct = !isSummary && total > 0 ? (value / total) * 100 : 0;
-        const active = s === 'All' ? activeStatus === '' : activeStatus === s;
-        // Click target — empty string clears the status filter; status
-        // names route to the corresponding grid filter; AllAssigned is
-        // info-only and clicking just no-ops.
-        const key = s === 'All' || s === 'AllAssigned' ? '' : s;
-        const clickable = !INFO_ONLY_TILES.has(s);
-        return { tileKey: s, key, meta, value, pct, active, isSummary, clickable };
+        // Click target:
+        //   All         → '' (clears filter)
+        //   AllAssigned → ASSIGNED_VIEW_KEY (parent swaps grid to children-only)
+        //   anything else → the status string
+        const key =
+          s === 'All'
+            ? ''
+            : s === 'AllAssigned'
+              ? ASSIGNED_VIEW_KEY
+              : s;
+        const active =
+          s === 'All'
+            ? activeStatus === ''
+            : s === 'AllAssigned'
+              ? activeStatus === ASSIGNED_VIEW_KEY
+              : activeStatus === s;
+        return { tileKey: s, key, meta, value, pct, active, isSummary, clickable: true };
       }),
     [counts, total, activeStatus]
   );

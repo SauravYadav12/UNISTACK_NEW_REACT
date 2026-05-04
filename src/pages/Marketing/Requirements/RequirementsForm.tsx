@@ -1386,7 +1386,10 @@ export default function RequirementsForm(props: Props) {
               <ChipSummary
                 items={[
                   { label: 'Client', value: values.clientCompany },
+                  { label: 'Website', value: values.clientWebsite },
+                  { label: 'Address', value: values.clientAddress },
                   { label: 'Person', value: values.clientPerson },
+                  { label: 'Phone', value: values.clientPhone },
                   { label: 'Email', value: values.clientEmail },
                 ]}
               />
@@ -1450,7 +1453,9 @@ export default function RequirementsForm(props: Props) {
               <ChipSummary
                 items={[
                   { label: 'Prime', value: values.primeVendorCompany },
+                  { label: 'Website', value: values.primeVendorWebsite },
                   { label: 'Person', value: values.primeVendorName },
+                  { label: 'Phone', value: values.primeVendorPhone },
                   { label: 'Email', value: values.primeVendorEmail },
                 ]}
               />
@@ -1507,7 +1512,9 @@ export default function RequirementsForm(props: Props) {
               <ChipSummary
                 items={[
                   { label: 'Vendor', value: values.vendorCompany },
+                  { label: 'Website', value: values.vendorWebsite },
                   { label: 'Person', value: values.vendorPersonName },
+                  { label: 'Phone', value: values.vendorPhone },
                   { label: 'Email', value: values.vendorEmail },
                 ]}
               />

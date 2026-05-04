@@ -39,7 +39,7 @@ import { filterOperatorsForDateField } from '../../../components/datagrid/Custom
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
 import AssignRequirementDrawer from '../../../components/requirement/AssignRequirementDrawer';
-import PipelineSnapshot from '../../../components/requirement/PipelineSnapshot';
+import PipelineSnapshot, { ASSIGNED_VIEW_KEY } from '../../../components/requirement/PipelineSnapshot';
 import PersonPill from '../../../components/ui/PersonPill';
 import { dateFormate2 } from '../../../components/constants';
 
@@ -133,14 +133,31 @@ export default function Requirements() {
     userRoles.includes(UserRole.admin) ||
     userRoles.includes(UserRole.support);
 
-  // ── Pipeline snapshot active status from URL search param ──
-  const activeReqStatus = searchParams.get('reqStatus') || '';
+  // ── Pipeline snapshot active status from URL search params ──
+  // Two views can be "active": a status filter (`reqStatus=…`) or the
+  // children-only view (`onlyChildren=true`). They're mutually exclusive
+  // — clicking a real status clears `onlyChildren` and vice versa.
+  const onlyChildrenActive = searchParams.get('onlyChildren') === 'true';
+  const activeReqStatus = onlyChildrenActive
+    ? ASSIGNED_VIEW_KEY
+    : searchParams.get('reqStatus') || '';
 
   const handlePipelineStatusChange = (status: string) => {
     setSearchParams(
       (prev) => {
-        if (!status) prev.delete('reqStatus');
-        else prev.set('reqStatus', status);
+        if (status === ASSIGNED_VIEW_KEY) {
+          // All Assigned → server filter for child rows only.
+          prev.delete('reqStatus');
+          prev.set('onlyChildren', 'true');
+        } else if (!status) {
+          // All → clear both filters.
+          prev.delete('reqStatus');
+          prev.delete('onlyChildren');
+        } else {
+          // Real status filter — drop the children-only override.
+          prev.set('reqStatus', status);
+          prev.delete('onlyChildren');
+        }
         return prev;
       },
       { replace: true }
