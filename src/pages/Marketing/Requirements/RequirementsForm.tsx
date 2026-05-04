@@ -651,6 +651,10 @@ export default function RequirementsForm(props: Props) {
   }
 
   // ── Chip-summary helper for a collapsed parent section ──
+  // Custom chip-like Box (instead of MUI <Chip label="…">) so we can color
+  // the label and the value independently — blue title, dark-orange value
+  // — for a strong contrast read at a glance. ~30% larger than the
+  // original 0.72rem chips: legible without dominating the section.
   function ChipSummary({
     items,
   }: {
@@ -666,18 +670,44 @@ export default function RequirementsForm(props: Props) {
     return (
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
         {nonEmpty.map((it) => (
-          <Chip
+          <Box
             key={it.label}
-            label={`${it.label}: ${it.value}`}
-            size="small"
             sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1.5,
+              py: 0.625,
+              borderRadius: '999px',
               bgcolor: alpha(tokens.colors.blue, 0.08),
-              color: tokens.colors.blueDark,
-              fontWeight: 600,
-              fontSize: '0.72rem',
-              height: 24,
+              border: `1px solid ${alpha(tokens.colors.blue, 0.18)}`,
+              maxWidth: '100%',
             }}
-          />
+          >
+            <Box
+              component="span"
+              sx={{
+                color: tokens.colors.blueDark,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {it.label}:
+            </Box>
+            <Box
+              component="span"
+              sx={{
+                color: '#EA580C',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                wordBreak: 'break-word',
+                minWidth: 0,
+              }}
+            >
+              {it.value}
+            </Box>
+          </Box>
         ))}
       </Stack>
     );
