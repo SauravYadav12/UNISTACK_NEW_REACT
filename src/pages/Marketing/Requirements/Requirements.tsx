@@ -664,8 +664,13 @@ export default function Requirements() {
       width: 170,
       renderCell: ({ row }) => {
         if (row.dateSeparator) return null;
+        // Two-source check — same pattern as the expand chevron. Server
+        // stamps `row.hasChildren` on first page load (authoritative even
+        // before any expansion); cache fallback covers any later session
+        // changes after the operator has expanded the row at least once.
         const cachedKids = childrenMap.get(row.reqID || '');
-        const hasChildren = !!cachedKids && cachedKids.length > 0;
+        const hasChildren =
+          !!row.hasChildren || (!!cachedKids && cachedKids.length > 0);
         if (!row.isChildRow && !row.parentReqID && hasChildren) {
           return (
             <Typography variant="caption" color="text.disabled">
@@ -682,8 +687,13 @@ export default function Requirements() {
       width: 170,
       renderCell: ({ row }) => {
         if (row.dateSeparator) return null;
+        // Two-source check — same pattern as the expand chevron. Server
+        // stamps `row.hasChildren` on first page load (authoritative even
+        // before any expansion); cache fallback covers any later session
+        // changes after the operator has expanded the row at least once.
         const cachedKids = childrenMap.get(row.reqID || '');
-        const hasChildren = !!cachedKids && cachedKids.length > 0;
+        const hasChildren =
+          !!row.hasChildren || (!!cachedKids && cachedKids.length > 0);
         if (!row.isChildRow && !row.parentReqID && hasChildren) {
           return (
             <Typography variant="caption" color="text.disabled">
