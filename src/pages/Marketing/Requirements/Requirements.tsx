@@ -506,35 +506,37 @@ export default function Requirements() {
             >
               <Typography
                 sx={{
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.12em',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
                   color: '#1A9FD4',
-                  textTransform: 'uppercase',
                   whiteSpace: 'nowrap',
                 }}
               >
                 {fromDate ? moment(fromDate).format(dateFormate2) : ''}
               </Typography>
-              {/* Count chip — brand pink against the blue date so the
-                  daily total reads as a separate, scannable accent. */}
-              <Box
+              <Typography
                 component="span"
                 sx={{
-                  px: 0.75,
-                  py: 0.125,
-                  borderRadius: 1,
-                  bgcolor: alpha('#EC4599', 0.14),
-                  color: '#DB2777',
-                  fontSize: '0.7rem',
+                  fontSize: '0.78rem',
+                  color: 'text.disabled',
+                  fontWeight: 600,
+                }}
+              >
+                -
+              </Typography>
+              {/* Count — dark orange so the daily total stands out
+                  against the blue date as its own scannable accent. */}
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: '0.82rem',
                   fontWeight: 900,
-                  letterSpacing: '0.08em',
+                  color: '#EA580C',
                   whiteSpace: 'nowrap',
-                  border: `1px solid ${alpha('#EC4599', 0.3)}`,
                 }}
               >
                 {countLabel}
-              </Box>
+              </Typography>
             </Box>
           );
         }
