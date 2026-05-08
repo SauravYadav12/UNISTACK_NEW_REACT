@@ -26,10 +26,24 @@ export interface LeaveBalance {
   leaveType: string | LeaveType;
   allocated: number;
   used: number;
+  /**
+   * Per-user override of the LeaveType's global `monthlyQuota`. `null` /
+   * missing → use the type default. Number → this user accrues at this
+   * rate instead. Set by an admin for mid-year joiners to avoid the
+   * cumulative ceiling unlocking the full balance on month 1.
+   */
+  monthlyQuota?: number | null;
   // Server-computed — how many days the user can still avail this month,
   // taking into account carry-forward from earlier months. Only present on
   // responses from /leave-balances/my/:year and /leave-balances/user/:id/:year.
   monthlyAvailable?: number;
+  /**
+   * Server-computed effective per-month accrual rate. Resolves through:
+   *   per-user override → type uncapped check → allocated/12 default.
+   * `null` means uncapped (UL / ML without an override). Same response
+   * channels as `monthlyAvailable`.
+   */
+  effectiveMonthlyQuota?: number | null;
   notes?: string;
 }
 

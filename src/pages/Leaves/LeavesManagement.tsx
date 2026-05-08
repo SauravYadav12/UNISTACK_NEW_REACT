@@ -4,6 +4,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel,
   IconButton, Tooltip, CircularProgress, LinearProgress, Divider,
+  Popover,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
@@ -872,6 +873,32 @@ function LeaveTypeDialog({
               onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
             />
           </Stack>
+          {/* Monthly quota — the per-employee accrual rate the type uses
+              by default. Blank → uncapped (the full annual balance is
+              available immediately, used by ML / UL). Number → cumulative
+              `min(month × quota, allocated)` ceiling per employee. Per-user
+              overrides are set on the Allocation cell. */}
+          <TextField
+            label="Monthly quota"
+            type="number"
+            size="small"
+            sx={{ maxWidth: 200 }}
+            value={form.monthlyQuota == null ? '' : String(form.monthlyQuota)}
+            inputProps={{ min: 0, step: 0.5 }}
+            placeholder="Leave blank for uncapped"
+            helperText={
+              form.monthlyQuota == null
+                ? 'Uncapped — full annual balance available immediately'
+                : `${form.monthlyQuota} day${form.monthlyQuota === 1 ? '' : 's'} per month, cumulative`
+            }
+            onChange={(e) => {
+              const raw = e.target.value;
+              setForm((f) => ({
+                ...f,
+                monthlyQuota: raw.trim() === '' ? null : Number(raw),
+              }));
+            }}
+          />
           <TextField
             label="Description" multiline rows={2} fullWidth size="small"
             value={form.description || ''}
@@ -920,9 +947,18 @@ function EmployeeBalancesPanel() {
     [year],
   );
 
-  async function handleAllocationChange(userId: string, leaveTypeId: string, allocated: number) {
+  async function handleAllocationChange(
+    userId: string,
+    leaveTypeId: string,
+    allocated: number,
+    // monthlyQuota patch:
+    //   undefined → don't touch the existing override
+    //   null      → clear the override (revert to type default)
+    //   number    → set the override
+    monthlyQuota?: number | null,
+  ) {
     try {
-      await updateAllocation(userId, year, leaveTypeId, allocated);
+      await updateAllocation(userId, year, leaveTypeId, allocated, monthlyQuota);
       loadData();
     } catch {
       toast.error('Update failed');
@@ -1080,7 +1116,8 @@ function EmployeeBalancesPanel() {
                           used={bal?.used ?? 0}
                           monthlyAvailable={t.monthlyQuota != null && !t.isUnpaidBucket ? bal?.monthlyAvailable : undefined}
                           monthlyQuota={t.monthlyQuota}
-                          onSave={(v) => handleAllocationChange(u._id, t._id, v)}
+                          monthlyQuotaOverride={bal?.monthlyQuota}
+                          onSave={(v, mq) => handleAllocationChange(u._id, t._id, v, mq)}
                         />
                       </Box>
                     );
@@ -1163,87 +1200,167 @@ function EmployeeBalancesPanel() {
   );
 }
 
-function AllocationCell({ hasRow, isUnpaidBucket, allocated, used, monthlyAvailable, monthlyQuota, onSave }: {
+function AllocationCell({
+  hasRow,
+  isUnpaidBucket,
+  allocated,
+  used,
+  monthlyAvailable,
+  monthlyQuota,
+  monthlyQuotaOverride,
+  onSave,
+}: {
   hasRow: boolean;
   isUnpaidBucket?: boolean;
   allocated: number;
   used: number;
   /** Present only for types with a monthlyQuota and not the unpaid bucket. */
   monthlyAvailable?: number;
+  /** The LeaveType's global `monthlyQuota` (default rate, used as the
+   *  placeholder for the override input when no override is set). */
   monthlyQuota?: number | null;
-  onSave: (v: number) => void;
+  /** The user's per-row override of the type's global `monthlyQuota`, when
+   *  set. `null`/undefined = no override (use the global default). */
+  monthlyQuotaOverride?: number | null;
+  /** Save callback. `monthlyQuota` is `undefined` when not changed,
+   *  `null` to clear the override, or a number to set/update it. */
+  onSave: (allocated: number, monthlyQuota?: number | null) => void;
 }) {
   const [v, setV] = useState<string>(String(allocated));
-  const [editing, setEditing] = useState(false);
+  // Empty string → not set (= "use default"). Accepts numeric strings.
+  const [q, setQ] = useState<string>(
+    monthlyQuotaOverride != null ? String(monthlyQuotaOverride) : "",
+  );
+  // Popover anchor — set on click, cleared on close. Replaces the inline
+  // edit mode; the editor floats above the table cell so a tall two-field
+  // form doesn't overlap with neighbour cells.
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const editing = Boolean(anchorEl);
 
   const remaining = Math.max(allocated - used, 0);
   const isOverUsed = used > allocated;
+  const hasQuotaOverride = monthlyQuotaOverride != null;
+  // Type doesn't use a monthly cap (UL / ML) — hide the override field
+  // in the editor. UL skips this whole branch anyway.
+  const supportsMonthlyQuota = monthlyQuota != null && !isUnpaidBucket;
+  // Default per-month rate when there is no admin override — comes from
+  // the LeaveType (e.g. PL = 1/mo). Shown in the editor's helper text so
+  // admins know what they're overriding when entering a custom value.
+  const defaultPerMonth = supportsMonthlyQuota
+    ? (monthlyQuota as number)
+    : null;
+
+  function openEditor(e: React.MouseEvent<HTMLElement>) {
+    setV(String(allocated));
+    setQ(monthlyQuotaOverride != null ? String(monthlyQuotaOverride) : "");
+    setAnchorEl(e.currentTarget);
+  }
+  function closeEditor() {
+    setAnchorEl(null);
+  }
 
   function commit() {
     const n = Number(v);
-    if (!Number.isFinite(n) || (hasRow && n === allocated)) { setEditing(false); return; }
-    onSave(Math.max(0, n));
-    setEditing(false);
+    const allocChanged = !hasRow || n !== allocated;
+    const allocValid = Number.isFinite(n);
+
+    // Resolve monthlyQuota patch: empty string means "clear override"; a
+    // numeric string means "set/update". Skip the patch entirely when
+    // the input matches the existing override (no-op).
+    let quotaPatch: number | null | undefined = undefined;
+    if (supportsMonthlyQuota) {
+      if (q.trim() === "") {
+        if (hasQuotaOverride) quotaPatch = null;
+      } else {
+        const parsed = Number(q);
+        if (Number.isFinite(parsed) && parsed >= 0 && parsed !== monthlyQuotaOverride) {
+          quotaPatch = parsed;
+        }
+      }
+    }
+
+    const nothingChanged =
+      !allocChanged && quotaPatch === undefined;
+    if (nothingChanged || !allocValid) {
+      closeEditor();
+      return;
+    }
+    onSave(Math.max(0, n), quotaPatch);
+    closeEditor();
   }
 
   // UL has no allocation — always show the "days taken" view. It's still
   // clickable so HR can grant a custom allocation if they really want to.
-  if (isUnpaidBucket && !editing) {
+  if (isUnpaidBucket) {
     const accent = used > 0 ? tokens.colors.warning : tokens.colors.lightTextSecondary;
     return (
-      <Tooltip
-        title={
-          hasRow
-            ? `Unpaid days taken: ${used}${allocated ? ` · Custom allocation: ${allocated}` : ''} · Click to override`
-            : 'Click to override allocation'
-        }
-        placement="top"
-        arrow
-      >
-        <Box
-          onClick={() => { setV(String(allocated)); setEditing(true); }}
-          sx={{
-            cursor: 'pointer', py: 0.5, px: 1, borderRadius: 1,
-            '&:hover': { bgcolor: alpha(tokens.colors.warning, 0.08) },
-          }}
+      <>
+        <Tooltip
+          title={
+            hasRow
+              ? `Unpaid days taken: ${used}${allocated ? ` · Custom allocation: ${allocated}` : ''} · Click to override`
+              : 'Click to override allocation'
+          }
+          placement="top"
+          arrow
         >
-          <Typography sx={{
-            fontSize: 18,
-            fontWeight: 800,
-            lineHeight: 1,
-            color: accent,
-            fontVariantNumeric: 'tabular-nums',
-          }}>
-            {used}
-          </Typography>
-          <Typography sx={{
-            fontSize: 10,
-            color: tokens.colors.lightTextSecondary,
-            mt: 0.25,
-          }}>
-            {used === 1 ? 'day taken' : 'days taken'}
-          </Typography>
-        </Box>
-      </Tooltip>
+          <Box
+            onClick={openEditor}
+            sx={{
+              cursor: 'pointer', py: 0.5, px: 1, borderRadius: 1,
+              '&:hover': { bgcolor: alpha(tokens.colors.warning, 0.08) },
+            }}
+          >
+            <Typography sx={{
+              fontSize: 18,
+              fontWeight: 800,
+              lineHeight: 1,
+              color: accent,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {used}
+            </Typography>
+            <Typography sx={{
+              fontSize: 10,
+              color: tokens.colors.lightTextSecondary,
+              mt: 0.25,
+            }}>
+              {used === 1 ? 'day taken' : 'days taken'}
+            </Typography>
+          </Box>
+        </Tooltip>
+        <AllocationEditor
+          anchorEl={anchorEl}
+          onClose={closeEditor}
+          v={v}
+          setV={setV}
+          q={q}
+          setQ={setQ}
+          supportsMonthlyQuota={supportsMonthlyQuota}
+          defaultPerMonth={defaultPerMonth}
+          hasQuotaOverride={hasQuotaOverride}
+          commit={commit}
+        />
+      </>
     );
   }
 
-  if (!editing) {
-    const tooltipBase = hasRow
-      ? `Allocated: ${allocated} · Used: ${used}`
-      : 'Click to set allocation';
-    const tooltipMonthly = hasRow && monthlyAvailable != null && monthlyQuota != null
-      ? ` · This month: ${monthlyAvailable} (${monthlyQuota}/mo + carry-forward)`
-      : '';
-    const tooltipEdit = hasRow ? ' · Click to edit allocation' : '';
-    return (
+  const tooltipBase = hasRow
+    ? `Allocated: ${allocated} · Used: ${used}`
+    : 'Click to set allocation';
+  const tooltipMonthly = hasRow && monthlyAvailable != null && monthlyQuota != null
+    ? ` · This month: ${monthlyAvailable} (${monthlyQuota}/mo + carry-forward)`
+    : '';
+  const tooltipEdit = hasRow ? ' · Click to edit allocation' : '';
+  return (
+    <>
       <Tooltip
         title={`${tooltipBase}${tooltipMonthly}${tooltipEdit}`}
         placement="top"
         arrow
       >
         <Box
-          onClick={() => { setV(String(allocated)); setEditing(true); }}
+          onClick={openEditor}
           sx={{
             cursor: 'pointer', py: 0.5, px: 1, borderRadius: 1,
             '&:hover': { bgcolor: alpha(tokens.colors.pink, 0.06) },
@@ -1271,35 +1388,170 @@ function AllocationCell({ hasRow, isUnpaidBucket, allocated, used, monthlyAvaila
           }}>
             {hasRow ? `of ${allocated}` : 'not seeded'}
           </Typography>
+          {/* Available this month — the server-computed per-employee
+              ceiling for the current month (carry-forward + accrual).
+              Highlighted in pink because that's the number admins are
+              actually looking at when triaging "how many leaves can this
+              person take this month". The per-month rate / "1.5/mo" chip
+              is intentionally hidden — admins want the available number,
+              not the rate, in the listing. */}
           {hasRow && monthlyAvailable != null && (
             <Typography sx={{
               fontSize: 9.5,
-              color: tokens.colors.pink,
+              color: hasQuotaOverride ? tokens.colors.warning : tokens.colors.pink,
               fontWeight: 700,
               mt: 0.25,
               fontVariantNumeric: 'tabular-nums',
               letterSpacing: 0.3,
             }}>
-              {monthlyAvailable} this mo
+              {monthlyAvailable} avail this mo
+              {hasQuotaOverride ? ' · custom' : ''}
             </Typography>
           )}
         </Box>
       </Tooltip>
-    );
-  }
+      <AllocationEditor
+        anchorEl={anchorEl}
+        onClose={closeEditor}
+        v={v}
+        setV={setV}
+        q={q}
+        setQ={setQ}
+        supportsMonthlyQuota={supportsMonthlyQuota}
+        defaultPerMonth={defaultPerMonth}
+        hasQuotaOverride={hasQuotaOverride}
+        commit={commit}
+      />
+    </>
+  );
+}
+
+// Floating editor — anchored to the cell's display element via Popover so
+// the two-input form doesn't squeeze inside the table column. Stays open
+// until the admin clicks Save / Cancel or clicks outside.
+function AllocationEditor({
+  anchorEl,
+  onClose,
+  v,
+  setV,
+  q,
+  setQ,
+  supportsMonthlyQuota,
+  defaultPerMonth,
+  hasQuotaOverride,
+  commit,
+}: {
+  anchorEl: HTMLElement | null;
+  onClose: () => void;
+  v: string;
+  setV: (s: string) => void;
+  q: string;
+  setQ: (s: string) => void;
+  supportsMonthlyQuota: boolean;
+  /** `allocated / 12` for the current value of `Allocated` — shown in the
+   *  helper text so the admin can compare their override against the
+   *  default proration before saving. */
+  defaultPerMonth: number | null;
+  hasQuotaOverride: boolean;
+  commit: () => void;
+}) {
   return (
-    <TextField
-      value={v} size="small" type="number"
-      autoFocus
-      onChange={(e) => setV(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') commit();
-        if (e.key === 'Escape') setEditing(false);
-      }}
-      sx={{ width: 70 }}
-      inputProps={{ min: 0 }}
-    />
+    <Popover
+      open={Boolean(anchorEl)}
+      anchorEl={anchorEl}
+      onClose={onClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+      slotProps={{ paper: { sx: { p: 2, width: 240, borderRadius: 2 } } }}
+    >
+      <Stack spacing={1.5}>
+        <TextField
+          value={v}
+          size="small"
+          type="number"
+          autoFocus
+          label="Allocated (yearly)"
+          onChange={(e) => setV(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') onClose();
+          }}
+          inputProps={{ min: 0 }}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+        />
+        {supportsMonthlyQuota && (
+          <Stack spacing={0.75}>
+            <TextField
+              value={q}
+              size="small"
+              type="number"
+              label="Monthly quota"
+              placeholder={defaultPerMonth != null ? String(defaultPerMonth) : ''}
+              helperText={
+                hasQuotaOverride
+                  ? `Override active — type default is ${defaultPerMonth}/mo`
+                  : `Type default ${defaultPerMonth}/mo — override for mid-year joiners`
+              }
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commit();
+                if (e.key === 'Escape') onClose();
+              }}
+              inputProps={{ min: 0, step: 0.5 }}
+              InputLabelProps={{ shrink: true }}
+              FormHelperTextProps={{ sx: { fontSize: 10, mx: 0 } }}
+              fullWidth
+            />
+            {/* Quick actions for the three common admin operations:
+                 - Reset:    drop the override, revert to type default.
+                 - +1 / +0.5: bump the current quota for stacking grants.
+                 - Set 0:    no monthly accrual (carry-forward only).
+                Each just mutates the input — admin still hits Save to persist. */}
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={q === '' && !hasQuotaOverride}
+                onClick={() => setQ('')}
+                sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
+              >
+                Reset
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  const baseline = q.trim() === ''
+                    ? (defaultPerMonth ?? 0)
+                    : Number(q) || 0;
+                  setQ(String(baseline + 1));
+                }}
+                sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
+              >
+                +1
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setQ('0')}
+                sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
+              >
+                Set 0
+              </Button>
+            </Stack>
+          </Stack>
+        )}
+        <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <Button size="small" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button size="small" variant="contained" onClick={commit}>
+            Save
+          </Button>
+        </Stack>
+      </Stack>
+    </Popover>
   );
 }
 

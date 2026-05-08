@@ -59,15 +59,27 @@ export async function getUserBalances(userId: string, year: number) {
   return res.data;
 }
 
+/**
+ * Upsert a user's allocation. `monthlyQuota` is an optional per-user
+ * override of the LeaveType's global monthly accrual cap:
+ *   - omit → leave existing override untouched
+ *   - number → set override (e.g. 0 to disable accrual, 1 instead of 1.5)
+ *   - null  → clear override and revert to the type default
+ */
 export async function updateAllocation(
   userId: string,
   year: number,
   leaveTypeId: string,
   allocated: number,
+  monthlyQuota?: number | null,
 ) {
+  const body: { allocated: number; monthlyQuota?: number | null } = {
+    allocated,
+  };
+  if (monthlyQuota !== undefined) body.monthlyQuota = monthlyQuota;
   const res = await axiosClient.patch<{ data: LeaveBalance }>(
     `/leave-balances/user/${userId}/${year}/${leaveTypeId}`,
-    { allocated },
+    body,
   );
   return res.data;
 }
