@@ -864,7 +864,9 @@ function LeaveTypeDialog({
             <TextField
               label="Default / year" type="number" size="small" sx={{ maxWidth: 160 }}
               value={form.defaultAllocationPerYear ?? 0}
-              inputProps={{ min: 0 }}
+              // step 0.5 — half-day allocations count as 0.5; lets HR set
+              // a 9.5/year default, and the spinner steps in half-day units.
+              inputProps={{ min: 0, step: 0.5 }}
               onChange={(e) => setForm((f) => ({ ...f, defaultAllocationPerYear: Number(e.target.value) || 0 }))}
             />
             <TextField
@@ -1476,7 +1478,10 @@ function AllocationEditor({
             if (e.key === 'Enter') commit();
             if (e.key === 'Escape') onClose();
           }}
-          inputProps={{ min: 0 }}
+          // step 0.5 supports half-day allocations (e.g. an employee with
+          // 9.5 paid leaves for the year). Mongoose stores any number; the
+          // earlier integer-only spinner just made decimals look unsupported.
+          inputProps={{ min: 0, step: 0.5 }}
           InputLabelProps={{ shrink: true }}
           fullWidth
         />
