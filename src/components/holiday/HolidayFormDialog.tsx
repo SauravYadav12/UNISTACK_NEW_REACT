@@ -112,12 +112,10 @@ export default function HolidayFormDialog({
       };
       if (isEdit && holiday) {
         const { data } = await updateHoliday(holiday._id, payload);
-        // Refresh via adding / reloading — addHoliday tolerates replacement.
-        if (data.data) {
-          // Simplest strategy: remove-then-add so list reflects new values.
-          // The context's setData would be ideal but we keep addHoliday for compat.
-          addHoliday(data.data);
-        }
+        // Context `addHoliday` upserts by _id — for an edit it replaces
+        // the existing row in place (no stale duplicate alongside the
+        // updated copy until the next refresh).
+        if (data.data) addHoliday(data.data);
         toast.success('Holiday updated');
       } else {
         const { data } = await markHoliday(payload);

@@ -24,8 +24,20 @@ export const HolidayContextProvider = ({
   const holidayState = useFetchData(
     async () => (await getHolidays()).data.data
   );
+  // Upsert by _id — when the dialog calls this after an EDIT, we want to
+  // replace the existing row in place (otherwise the stale copy lingers
+  // alongside the updated copy until the next refresh — two rows, same
+  // holiday). When called after a CREATE, no _id matches, so we just
+  // prepend like before. Single function, both call sites stay correct.
   function addHoliday(h: Holiday) {
-    holidayState.setData((pre) => (pre ? [h, ...pre] : [h]));
+    holidayState.setData((pre) => {
+      if (!pre) return [h];
+      const idx = pre.findIndex((x) => x._id === h._id);
+      if (idx === -1) return [h, ...pre];
+      const next = pre.slice();
+      next[idx] = h;
+      return next;
+    });
   }
   function removeHoliday(id: string) {
     holidayState.setData((pre) => pre?.filter((h) => h._id !== id));
