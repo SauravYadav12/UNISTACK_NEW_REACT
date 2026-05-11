@@ -942,7 +942,12 @@ function EmployeeBalancesPanel() {
       ]);
       return {
         balances: b.data || [],
-        users: (u.data.users || []).filter((x) => x.active),
+        // Super-admins are not paid employees — exclude them from the
+        // per-user leave-balance grid so the table only lists people who
+        // actually accrue / consume leave.
+        users: (u.data.users || []).filter(
+          (x) => x.active && !x.role?.includes(UserRole['super-admin']),
+        ),
         types: t.data || [],
       };
     },

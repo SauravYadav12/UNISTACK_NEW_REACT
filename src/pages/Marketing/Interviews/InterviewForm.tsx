@@ -119,13 +119,26 @@ export default function InterviewForm(props: iProps) {
 
   function initializeValuesToCreateInterview(req: IRequirement) {
     if (!req) return;
+    // Marketing credit follows the requirement's `assignedTo` — that
+    // person owns the lead and should get the performance credit when the
+    // interview gets confirmed / completed, regardless of who is actually
+    // clicking "Create interview" (support / admin often do this on behalf
+    // of the marketer). Falls back to the current user only when the req
+    // has no assignee — defensive for legacy standalones; the multi-assign
+    // flow always sets assignedTo on the child rows.
+    const reqAssignedTo = (req.assignedTo || '').trim();
+    const reqAssignedRef = req.assignedToRef;
+    const marketingPerson = reqAssignedTo
+      ? reqAssignedTo
+      : `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+    const marketingPersonRef = reqAssignedRef || user?.id;
     setValues((prev) => ({
       ...prev, consultant: req.appliedFor, consultantRef: req.appliedForRef,
       clientName: req.clientCompany, reqID: req.reqID, vendorCompany: req.vendorCompany,
       primeVendorCompany: req.primeVendorCompany, jobDescription: req.jobDescription,
       jobTitle: req.jobTitle, duration: req.duration, taxType: req.taxType,
       interviewStatus: intStatusOptions[0] || '',
-      marketingPerson: `${user?.firstName} ${user?.lastName}`, marketingPersonRef: user?.id,
+      marketingPerson, marketingPersonRef,
     }));
   }
 
