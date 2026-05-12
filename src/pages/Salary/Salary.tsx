@@ -20,7 +20,7 @@ import {
   monthlyReportCsvUrl,
 } from '../../services/salaryApi';
 import { usersList } from '../../services/authApi';
-import { iUser } from '../../Interfaces/iUser';
+import { iUser, UserRole } from '../../Interfaces/iUser';
 import { axiosClient } from '../../config/axios.config';
 import { SalarySlip } from '../../Interfaces/salary';
 
@@ -70,7 +70,9 @@ export default function Salary() {
       getSlipsForMonth(year, month),
     ]);
     return {
-      users: (u.data.users || []).filter((x) => x.active),
+      users: (u.data.users || []).filter(
+        (x) => x.active && !x.role?.includes(UserRole['super-admin']),
+      ),
       slips: s.data || [],
     };
   }, [year, month]);
