@@ -34,6 +34,19 @@ export interface SupportMetrics {
   duplicatesEntered: number;
 }
 
+/**
+ * A specific record (requirement or interview) that contributed to a metric.
+ * Used to render clickable drill-down chips in the leaderboard drawer.
+ */
+export interface ContributorItem {
+  type: 'requirement' | 'interview';
+  reqID?: string;
+  intId?: string;
+}
+
+/** Map of metric key (matches ScoreLine.key) → contributing records. */
+export type Contributors = Record<string, ContributorItem[]>;
+
 export interface LeaderboardRow<M = MarketingMetrics | SupportMetrics> {
   user: {
     _id: string;
@@ -43,6 +56,7 @@ export interface LeaderboardRow<M = MarketingMetrics | SupportMetrics> {
   };
   metrics: M;
   breakdown: ScoreLine[];
+  contributors?: Contributors;
   score: number;
   rawTotal: number;
   rank: number;
