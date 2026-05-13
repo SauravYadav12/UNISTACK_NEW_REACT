@@ -21,6 +21,7 @@ import AttendanceTimePicker from './AttendanceTimePicker';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
   getStatusShortForm,
+  holidaysForUserShift,
   HolidayStatus,
   iHolidayStatus,
   isHolidayMarked,
@@ -85,9 +86,17 @@ const AttendanceStatusBox = ({
   };
   const { holidayState } = useHoliday();
 
-  const isHoliday = isHolidayMarked(
+  // Filter the holiday list to those that apply to THIS cell's user. An
+  // India-shift employee no longer sees US holidays on their attendance
+  // grid, and vice versa. Org-wide ("ALL") holidays continue to show for
+  // everyone. Legacy rows without a country are treated as "ALL".
+  const relevantHolidays = holidaysForUserShift(
     holidayState.data || [],
-    date.format(dateFormate)
+    user.shift,
+  );
+  const isHoliday = isHolidayMarked(
+    relevantHolidays,
+    date.format(dateFormate),
   );
 
   const status = getStatus();

@@ -52,7 +52,7 @@ export default function LeavesManagement() {
   // administer the system for employees instead. If they legitimately need to
   // take leave themselves, they can log in as their user account (or we can
   // add a separate admin self-service flow later).
-  type Tab = 'dashboard' | 'requests' | 'types' | 'balances' | 'holidays-in' | 'holidays-us' | 'settings';
+  type Tab = 'dashboard' | 'requests' | 'types' | 'balances' | 'holidays' | 'settings';
   const defaultTab: Tab = isAdmin ? 'requests' : 'dashboard';
   const [tab, setTab] = useState<Tab>(defaultTab);
 
@@ -89,8 +89,9 @@ export default function LeavesManagement() {
         {isAdmin && <Tab value="requests" label="All Requests" icon={<IconChecks size={16} />} iconPosition="start" />}
         {isAdmin && <Tab value="types" label="Leave Types" icon={<IconEdit size={16} />} iconPosition="start" />}
         {isAdmin && <Tab value="balances" label="Employee Balances" icon={<IconCalendar size={16} />} iconPosition="start" />}
-        <Tab value="holidays-in" label="India Holidays" icon={<IconFlag size={16} />} iconPosition="start" />
-        <Tab value="holidays-us" label="US Holidays" icon={<IconFlag size={16} />} iconPosition="start" />
+        {/* One unified "Holidays" tab: employees see their shift + ALL;
+            admins see the full list with country dropdown for management. */}
+        <Tab value="holidays" label="Holidays" icon={<IconFlag size={16} />} iconPosition="start" />
         {isAdmin && <Tab value="settings" label="Settings" icon={<IconSettings size={16} />} iconPosition="start" />}
       </Tabs>
 
@@ -98,16 +99,23 @@ export default function LeavesManagement() {
       {tab === 'requests' && isAdmin && <AllRequestsPanel />}
       {tab === 'types' && isAdmin && <LeaveTypesPanel />}
       {tab === 'balances' && isAdmin && <EmployeeBalancesPanel />}
-      {tab === 'holidays-in' && (
+      {tab === 'holidays' && (
         <HolidayContextProvider>
-          <SyncHolidaysCard country="IN" visible={isAdmin} />
-          <HolidayList lockCountry="IN" forAdmin={isAdmin} hideYearSelector />
-        </HolidayContextProvider>
-      )}
-      {tab === 'holidays-us' && (
-        <HolidayContextProvider>
-          <SyncHolidaysCard country="US" visible={isAdmin} />
-          <HolidayList lockCountry="US" forAdmin={isAdmin} hideYearSelector />
+          {/* Admins still need to sync both national calendars — show both
+              cards stacked. Hidden for non-admins via the `visible` prop. */}
+          {isAdmin && (
+            <Stack spacing={1.5} sx={{ mb: 2 }}>
+              <SyncHolidaysCard country="IN" visible={isAdmin} />
+              <SyncHolidaysCard country="US" visible={isAdmin} />
+            </Stack>
+          )}
+          {/* For admins: full list with country dropdown.
+              For employees: filtered to their shift + ALL company-wide. */}
+          <HolidayList
+            forAdmin={isAdmin}
+            lockByUserShift={!isAdmin}
+            hideYearSelector
+          />
         </HolidayContextProvider>
       )}
       {tab === 'settings' && isAdmin && <HolidayNoticeSettingsPanel />}

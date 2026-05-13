@@ -15,6 +15,8 @@ import { parseError } from '../../utils/utils';
 import { tokens } from '../../theme/theme';
 import { dateFormate2 } from '../constants';
 import { getDatesBetween } from '../../utils/dateUtil';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { holidayCountryForShift } from '../../utils/holidayUtil';
 import HolidayFormDialog from './HolidayFormDialog';
 import ConfirmDialog from '../ui/ConfirmDialog';
 
@@ -31,6 +33,14 @@ interface Props {
    */
   lockCountry?: 'IN' | 'US';
   /**
+   * Employee-facing mode: derive the country filter from the *current
+   * user's* shift instead of taking a fixed value. Hides the country
+   * dropdown and shows the shift-matching holidays + company-wide (ALL)
+   * ones, so each employee gets a single unified "Holidays" list.
+   * Ignored when `lockCountry` is also passed.
+   */
+  lockByUserShift?: boolean;
+  /**
    * When true, the year selector is hidden and the list is locked to the
    * current calendar year. Used on the Holidays tabs in Leaves Management
    * per product decision.
@@ -38,10 +48,25 @@ interface Props {
   hideYearSelector?: boolean;
 }
 
-const HolidayList = ({ forAdmin, defaultYear, lockCountry, hideYearSelector }: Props) => {
+const HolidayList = ({
+  forAdmin,
+  defaultYear,
+  lockCountry,
+  lockByUserShift,
+  hideYearSelector,
+}: Props) => {
   const { holidayState, removeHoliday } = useHoliday();
+  const { iUser } = useAuth();
   const [year, setYear] = useState<number>(defaultYear ?? new Date().getFullYear());
-  const [country, setCountry] = useState<CountryFilter>(lockCountry || 'all');
+  // Resolve the effective per-shift lock when `lockByUserShift` is on.
+  // `iUser?.shift` defaults to US per the user model, so even an
+  // undefined-shift edge case falls back to a sensible scope.
+  const shiftLockedCountry: 'IN' | 'US' | undefined = useMemo(() => {
+    if (lockCountry) return lockCountry;
+    if (lockByUserShift && iUser?.shift) return holidayCountryForShift(iUser.shift);
+    return undefined;
+  }, [lockCountry, lockByUserShift, iUser?.shift]);
+  const [country, setCountry] = useState<CountryFilter>(shiftLockedCountry || 'all');
   const [editing, setEditing] = useState<Holiday | undefined>();
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Holiday | undefined>();
@@ -57,15 +82,15 @@ const HolidayList = ({ forAdmin, defaultYear, lockCountry, hideYearSelector }: P
       .filter((h) => {
         const y = moment(h.fromDate).year();
         if (y !== lockedYear) return false;
-        if (lockCountry) {
-          // Region tab: show the locked country + company-wide ones.
-          return h.country === lockCountry || h.country === 'ALL';
+        if (shiftLockedCountry) {
+          // Shift-locked / region-locked view: show that country + company-wide.
+          return h.country === shiftLockedCountry || h.country === 'ALL';
         }
         if (country !== 'all' && h.country !== country) return false;
         return true;
       })
       .sort((a, b) => new Date(a.fromDate).getTime() - new Date(b.fromDate).getTime());
-  }, [all, lockedYear, country, lockCountry]);
+  }, [all, lockedYear, country, shiftLockedCountry]);
 
   async function confirmDelete() {
     if (!deleting) return;
@@ -214,11 +239,11 @@ const HolidayList = ({ forAdmin, defaultYear, lockCountry, hideYearSelector }: P
           </Typography>
           <Typography sx={{ fontSize: 12, color: tokens.colors.lightTextSecondary }}>
             {rows.length} holiday{rows.length === 1 ? '' : 's'} shown
-            {lockCountry && ' (includes company-wide)'}
+            {shiftLockedCountry && ' (your shift + company-wide)'}
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
-          {!lockCountry && (
+          {!shiftLockedCountry && (
             <FormControl size="small" sx={{ minWidth: 110 }}>
               <InputLabel>Country</InputLabel>
               <Select value={country} label="Country" onChange={(e) => setCountry(e.target.value as CountryFilter)}>
@@ -298,7 +323,7 @@ const HolidayList = ({ forAdmin, defaultYear, lockCountry, hideYearSelector }: P
           <HolidayFormDialog
             open={adding}
             onClose={() => setAdding(false)}
-            defaultCountry={lockCountry || 'IN'}
+            defaultCountry={shiftLockedCountry || 'IN'}
           />
           <HolidayFormDialog
             open={!!editing}

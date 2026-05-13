@@ -5,65 +5,50 @@ import moment from 'moment';
 
 import { Holiday } from '../../Interfaces/holiday';
 import { useHoliday } from '../../contextProviders/HolidayContextProvider';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { UserRole } from '../../Interfaces/iUser';
+import { holidaysForUserShift } from '../../utils/holidayUtil';
 import { tokens } from '../../theme/theme';
 
-// Product rule: show the single closest upcoming holiday per region within
-// the next 30 days, drawn from the shared holidays collection. Empty state
-// per region when nothing is coming up.
+// Single, shift-aware upcoming-holidays card. Previously this widget showed
+// two side-by-side cards (India + United States) regardless of who was
+// looking. Per product feedback, every employee should see ONE list — the
+// holidays that apply to their shift, plus any company-wide ("ALL") ones —
+// without the cognitive overhead of two columns. Super-admins keep seeing
+// everything (both shifts) since they manage the calendar.
 
 interface Props {
-  /** Retained for API compatibility; not used in this view. */
+  /** Retained for API compatibility; not used. */
   forAdmin?: boolean;
 }
 
 const WINDOW_DAYS = 30;
-
-function findNearest(
-  holidays: Holiday[],
-  country: 'IN' | 'US',
-  start: moment.Moment,
-  end: moment.Moment,
-): Holiday | undefined {
-  return [...holidays]
-    .filter((h) => {
-      const c = h.country || 'ALL';
-      if (c !== country && c !== 'ALL') return false;
-      const hd = moment(h.fromDate);
-      return hd.isSameOrAfter(start, 'day') && hd.isSameOrBefore(end, 'day');
-    })
-    .sort((a, b) => moment(a.fromDate).diff(moment(b.fromDate)))
-    .shift();
-}
-
-const COUNTRIES = [
-  {
-    code: 'IN' as const,
-    flag: '\uD83C\uDDEE\uD83C\uDDF3', // 🇮🇳
-    label: 'India',
-    accent: tokens.colors.pink,
-  },
-  {
-    code: 'US' as const,
-    flag: '\uD83C\uDDFA\uD83C\uDDF8', // 🇺🇸
-    label: 'United States',
-    accent: tokens.colors.blue,
-  },
-];
+const MAX_VISIBLE = 5;
 
 const UpcomingHolidays = (_: Props) => {
   const { holidayState } = useHoliday();
+  const { iUser } = useAuth();
   const today = useMemo(() => moment().startOf('day'), []);
   const cutoff = useMemo(() => today.clone().add(WINDOW_DAYS, 'days'), [today]);
-  const all = holidayState.data || [];
 
-  const picks = useMemo(
-    () =>
-      COUNTRIES.map((c) => ({
-        ...c,
-        holiday: findNearest(all, c.code, today, cutoff),
-      })),
-    [all, today, cutoff],
-  );
+  const isSuperAdmin = !!iUser?.role?.includes(UserRole['super-admin']);
+  // Super-admins see every shift's holidays since they're the ones managing
+  // the calendar; employees see only their own shift + company-wide.
+  const visibleHolidays = useMemo(() => {
+    const all = holidayState.data || [];
+    if (isSuperAdmin) return all;
+    return holidaysForUserShift(all, iUser?.shift);
+  }, [holidayState.data, isSuperAdmin, iUser?.shift]);
+
+  const upcoming = useMemo<Holiday[]>(() => {
+    return visibleHolidays
+      .filter((h) => {
+        const hd = moment(h.fromDate);
+        return hd.isSameOrAfter(today, 'day') && hd.isSameOrBefore(cutoff, 'day');
+      })
+      .sort((a, b) => moment(a.fromDate).diff(moment(b.fromDate)))
+      .slice(0, MAX_VISIBLE);
+  }, [visibleHolidays, today, cutoff]);
 
   return (
     <Box
@@ -82,14 +67,22 @@ const UpcomingHolidays = (_: Props) => {
         sx={{
           bgcolor: tokens.colors.brand,
           color: '#fff',
-          px: 2, py: 1.25,
+          px: 2,
+          py: 1.25,
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        <Box sx={{
-          position: 'absolute', top: 8, right: 10, display: 'flex', gap: 0.5, opacity: 0.55,
-        }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 10,
+            display: 'flex',
+            gap: 0.5,
+            opacity: 0.55,
+          }}
+        >
           <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: tokens.colors.pink }} />
           <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: tokens.colors.blue }} />
           <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: tokens.colors.yellow }} />
@@ -102,123 +95,174 @@ const UpcomingHolidays = (_: Props) => {
         </Typography>
       </Box>
 
-      {/* Two halves, one per country, split by a subtle dashed divider */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', position: 'relative' }}>
-        {/* Vertical dashed divider */}
-        <Box sx={{
-          position: 'absolute',
-          top: 12, bottom: 12,
-          left: '50%',
-          width: 0,
-          borderLeft: `1px dashed ${alpha(tokens.colors.brand, 0.18)}`,
-        }} />
-        {picks.map((p, i) => (
-          <HalfCard key={p.code} pick={p} today={today} index={i} />
-        ))}
-      </Box>
+      {upcoming.length === 0 ? (
+        <Box sx={{ p: 2.5, minHeight: 120, display: 'flex', alignItems: 'center' }}>
+          <Typography
+            sx={{
+              fontSize: 12,
+              color: tokens.colors.lightTextSecondary,
+              fontStyle: 'italic',
+            }}
+          >
+            No holidays in the next {WINDOW_DAYS} days.
+          </Typography>
+        </Box>
+      ) : (
+        <Stack divider={<Box sx={{ borderTop: `1px dashed ${alpha(tokens.colors.brand, 0.12)}` }} />}>
+          {upcoming.map((h, i) => (
+            <UpcomingRow key={h._id} holiday={h} today={today} index={i} />
+          ))}
+        </Stack>
+      )}
     </Box>
   );
 };
 
-function HalfCard({
-  pick,
+function UpcomingRow({
+  holiday,
   today,
   index,
 }: {
-  pick: typeof COUNTRIES[number] & { holiday?: Holiday };
+  holiday: Holiday;
   today: moment.Moment;
   index: number;
 }) {
-  const { flag, label, accent, holiday } = pick;
-
-  const daysAway = holiday
-    ? moment(holiday.fromDate).startOf('day').diff(today, 'days')
-    : null;
-
+  const daysAway = moment(holiday.fromDate).startOf('day').diff(today, 'days');
   const daysLabel = (() => {
-    if (daysAway == null) return null;
     if (daysAway === 0) return 'TODAY';
     if (daysAway === 1) return 'TOMORROW';
     return `${daysAway} DAYS`;
   })();
+  const dayOfWeek = moment(holiday.fromDate).format('dddd');
 
-  const dayOfWeek = holiday ? moment(holiday.fromDate).format('dddd') : null;
+  // Per-row accent based on which shift the holiday applies to. "ALL" gets
+  // the brand navy so company-wide entries visually pop above per-shift
+  // ones; per-shift entries get the soft pink/blue we use elsewhere.
+  const scope = (holiday.country || 'ALL') as 'IN' | 'US' | 'ALL';
+  const accent =
+    scope === 'IN'
+      ? tokens.colors.pink
+      : scope === 'US'
+        ? tokens.colors.blue
+        : tokens.colors.brand;
+  const scopeLabel =
+    scope === 'IN' ? 'India' : scope === 'US' ? 'US' : 'Company-wide';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.3 }}
+      transition={{ delay: index * 0.05, duration: 0.25 }}
     >
-      <Box sx={{
-        position: 'relative',
-        p: 2,
-        minHeight: 140,
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        bgcolor: holiday ? 'transparent' : alpha(tokens.colors.lightTextSecondary, 0.03),
-      }}>
-        {/* Country row */}
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
-          <Typography sx={{ fontSize: 18, lineHeight: 1 }}>{flag}</Typography>
-          <Typography sx={{
-            fontSize: 10, fontWeight: 700, letterSpacing: 2,
-            color: accent, textTransform: 'uppercase',
-          }}>
-            {label}
+      <Box
+        sx={{
+          p: 1.75,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+        }}
+      >
+        {/* Date block */}
+        <Box
+          sx={{
+            minWidth: 44,
+            textAlign: 'center',
+            px: 0.75,
+            py: 0.5,
+            borderRadius: 1.5,
+            bgcolor: alpha(accent, 0.08),
+            border: `1px solid ${alpha(accent, 0.2)}`,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: 1.2,
+              color: accent,
+              lineHeight: 1,
+            }}
+          >
+            {moment(holiday.fromDate).format('MMM').toUpperCase()}
           </Typography>
-        </Stack>
+          <Typography
+            sx={{
+              fontSize: 18,
+              fontWeight: 800,
+              color: tokens.colors.lightText,
+              lineHeight: 1.1,
+              mt: 0.25,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {moment(holiday.fromDate).format('D')}
+          </Typography>
+        </Box>
 
-        {holiday ? (
-          <>
-            {/* Holiday name */}
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{
-                fontSize: 15, fontWeight: 700, color: tokens.colors.lightText,
-                lineHeight: 1.2, mb: 0.5,
-              }}>
-                {holiday.name || 'Holiday'}
-              </Typography>
-              <Typography sx={{ fontSize: 11, color: tokens.colors.lightTextSecondary }}>
-                {moment(holiday.fromDate).format('MMM D')} · {dayOfWeek}
-              </Typography>
-            </Box>
-
-            {/* Days-away pill — bigger if very close */}
-            <Box sx={{ mt: 1, alignSelf: 'flex-start' }}>
-              <Box sx={{
-                display: 'inline-flex', alignItems: 'center',
-                px: 1, py: 0.4, borderRadius: 1.25,
-                bgcolor: alpha(accent, daysAway === 0 ? 0.22 : 0.12),
-                color: accent,
-                border: `1px solid ${alpha(accent, 0.3)}`,
-                fontVariantNumeric: 'tabular-nums',
-              }}>
-                {/* Small pulse dot on TODAY */}
-                {daysAway === 0 && (
-                  <motion.span
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-                    style={{
-                      width: 6, height: 6, borderRadius: '50%',
-                      background: accent, marginRight: 6, display: 'inline-block',
-                    }}
-                  />
-                )}
-                <Typography sx={{
-                  fontSize: 10, fontWeight: 800, letterSpacing: 1.2, lineHeight: 1,
-                }}>
-                  {daysLabel}
-                </Typography>
-              </Box>
-            </Box>
-          </>
-        ) : (
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: 11, color: tokens.colors.lightTextSecondary, fontStyle: 'italic' }}>
-              No holidays in the next {WINDOW_DAYS} days.
+        {/* Name + meta */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: tokens.colors.lightText,
+              lineHeight: 1.25,
+            }}
+            noWrap
+          >
+            {holiday.name || 'Holiday'}
+          </Typography>
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.25 }}>
+            <Typography sx={{ fontSize: 10, color: tokens.colors.lightTextSecondary }}>
+              {dayOfWeek}
             </Typography>
-          </Box>
-        )}
+            <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: alpha(tokens.colors.brand, 0.3) }} />
+            <Typography
+              sx={{
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: 0.6,
+                color: accent,
+                textTransform: 'uppercase',
+              }}
+            >
+              {scopeLabel}
+            </Typography>
+          </Stack>
+        </Box>
+
+        {/* Days-away pill */}
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            px: 1,
+            py: 0.4,
+            borderRadius: 1.25,
+            bgcolor: alpha(accent, daysAway === 0 ? 0.22 : 0.12),
+            color: accent,
+            border: `1px solid ${alpha(accent, 0.3)}`,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {daysAway === 0 && (
+            <motion.span
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                background: accent,
+                marginRight: 4,
+                display: 'inline-block',
+              }}
+            />
+          )}
+          <Typography sx={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, lineHeight: 1 }}>
+            {daysLabel}
+          </Typography>
+        </Box>
       </Box>
     </motion.div>
   );

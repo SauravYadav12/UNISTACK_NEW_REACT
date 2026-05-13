@@ -4,7 +4,12 @@ import {
   Box,
   Button,
   CircularProgress,
+  FormControl,
+  FormHelperText,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
   TextField,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -18,11 +23,20 @@ import { useHoliday } from '../../contextProviders/HolidayContextProvider';
 import { isHolidayMarked } from '../../utils/holidayUtil';
 import { parseError } from '../../utils/utils';
 
+type HolidayScope = 'ALL' | 'US' | 'IN';
+
 type HolidayFormValues = {
   name: string;
   description: string;
   fromDate: Moment | null;
   toDate: Moment | null;
+  /**
+   * Which shift the holiday applies to.
+   *   - "ALL" → both shifts see it (super-admin marks a company-wide off).
+   *   - "US"  → only US-shift employees see it in attendance / leave / notice.
+   *   - "IN"  → only India-shift employees see it.
+   */
+  country: HolidayScope;
 };
 
 interface iProps {
@@ -37,6 +51,7 @@ const HolidayForm = ({ onClose }: iProps) => {
     description: '',
     fromDate: null,
     toDate: null,
+    country: 'ALL',
   });
 
   const isHoliday = useMemo(() => {
@@ -44,9 +59,13 @@ const HolidayForm = ({ onClose }: iProps) => {
     return isHolidayMarked(
       holidayState.data || [],
       formValues.fromDate?.format(dateFormate),
-      formValues.toDate?.format(dateFormate)
+      formValues.toDate?.format(dateFormate),
+      undefined,
+      // Scope the overlap check to the same audience — a US holiday and an
+      // India holiday on the same calendar date are NOT a conflict.
+      formValues.country,
     );
-  }, [formValues.fromDate, formValues.toDate]);
+  }, [formValues.fromDate, formValues.toDate, formValues.country]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -100,6 +119,7 @@ const HolidayForm = ({ onClose }: iProps) => {
         description: formValues.description,
         fromDate: formValues.fromDate.format(dateFormate),
         toDate: formValues.toDate?.format(dateFormate),
+        country: formValues.country,
       };
 
       const { data } = await markHoliday(holidayData);
@@ -200,6 +220,34 @@ const HolidayForm = ({ onClose }: iProps) => {
                 },
               }}
             />
+          </Grid>
+
+          <Grid size={12}>
+            {/* Shift scope — drives who actually sees this holiday in
+                attendance, leave, and the daily notice email. */}
+            <FormControl fullWidth>
+              <InputLabel id="holiday-scope-label">Applies to</InputLabel>
+              <Select
+                labelId="holiday-scope-label"
+                label="Applies to"
+                value={formValues.country}
+                onChange={(e) =>
+                  setFormValues((prev) => ({
+                    ...prev,
+                    country: e.target.value as HolidayScope,
+                  }))
+                }
+              >
+                <MenuItem value="ALL">Both shifts (company-wide)</MenuItem>
+                <MenuItem value="US">US Shift only</MenuItem>
+                <MenuItem value="IN">India Shift only</MenuItem>
+              </Select>
+              <FormHelperText>
+                Both-shifts marks a global day off. Shift-specific scopes
+                are useful for national holidays (e.g. Independence Day vs.
+                Republic Day) where only one cohort is off.
+              </FormHelperText>
+            </FormControl>
           </Grid>
 
           <Grid size={12}>
