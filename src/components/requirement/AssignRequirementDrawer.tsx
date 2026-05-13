@@ -36,6 +36,20 @@ import { getInitials } from '../ui/PersonPill';
 import { reqirementStatusColors } from '../../pages/Marketing/Requirements/requirementsValues';
 import { RequirementStatus } from '../../Interfaces/reports';
 
+interface MutateInfo {
+  parentReqID: string;
+  /** Children list after the mutation (already-refetched by the drawer). */
+  children: IRequirement[];
+  /** Children created by *this* action specifically. Empty for removal. */
+  created: IRequirement[];
+  /** True when a marketer assigned themselves — the caller may want to open
+   *  the new child drawer automatically so the marketer can start working. */
+  isSelfAssign: boolean;
+  /** Distinguishes a save from a remove so the caller can pick the right
+   *  close behaviour without sniffing array lengths. */
+  kind: 'add' | 'remove';
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -43,7 +57,7 @@ interface Props {
   /** Pool of candidates — the drawer filters down to users with the `marketing` role. */
   accounts: iUser[];
   /** Fired after a successful assignment or removal so the caller can refetch the grid. */
-  onMutate?: () => void;
+  onMutate?: (info: MutateInfo) => void;
 }
 
 /**
@@ -118,6 +132,21 @@ export default function AssignRequirementDrawer({
   const currentUserId = String(currentUser?._id || '');
   const selfAlreadyAssigned = alreadyAssignedIds.has(currentUserId);
 
+  // Refetch this parent's children and return the fresh list, so callers can
+  // both update local state AND hand the list off to the page.
+  const refetchAndReturn = async (): Promise<IRequirement[]> => {
+    if (!parent?.reqID) return [];
+    try {
+      const res = await listChildAssignments(parent.reqID);
+      const list = (res.data.data?.results as IRequirement[]) || [];
+      setChildren(list);
+      return list;
+    } catch (e) {
+      console.error('refetchAndReturn error', e);
+      return children;
+    }
+  };
+
   const handleAssign = async () => {
     if (!parent?.reqID || picked.length === 0) return;
     setSaving(true);
@@ -126,11 +155,18 @@ export default function AssignRequirementDrawer({
         marketerRef: String(u._id),
         marketerName: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
       }));
-      await assignMarketersApi(parent.reqID, payload);
+      const res = await assignMarketersApi(parent.reqID, payload);
+      const created = ((res.data?.data as unknown) as IRequirement[]) || [];
       toast.success(`Assigned ${picked.length} marketer${picked.length === 1 ? '' : 's'}`);
       setPicked([]);
-      await loadChildren();
-      onMutate?.();
+      const fresh = await refetchAndReturn();
+      onMutate?.({
+        parentReqID: parent.reqID,
+        children: fresh,
+        created,
+        isSelfAssign: false,
+        kind: 'add',
+      });
     } catch (e: any) {
       console.error('assignMarketers error', e);
       toast.error(e?.response?.data?.message || 'Failed to assign marketers');
@@ -143,15 +179,22 @@ export default function AssignRequirementDrawer({
     if (!parent?.reqID || !currentUser) return;
     setSaving(true);
     try {
-      await assignMarketersApi(parent.reqID, [
+      const res = await assignMarketersApi(parent.reqID, [
         {
           marketerRef: String(currentUser._id),
           marketerName: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim(),
         },
       ]);
+      const created = ((res.data?.data as unknown) as IRequirement[]) || [];
       toast.success('You are now assigned to this requirement');
-      await loadChildren();
-      onMutate?.();
+      const fresh = await refetchAndReturn();
+      onMutate?.({
+        parentReqID: parent.reqID,
+        children: fresh,
+        created,
+        isSelfAssign: true,
+        kind: 'add',
+      });
     } catch (e: any) {
       console.error('handleSelfAssign error', e);
       toast.error(e?.response?.data?.message || 'Failed to assign yourself');
@@ -161,12 +204,19 @@ export default function AssignRequirementDrawer({
   };
 
   const handleRemove = async (child: IRequirement) => {
+    if (!parent?.reqID) return;
     setRemovingId(child._id);
     try {
       await unassignMarketerApi(child._id);
       toast.success(`Removed assignment ${child.reqID}`);
-      await loadChildren();
-      onMutate?.();
+      const fresh = await refetchAndReturn();
+      onMutate?.({
+        parentReqID: parent.reqID,
+        children: fresh,
+        created: [],
+        isSelfAssign: false,
+        kind: 'remove',
+      });
     } catch (e: any) {
       console.error('unassignMarketer error', e);
       toast.error(

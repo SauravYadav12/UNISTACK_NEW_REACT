@@ -112,9 +112,34 @@ export default function Requirements() {
   }, [searchParams]);
 
   // ── Parent/child expansion state ──
-  const [expandedParents, setExpandedParents] = useState<Set<string>>(
-    new Set()
-  );
+  // Persisted in sessionStorage so a refresh, a route bounce, or the deep
+  // -link flow from a notification doesn't collapse every parent the user
+  // had open. Scoped to the current tab so concurrent sessions stay
+  // independent. Cleared when the user toggles between Live ↔ Archive
+  // (the two have disjoint requirement universes — see onChangeArchiveButton).
+  const EXPANDED_PARENTS_KEY = 'requirements:expandedParents';
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(() => {
+    try {
+      const raw = sessionStorage.getItem(EXPANDED_PARENTS_KEY);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return new Set(Array.isArray(arr) ? arr : []);
+    } catch {
+      return new Set();
+    }
+  });
+  // Mirror to sessionStorage whenever the set changes — small payload, the
+  // page only re-hydrates when the user re-enters this route.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        EXPANDED_PARENTS_KEY,
+        JSON.stringify([...expandedParents]),
+      );
+    } catch {
+      // Quota / private-mode fall-through — non-fatal.
+    }
+  }, [expandedParents]);
   const [childrenMap, setChildrenMap] = useState<
     Map<string, IRequirement[]>
   >(new Map());
@@ -173,6 +198,35 @@ export default function Requirements() {
     );
   };
 
+  // Fetch children for one parent and stash into the map. Extracted so both
+  // the toggle handler AND the rehydration effect below share the logic.
+  const fetchChildrenFor = async (reqID: string) => {
+    setLoadingChildrenFor((prev) => new Set(prev).add(reqID));
+    try {
+      const res = await listChildAssignments(reqID);
+      const results =
+        (res.data.data?.results as IRequirement[] | undefined) || [];
+      setChildrenMap((prev) => {
+        const next = new Map(prev);
+        next.set(reqID, results);
+        return next;
+      });
+    } catch (e) {
+      console.error('Failed to load child assignments for', reqID, e);
+      setChildrenMap((prev) => {
+        const next = new Map(prev);
+        next.set(reqID, []);
+        return next;
+      });
+    } finally {
+      setLoadingChildrenFor((prev) => {
+        const next = new Set(prev);
+        next.delete(reqID);
+        return next;
+      });
+    }
+  };
+
   // ── Child expand helpers ──
   const toggleExpandParent = async (row: IRequirement) => {
     const reqID = row.reqID;
@@ -191,30 +245,7 @@ export default function Requirements() {
 
     // Expand — fetch if we haven't loaded before.
     if (!childrenMap.has(reqID)) {
-      setLoadingChildrenFor((prev) => new Set(prev).add(reqID));
-      try {
-        const res = await listChildAssignments(reqID);
-        const results =
-          (res.data.data?.results as IRequirement[] | undefined) || [];
-        setChildrenMap((prev) => {
-          const next = new Map(prev);
-          next.set(reqID, results);
-          return next;
-        });
-      } catch (e) {
-        console.error('Failed to load child assignments for', reqID, e);
-        setChildrenMap((prev) => {
-          const next = new Map(prev);
-          next.set(reqID, []);
-          return next;
-        });
-      } finally {
-        setLoadingChildrenFor((prev) => {
-          const next = new Set(prev);
-          next.delete(reqID);
-          return next;
-        });
-      }
+      await fetchChildrenFor(reqID);
     }
     setExpandedParents((prev) => new Set(prev).add(reqID));
   };
@@ -242,6 +273,99 @@ export default function Requirements() {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString()]);
+
+  // Rehydrate children for any parent whose expansion state was restored
+  // from sessionStorage. Without this, restoring "expanded" looks broken
+  // because childrenMap is fresh on mount. We only fetch for parents that
+  // are actually visible in the current grid so we don't burn requests
+  // on rows that aren't on this page.
+  useEffect(() => {
+    const visibleParents = new Set(
+      (gridData?.results as IRequirement[] | undefined)
+        ?.filter((r) => r.reqID && !r.parentReqID)
+        .map((r) => r.reqID as string) || [],
+    );
+    for (const reqID of expandedParents) {
+      if (!visibleParents.has(reqID)) continue;
+      if (childrenMap.has(reqID)) continue;
+      if (loadingChildrenFor.has(reqID)) continue;
+      void fetchChildrenFor(reqID);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridData?.results]);
+
+  /**
+   * Unified row-patch for the page's grid AND its expanded children. The
+   * RequirementsForm submits create / edit through `setResults(callback)`.
+   * Without this wrapper:
+   *   - Edits to a child requirement (status change, status text, etc.)
+   *     update the top-level grid only — child rows under an expanded
+   *     parent stay stale until the user re-expands.
+   *   - Creating a parent already inserts at the top via the form's own
+   *     callback; we additionally queue a silent reload so date separators
+   *     / sort buckets settle correctly.
+   *
+   * Strategy: run the form's callback against every cached source. If the
+   * resulting array has the same length AND at least one item swapped
+   * (heuristic for an in-place edit, e.g. `pre.map(d => d._id === id ? upd : d)`),
+   * commit it back. Length change means "create" or "delete" — we don't
+   * propagate that across children buckets (would erroneously add a parent
+   * row to every child list).
+   */
+  const patchRowEverywhere: typeof setResults = (action) => {
+    let observedNewLength = -1;
+    let observedOldLength = -1;
+    setResults((prev) => {
+      const arr = prev || [];
+      const nextArr =
+        typeof action === 'function'
+          ? (action as (p: IRequirement[]) => IRequirement[])(arr)
+          : action;
+      observedOldLength = arr.length;
+      observedNewLength = nextArr.length;
+      return nextArr;
+    });
+
+    // Patch the cached children for any expanded parent whose array also
+    // contains an entry the callback touched. Only run for in-place edits.
+    setChildrenMap((prev) => {
+      const next = new Map(prev);
+      let changed = false;
+      for (const [parentReqID, kids] of prev.entries()) {
+        const patched =
+          typeof action === 'function'
+            ? (action as (p: IRequirement[]) => IRequirement[])(kids)
+            : action;
+        // Skip if the form's callback changed the length on this array (a
+        // create-flow path leaking into the children bucket).
+        if (patched.length !== kids.length) continue;
+        // Did anything actually change for this parent's children?
+        let any = false;
+        for (let i = 0; i < kids.length; i++) {
+          if (patched[i] !== kids[i]) {
+            any = true;
+            break;
+          }
+        }
+        if (!any) continue;
+        next.set(parentReqID, patched);
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+
+    // Create case (output is longer than input by 1): the optimistic insert
+    // is already done. Trigger a silent reload so the new row settles into
+    // the correct date-separator / sort bucket without the user having to
+    // hit refresh. The optimistic row stays visible during the round-trip.
+    if (
+      observedOldLength !== -1 &&
+      observedNewLength === observedOldLength + 1
+    ) {
+      // Defer to next tick so reload() doesn't race the setResults flush.
+      Promise.resolve().then(() => reload());
+    }
+  };
 
   // ── pendingAiPrefill: open drawer in Add mode with merged values ──
   useEffect(() => {
@@ -1256,7 +1380,7 @@ export default function Requirements() {
       ) : (
         <RequirementsForm
           showLogs
-          setResults={setResults}
+          setResults={patchRowEverywhere}
           hideButtons={archive}
           accounts={accounts || []}
           consultants={consultants || []}
@@ -1355,17 +1479,34 @@ export default function Requirements() {
         onClose={() => setAssignFor(null)}
         parent={assignFor || undefined}
         accounts={accounts || []}
-        onMutate={() => {
-          reload();
-          if (assignFor?.reqID) {
-            const reqID = assignFor.reqID;
-            setChildrenMap((prev) => {
-              const next = new Map(prev);
-              next.delete(reqID);
-              return next;
-            });
-          }
+        onMutate={({ parentReqID, children: fresh, created, isSelfAssign, kind }) => {
+          // Surgical update: swap in the freshly-refetched children for this
+          // ONE parent. No full table reload (preserves user scroll position,
+          // expansion state, and avoids the chevron-collapse jolt). The
+          // pipeline snapshot is the only thing that needs a global hint.
+          setChildrenMap((prev) => {
+            const next = new Map(prev);
+            next.set(parentReqID, fresh);
+            return next;
+          });
+          // Auto-expand the parent so the new child is visible without the
+          // user having to hunt for the chevron after the drawer closes.
+          setExpandedParents((prev) =>
+            prev.has(parentReqID) ? prev : new Set(prev).add(parentReqID),
+          );
           setSnapshotRefreshKey((k) => k + 1);
+
+          // Close the assign drawer on any successful add — admin or
+          // self-assign. Removal keeps the drawer open so admins can chain
+          // trash clicks across multiple stale assignments.
+          if (kind === 'add') setAssignFor(null);
+
+          // Self-assign UX: also open the new child record so the marketer
+          // lands directly on their working record. Admins skip this so a
+          // bulk distribution doesn't pop a drawer per click.
+          if (isSelfAssign && created.length > 0 && created[0]?.reqID) {
+            setChildReqDrawer(created[0].reqID);
+          }
         }}
       />
     </>
