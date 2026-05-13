@@ -43,28 +43,38 @@ export function usePagination(para: ApiQuery, dependencies: unknown[]) {
   };
 
   function createQueryString() {
+    // Build segment by segment + join with a single `&`. Previously this
+    // function prepended `&` to each segment even when the prefix was
+    // empty, producing malformed URLs like `?&&page=1&limit=100` when the
+    // search and queryParams were both empty.
     const { page, pageSize } = paginationModel;
-    const iQuery = para.queryParams || '';
-    let queryString = '';
+    const parts: string[] = [];
+
     if (searchModel.items.length) {
       const { operator, field, value } = searchModel.items[0];
       if (value?.toString().trim()) {
         if (operator === SearchOperator.Contains) {
-          queryString = `${queryString}&${searchStringKey}=${value}&${searchFieldKey}=${field}`;
+          parts.push(`${searchStringKey}=${value}`);
+          parts.push(`${searchFieldKey}=${field}`);
         } else if (operator === SearchOperator.Equals) {
-          queryString = `${queryString}&${field}=${value}&${caseInsensitiveSearchFieldsKey}=${field}`;
+          parts.push(`${field}=${value}`);
+          parts.push(`${caseInsensitiveSearchFieldsKey}=${field}`);
         }
       }
     }
 
     const searchText = searchModel.quickFilterValues?.join(' ').trim();
     if (searchText) {
-      queryString = `${queryString}&${searchStringKey}=${searchText}`;
+      parts.push(`${searchStringKey}=${searchText}`);
     }
 
-    queryString = `${queryString}&${iQuery}&page=${page}&limit=${pageSize}`;
+    const iQuery = para.queryParams || '';
+    if (iQuery) parts.push(iQuery);
 
-    return queryString;
+    parts.push(`page=${page}`);
+    parts.push(`limit=${pageSize}`);
+
+    return parts.join('&');
   }
 
   function handleSetSearchModel(model: GridFilterModel) {
@@ -98,19 +108,29 @@ export function usePagination(para: ApiQuery, dependencies: unknown[]) {
     }
   };
 
+  // Single fetching effect — picks up every meaningful change. Previously
+  // there were three separate effects that all called loadData(), plus the
+  // cascading state resets in `[searchModel]` and `[dependencies]` each
+  // re-triggered the `[paginationModel]` effect, producing 2-3 redundant
+  // requests on mount and every filter change. `para.queryParams` is in
+  // the dep array so callers no longer need their own `reload()` effect.
   useEffect(() => {
     loadData();
-  }, [paginationModel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginationModel, searchModel, para.queryParams, ...dependencies]);
 
+  // Reset side-effects — they only mutate state. The fetching effect above
+  // picks up the resulting paginationModel/searchModel change and fires
+  // exactly once per logical state transition.
   useEffect(() => {
-    loadData();
     setPaginationModel(initialPaginationModel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchModel]);
 
   useEffect(() => {
-    loadData();
     setPaginationModel(initialPaginationModel);
     setSearchModel(initialSearchModel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...dependencies]);
 
   return {

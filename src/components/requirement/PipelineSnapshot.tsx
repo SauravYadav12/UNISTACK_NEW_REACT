@@ -12,8 +12,7 @@ import {
   IconRocket,
   IconPlayerPause,
 } from '@tabler/icons-react';
-import { requirementsList } from '../../services/requirementApi';
-import { archiveRequirementsList } from '../../services/archivesApi';
+import { getPipelineCounts } from '../../services/requirementApi';
 import { tokens } from '../../theme/theme';
 import AnimatedCounter from '../ui/AnimatedCounter';
 import { RequirementStatus } from '../../Interfaces/reports';
@@ -122,25 +121,19 @@ export default function PipelineSnapshot({
     async function load() {
       setLoading(true);
       try {
-        const api = archive ? archiveRequirementsList : requirementsList;
-        // Tiles fetched as real status filters — exclude All (no filter)
-        // and AllAssigned (uses the dedicated `onlyChildren` server flag).
-        const statuses = STATUS_ORDER.filter(
-          (s) => s !== 'All' && s !== 'AllAssigned'
-        );
-        const results = await Promise.all([
-          api('page=1&limit=1'), // total (All)
-          api('onlyChildren=true&page=1&limit=1'), // total children (AllAssigned)
-          ...statuses.map((s) => api(`reqStatus=${encodeURIComponent(s)}&page=1&limit=1`)),
-        ]);
+        // Single aggregated call — server returns every count via a one-shot
+        // MongoDB `$facet`. Was 10 separate `reqStatus=X` calls; now 1.
+        const res = await getPipelineCounts(archive);
         if (cancelled) return;
+        const data = res.data?.data;
         const next: Record<string, number> = {
-          All: results[0].data.data?.totalDocuments || 0,
-          AllAssigned: results[1].data.data?.totalDocuments || 0,
+          All: data?.all || 0,
+          AllAssigned: data?.allAssigned || 0,
         };
-        statuses.forEach((s, i) => {
-          next[s] = results[i + 2].data.data?.totalDocuments || 0;
-        });
+        for (const s of STATUS_ORDER) {
+          if (s === 'All' || s === 'AllAssigned') continue;
+          next[s] = data?.byStatus?.[s] || 0;
+        }
         setCounts(next);
       } catch (e) {
         console.error('PipelineSnapshot load error', e);

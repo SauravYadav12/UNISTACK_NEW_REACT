@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import moment from 'moment';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   GridCallbackDetails,
@@ -100,6 +100,13 @@ export default function Requirements() {
   const [duplicateReqDrawer, setDuplicateReqDrawer] = useState<string>();
   const [archive, setArchive] = useState(false);
   const [snapshotRefreshKey, setSnapshotRefreshKey] = useState(0);
+  // Tracks whether the currently-open drawer triggered a real mutation
+  // (create or edit save). On drawer close we only bump the pipeline
+  // snapshot when this is true — view-only opens no longer fire the 1
+  // aggregated `pipeline-counts` call (and previously, 10 separate calls).
+  // Reset to false every time a drawer opens (see handleViewDetails /
+  // handleCopy / add-mode handlers below) and on close.
+  const mutatedDuringDrawerRef = useRef(false);
   const [childReqDrawer, setChildReqDrawer] = useState<string>();
   // Deep-link drawer driven by `?openReqID=...` — used by notification
   // clicks so the bell can route a marketer straight into a requirement.
@@ -269,10 +276,10 @@ export default function Requirements() {
     [archive]
   );
 
-  useEffect(() => {
-    reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.toString()]);
+  // `usePagination` now watches `queryParams` (== searchParams.toString())
+  // internally, so we no longer need a manual `reload()` on URL change.
+  // Removing this effect saves one redundant `get-requirements` per
+  // filter / status change.
 
   // Rehydrate children for any parent whose expansion state was restored
   // from sessionStorage. Without this, restoring "expanded" looks broken
@@ -313,6 +320,11 @@ export default function Requirements() {
    * row to every child list).
    */
   const patchRowEverywhere: typeof setResults = (action) => {
+    // The form only calls setResults on successful save (create or edit).
+    // Flip the mutated flag so handleDrawerClose knows to bump the
+    // pipeline snapshot — view-only opens won't reach this code path.
+    mutatedDuringDrawerRef.current = true;
+
     let observedNewLength = -1;
     let observedOldLength = -1;
     setResults((prev) => {
@@ -520,7 +532,13 @@ export default function Requirements() {
     setReqToCopy(undefined);
     setDuplicateReqDrawer(undefined);
     setViewData(undefined);
-    setSnapshotRefreshKey((k) => k + 1);
+    // Only refresh the pipeline snapshot when the drawer actually mutated
+    // data. View-only opens skip this — previously every drawer close fired
+    // an unconditional 10-call burst (now 1 call) for no reason.
+    if (mutatedDuringDrawerRef.current) {
+      setSnapshotRefreshKey((k) => k + 1);
+      mutatedDuringDrawerRef.current = false;
+    }
   };
 
   const handleChangeFilterModel = (

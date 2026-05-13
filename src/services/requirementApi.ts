@@ -101,6 +101,24 @@ export async function generatePayLoadFromPrompt(content: string, instruction: st
   return response.data.data as Record<string, unknown>;
 }
 
+// ── Pipeline counts ──────────────────────────────────────────────────────
+
+export interface PipelineCounts {
+  all: number;
+  allAssigned: number;
+  byStatus: Record<string, number>;
+}
+
+/**
+ * Aggregated counts for the `PipelineSnapshot` tiles. Replaces ~10 separate
+ * `get-requirements?reqStatus=X&page=1&limit=1` calls — one request, one
+ * server-side DB round-trip via `$facet`.
+ */
+export async function getPipelineCounts(archive: boolean = false) {
+  const url = `/requirements/pipeline-counts?archive=${archive ? 'true' : 'false'}`;
+  return axiosClient.get<ApiQueryRes<PipelineCounts>>(url);
+}
+
 // ── Multi-assign ─────────────────────────────────────────────────────────
 
 export async function listChildAssignments(parentReqID: string) {
