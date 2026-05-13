@@ -6,7 +6,12 @@ import { syncIUser } from '../services/authApi';
 import { iUseAttendance, useAttendance } from '../hooks/attendanceHook';
 import { iFetchData, useFetchData } from '../hooks/fetchDataHook';
 import { getAccessControl } from '../services/accessControlApi';
-import { iAccessControl } from '../utils/accessControlUtil';
+import {
+  iAccessControl,
+  ModuleGroup,
+  moduleKey,
+  SuperAdminModule,
+} from '../utils/accessControlUtil';
 import { iUser, UserRole } from '../Interfaces/iUser';
 import { autoOpenAttendanceModalKey } from '../components/dashboard/MarkAttendanceModal';
 import { toast } from 'react-toastify';
@@ -98,6 +103,27 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     const { data } = accessControlState;
     if (!data || !me?.role.length || isTokenExpired()) return false;
     if (me.role.includes(UserRole['super-admin'])) return true;
+
+    // Performance page is intentionally visible to every Marketing + Support
+    // user — they're the people whose scores it shows, so transparency is
+    // by design (the scoring rules and weights are publicly visible inside
+    // the page). The gear-icon "Edit weights" affordance stays gated to
+    // super-admin only via an inline check in PerformancePage.tsx, and the
+    // weight-write API endpoints are guarded server-side by roleGuard
+    // (see `/performance/weights` PATCH / `/performance/weights/reset`),
+    // so this carve-out only affects read-only viewing.
+    const performanceKey = moduleKey(
+      ModuleGroup['Super Admin Modules'],
+      SuperAdminModule.Performance,
+    );
+    if (key === performanceKey) {
+      if (
+        me.role.includes(UserRole.marketing) ||
+        me.role.includes(UserRole.support)
+      ) {
+        return true;
+      }
+    }
 
     return me.role.some((role) => data[role]?.includes(key) || false);
   };
