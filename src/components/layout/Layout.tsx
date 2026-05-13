@@ -7,6 +7,8 @@ import Sidebar from '../sidebar/Sidebar';
 import { drawerWidth, smallDrawerWidth, navbarHeight } from '../constants';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { pageVariants } from '../../theme/animations';
+import { useNotifications } from '../../hooks/useNotifications';
+import NotificationDrawer from '../notifications/NotificationDrawer';
 
 const MotionBox = motion.create(Box);
 
@@ -16,6 +18,7 @@ function Layout() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { myProfileState } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const notifications = useNotifications();
 
   useEffect(() => {
     !myProfileState.data && myProfileState.loadData();
@@ -37,7 +40,20 @@ function Layout() {
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
 
-      <Navbar collapsed={collapsed} />
+      <Navbar
+        collapsed={collapsed}
+        unreadCount={notifications.unreadCount}
+        onOpenNotifications={notifications.openDrawer}
+      />
+
+      <NotificationDrawer
+        open={notifications.drawerOpen}
+        onClose={notifications.closeDrawer}
+        items={notifications.items}
+        loading={notifications.loading}
+        markRead={notifications.markRead}
+        markAllRead={notifications.markAllRead}
+      />
 
       <Box
         component="main"

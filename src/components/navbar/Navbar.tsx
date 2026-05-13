@@ -33,12 +33,15 @@ import {
 import { tokens } from '../../theme/theme';
 import Breadcrumbs from './Breadcrumbs';
 import AttendancePopUp from './AttendancePopUp';
+import NotificationBell from './NotificationBell';
 
 interface NavbarProps {
   collapsed: boolean;
+  unreadCount: number;
+  onOpenNotifications: () => void;
 }
 
-function Navbar({ collapsed }: NavbarProps) {
+function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const { myProfileState, validateLogout, isModuleAllowed, iUser } = useAuth();
@@ -148,6 +151,12 @@ function Navbar({ collapsed }: NavbarProps) {
 
         {/* Attendance popup */}
         <AttendancePopUp />
+
+        {/* Notification bell */}
+        <NotificationBell
+          unreadCount={unreadCount}
+          onClick={onOpenNotifications}
+        />
 
         {/* User avatar & menu */}
         <Tooltip title="Account">

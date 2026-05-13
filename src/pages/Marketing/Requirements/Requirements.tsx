@@ -101,6 +101,15 @@ export default function Requirements() {
   const [archive, setArchive] = useState(false);
   const [snapshotRefreshKey, setSnapshotRefreshKey] = useState(0);
   const [childReqDrawer, setChildReqDrawer] = useState<string>();
+  // Deep-link drawer driven by `?openReqID=...` — used by notification
+  // clicks so the bell can route a marketer straight into a requirement.
+  const [deepLinkReqID, setDeepLinkReqID] = useState<string | undefined>(
+    searchParams.get('openReqID') || undefined,
+  );
+  useEffect(() => {
+    const fromUrl = searchParams.get('openReqID') || undefined;
+    setDeepLinkReqID(fromUrl);
+  }, [searchParams]);
 
   // ── Parent/child expansion state ──
   const [expandedParents, setExpandedParents] = useState<Set<string>>(
@@ -1320,6 +1329,24 @@ export default function Requirements() {
           open={Boolean(childReqDrawer)}
           reqID={childReqDrawer}
           onClose={() => setChildReqDrawer(undefined)}
+        />
+      )}
+
+      {deepLinkReqID && (
+        <RequirementDrawer
+          open={Boolean(deepLinkReqID)}
+          reqID={deepLinkReqID}
+          onClose={() => {
+            setDeepLinkReqID(undefined);
+            // Strip the URL param so closing + re-clicking the bell works.
+            setSearchParams(
+              (prev) => {
+                prev.delete('openReqID');
+                return prev;
+              },
+              { replace: true },
+            );
+          }}
         />
       )}
 

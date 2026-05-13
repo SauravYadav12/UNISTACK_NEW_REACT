@@ -179,6 +179,44 @@ export default function Interviews(props: Iprops) {
   const [snapshotRefreshKey, setSnapshotRefreshKey] = useState(0);
   const [archive, setArchive] = props.archiveState;
 
+  // Deep-link support: when the user clicks an interview notification, the
+  // bell pushes `/interviews?openIntId=INT-XXX`. We fetch that one interview
+  // and open it in the existing drawer, then strip the URL param so the
+  // close-and-reopen flow works on subsequent clicks.
+  useEffect(() => {
+    const openIntId = searchParams.get('openIntId');
+    if (!openIntId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await interviewsList(
+          `intId=${encodeURIComponent(openIntId)}`,
+        );
+        const found = res.data?.data?.results?.[0] as IInterview | undefined;
+        if (cancelled || !found) return;
+        setViewData(found);
+        setFormTitle(`Interview ID: ${found.intId}`);
+        setMode('view');
+        setDrawerOpen(true);
+      } catch {
+        // Silently ignore — the user can still navigate manually.
+      } finally {
+        if (!cancelled) {
+          setSearchParams(
+            (prev) => {
+              prev.delete('openIntId');
+              return prev;
+            },
+            { replace: true },
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, setSearchParams]);
+
   const teamState = useFetchData(async () => {
     const { data } = await teamsList(`limit=5000`);
     return data.data?.results || [];
