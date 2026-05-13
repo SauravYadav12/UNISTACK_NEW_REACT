@@ -10,6 +10,15 @@ interface Props {
 /**
  * Lightweight bell trigger. Render in the navbar; the parent owns the
  * drawer + polling state.
+ *
+ * Color: must adapt to the theme. The previous build hard-coded
+ * `tokens.colors.lightText` (a dark navy `#032840`) which rendered
+ * invisible on top of the dark-mode navbar background — the bell would
+ * "glitch in" briefly on refresh (light flash before dark-mode CSS
+ * reapplied) and then disappear once dark mode settled. Using
+ * `text.primary` (which the AppBar itself already uses) means the icon
+ * follows whatever the current palette's text colour is, so it stays
+ * visible in both light and dark.
  */
 export default function NotificationBell({ unreadCount, onClick }: Props) {
   const display = unreadCount > 99 ? '99+' : String(unreadCount);
@@ -19,7 +28,7 @@ export default function NotificationBell({ unreadCount, onClick }: Props) {
         onClick={onClick}
         size="medium"
         sx={{
-          color: tokens.colors.lightText,
+          color: 'text.primary',
           borderRadius: 2,
           '&:hover': { bgcolor: alpha(tokens.colors.pink, 0.08) },
         }}
