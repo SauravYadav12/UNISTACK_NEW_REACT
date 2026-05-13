@@ -12,6 +12,11 @@ export interface iUser {
   shift: UserShift;
   workLocation: WorkLocation;
   activity?: iUserActivity[];
+  /** Auth-account creation timestamp from Mongoose `timestamps: true`. Used
+   *  as a "didn't exist before this date" cutoff for the attendance week
+   *  strip so new joiners don't see Present/Absent pills on days that
+   *  pre-date their account. */
+  createdAt?: string;
 }
 
 export type iUserActivity = {

@@ -204,7 +204,7 @@ const DailyAttendanceTable = ({
           }}
         >
           <Typography variant="body2" fontWeight={600} color="#2A3547">
-            {currentDate.format('dddd, YYYY MMMM DD')}
+            {currentDate.format('dddd, MMMM D, YYYY')}
           </Typography>
           {!forEmployee && (
             <DatePickerButton

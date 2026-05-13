@@ -13,7 +13,6 @@ import {
   SuperAdminModule,
 } from '../utils/accessControlUtil';
 import { iUser, UserRole } from '../Interfaces/iUser';
-import { autoOpenAttendanceModalKey } from '../components/dashboard/MarkAttendanceModal';
 import { toast } from 'react-toastify';
 
 
@@ -81,7 +80,11 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
   const validateLogin = (token: string, user: iUser) => {
     localStorage.setItem('token', token);
-    localStorage.setItem(autoOpenAttendanceModalKey, 'true');
+    // Legacy: previously we set `autoOpenAttendanceModalKey` here so the
+    // modal would open on every login. The auto-popup is now governed by
+    // a time-window check (09:00–09:15 AM EST, US-shift, non-admin) inside
+    // CheckInCheckOut, so this login-time trigger is intentionally gone —
+    // it would cause an unexpected popup any time someone logs in.
     setIsAuthenticated(true);
     iUserState.setData(user);
   };

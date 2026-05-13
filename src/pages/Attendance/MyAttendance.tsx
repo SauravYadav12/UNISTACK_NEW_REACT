@@ -16,7 +16,7 @@ import { AttendanceStatus, iAttendance, iUser } from '../../Interfaces/iUser';
 
 import SyncIcon from '@mui/icons-material/Sync';
 import { useEffect, useMemo, useState } from 'react';
-import { dateByUserShift } from '../../utils/dateUtil';
+import { dateByUserShift, timeByUserShift } from '../../utils/dateUtil';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { Moment, unitOfTime } from 'moment';
 import MonthlyAttendanceTable from '../../components/attendance/MonthlyAttendanceTable';
@@ -331,8 +331,14 @@ function HeroStatusCard({
               )}
               {todayAttendance?.checkIn && (
                 <Typography variant="caption" sx={{ color: alpha('#fff', 0.6) }}>
-                  Check-in: {todayAttendance.checkIn}
-                  {todayAttendance.checkOut && ` · Out: ${todayAttendance.checkOut}`}
+                  Check-in:{' '}
+                  {timeByUserShift(me.shift, moment(todayAttendance.checkIn)).format(
+                    timeFormate + ' z',
+                  )}
+                  {todayAttendance.checkOut &&
+                    ` · Out: ${timeByUserShift(me.shift, moment(todayAttendance.checkOut)).format(
+                      timeFormate + ' z',
+                    )}`}
                 </Typography>
               )}
             </Box>
@@ -513,30 +519,58 @@ function QuickStats({ me }: { me: iUser }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 7-day streak visualization (pill timeline)
+// This-week streak visualization (Mon–Sun pill timeline)
+//
+// Renamed from "Last 7 Days" → "This Week" so the strip aligns with the
+// payroll/HR week (a rolling 7-day window confused new employees who saw
+// pre-join days mixed in). Pre-join days now render as a neutral "Not
+// joined" pill — previously they showed a random Present/Absent because
+// the server returned empty data which defaulted to gray, plus any
+// auto-marked records (leave-driven Absent) bled across.
 // ─────────────────────────────────────────────────────────────────────
+type DayStatus = AttendanceStatus | 'future' | 'empty' | 'pre-join';
+
 function WeeklyStreak({ me }: { me: iUser }) {
   const today = dateByUserShift(me.shift);
-  const fromDate = moment(today).subtract(6, 'day').format(dateFormate);
-  const toDate = moment(today).format(dateFormate);
+  // ISO week — Monday-start, Sunday-end. Matches the standard business
+  // week most users mentally picture when they hear "this week".
+  const weekStart = moment(today).clone().startOf('isoWeek'); // Monday
+  const weekEnd = moment(today).clone().endOf('isoWeek'); // Sunday
+  const fromDate = weekStart.format(dateFormate);
+  const toDate = weekEnd.format(dateFormate);
 
   const state = useAttendance(
     { fromDate, toDate, users: [me] },
     [me._id, fromDate, toDate]
   );
 
+  // The earliest date for which a record could legitimately exist for this
+  // user. New users joining today should NOT see Present/Absent pills on
+  // Monday if they joined Wednesday. `iUser.createdAt` is the auth-account
+  // creation time — close enough as a "didn't exist before this" cutoff.
+  const joinedAt = me.createdAt ? moment(me.createdAt) : null;
+
   const days = useMemo(() => {
-    const out: Array<{ date: Moment; status: AttendanceStatus | 'future' | 'empty' }> = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = moment(today).subtract(i, 'day');
-      const hit = state.attendance?.find((a) => moment(a.date).format(dateFormate) === d.format(dateFormate));
-      let status: AttendanceStatus | 'future' | 'empty' = 'empty';
-      if (hit) status = hit.status || AttendanceStatus.Absent;
-      else if (d.isAfter(today, 'day')) status = 'future';
+    const out: Array<{ date: Moment; status: DayStatus }> = [];
+    for (let i = 0; i < 7; i++) {
+      const d = weekStart.clone().add(i, 'day');
+      let status: DayStatus = 'empty';
+
+      if (d.isAfter(today, 'day')) {
+        status = 'future';
+      } else if (joinedAt && d.isBefore(joinedAt, 'day')) {
+        status = 'pre-join';
+      } else {
+        const hit = state.attendance?.find(
+          (a) => moment(a.date).format(dateFormate) === d.format(dateFormate),
+        );
+        if (hit) status = hit.status || AttendanceStatus.Absent;
+      }
       out.push({ date: d, status });
     }
     return out;
-  }, [state.attendance, me.shift]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.attendance, me.shift, me.createdAt, weekStart.valueOf()]);
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -544,8 +578,15 @@ function WeeklyStreak({ me }: { me: iUser }) {
       case AttendanceStatus['Half-Day']: return tokens.colors.warning;
       case AttendanceStatus.Late: return tokens.colors.blue;
       case AttendanceStatus.Absent: return tokens.colors.error;
-      default: return '#D1D5DB';
+      default: return '#D1D5DB'; // empty / future / pre-join
     }
+  };
+
+  const tooltipLabel = (s: DayStatus): string => {
+    if (s === 'empty') return 'No record';
+    if (s === 'future') return 'Upcoming';
+    if (s === 'pre-join') return 'Before joining';
+    return s;
   };
 
   return (
@@ -566,11 +607,11 @@ function WeeklyStreak({ me }: { me: iUser }) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <IconPointFilled size={18} color={tokens.colors.pink} />
           <Typography variant="body1" fontWeight={600} color="text.primary">
-            Last 7 Days
+            This Week
           </Typography>
         </Box>
         <Typography variant="caption" color="text.secondary">
-          {moment(today).subtract(6, 'day').format('MMM D')} – {moment(today).format('MMM D')}
+          {weekStart.format('MMM D')} – {weekEnd.format('MMM D')}
         </Typography>
       </Stack>
 
@@ -578,8 +619,15 @@ function WeeklyStreak({ me }: { me: iUser }) {
         {days.map((d, i) => {
           const isToday = d.date.isSame(today, 'day');
           const color = statusColor(d.status);
+          // Future + pre-join + empty all get a very light fill so the
+          // pill reads as inactive rather than implying any status.
+          const isInactive =
+            d.status === 'future' || d.status === 'pre-join' || d.status === 'empty';
           return (
-            <Tooltip key={i} title={`${d.date.format('ddd, MMM D')} — ${d.status === 'empty' ? 'No record' : d.status === 'future' ? 'Upcoming' : d.status}`}>
+            <Tooltip
+              key={i}
+              title={`${d.date.format('ddd, MMM D')} — ${tooltipLabel(d.status)}`}
+            >
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: isToday ? 700 : 400, display: 'block', mb: 0.5 }}>
                   {d.date.format('ddd')}
@@ -588,7 +636,7 @@ function WeeklyStreak({ me }: { me: iUser }) {
                   sx={{
                     height: 36,
                     borderRadius: 2,
-                    bgcolor: alpha(color, d.status === 'future' ? 0.08 : 0.15),
+                    bgcolor: alpha(color, isInactive ? 0.08 : 0.15),
                     border: '2px solid',
                     borderColor: isToday ? tokens.colors.pink : alpha(color, 0.25),
                     display: 'flex',

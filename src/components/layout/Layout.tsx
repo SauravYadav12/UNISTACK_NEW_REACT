@@ -16,12 +16,19 @@ function Layout() {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { myProfileState } = useAuth();
+  const { myProfileState, myAttendanceState } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const notifications = useNotifications();
 
   useEffect(() => {
     !myProfileState.data && myProfileState.loadData();
+    // Re-fetch today's attendance on every navigation so admin status
+    // edits (e.g. super-admin flipping a record from Present → Half-Day
+    // via the dashboard) become visible to the employee without a
+    // full re-login. Previously the state was loaded once at auth-init
+    // and never refreshed, which caused the "super-admin sees half-day,
+    // employee sees present" complaint.
+    myAttendanceState.loadData();
   }, [location]);
 
   // Auto-collapse on smaller screens
