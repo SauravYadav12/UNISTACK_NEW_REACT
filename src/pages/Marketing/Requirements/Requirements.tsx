@@ -621,6 +621,27 @@ export default function Requirements() {
     return out;
   }, [gridData?.results, expandedParents, childrenMap]);
 
+  /**
+   * Source-of-truth for "does this parent currently have child assignments?".
+   *
+   * Rule: if we have a cached children array (we've expanded or refetched at
+   * least once), trust the cache as the latest truth. Otherwise fall back to
+   * the server's `hasChildren` stamp from the initial grid fetch.
+   *
+   * Why not just `row.hasChildren || cached.length > 0`? When the user
+   * removes the last child via the assign drawer, the cache correctly drops
+   * to `[]` but `row.hasChildren` is still stale-true from the original
+   * fetch (we haven't reloaded the top-level grid). That stale-true used to
+   * leave a chevron behind that opened an empty list, plus kept three
+   * aggregated columns showing the now-removed child's data.
+   */
+  const hasLiveChildren = (row: Row): boolean => {
+    if (!row.reqID) return false;
+    const cached = childrenMap.get(row.reqID);
+    if (cached) return cached.length > 0;
+    return !!row.hasChildren;
+  };
+
   // ── Columns ──
   const columns: GridColDef<Row>[] = [
     {
@@ -633,15 +654,12 @@ export default function Requirements() {
         if (row.dateSeparator) return null;
         if (row.isChildRow) return null;
         if (row.parentReqID) return null; // child surfaced by filter — no chevron
-        // Render the chevron only on parents that actually have children.
-        // The server stamps `hasChildren: true` in `getAllRrequirements`;
-        // already-expanded rows fall back to the cached children count so
-        // the chevron stays visible after the first expand even if the
-        // server flag drifts. Legacy standalone parents never qualify.
+        // Use the live-children helper so removing the last child via the
+        // assign drawer immediately drops the chevron (was previously stuck
+        // on because `row.hasChildren` from the original grid fetch went stale).
+        if (!hasLiveChildren(row)) return null;
         const cached = childrenMap.get(row.reqID || '');
         const count = cached?.length ?? 0;
-        const hasChildren = !!row.hasChildren || count > 0;
-        if (!hasChildren) return null;
         const isLoading = loadingChildrenFor.has(row.reqID || '');
         const isOpen = expandedParents.has(row.reqID || '');
         return (
@@ -854,16 +872,15 @@ export default function Requirements() {
       width: 160,
       renderCell: ({ row }) => {
         if (row.dateSeparator) return null;
-        // Same two-source check as the chevron / AssignedTo / AppliedFor
-        // columns. Server stamps `row.hasChildren` on every parent row that
-        // has at least one child — primary signal even before the user
-        // expands. Cache fallback covers in-session expansions for parents
-        // that picked up children after the initial page load.
-        const cachedKids = childrenMap.get(row.reqID || '');
-        const hasChildren =
-          !!row.hasChildren || (!!cachedKids && cachedKids.length > 0);
         // Parent-with-children: no status (rollup belongs to children).
-        if (!row.isChildRow && !row.parentReqID && hasChildren) {
+        // Uses `hasLiveChildren` so removing the last assignment immediately
+        // restores the parent's own status — the cache is the latest truth,
+        // not the stale `row.hasChildren` from the original grid fetch.
+        if (
+          !row.isChildRow &&
+          !row.parentReqID &&
+          hasLiveChildren(row)
+        ) {
           return (
             <Typography variant="caption" color="text.disabled">
               —
@@ -915,14 +932,14 @@ export default function Requirements() {
       width: 170,
       renderCell: ({ row }) => {
         if (row.dateSeparator) return null;
-        // Two-source check — same pattern as the expand chevron. Server
-        // stamps `row.hasChildren` on first page load (authoritative even
-        // before any expansion); cache fallback covers any later session
-        // changes after the operator has expanded the row at least once.
-        const cachedKids = childrenMap.get(row.reqID || '');
-        const hasChildren =
-          !!row.hasChildren || (!!cachedKids && cachedKids.length > 0);
-        if (!row.isChildRow && !row.parentReqID && hasChildren) {
+        // Same em-dash rollup gate as the Status column; cache-first so
+        // unassign-last-child drops the dash and restores the parent's
+        // own `assignedTo`.
+        if (
+          !row.isChildRow &&
+          !row.parentReqID &&
+          hasLiveChildren(row)
+        ) {
           return (
             <Typography variant="caption" color="text.disabled">
               —
@@ -938,14 +955,14 @@ export default function Requirements() {
       width: 170,
       renderCell: ({ row }) => {
         if (row.dateSeparator) return null;
-        // Two-source check — same pattern as the expand chevron. Server
-        // stamps `row.hasChildren` on first page load (authoritative even
-        // before any expansion); cache fallback covers any later session
-        // changes after the operator has expanded the row at least once.
-        const cachedKids = childrenMap.get(row.reqID || '');
-        const hasChildren =
-          !!row.hasChildren || (!!cachedKids && cachedKids.length > 0);
-        if (!row.isChildRow && !row.parentReqID && hasChildren) {
+        // Same em-dash rollup gate as the Status / Assigned-To columns;
+        // cache-first so unassign-last-child restores the parent's own
+        // `appliedFor`.
+        if (
+          !row.isChildRow &&
+          !row.parentReqID &&
+          hasLiveChildren(row)
+        ) {
           return (
             <Typography variant="caption" color="text.disabled">
               —
