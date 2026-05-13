@@ -36,7 +36,7 @@ import { getInitials } from '../ui/PersonPill';
 import { reqirementStatusColors } from '../../pages/Marketing/Requirements/requirementsValues';
 import { RequirementStatus } from '../../Interfaces/reports';
 
-interface MutateInfo {
+export interface MutateInfo {
   parentReqID: string;
   /** Children list after the mutation (already-refetched by the drawer). */
   children: IRequirement[];

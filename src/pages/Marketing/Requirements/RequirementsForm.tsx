@@ -42,7 +42,9 @@ import CustomTextField from '../../../components/text_field/CustomTextField';
 import CustomSelectField from '../../../components/select/CustomSelectField';
 import { SelectedFile } from '../../../components/profile/formFields/DocumentsField';
 import RequirementLogTable from '../../../components/requirement/RequirementLogTable';
-import AssignRequirementDrawer from '../../../components/requirement/AssignRequirementDrawer';
+import AssignRequirementDrawer, {
+  MutateInfo as AssignMutateInfo,
+} from '../../../components/requirement/AssignRequirementDrawer';
 import MarketerAssignmentCard from '../../../components/requirement/MarketerAssignmentCard';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementAiSuggestions from '../../../components/requirement/RequirementAiSuggestions';
@@ -219,6 +221,14 @@ interface Props {
   setResults?: SetResults;
   /** Open a focused drawer for a specific child reqID (from a MarketerAssignmentCard's "View record"). */
   onOpenChild?: (reqID: string) => void;
+  /**
+   * Page-level callback invoked when the form's inline AssignRequirementDrawer
+   * finishes a save / removal. Lets the page update its `childrenMap`,
+   * auto-expand the parent, bump the snapshot, and (for self-assign) open
+   * the new child drawer — without RequirementsForm having to know about
+   * the page's state.
+   */
+  onAssignMutated?: (info: AssignMutateInfo) => void;
 }
 
 export default function RequirementsForm(props: Props) {
@@ -240,6 +250,7 @@ export default function RequirementsForm(props: Props) {
     onDrawerClose,
     setResults,
     onOpenChild,
+    onAssignMutated,
   } = props;
 
   const user = useAuth().iUser!;
@@ -1939,17 +1950,24 @@ export default function RequirementsForm(props: Props) {
           onClose={() => setAssignOpen(false)}
           parent={viewData}
           accounts={accounts || []}
-          onMutate={async () => {
-            if (!viewData?.reqID) return;
-            setLoadingChildren(true);
-            try {
-              const res = await listChildAssignments(viewData.reqID);
-              setChildren((res.data.data?.results as IRequirement[]) || []);
-            } catch (e) {
-              console.warn('Failed to refresh child assignments', e);
-            } finally {
-              setLoadingChildren(false);
-            }
+          onMutate={(info) => {
+            // 1. Keep the form-internal `children` list in sync so the parent
+            //    view's "Marketer assignments" card reflects the change
+            //    without a manual reload. The drawer already refetched, so we
+            //    just splice in the fresh list it handed us.
+            setChildren(info.children);
+
+            // 2. Close the assign sub-drawer on any successful add. Removal
+            //    keeps it open so admins can chain trash clicks on multiple
+            //    stale assignments without re-opening between each.
+            if (info.kind === 'add') setAssignOpen(false);
+
+            // 3. Bubble up to the page so it can update the grid's
+            //    `childrenMap`, auto-expand the parent, bump the pipeline
+            //    snapshot, and (for self-assign) open the new child drawer.
+            //    Without this, the page-level grid wouldn't reflect the
+            //    new assignment until a manual refresh.
+            onAssignMutated?.(info);
           }}
         />
       )}

@@ -38,7 +38,9 @@ import CustomDrawer from '../../../components/drawer/CustomDrawer';
 import { filterOperatorsForDateField } from '../../../components/datagrid/CustomToolbar';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import RequirementMeta from '../../../components/requirement/RequirementMeta';
-import AssignRequirementDrawer from '../../../components/requirement/AssignRequirementDrawer';
+import AssignRequirementDrawer, {
+  MutateInfo as AssignMutateInfo,
+} from '../../../components/requirement/AssignRequirementDrawer';
 import PipelineSnapshot, { ASSIGNED_VIEW_KEY } from '../../../components/requirement/PipelineSnapshot';
 import PersonPill from '../../../components/ui/PersonPill';
 import { dateFormate2 } from '../../../components/constants';
@@ -402,6 +404,43 @@ export default function Requirements() {
     setDrawerOpen(true);
     clearPendingAiPrefill();
   }, [pendingAiPrefill, iUser, clearPendingAiPrefill]);
+
+  /**
+   * Shared handler for the two `AssignRequirementDrawer` mount points: the
+   * page-level one (admin / parent-editor path, opened via the grid's
+   * Assign button) AND the one mounted inside `RequirementsForm` (the path
+   * marketers use when they self-assign from the parent's view drawer).
+   *
+   * Both need to:
+   *   1. Splice the freshly-refetched children into the page-level
+   *      `childrenMap` so the grid renders the new child without a refresh.
+   *   2. Auto-expand the parent so the new child is visible inline.
+   *   3. Bump the pipeline-snapshot refresh key.
+   *   4. On `kind === 'add'`, close any open assign drawer (page-level
+   *      `setAssignFor(null)` — the form-level one is closed inside
+   *      `RequirementsForm` since the page can't reach its state).
+   *   5. On self-assign, open the new child's `RequirementDrawer` so the
+   *      marketer lands directly on their working record.
+   */
+  const handleAssignMutated = (info: AssignMutateInfo) => {
+    const { parentReqID, children: fresh, created, isSelfAssign, kind } = info;
+
+    setChildrenMap((prev) => {
+      const next = new Map(prev);
+      next.set(parentReqID, fresh);
+      return next;
+    });
+    setExpandedParents((prev) =>
+      prev.has(parentReqID) ? prev : new Set(prev).add(parentReqID),
+    );
+    setSnapshotRefreshKey((k) => k + 1);
+
+    if (kind === 'add') setAssignFor(null);
+
+    if (isSelfAssign && created.length > 0 && created[0]?.reqID) {
+      setChildReqDrawer(created[0].reqID);
+    }
+  };
 
   // ── Data fetching (same as legacy, with counts for date separators) ──
   async function fetchRequirementsData(
@@ -1410,6 +1449,7 @@ export default function Requirements() {
           onCopy={handleCopy}
           reqToCopy={reqToCopy}
           onOpenChild={(reqID) => setChildReqDrawer(reqID)}
+          onAssignMutated={handleAssignMutated}
         />
       )}
     </>
@@ -1497,35 +1537,7 @@ export default function Requirements() {
         onClose={() => setAssignFor(null)}
         parent={assignFor || undefined}
         accounts={accounts || []}
-        onMutate={({ parentReqID, children: fresh, created, isSelfAssign, kind }) => {
-          // Surgical update: swap in the freshly-refetched children for this
-          // ONE parent. No full table reload (preserves user scroll position,
-          // expansion state, and avoids the chevron-collapse jolt). The
-          // pipeline snapshot is the only thing that needs a global hint.
-          setChildrenMap((prev) => {
-            const next = new Map(prev);
-            next.set(parentReqID, fresh);
-            return next;
-          });
-          // Auto-expand the parent so the new child is visible without the
-          // user having to hunt for the chevron after the drawer closes.
-          setExpandedParents((prev) =>
-            prev.has(parentReqID) ? prev : new Set(prev).add(parentReqID),
-          );
-          setSnapshotRefreshKey((k) => k + 1);
-
-          // Close the assign drawer on any successful add — admin or
-          // self-assign. Removal keeps the drawer open so admins can chain
-          // trash clicks across multiple stale assignments.
-          if (kind === 'add') setAssignFor(null);
-
-          // Self-assign UX: also open the new child record so the marketer
-          // lands directly on their working record. Admins skip this so a
-          // bulk distribution doesn't pop a drawer per click.
-          if (isSelfAssign && created.length > 0 && created[0]?.reqID) {
-            setChildReqDrawer(created[0].reqID);
-          }
-        }}
+        onMutate={handleAssignMutated}
       />
     </>
   );
