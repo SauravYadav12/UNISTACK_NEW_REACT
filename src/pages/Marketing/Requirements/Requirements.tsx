@@ -138,20 +138,68 @@ export default function Requirements() {
     }
   });
   // Mirror to sessionStorage whenever the set changes — small payload, the
-  // page only re-hydrates when the user re-enters this route.
+  // page only re-hydrates when the user re-enters this route. Deferred via
+  // `requestIdleCallback` when available (with a `setTimeout(_, 0)` fallback
+  // for Safari) so the storage write doesn't share a frame with the toggle's
+  // React render. Without this, JSON.stringify on each expand/collapse
+  // sat on the critical path; perceived expand/collapse latency drops
+  // measurably with the deferral.
   useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        EXPANDED_PARENTS_KEY,
-        JSON.stringify([...expandedParents]),
-      );
-    } catch {
-      // Quota / private-mode fall-through — non-fatal.
+    const persist = () => {
+      try {
+        sessionStorage.setItem(
+          EXPANDED_PARENTS_KEY,
+          JSON.stringify([...expandedParents]),
+        );
+      } catch {
+        // Quota / private-mode fall-through — non-fatal.
+      }
+    };
+    const ric = (
+      window as unknown as {
+        requestIdleCallback?: (cb: () => void) => number;
+      }
+    ).requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(persist);
+      return () => {
+        const cic = (
+          window as unknown as {
+            cancelIdleCallback?: (h: number) => void;
+          }
+        ).cancelIdleCallback;
+        if (typeof cic === 'function') cic(id);
+      };
     }
+    const id = window.setTimeout(persist, 0);
+    return () => clearTimeout(id);
   }, [expandedParents]);
-  const [childrenMap, setChildrenMap] = useState<
-    Map<string, IRequirement[]>
-  >(new Map());
+  /**
+   * Children are stored as `Row[]` — pre-sorted by `childSuffix` and pre-
+   * stamped with `isChildRow: true` at insertion time. Why: `displayRows`
+   * used to spread each child (`{ ...kid, isChildRow: true }`) on every
+   * recompute, which created brand-new object identities for every child
+   * on every toggle. MUI X DataGrid then re-ran every cell's `renderCell`
+   * for every visible row, causing the ~1s hitch you'd see when expanding
+   * or collapsing. With pre-stamped storage, displayRows just pushes the
+   * same references back into the row array on every toggle → DataGrid
+   * diff is now "these N rows appeared / disappeared" instead of "all rows
+   * changed".
+   */
+  const [childrenMap, setChildrenMap] = useState<Map<string, Row[]>>(
+    new Map(),
+  );
+
+  // Sort + stamp once at insertion so render-path code can rely on stable
+  // child references. The `_source` tag preserves the original array
+  // reference for callers (e.g. the assign drawer) that may still want
+  // the raw IRequirement[] view.
+  const stampChildren = (kids: IRequirement[]): Row[] =>
+    [...kids]
+      .sort((a, b) =>
+        (a.childSuffix || '').localeCompare(b.childSuffix || ''),
+      )
+      .map((k) => ({ ...k, isChildRow: true as const }));
   const [loadingChildrenFor, setLoadingChildrenFor] = useState<Set<string>>(
     new Set()
   );
@@ -217,7 +265,7 @@ export default function Requirements() {
         (res.data.data?.results as IRequirement[] | undefined) || [];
       setChildrenMap((prev) => {
         const next = new Map(prev);
-        next.set(reqID, results);
+        next.set(reqID, stampChildren(results));
         return next;
       });
     } catch (e) {
@@ -353,16 +401,27 @@ export default function Requirements() {
         // Skip if the form's callback changed the length on this array (a
         // create-flow path leaking into the children bucket).
         if (patched.length !== kids.length) continue;
-        // Did anything actually change for this parent's children?
+        // Walk parallel and rebuild: unchanged entries retain their pre-
+        // stamped `Row` (preserving identity so DataGrid's diff sees no
+        // change), and changed entries get re-stamped with `isChildRow`.
+        // Without this re-stamp, the form's `.map(d => d._id === id ? upd : d)`
+        // path would drop the stamp for the edited entry and downstream
+        // renderCells that branch on `row.isChildRow` would mis-render.
         let any = false;
+        const finalRows: Row[] = new Array(kids.length);
         for (let i = 0; i < kids.length; i++) {
-          if (patched[i] !== kids[i]) {
+          if ((patched[i] as IRequirement) !== (kids[i] as IRequirement)) {
             any = true;
-            break;
+            finalRows[i] = {
+              ...(patched[i] as IRequirement),
+              isChildRow: true as const,
+            } as Row;
+          } else {
+            finalRows[i] = kids[i];
           }
         }
         if (!any) continue;
-        next.set(parentReqID, patched);
+        next.set(parentReqID, finalRows);
         changed = true;
       }
       return changed ? next : prev;
@@ -427,7 +486,7 @@ export default function Requirements() {
 
     setChildrenMap((prev) => {
       const next = new Map(prev);
-      next.set(parentReqID, fresh);
+      next.set(parentReqID, stampChildren(fresh));
       return next;
     });
     setExpandedParents((prev) =>
@@ -601,6 +660,11 @@ export default function Requirements() {
   };
 
   // ── Row synthesis: splice cached children in right after their expanded parent ──
+  // Children are stored pre-stamped + pre-sorted (see `stampChildren`), so
+  // this loop just pushes the references back in. Each toggle therefore
+  // produces a row array where unchanged parents AND unchanged children
+  // keep their object identity — MUI X DataGrid's row diff turns into a
+  // small insert/remove instead of a "every cell changed" full re-render.
   const displayRows = useMemo<Row[]>(() => {
     const src = (gridData?.results as Row[] | undefined) || [];
     const out: Row[] = [];
@@ -610,13 +674,9 @@ export default function Requirements() {
       if (r.parentReqID) continue; // child rows can surface in filtered lists — don't re-splice
       if (!r.reqID) continue;
       if (!expandedParents.has(r.reqID)) continue;
-      const kids = childrenMap.get(r.reqID) || [];
-      const sortedKids = [...kids].sort((a, b) =>
-        (a.childSuffix || '').localeCompare(b.childSuffix || '')
-      );
-      for (const kid of sortedKids) {
-        out.push({ ...kid, isChildRow: true });
-      }
+      const kids = childrenMap.get(r.reqID);
+      if (!kids) continue;
+      for (const kid of kids) out.push(kid);
     }
     return out;
   }, [gridData?.results, expandedParents, childrenMap]);
