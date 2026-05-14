@@ -7,6 +7,7 @@ import { requirementsList } from '../../services/requirementApi';
 import CustomDrawer from '../drawer/CustomDrawer';
 import RequirementMeta from './RequirementMeta';
 import { iUser } from '../../Interfaces/iUser';
+import { IRequirement } from '../../Interfaces/types';
 import { usersList } from '../../services/authApi';
 import { consultantsList } from '../../services/consultantApi';
 import { FormMode } from '../../pages/Marketing/Requirements/Requirements';
@@ -20,6 +21,13 @@ interface iProps {
   hideButtons?: boolean;
   archive?: boolean;
   onClose: () => void;
+  /**
+   * Called after a successful save inside this drawer. Lets the caller
+   * keep their list / grid / children-cache in sync so the edit shows up
+   * live (not just on next page reload). The drawer still updates its
+   * own local `viewData` regardless — this just lifts the change up.
+   */
+  onPatch?: (updated: IRequirement) => void;
 }
 const RequirementDrawer = ({
   reqID,
@@ -29,6 +37,7 @@ const RequirementDrawer = ({
   hideButtons,
   archive,
   onClose,
+  onPatch,
 }: iProps) => {
   const {
     data: viewData,
@@ -141,6 +150,13 @@ const RequirementDrawer = ({
         setResults={(cb) => {
           const results = typeof cb === 'function' ? cb([viewData]) : cb;
           setData(results);
+          // Lift the saved row up so the caller (the page's grid /
+          // childrenMap) can patch in place. Without this, an "Applied
+          // For" edit made inside the focused-child drawer would update
+          // the drawer's local view but the parent's expanded children
+          // list would stay stale until the user refreshed.
+          const updated = Array.isArray(results) ? results[0] : undefined;
+          if (updated && onPatch) onPatch(updated as IRequirement);
         }}
       />
     );

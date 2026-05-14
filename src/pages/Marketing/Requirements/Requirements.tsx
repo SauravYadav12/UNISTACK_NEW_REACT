@@ -703,7 +703,17 @@ export default function Requirements() {
   };
 
   // ── Columns ──
-  const columns: GridColDef<Row>[] = [
+  // Memoized so we don't ship a fresh `columns` prop into MUI X DataGrid
+  // on every render. Without this memo, even an unrelated state change
+  // (drawer open/close, hover, focus) rebuilt the array and DataGrid
+  // re-rendered every cell — which dominated the perceived expand /
+  // collapse lag. Deps cover everything the renderCells read directly
+  // from page state; handlers defined inline (`toggleExpandParent`,
+  // `handleViewDetails`, etc.) are recreated on every render but only
+  // become stale-captured if a dep here doesn't trigger a refresh —
+  // we include the upstream state they read so the memo invalidates
+  // in lockstep with their state-reads.
+  const columns: GridColDef<Row>[] = useMemo<GridColDef<Row>[]>(() => [
     {
       field: 'expand',
       headerName: '',
@@ -1267,7 +1277,23 @@ export default function Requirements() {
         );
       },
     },
-  ];
+  ],
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [
+    // State the renderCells actually read. Functions captured in the
+    // memo (toggle, view, etc.) close over these — they're recreated
+    // each Requirements render, so the memo recaptures the latest
+    // bindings whenever any of these deps move. Other state changes
+    // (drawer open, form mode, etc.) don't invalidate this memo, so
+    // DataGrid keeps the same columns reference and skips re-rendering
+    // every cell on every keystroke.
+    childrenMap,
+    expandedParents,
+    loadingChildrenFor,
+    archive,
+    isParentEditor,
+    userRoles,
+  ]);
 
   // Copy directly from a row without first opening view mode.
   const handleCopyRow = (row: IRequirement) => {
@@ -1588,6 +1614,17 @@ export default function Requirements() {
           open={Boolean(childReqDrawer)}
           reqID={childReqDrawer}
           onClose={() => setChildReqDrawer(undefined)}
+          // Route saves done inside this focused drawer through the page's
+          // shared row-patcher so the expanded children list under the
+          // parent updates live. Without this, an "Applied For" edit
+          // (or any other field) inside the child drawer would only
+          // refresh the drawer's local view — the grid stayed stale
+          // until the user manually reloaded.
+          onPatch={(updated) => {
+            patchRowEverywhere((prev) =>
+              (prev || []).map((r) => (r._id === updated._id ? updated : r)),
+            );
+          }}
         />
       )}
 
@@ -1595,6 +1632,14 @@ export default function Requirements() {
         <RequirementDrawer
           open={Boolean(deepLinkReqID)}
           reqID={deepLinkReqID}
+          onPatch={(updated) => {
+            // Same sync — a notification deep-link can land you on a
+            // requirement; if you edit it, the grid should reflect the
+            // change immediately.
+            patchRowEverywhere((prev) =>
+              (prev || []).map((r) => (r._id === updated._id ? updated : r)),
+            );
+          }}
           onClose={() => {
             setDeepLinkReqID(undefined);
             // Strip the URL param so closing + re-clicking the bell works.
