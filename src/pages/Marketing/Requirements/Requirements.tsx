@@ -567,19 +567,33 @@ export default function Requirements() {
   };
 
   const handleViewDetails = (row: IRequirement) => {
-    const data =
-      gridData?.results?.find((r) => r.reqID === row.reqID) ||
-      // fall back to a child in one of the cached maps
-      Array.from(childrenMap.values())
-        .flat()
-        .find((c) => c.reqID === row.reqID);
-    if (!data) return;
-    setViewData(data);
+    // Use the row passed in by DataGrid directly — `displayRows` only ever
+    // contains full server-fetched documents (from `gridData.results` or
+    // the stamped children in `childrenMap`), so there's no need to look
+    // it up by `reqID` against cached state.
+    //
+    // The previous lookup pattern silently failed in three real-world
+    // scenarios:
+    //   1. Stale closure on column-memo dep mismatch — `gridData?.results`
+    //      was undefined at memo capture time, the find returned undefined
+    //      for parents, and the drawer never opened.
+    //   2. Role-scoped server fetches — when a role sees a different set
+    //      of rows than another, the lookup against `gridData.results`
+    //      could miss rows that came from a different page or filter run.
+    //   3. Grid filters changing `gridData` between render and click —
+    //      the captured handler's `gridData` was a different page's data
+    //      than what the user was looking at.
+    //
+    // Passing the click's `row` straight through removes the closure
+    // dependency entirely. `syncDataById` still refreshes from the
+    // server so any field that drifted since the last fetch is updated.
+    if (!row) return;
+    setViewData(row);
     setFormTitle(`Requirement ID: ${row.reqID}`);
     setMode('view');
     setDrawerOpen(true);
     if (!archive) {
-      syncDataById(data, {
+      syncDataById(row, {
         queryFunction: requirementsList,
         setViewData,
         setResults,
@@ -1288,12 +1302,10 @@ export default function Requirements() {
     // DataGrid keeps the same columns reference and skips re-rendering
     // every cell on every keystroke.
     //
-    // `gridData?.results` is in here so the `handleViewDetails` closure
-    // captured inside the memo always sees the latest top-level rows —
-    // without this, clicking View on a parent right after mount used the
-    // pre-fetch (empty) results array, the find returned undefined, and
-    // the drawer silently didn't open.
-    gridData?.results,
+    // `gridData?.results` is intentionally NOT in here — the row click
+    // handler now uses the row passed by DataGrid directly, so it has
+    // no dependency on the latest results array. Keeping it out
+    // preserves the memo across pagination / filter changes.
     childrenMap,
     expandedParents,
     loadingChildrenFor,
