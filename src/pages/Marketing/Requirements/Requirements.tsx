@@ -1287,6 +1287,13 @@ export default function Requirements() {
     // (drawer open, form mode, etc.) don't invalidate this memo, so
     // DataGrid keeps the same columns reference and skips re-rendering
     // every cell on every keystroke.
+    //
+    // `gridData?.results` is in here so the `handleViewDetails` closure
+    // captured inside the memo always sees the latest top-level rows —
+    // without this, clicking View on a parent right after mount used the
+    // pre-fetch (empty) results array, the find returned undefined, and
+    // the drawer silently didn't open.
+    gridData?.results,
     childrenMap,
     expandedParents,
     loadingChildrenFor,
