@@ -38,9 +38,13 @@ import {
 } from './interviewValues';
 import {
   createInterview,
+  createInterviewLog,
   deleteInterview,
   updateInterview,
 } from '../../../services/interviewApi';
+import InterviewLogTable from '../../../components/interview/InterviewLogTable';
+import { LogOperation } from '../../../Interfaces/requirement';
+import { CreateInterviewLogPayload } from '../../../Interfaces/interview';
 import { dateFormate, timeFormate } from '../../../components/constants';
 import ScriptModal from '../../../components/interview/ScriptModal';
 import { isFieldValid, validateAllFields } from '../../../utils/validators';
@@ -66,6 +70,10 @@ interface iProps {
   disableGenerateScript?: boolean;
   disableDelete?: boolean;
   archive?: boolean;
+  /** Show the "View logs" affordance in view mode. Mirrors the
+   *  requirement form's `showLogs` prop — opt-in so callers that
+   *  embed the form in compact contexts can hide it. */
+  showLogs?: boolean;
   onDrawerClose?: () => void;
   onCreate?: () => void;
   onEdit?: (editMode: boolean) => void;
@@ -96,6 +104,7 @@ export default function InterviewForm(props: iProps) {
   const {
     viewData, requirement, teamsList, mode = 'view', isEditing = false,
     hideButtons = false, disableGenerateScript, disableDelete, archive,
+    showLogs = false,
     onEdit, onDrawerClose, setResults, onCreate,
   } = props;
   const [values, setValues] = useState<Partial<IInterview>>(interviewFormInitialValues);
@@ -159,13 +168,49 @@ export default function InterviewForm(props: iProps) {
     });
   };
 
+  /**
+   * Helper to post an activity-log entry after a successful create / update
+   * / delete. Mirrors `RequirementsForm.createLog` exactly — fire-and-
+   * forget; we don't block the UI on the log write or surface its errors
+   * to the user (the underlying business write already succeeded). A
+   * failed log entry shows in the console only.
+   */
+  async function createLog(
+    id: string,
+    data: Record<string, unknown>,
+    operation: LogOperation,
+  ) {
+    if (!user) return;
+    try {
+      const logPayload: CreateInterviewLogPayload = {
+        interviewRef: id,
+        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        userRef: user._id,
+        oldData: values as Record<string, unknown>,
+        newData: data,
+        operation,
+      };
+      await createInterviewLog(logPayload);
+    } catch (e) {
+      console.error('Failed to write interview log:', e);
+    }
+  }
+
   async function handleSubmitForm(event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent) {
     event.preventDefault();
     if (isSubmitting) return;
     if (!validateAllFields(interviewValidationMeta, values, setErrors)) return;
     setIsSubmitting(true);
-    try { const { data } = await createInterview(values); setResults?.((pre) => [data.data, ...pre]); onCreate?.(); onDrawerClose?.(); }
-    catch (e) { console.log('Error saving:', e); } finally { setIsSubmitting(false); }
+    try {
+      const { data } = await createInterview(values);
+      setResults?.((pre) => [data.data, ...pre]);
+      if (data.data?._id) {
+        await createLog(data.data._id, values as Record<string, unknown>, 'create');
+      }
+      onCreate?.();
+      onDrawerClose?.();
+    } catch (e) { console.log('Error saving:', e); }
+    finally { setIsSubmitting(false); }
   }
 
   async function handleEditSubmitForm(event: React.MouseEvent<HTMLButtonElement> | KeyboardEvent) {
@@ -173,20 +218,40 @@ export default function InterviewForm(props: iProps) {
     if (isSubmitting || !values._id) return;
     if (!validateAllFields(interviewValidationMeta, values, setErrors)) return;
     setIsSubmitting(true);
-    try { const { data } = await updateInterview(values._id, values); setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d)); onDrawerClose?.(); }
-    catch (e) { console.log('Error updating:', e); } finally { setIsSubmitting(false); }
+    try {
+      const { data } = await updateInterview(values._id, values);
+      setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d));
+      await createLog(values._id, values as Record<string, unknown>, 'update');
+      onDrawerClose?.();
+    } catch (e) { console.log('Error updating:', e); }
+    finally { setIsSubmitting(false); }
   }
 
   const handleSaveScript = async (script: string) => {
     if (!values._id) { toast.error('Missing interview id'); return; }
-    try { const { data } = await updateInterview(values._id, { script }); setValues({ ...values, script }); setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d)); }
+    try {
+      const { data } = await updateInterview(values._id, { script });
+      setValues({ ...values, script });
+      setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d));
+      // Script edits are a real update — log them too so the activity
+      // history shows when a script was last refreshed.
+      await createLog(values._id, { script }, 'update');
+    }
     catch { toast.error('Failed to save'); }
   };
 
   async function handleDeleteInterview() {
     if (!values._id) { toast.error('Missing interview id'); return; }
-    try { await deleteInterview(values._id); setResults?.((pre) => pre.filter((p) => p._id !== values._id)); onDrawerClose?.(); }
-    catch (e) { console.error('Error deleting:', e); }
+    try {
+      // Write the delete log FIRST while we still have an interview ref
+      // — once the delete lands, the `interviewRef` FK would be orphaned,
+      // but the log row keeps the historical record (same pattern as
+      // requirement deletes).
+      await createLog(values._id, values as Record<string, unknown>, 'delete');
+      await deleteInterview(values._id);
+      setResults?.((pre) => pre.filter((p) => p._id !== values._id));
+      onDrawerClose?.();
+    } catch (e) { console.error('Error deleting:', e); }
   }
 
   const onBlur = (key: keyof typeof values) => {
@@ -345,6 +410,13 @@ export default function InterviewForm(props: iProps) {
 
         </Box>
       </form>
+
+      {/* Activity log — only in view mode (matches RequirementsForm
+          pattern), gated by the opt-in `showLogs` prop so embedded
+          callers can hide it when space is tight. */}
+      {showLogs && mode === 'view' && viewData?._id && (
+        <InterviewLogTable interviewObjectId={viewData._id} />
+      )}
 
       {scriptModal && viewData && (
         <ScriptModal interview={{ ...viewData, ...values }} open={scriptModal} onClose={() => setScriptModal(!scriptModal)} onSave={handleSaveScript} />

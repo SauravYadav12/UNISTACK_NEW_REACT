@@ -74,6 +74,7 @@ const InterviewDrawer = ({
               teamsList={teamState.data || []}
               disableDelete
               hideButtons={archive}
+              showLogs
               viewData={interview}
               mode={mode}
               isEditing={mode !== 'view'}

@@ -1160,6 +1160,7 @@ export default function Interviews(props: Iprops) {
             onCreate={clearReqFromParams}
             setResults={setResults}
             hideButtons={archive}
+            showLogs
             requirement={requirement}
             viewData={viewData}
             onDrawerClose={handleCloseForm}

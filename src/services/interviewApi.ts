@@ -1,6 +1,10 @@
 import { axiosClient } from '../config/axios.config';
 import { ApiQueryRes, PaginationResult } from '../Interfaces/apiRes';
 import { IInterview } from '../Interfaces/types';
+import {
+  CreateInterviewLogPayload,
+  InterviewLog,
+} from '../Interfaces/interview';
 
 export async function interviewsList(query: string = '', signal?: AbortSignal) {
 
@@ -45,6 +49,26 @@ export async function deleteInterview(id: string) {
  * parents without children, this returns the same data as the regular
  * `reqID=` filter.
  */
+/**
+ * Activity log writes — called from the InterviewForm after a successful
+ * create / update / delete. Mirrors the requirement-log API.
+ */
+export async function createInterviewLog(data: CreateInterviewLogPayload) {
+  const response = await axiosClient.post(`/interviews/create-log`, data);
+  return response;
+}
+
+export async function getInterviewLogs(
+  query: string = '',
+  signal?: AbortSignal,
+) {
+  const url = `/interviews/get-log?${query}`;
+  const response = await axiosClient.get<ApiQueryRes<InterviewLog[]>>(url, {
+    signal,
+  });
+  return response;
+}
+
 export async function interviewsByParent(reqID: string, signal?: AbortSignal) {
   const response = await axiosClient.get<
     ApiQueryRes<{
