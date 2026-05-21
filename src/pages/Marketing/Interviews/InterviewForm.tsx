@@ -121,10 +121,20 @@ export default function InterviewForm(props: iProps) {
   );
 
   useEffect(() => { requirement && initializeValuesToCreateInterview(requirement); }, [requirement]);
+  // Re-sync `values` from `viewData` ONLY when the underlying record
+  // changes (different `_id`). Previously this depended on `[mode,
+  // viewData]` — so flipping edit → view AFTER a save would re-run and
+  // reset `values` to the parent's stale pre-save `viewData` snapshot,
+  // showing the old data even though the save succeeded. Now: open a
+  // record → values syncs from viewData. Edit → save → mode flips →
+  // values stays (the user's fresh edits ARE what was saved). Cancel
+  // explicitly calls `setValues(viewData || {})` to revert, so manual
+  // discard still works.
   useEffect(() => {
-    if (mode === 'view' || mode === 'edit') setValues(viewData || {});
+    if (viewData) setValues(viewData);
     setErrors(convertValuesToEmptyString(interviewFormInitialValues));
-  }, [mode, viewData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewData?._id]);
 
   function initializeValuesToCreateInterview(req: IRequirement) {
     if (!req) return;
@@ -170,24 +180,56 @@ export default function InterviewForm(props: iProps) {
 
   /**
    * Helper to post an activity-log entry after a successful create / update
-   * / delete. Mirrors `RequirementsForm.createLog` exactly — fire-and-
-   * forget; we don't block the UI on the log write or surface its errors
-   * to the user (the underlying business write already succeeded). A
-   * failed log entry shows in the console only.
+   * / delete. Fire-and-forget; failures are logged to the console only
+   * (the underlying business write already succeeded).
+   *
+   * For `update`, computes a diff between `before` (the pre-edit snapshot,
+   * typically `viewData`) and `after` (the new values being saved) and
+   * stores ONLY the changed fields as `newData`. Otherwise the log
+   * renderer — which just iterates `newData`'s keys — would show every
+   * populated field as "updated" and bury the actual change. A no-op
+   * update (no diff) doesn't write a log entry at all.
+   *
+   * For `create`, `before` is undefined and the full payload becomes
+   * `newData` — the create IS the change.
+   *
+   * For `delete`, captures the doc's current state so the audit history
+   * survives the deletion (the FK ref will be orphaned but the row stays).
    */
   async function createLog(
     id: string,
-    data: Record<string, unknown>,
+    before: Record<string, unknown> | undefined,
+    after: Record<string, unknown>,
     operation: LogOperation,
   ) {
     if (!user) return;
     try {
+      let payloadNewData: Record<string, unknown> = after;
+      if (operation === 'update' && before) {
+        const diff: Record<string, unknown> = {};
+        const allKeys = new Set([
+          ...Object.keys(after),
+          ...Object.keys(before),
+        ]);
+        for (const k of allKeys) {
+          // Stringify-compare to handle nested objects / arrays / dates
+          // uniformly. Same approach used by the requirement form's diff.
+          if (JSON.stringify(before[k]) !== JSON.stringify(after[k])) {
+            diff[k] = after[k];
+          }
+        }
+        // No-op save: skip the log entirely so the activity history
+        // doesn't get polluted with empty entries.
+        if (Object.keys(diff).length === 0) return;
+        payloadNewData = diff;
+      }
+
       const logPayload: CreateInterviewLogPayload = {
         interviewRef: id,
         userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
         userRef: user._id,
-        oldData: values as Record<string, unknown>,
-        newData: data,
+        oldData: before,
+        newData: payloadNewData,
         operation,
       };
       await createInterviewLog(logPayload);
@@ -205,7 +247,12 @@ export default function InterviewForm(props: iProps) {
       const { data } = await createInterview(values);
       setResults?.((pre) => [data.data, ...pre]);
       if (data.data?._id) {
-        await createLog(data.data._id, values as Record<string, unknown>, 'create');
+        await createLog(
+          data.data._id,
+          undefined, // no prior state — create is the change
+          values as Record<string, unknown>,
+          'create',
+        );
       }
       onCreate?.();
       onDrawerClose?.();
@@ -221,7 +268,14 @@ export default function InterviewForm(props: iProps) {
     try {
       const { data } = await updateInterview(values._id, values);
       setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d));
-      await createLog(values._id, values as Record<string, unknown>, 'update');
+      // Diff against the pre-edit snapshot (viewData) so the log only
+      // captures the field(s) the user actually changed.
+      await createLog(
+        values._id,
+        (viewData ?? {}) as Record<string, unknown>,
+        values as Record<string, unknown>,
+        'update',
+      );
       onDrawerClose?.();
     } catch (e) { console.log('Error updating:', e); }
     finally { setIsSubmitting(false); }
@@ -233,9 +287,15 @@ export default function InterviewForm(props: iProps) {
       const { data } = await updateInterview(values._id, { script });
       setValues({ ...values, script });
       setResults?.((pre) => pre.map((d) => d._id === data.data?._id ? data.data : d));
-      // Script edits are a real update — log them too so the activity
-      // history shows when a script was last refreshed.
-      await createLog(values._id, { script }, 'update');
+      // Script edits are a real update — diff against the prior script
+      // so the log only fires when the content actually changed (and
+      // shows just the script field, not the whole form).
+      await createLog(
+        values._id,
+        { script: viewData?.script } as Record<string, unknown>,
+        { script },
+        'update',
+      );
     }
     catch { toast.error('Failed to save'); }
   };
@@ -246,8 +306,14 @@ export default function InterviewForm(props: iProps) {
       // Write the delete log FIRST while we still have an interview ref
       // — once the delete lands, the `interviewRef` FK would be orphaned,
       // but the log row keeps the historical record (same pattern as
-      // requirement deletes).
-      await createLog(values._id, values as Record<string, unknown>, 'delete');
+      // requirement deletes). For deletes we capture the full current
+      // state as `newData` so the audit shows what was removed.
+      await createLog(
+        values._id,
+        undefined,
+        values as Record<string, unknown>,
+        'delete',
+      );
       await deleteInterview(values._id);
       setResults?.((pre) => pre.filter((p) => p._id !== values._id));
       onDrawerClose?.();
