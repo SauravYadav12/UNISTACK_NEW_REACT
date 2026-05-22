@@ -49,6 +49,8 @@ import { AiProvider } from './context/AiContext';
 import { RequirementAiChatProvider } from './context/RequirementAiChatContext';
 import FloatingAiChat from './components/aiChat/FloatingAiChat';
 import CommandPalette from './components/commandPalette/CommandPalette';
+import JobBoards from './pages/JobBoards/JobBoards';
+import { JobBoardSearchProvider } from './context/JobBoardSearchContext';
 
 // Outer shell — sets up providers only
 function App() {
@@ -228,6 +230,21 @@ function AppContent() {
                 }}
               >
                 <InterviewTabs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="job-boards"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup.Marketing,
+                  module: MarketingModule['Job Boards'],
+                }}
+              >
+                <JobBoardSearchProvider>
+                  <JobBoards />
+                </JobBoardSearchProvider>
               </ProtectedRoute>
             }
           />

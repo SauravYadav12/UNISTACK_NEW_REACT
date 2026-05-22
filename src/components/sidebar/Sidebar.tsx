@@ -40,6 +40,7 @@ import {
   IconFolders,
   IconMailCog,
   IconClipboardCheck,
+  IconWorldSearch,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -159,6 +160,13 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       path: '/reports',
       group: ModuleGroup.Marketing,
       module: MarketingModule.Reports,
+    },
+    {
+      text: 'Job Boards',
+      icon: <IconWorldSearch size={20} />,
+      path: '/job-boards',
+      group: ModuleGroup.Marketing,
+      module: MarketingModule['Job Boards'],
     },
     // Sales Leads hidden — not needed
     // {
