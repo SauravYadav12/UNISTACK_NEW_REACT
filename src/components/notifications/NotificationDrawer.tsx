@@ -367,6 +367,12 @@ function resolveLink(n: NotificationItem): string | null {
         return `/requirements?reqIDs=${encodeURIComponent(filterReqIDs.join(','))}`;
       }
       return '/requirements';
+    case 'employee-management':
+      // Probation-review nudges live here. The page reads pending
+      // employees server-side; deep-linking to a specific user isn't
+      // necessary since the list is short and the row is highlighted
+      // by being "overdue" at the top.
+      return '/employee-management';
     default:
       return null;
   }

@@ -39,7 +39,12 @@ import { LeaveType, LeaveBalance } from '../../Interfaces/salary';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { toast } from 'react-toastify';
 import { createLeave } from '../../services/leavesApi';
-import { listLeaveTypes, getMyBalances } from '../../services/leaveTypesApi';
+import {
+  listLeaveTypes,
+  getMyBalances,
+  getMyProbationStatus,
+  ProbationStatus,
+} from '../../services/leaveTypesApi';
 import { tokens } from '../../theme/theme';
 
 enum iFormType {
@@ -121,6 +126,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
   const [types, setTypes] = useState<LeaveType[]>([]);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [typesLoading, setTypesLoading] = useState(true);
+  const [probation, setProbation] = useState<ProbationStatus | null>(null);
 
   const currentYear = moment().year();
 
@@ -129,13 +135,19 @@ const ApplyLeave = ({ onApplied }: iProps) => {
     (async () => {
       setTypesLoading(true);
       try {
-        const [tRes, bRes] = await Promise.all([
+        const [tRes, bRes, pRes] = await Promise.all([
           listLeaveTypes(false),
           getMyBalances(currentYear),
+          // Probation lookup is best-effort: if the endpoint fails
+          // (older server) we treat the user as non-probation so the
+          // form stays functional. Server-side guard still catches
+          // anyone who is genuinely on probation.
+          getMyProbationStatus().catch(() => ({ data: { onProbation: false } })),
         ]);
         if (cancelled) return;
         setTypes(tRes.data || []);
         setBalances(bRes.data || []);
+        setProbation(pRes.data || { onProbation: false });
       } catch (e) {
         if (!cancelled) toast.error('Failed to load leave types');
       } finally {
@@ -149,6 +161,9 @@ const ApplyLeave = ({ onApplied }: iProps) => {
   // `monthlyAvailable` — only show when > 0. UL / no-cap types are always
   // visible. A missing balance row means the user was never seeded, so
   // fall back to `defaultAllocationPerYear` (salary calc does the same).
+  //
+  // Probationary users see ONLY the unpaid bucket. Server enforces the
+  // same rule with a 400, this is just the cooperative UI.
   const options: LeaveTypeOption[] = useMemo(() => {
     const balanceByTypeId = new Map<string, LeaveBalance>();
     for (const b of balances) {
@@ -157,6 +172,9 @@ const ApplyLeave = ({ onApplied }: iProps) => {
     }
     const out: LeaveTypeOption[] = [];
     types.forEach((t, i) => {
+      // Probation gate: hide every paid type until probation ends.
+      if (probation?.onProbation && !t.isUnpaidBucket) return;
+
       const bal = balanceByTypeId.get(t._id);
       const allocated = bal ? bal.allocated : t.defaultAllocationPerYear;
       const used = bal ? bal.used : 0;
@@ -190,7 +208,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
       });
     });
     return out;
-  }, [types, balances]);
+  }, [types, balances, probation]);
 
   // The UL option (if active) — used when a request overflows the monthly cap
   // and we need to show the user the "X will be unpaid" split.
@@ -463,6 +481,36 @@ const ApplyLeave = ({ onApplied }: iProps) => {
           {loading ? 'Submitting…' : 'Submit Request'}
         </Button>
       </Box>
+
+      {/* Probation notice — appears only while the user is in the
+          3-month window. Server enforces the same rule with a 400. */}
+      {probation?.onProbation && (
+        <Box
+          sx={{
+            mx: 3,
+            mt: 2,
+            px: 2,
+            py: 1.5,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: alpha('#f59e0b', 0.4),
+            backgroundColor: alpha('#f59e0b', 0.08),
+            display: 'flex',
+            gap: 1,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400e' }}>
+            Probation period:
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#78350f' }}>
+            Paid leaves are not available until{' '}
+            {probation.probationEnd
+              ? moment(probation.probationEnd).format('DD MMM YYYY')
+              : 'your probation ends'}
+            . Any leave during this period must be filed as Unpaid Leave (UL).
+          </Typography>
+        </Box>
+      )}
 
       <Box sx={{ p: 3 }}>
         <form id="apply-leave-form" onSubmit={handleSubmit(onSubmit)}>

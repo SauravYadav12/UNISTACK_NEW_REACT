@@ -5,7 +5,8 @@ export type NotificationLinkKind =
   | 'salary'
   | 'project'
   | 'timesheet'
-  | 'filter';
+  | 'filter'
+  | 'employee-management';
 
 export interface NotificationLink {
   kind: NotificationLinkKind;
@@ -17,6 +18,8 @@ export interface NotificationLink {
   approvalId?: string;
   periodMonth?: string;
   filterReqIDs?: string[];
+  /** For employee-management links — which employee triggered the event. */
+  employeeRef?: string;
 }
 
 export interface NotificationActor {

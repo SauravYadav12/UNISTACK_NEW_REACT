@@ -32,7 +32,11 @@ import {
 
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { tokens } from '../../theme/theme';
-import { getMyBalances } from '../../services/leaveTypesApi';
+import {
+  getMyBalances,
+  getMyProbationStatus,
+  ProbationStatus,
+} from '../../services/leaveTypesApi';
 import { getLeaves } from '../../services/leavesApi';
 import { getHolidays } from '../../services/holidayApi';
 import { LeaveBalance, LeaveType as LeaveTypeDef } from '../../Interfaces/salary';
@@ -71,6 +75,7 @@ export default function UserDashboard() {
   const [balances, setBalances] = useState<LeaveBalance[] | null>(null);
   const [myLeaves, setMyLeaves] = useState<iLeave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [probation, setProbation] = useState<ProbationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [applyOpen, setApplyOpen] = useState(false);
 
@@ -78,14 +83,19 @@ export default function UserDashboard() {
     if (!iUser?._id) return;
     setLoading(true);
     try {
-      const [bRes, lRes, hRes] = await Promise.all([
+      const [bRes, lRes, hRes, pRes] = await Promise.all([
         getMyBalances(year),
         getLeaves(`userRef=${iUser._id}&limit=10`),
         getHolidays(),
+        // Probation status is best-effort — if the endpoint fails
+        // (older server), the dashboard still renders without the
+        // banner. The balance numbers themselves are authoritative.
+        getMyProbationStatus().catch(() => ({ data: { onProbation: false } })),
       ]);
       setBalances(bRes.data || []);
       setMyLeaves(lRes.data.data?.results || []);
       setHolidays(hRes.data.data || []);
+      setProbation(pRes.data || { onProbation: false });
     } catch (e) {
       console.error('UserDashboard load error', e);
       setBalances([]);
@@ -348,6 +358,46 @@ export default function UserDashboard() {
           />
         </Grid>
       </Grid>
+
+      {/* Probation notice — shown while the user is in_progress.
+          Two visual states:
+            (a) Inside the 90-day window → "Probation period. Paid
+                leaves accrue starting <date>."
+            (b) Past the window, awaiting confirmation → "Probation
+                window completed. Awaiting HR confirmation."
+          Server enforces the same rule on leave submission with a 400. */}
+      {probation?.onProbation && (
+        <Box
+          sx={{
+            mb: 3,
+            px: 2.25,
+            py: 1.5,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: alpha('#f59e0b', 0.4),
+            backgroundColor: alpha('#f59e0b', 0.08),
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 700, color: '#92400e' }}>
+            {probation.awaitingConfirmation
+              ? 'Probation review pending'
+              : 'Probation period'}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#78350f' }}>
+            {probation.awaitingConfirmation
+              ? 'Your 3-month window has completed. Paid leaves will be credited once HR confirms.'
+              : `Paid leaves accrue starting ${
+                  probation.probationEnd
+                    ? moment(probation.probationEnd).format('DD MMM YYYY')
+                    : 'after your probation ends'
+                }. Any time off taken before then must be filed as Unpaid Leave.`}
+          </Typography>
+        </Box>
+      )}
 
       {/* ── Main grid: balance rings + next up ── */}
       <Grid container spacing={3}>

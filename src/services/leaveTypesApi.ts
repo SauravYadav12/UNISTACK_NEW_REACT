@@ -84,6 +84,35 @@ export async function updateAllocation(
   return res.data;
 }
 
+export interface ProbationStatus {
+  onProbation: boolean;
+  /**
+   * True when probation is still 'in_progress' AND the original 90-day
+   * window has elapsed. Signals to the user dashboard that an admin
+   * needs to confirm before leaves accrue.
+   */
+  awaitingConfirmation?: boolean;
+  dateOfJoining?: string;
+  probationEnd?: string;
+  /** Explicit status from the new probation workflow. `null` for
+   *  legacy users where status hasn't been stamped. */
+  probationStatus?: "in_progress" | "confirmed" | null;
+  /** Admin-chosen end date once confirmed (may be backdated). */
+  probationConfirmedEnd?: string;
+}
+
+/**
+ * Fetches the calling user's probation snapshot. The ApplyLeave form
+ * uses this to filter the leave-type picker (probationary employees
+ * see only UL) and to render a notice explaining the policy.
+ */
+export async function getMyProbationStatus() {
+  const res = await axiosClient.get<{ data: ProbationStatus }>(
+    `/leaves/me/probation`,
+  );
+  return res.data;
+}
+
 export async function triggerYearlyReset(year: number, force = false) {
   const res = await axiosClient.post<{ data: { year: number; users: number; types: number; upserted: number } }>(
     `/leave-balances/reset/${year}?force=${force}`,

@@ -1132,6 +1132,7 @@ function EmployeeBalancesPanel() {
                           monthlyAvailable={t.monthlyQuota != null && !t.isUnpaidBucket ? bal?.monthlyAvailable : undefined}
                           monthlyQuota={t.monthlyQuota}
                           monthlyQuotaOverride={bal?.monthlyQuota}
+                          leaveStartMonth={bal?.leaveStartMonth}
                           onSave={(v, mq) => handleAllocationChange(u._id, t._id, v, mq)}
                         />
                       </Box>
@@ -1223,6 +1224,7 @@ function AllocationCell({
   monthlyAvailable,
   monthlyQuota,
   monthlyQuotaOverride,
+  leaveStartMonth,
   onSave,
 }: {
   hasRow: boolean;
@@ -1237,6 +1239,10 @@ function AllocationCell({
   /** The user's per-row override of the type's global `monthlyQuota`, when
    *  set. `null`/undefined = no override (use the global default). */
   monthlyQuotaOverride?: number | null;
+  /** 1-indexed month accrual begins. > 1 indicates a probationary
+   *  joiner; the cell renders a "Starts <MMM>" hint so it's obvious
+   *  the allocation is dormant until then. */
+  leaveStartMonth?: number | null;
   /** Save callback. `monthlyQuota` is `undefined` when not changed,
    *  `null` to clear the override, or a number to set/update it. */
   onSave: (allocated: number, monthlyQuota?: number | null) => void;
@@ -1360,9 +1366,25 @@ function AllocationCell({
     );
   }
 
+  // Probation-aware accrual start. When `leaveStartMonth > 1`, the user
+  // is on probation and accrual is dormant until that month — surface
+  // this in both the tooltip and a small inline chip so admins don't
+  // mistake "5 allocated" for "5 available right now".
+  const isProbationary =
+    hasRow && typeof leaveStartMonth === 'number' && leaveStartMonth > 1;
+  const startMonthLabel = isProbationary
+    ? new Date(2000, (leaveStartMonth as number) - 1, 1).toLocaleString(
+        undefined,
+        { month: 'short' },
+      )
+    : null;
+
   const tooltipBase = hasRow
     ? `Allocated: ${allocated} · Used: ${used}`
     : 'Click to set allocation';
+  const tooltipProbation = isProbationary
+    ? ` · Accrual starts ${startMonthLabel} 1 (probation period)`
+    : '';
   const tooltipMonthly = hasRow && monthlyAvailable != null && monthlyQuota != null
     ? ` · This month: ${monthlyAvailable} (${monthlyQuota}/mo + carry-forward)`
     : '';
@@ -1370,7 +1392,7 @@ function AllocationCell({
   return (
     <>
       <Tooltip
-        title={`${tooltipBase}${tooltipMonthly}${tooltipEdit}`}
+        title={`${tooltipBase}${tooltipProbation}${tooltipMonthly}${tooltipEdit}`}
         placement="top"
         arrow
       >
@@ -1413,14 +1435,19 @@ function AllocationCell({
           {hasRow && monthlyAvailable != null && (
             <Typography sx={{
               fontSize: 9.5,
-              color: hasQuotaOverride ? tokens.colors.warning : tokens.colors.pink,
+              color: isProbationary
+                ? tokens.colors.warning
+                : hasQuotaOverride
+                  ? tokens.colors.warning
+                  : tokens.colors.pink,
               fontWeight: 700,
               mt: 0.25,
               fontVariantNumeric: 'tabular-nums',
               letterSpacing: 0.3,
             }}>
-              {monthlyAvailable} avail this mo
-              {hasQuotaOverride ? ' · custom' : ''}
+              {isProbationary
+                ? `Starts ${startMonthLabel} 1`
+                : `${monthlyAvailable} avail this mo${hasQuotaOverride ? ' · custom' : ''}`}
             </Typography>
           )}
         </Box>

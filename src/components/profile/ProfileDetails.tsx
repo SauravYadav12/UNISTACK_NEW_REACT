@@ -8,6 +8,8 @@ import { tokens } from '../../theme/theme';
 import {
   IconUser,
   IconCalendar,
+  IconCalendarPlus,
+  IconCalendarMinus,
   IconMail,
   IconMailOpened,
   IconPhone,
@@ -19,6 +21,8 @@ import {
 const detailIcons = [
   <IconUser size={16} />,
   <IconCalendar size={16} />,
+  <IconCalendarPlus size={16} />,
+  <IconCalendarMinus size={16} />,
   <IconMail size={16} />,
   <IconMailOpened size={16} />,
   <IconPhone size={16} />,
@@ -35,6 +39,12 @@ const ProfileDetails = () => {
     const schema: MyDetail[] = [
       { label: 'Name', value: myProfile?.name },
       { label: 'Date of Birth', value: myProfile?.dob ? dayjs(myProfile.dob).format(dateFormate) : '' },
+      // Joining + relieving sit next to DOB so the timeline of the
+      // employee's tenure reads top-to-bottom on the profile card.
+      // Relieving renders only if set — active employees see nothing
+      // there.
+      { label: 'Date of Joining', value: myProfile?.dateOfJoining ? dayjs(myProfile.dateOfJoining).format(dateFormate) : '' },
+      { label: 'Relieving Date', value: myProfile?.relievingDate ? dayjs(myProfile.relievingDate).format(dateFormate) : '' },
       { label: 'Personal Email', value: myProfile?.email.personal },
       { label: 'Official Email', value: myProfile?.email.official },
       { label: 'Phone Number', value: myProfile?.phoneNumber },

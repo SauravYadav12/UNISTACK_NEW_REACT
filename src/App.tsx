@@ -32,6 +32,7 @@ import {
 } from './utils/accessControlUtil';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import LeavesManagement from './pages/Leaves/LeavesManagement';
+import EmployeeManagement from './pages/EmployeeManagement/EmployeeManagement';
 import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
 import Salary from './pages/Salary/Salary';
 import Projects from './pages/Marketing/Projects/Projects';
@@ -352,6 +353,19 @@ function AppContent() {
                 }}
               >
                 <LeavesManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employee-management"
+            element={
+              <ProtectedRoute
+                meta={{
+                  group: ModuleGroup['Super Admin Modules'],
+                  module: SuperAdminModule['Employee Management'],
+                }}
+              >
+                <EmployeeManagement />
               </ProtectedRoute>
             }
           />

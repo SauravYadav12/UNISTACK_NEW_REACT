@@ -13,6 +13,15 @@ export interface UserProfile extends MyDocuments {
   bankDetails: BankDetails;
   communicationAddress: CommunicationAddress;
   permanentAddress: PermanentAddress;
+  // Auto-stamped by the server on first activation (false→true). Used
+  // as the anchor for the 3-month probation window and leave prorata.
+  // Admins can edit manually if the recorded date differs from the
+  // actual onboarding date.
+  dateOfJoining?: string;
+  // Auto-stamped by the server on deactivation (true→false). Cleared
+  // when the user is reactivated. Surfaced on the profile so HR can
+  // see the relieving date at a glance.
+  relievingDate?: string;
 }
 
 export interface MyDocuments {

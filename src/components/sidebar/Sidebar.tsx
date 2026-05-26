@@ -41,6 +41,7 @@ import {
   IconMailCog,
   IconClipboardCheck,
   IconWorldSearch,
+  IconUserCheck,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -239,6 +240,15 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       path: '/user-management',
       group: ModuleGroup['Super Admin Modules'],
       module: SuperAdminModule['User Management'],
+    },
+    {
+      text: 'Employee Management',
+      icon: <IconUserCheck size={20} />,
+      path: '/employee-management',
+      group: ModuleGroup['Super Admin Modules'],
+      module: SuperAdminModule['Employee Management'],
+      // Visibility is governed by the standard Access Control matrix
+      // — super-admin grants the module per-role from /access-control.
     },
     {
       text: 'Access Control',

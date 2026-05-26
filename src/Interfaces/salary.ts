@@ -33,6 +33,14 @@ export interface LeaveBalance {
    * cumulative ceiling unlocking the full balance on month 1.
    */
   monthlyQuota?: number | null;
+  /**
+   * 1-indexed month within `year` that monthly accrual begins. `null` /
+   * missing → January (legacy / full-year employee). Set to a value
+   * 2..12 for probationary new joiners so accrual is re-anchored.
+   * Example: an April joiner gets `leaveStartMonth: 7`, meaning July is
+   * treated as accrual-month #1 with `1 × monthlyQuota` available.
+   */
+  leaveStartMonth?: number | null;
   // Server-computed — how many days the user can still avail this month,
   // taking into account carry-forward from earlier months. Only present on
   // responses from /leave-balances/my/:year and /leave-balances/user/:id/:year.
