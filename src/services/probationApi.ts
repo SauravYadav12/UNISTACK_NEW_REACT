@@ -60,3 +60,48 @@ export async function extendProbation(
   );
   return res.data;
 }
+
+// ── Joining-date management (Employee Management → Joining dates tab)
+//
+// Reuses the same /probation/... prefix so the express routing stays
+// in one file; the endpoints themselves serve the broader employee
+// lifecycle, not probation specifically.
+
+export interface EmployeeJoiningRow {
+  userId: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: string[];
+  dateOfJoining: string | null;
+  probationStatus: 'in_progress' | 'confirmed' | null;
+  probationOriginalEndDate: string | null;
+  probationEndDate: string | null;
+  relievingDate: string | null;
+  hasProfile: boolean;
+}
+
+export interface UpdateJoiningDateResult {
+  userId: string;
+  dateOfJoining: string;
+  probationOriginalEndDate: string | null;
+  balancesUpdated: number;
+}
+
+export async function listEmployeesWithJoiningDates() {
+  const res = await axiosClient.get<{ data: EmployeeJoiningRow[] }>(
+    '/probation/employees',
+  );
+  return res.data;
+}
+
+export async function updateEmployeeJoiningDate(
+  userId: string,
+  dateOfJoining: string,
+) {
+  const res = await axiosClient.patch<{ data: UpdateJoiningDateResult }>(
+    `/probation/employees/${userId}/joining-date`,
+    { dateOfJoining },
+  );
+  return res.data;
+}

@@ -149,4 +149,13 @@ export const interviewValidationMeta: ValidationMeta[] = [
     field: 'interviewDuration',
     required: true,
   },
+  {
+    // Consultant is filled automatically when a requirement is picked
+    // (see InterviewForm: `consultant: req.appliedFor`). We still
+    // enforce it as required so a hand-edited form or a requirement
+    // that somehow has no applied-for cannot reach submit. Server
+    // enforces the same rule — this just surfaces the error inline.
+    field: 'consultant',
+    required: true,
+  },
 ];

@@ -51,6 +51,7 @@ import ActiveUserSwitch from '../../components/userManagement/ActiveUserSwitch';
 import UserShiftSelect from '../../components/userManagement/UserShiftSelect';
 import UserWorkLocationSelect from '../../components/userManagement/UserWorkLocationSelect';
 import CanEditSwitch from '../../components/userManagement/canEditSwitch';
+import DateOfJoiningEditor from './DateOfJoiningEditor';
 import {
   documentFormSection,
   getProfileFormInitialValues,
@@ -1530,6 +1531,11 @@ function UserManagement() {
 
           {mode === 'view' && (
             <Box sx={{ mt: 3 }}>
+              {/* Date-of-Joining editor — admin / super-admin can set
+                  or correct DOJ for any employee. Recomputes the
+                  probation clock and re-seeds the year's balances. */}
+              <DateOfJoiningEditor user={selectedUser} />
+
               {/* canEdit toggle lives in the drawer — it's an advanced
                   permission flag, not a day-to-day admin action, so keeping
                   it off the main card reduces noise. */}

@@ -242,6 +242,16 @@ export default function InterviewForm(props: iProps) {
     event.preventDefault();
     if (isSubmitting) return;
     if (!validateAllFields(interviewValidationMeta, values, setErrors)) return;
+    // Defence-in-depth client check matching the server: an interview
+    // without a consultant is rejected. Validation meta also requires
+    // it, but a malformed initial state could slip past — toast here
+    // so the user gets immediate feedback rather than a generic 400.
+    if (!values.consultant?.trim() && !values.consultantRef) {
+      toast.error(
+        'Pick a requirement first — interviews need a consultant.',
+      );
+      return;
+    }
     setIsSubmitting(true);
     try {
       const { data } = await createInterview(values);
@@ -256,7 +266,19 @@ export default function InterviewForm(props: iProps) {
       }
       onCreate?.();
       onDrawerClose?.();
-    } catch (e) { console.log('Error saving:', e); }
+    } catch (e) {
+      // Surface the server-side validation error (parent-record /
+      // missing-consultant / etc.) to the user instead of swallowing
+      // it. The interviewController returns `{ message: ... }` on 400s.
+      const msg =
+        (e as { response?: { data?: { message?: string; error?: string } } })
+          ?.response?.data?.message ||
+        (e as { response?: { data?: { message?: string; error?: string } } })
+          ?.response?.data?.error ||
+        'Failed to create interview.';
+      toast.error(msg);
+      console.log('Error saving:', e);
+    }
     finally { setIsSubmitting(false); }
   }
 
