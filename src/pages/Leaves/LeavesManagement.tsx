@@ -730,10 +730,15 @@ function AllRequestsPanel() {
 // LEAVE TYPES TAB (admin)
 // ─────────────────────────────────────────────────────────────────────────────
 function LeaveTypesPanel() {
+  // Show only active types by default — soft-deleted ones used to
+  // linger in the listing, which made "delete" look broken because
+  // the row stayed visible (just with active=false). Admins can flip
+  // the toggle below to audit the full history.
+  const [showInactive, setShowInactive] = useState(false);
   const { data: types, loadData, loading } = useFetchData<LeaveType[]>(async () => {
-    const { data } = await listLeaveTypes(true);
+    const { data } = await listLeaveTypes(showInactive);
     return data || [];
-  }, []);
+  }, [showInactive]);
   const [editing, setEditing] = useState<LeaveType | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -771,8 +776,34 @@ function LeaveTypesPanel() {
             size="small"
             disabled={row.isUnpaidBucket}
             onClick={async () => {
-              if (!window.confirm(`Deactivate ${row.name}?`)) return;
-              await deleteLeaveType(row._id);
+              if (
+                !window.confirm(
+                  `Delete "${row.name}"? Past leaves/balances that reference this type will keep working; the type just won't appear in new requests.`,
+                )
+              )
+                return;
+              try {
+                const res = await deleteLeaveType(row._id);
+                // Server returns { hardDeleted: true } when no refs
+                // exist and the doc was fully removed; otherwise it
+                // soft-deleted and tells us why. Surface either path
+                // so admins know which one happened.
+                const r = (res as unknown as {
+                  data?: { hardDeleted?: boolean };
+                  message?: string;
+                });
+                toast.success(
+                  r?.message ||
+                    (r?.data?.hardDeleted
+                      ? `"${row.name}" deleted.`
+                      : `"${row.name}" deactivated.`),
+                );
+              } catch (e) {
+                toast.error(
+                  (e as { response?: { data?: { error?: string } } })
+                    ?.response?.data?.error || 'Failed to delete.',
+                );
+              }
               loadData();
             }}
           >
@@ -785,15 +816,31 @@ function LeaveTypesPanel() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h6" fontWeight={700}>Leave Types</Typography>
-        <Button
-          variant="contained" startIcon={<IconPlus size={16} />}
-          onClick={() => setAdding(true)}
-          sx={{ bgcolor: tokens.colors.pink, '&:hover': { bgcolor: tokens.colors.pinkDark } }}
-        >
-          Add Type
-        </Button>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+              />
+            }
+            label={
+              <Typography variant="caption" color="text.secondary">
+                Show inactive
+              </Typography>
+            }
+          />
+          <Button
+            variant="contained" startIcon={<IconPlus size={16} />}
+            onClick={() => setAdding(true)}
+            sx={{ bgcolor: tokens.colors.pink, '&:hover': { bgcolor: tokens.colors.pinkDark } }}
+          >
+            Add Type
+          </Button>
+        </Stack>
       </Stack>
       <Box sx={{ minHeight: 400 }}>
         <DataGrid
