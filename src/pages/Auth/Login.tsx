@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sendOtp } from '../../services/authApi';
 import { toast } from 'react-toastify';
 import Loader from '../../components/loader/Loader';
@@ -22,8 +22,26 @@ export default function Login() {
   const otpState = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [authData, setAuthData] = React.useState<AuthData>();
   const { isAuthenticated, validateLogin } = useAuth();
+
+  // Resolve the post-login destination once. Email deep-links land here
+  // with ?redirect=<encoded path+query> when ProtectedRoute intercepts
+  // them; falls back to /dashboard for direct visits.
+  //
+  // Sanity-check the redirect target: must be a relative in-app path
+  // starting with `/`, must not be `/login` itself (would loop), and
+  // must not be a `//` scheme-relative URL that browsers treat as
+  // external — basic open-redirect mitigation.
+  const rawRedirect = searchParams.get('redirect');
+  const redirectTo = React.useMemo(() => {
+    if (!rawRedirect) return '/dashboard';
+    if (!rawRedirect.startsWith('/')) return '/dashboard';
+    if (rawRedirect.startsWith('//')) return '/dashboard';
+    if (rawRedirect.startsWith('/login')) return '/dashboard';
+    return rawRedirect;
+  }, [rawRedirect]);
 
   async function handleSendOTP() {
     const email = emailState[0];
@@ -54,7 +72,7 @@ export default function Login() {
   async function onUserVerifiedSuccessfully(user: iUser, token?: string) {
     if (token) {
       validateLogin(token, user);
-      navigate('/dashboard');
+      navigate(redirectTo, { replace: true });
       toast.success('Login Successful');
       return;
     }
@@ -69,16 +87,22 @@ export default function Login() {
     }
     const { user } = authData;
     validateLogin(token, user);
-    navigate('/dashboard');
+    navigate(redirectTo, { replace: true });
     toast.success('Login Successful');
   }
 
   React.useEffect(() => {
+    // Already authenticated (same browser session, valid token in
+    // localStorage) — skip the login form and forward to the intended
+    // destination. This is the "I'm already logged in, why am I
+    // seeing the login page?" case for email deep-links: even if
+    // ProtectedRoute briefly bounced through /login during boot, the
+    // useEffect catches up and forwards.
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate(redirectTo, { replace: true });
       return;
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, redirectTo]);
 
   return (
     <>

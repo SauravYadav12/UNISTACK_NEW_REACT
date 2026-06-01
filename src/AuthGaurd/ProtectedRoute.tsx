@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContextProvider';
 import { ModuleGroup, moduleKey } from '../utils/accessControlUtil';
 import { UserRole } from '../Interfaces/iUser';
@@ -12,6 +12,7 @@ const ProtectedRoute = ({
 }: ProtectedRouteProps) => {
   const { isAuthenticated, accessControlState, iUserState, isModuleAllowed } =
     useAuth();
+  const location = useLocation();
   const isAllowed = meta
     ? isModuleAllowed(moduleKey(meta.group, meta.module))
     : true;
@@ -29,9 +30,19 @@ const ProtectedRoute = ({
   }
 
   if (!isAuthenticated) {
-    // Send straight to /login rather than the marketing Landing page — the
-    // user was trying to use the app, not shop for it.
-    return <Navigate to="/login" replace />;
+    // Send straight to /login rather than the marketing Landing page —
+    // the user was trying to use the app, not shop for it. Stash the
+    // path + query they were aiming for as ?redirect=... so Login can
+    // bounce them back to the right page after re-authentication
+    // (matters for email-link deep links: clicking a leave/interview
+    // notification used to drop you on /dashboard after login).
+    const intended = location.pathname + location.search;
+    const isWorthRemembering =
+      intended && intended !== '/' && intended !== '/login';
+    const target = isWorthRemembering
+      ? `/login?redirect=${encodeURIComponent(intended)}`
+      : '/login';
+    return <Navigate to={target} replace />;
   }
 
   if (!isAllowed || !passesRoleGate) {
