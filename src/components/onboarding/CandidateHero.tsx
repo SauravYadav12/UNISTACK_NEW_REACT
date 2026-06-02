@@ -41,7 +41,11 @@ interface Props {
 export default function CandidateHero({ candidate, busy, onRefresh }: Props) {
   const fullName = `${candidate.firstName} ${candidate.lastName}`.trim();
   const isRejected = candidate.stage === 'rejected';
-  const isComplete = candidate.stage === 'offer-signed';
+  // Both `offer-signed` (legacy single-doc terminal) and `onboarded`
+  // (new terminal after all five docs signed) count as complete — the
+  // hero turns green, ring fills to 100%, "Onboarded" chip shows.
+  const isComplete =
+    candidate.stage === 'offer-signed' || candidate.stage === 'onboarded';
   const accent = isRejected
     ? tokens.colors.error
     : isComplete

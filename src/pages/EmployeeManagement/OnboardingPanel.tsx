@@ -109,7 +109,11 @@ export default function OnboardingPanel() {
     ]);
     for (const cand of candidates) {
       if (cand.stage === 'rejected') r.push(cand);
-      else if (cand.stage === 'offer-signed') c.push(cand);
+      // Both terminal "done" stages bucket into Completed. `offer-signed`
+      // covers legacy single-doc onboarding; `onboarded` is the new
+      // terminal after all 5 docs are signed.
+      else if (cand.stage === 'offer-signed' || cand.stage === 'onboarded')
+        c.push(cand);
       else {
         a.push(cand);
         if (ADMIN_NEXT_STAGES.has(cand.stage)) waiting++;

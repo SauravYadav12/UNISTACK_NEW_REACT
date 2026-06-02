@@ -74,8 +74,13 @@ function activeIndex(stage: OnboardingCandidate['stage']): number {
       return 3;
     case 'offer-sent':
       return 3;
+    // Both terminal "done" stages map past the last station so every
+    // step is rendered as completed (green tick). `offer-signed` is
+    // the legacy single-doc terminal; `onboarded` is the new terminal
+    // after all five documents (offer + 4 additional) have been signed.
     case 'offer-signed':
-      return 5; // past the last step → all completed
+    case 'onboarded':
+      return 5;
     case 'rejected':
       return -1;
   }
@@ -113,7 +118,11 @@ interface Props {
 
 export default function OnboardingTimeline({ candidate }: Props) {
   const isRejected = candidate.stage === 'rejected';
-  const isComplete = candidate.stage === 'offer-signed';
+  // Either terminal "done" stage flips the timeline into its complete
+  // state — all stations green, progress bar full, "Onboarding
+  // complete" headline.
+  const isComplete =
+    candidate.stage === 'offer-signed' || candidate.stage === 'onboarded';
   const active = activeIndex(candidate.stage);
   const totalSegments = STEPS.length - 1; // 4 connectors between 5 stations
   // Visual fill for connectors + progress bar. Each completed station

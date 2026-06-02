@@ -1008,12 +1008,17 @@ export default function OfferLetterPage() {
                       Your IP and timestamp are auto-captured for verification.
                     </Typography>
                   </Stack>
-                  <Stack direction="row" spacing={1}>
+                  <Stack
+                    direction="row"
+                    spacing={1.25}
+                    alignItems="center"
+                  >
                     <Chip
                       size="small"
                       label={`Step ${stepIdx + 1} / ${STEP_ORDER.length}`}
                       sx={{
                         fontWeight: 700,
+                        height: 28,
                         bgcolor: alpha(tokens.colors.pink, 0.08),
                         color: tokens.colors.pink,
                       }}

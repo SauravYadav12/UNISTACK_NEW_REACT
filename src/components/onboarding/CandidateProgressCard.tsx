@@ -30,7 +30,11 @@ interface Props {
 
 export default function CandidateProgressCard({ candidate, onClick }: Props) {
   const isRejected = candidate.stage === 'rejected';
-  const isComplete = candidate.stage === 'offer-signed';
+  // Either terminal state — legacy single-doc offer-signed OR new
+  // all-five-signed onboarded — paints the card in its complete look
+  // (green ring + 100% + checkmark).
+  const isComplete =
+    candidate.stage === 'offer-signed' || candidate.stage === 'onboarded';
   const accent = isRejected
     ? tokens.colors.error
     : isComplete
