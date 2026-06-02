@@ -248,7 +248,13 @@ export default function OfferLetterPage() {
     return <LinkUnavailable reason="not-found" />;
   }
 
-  const isDone = stepIdx >= STEP_ORDER.length;
+  // Source-of-truth check: thank-you screen shows when we've advanced
+  // past the last step OR when the server has marked the candidate as
+  // fully `onboarded` (authoritative). The second clause is the
+  // safety net against any race condition where stepIdx might lag
+  // behind the actual signing state.
+  const isDone =
+    stepIdx >= STEP_ORDER.length || candidate.stage === 'onboarded';
   const currentKey = isDone ? null : STEP_ORDER[stepIdx];
   const isFinalStep = stepIdx === STEP_ORDER.length - 1;
 
@@ -329,7 +335,20 @@ export default function OfferLetterPage() {
           ? 'Onboarding complete — welcome to Unicodez!'
           : 'Saved. Moving to the next document.',
       );
-      setStepIdx((p) => p + 1);
+      // Use computeInitialStep on the freshly-saved candidate as the
+      // source of truth for "where to be next". This is robust to
+      // any state-staleness edge cases:
+      //   - after the final sign, all 5 docs are signed → returns
+      //     STEP_ORDER.length → isDone=true → thank-you screen
+      //   - mid-flow, it returns the index of the next unsigned doc
+      //   - if the server detects no progress (idempotent re-sign),
+      //     it returns the current step, so we don't go backward
+      // Fallback to `stepIdx + 1` only when the server didn't return
+      // a candidate (network glitch, schema mismatch).
+      const nextStep = updatedCandidate
+        ? Math.max(stepIdx, computeInitialStep(updatedCandidate))
+        : stepIdx + 1;
+      setStepIdx(nextStep);
     } catch (e) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data
