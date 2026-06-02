@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Box, Stack, Tab, Tabs, Typography } from '@mui/material';
-import { IconShieldCheck } from '@tabler/icons-react';
+import { IconShieldCheck, IconUserPlus } from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ProbationApprovals from './ProbationApprovals';
+import OnboardingPanel from './OnboardingPanel';
 
 /**
  * Employee Management
@@ -15,7 +16,7 @@ import ProbationApprovals from './ProbationApprovals';
  * deep link or browser-back/refresh lands on the right tab.
  */
 
-type TabKey = 'probation';
+type TabKey = 'probation' | 'onboarding';
 
 interface TabDef {
   key: TabKey;
@@ -29,6 +30,11 @@ const TAB_DEFS: TabDef[] = [
     key: 'probation',
     label: 'Probation',
     icon: <IconShieldCheck size={16} />,
+  },
+  {
+    key: 'onboarding',
+    label: 'Onboarding',
+    icon: <IconUserPlus size={16} />,
   },
 ];
 
@@ -86,6 +92,7 @@ export default function EmployeeManagement() {
 
       <Stack>
         {activeTab === 'probation' && <ProbationApprovals />}
+        {activeTab === 'onboarding' && <OnboardingPanel />}
         {/* Future tabs render here. Keep each as a self-contained
             sub-component fetching its own data so this shell stays
             zero-state-y and instant to render. */}

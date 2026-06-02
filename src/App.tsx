@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from 'react-router-dom';
 import Login from './pages/Auth/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -33,6 +34,8 @@ import {
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import LeavesManagement from './pages/Leaves/LeavesManagement';
 import EmployeeManagement from './pages/EmployeeManagement/EmployeeManagement';
+import OnboardingFormPage from './pages/PublicOnboarding/OnboardingFormPage';
+import OfferLetterPage from './pages/PublicOnboarding/OfferLetterPage';
 import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
 import Salary from './pages/Salary/Salary';
 import Projects from './pages/Marketing/Projects/Projects';
@@ -71,6 +74,15 @@ function App() {
 // Inner component — can safely read useAuth() since it's inside AuthContextProvider
 function AppContent() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  // Public candidate-facing routes (magic-link onboarding form + offer
+  // letter signing). These should NEVER render internal-only UI like
+  // the AI chat or command palette — even if the visitor happens to
+  // also be authenticated as an admin in the same browser tab.
+  const isPublicCandidateRoute =
+    location.pathname.startsWith('/onboarding/') ||
+    location.pathname.startsWith('/offer/');
+  const showInternalChrome = isAuthenticated && !isPublicCandidateRoute;
 
   return (
     <>
@@ -97,6 +109,11 @@ function AppContent() {
           path="/status"
           element={<LegalPage content={STATUS_CONTENT} />}
         />
+        {/* Candidate-facing public pages — accessed via a magic-link
+            token in the URL, no JWT auth. Mounted OUTSIDE the
+            <ProtectedRoute> wrapper below. */}
+        <Route path="/onboarding/:token" element={<OnboardingFormPage />} />
+        <Route path="/offer/:token" element={<OfferLetterPage />} />
         {/* Pathless layout route — children carry their own paths (e.g.
             `dashboard` → /dashboard) and render inside <Layout/>. Keeping
             this pathless avoids colliding with the public `/` → Landing
@@ -379,8 +396,11 @@ function AppContent() {
         ) : null}
       </Routes>
 
-      {/* Global AI components — only visible after authentication */}
-      {isAuthenticated && (
+      {/* Global AI components — only visible after authentication AND
+          only on internal app routes. Hidden on the candidate-facing
+          public pages so an admin who's logged in elsewhere doesn't see
+          internal chrome while previewing the candidate experience. */}
+      {showInternalChrome && (
         <>
           <CommandPalette />
           <FloatingAiChat />

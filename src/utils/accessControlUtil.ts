@@ -42,6 +42,7 @@ export enum SuperAdminModule {
   'Timesheet Approvals' = 'Timesheet Approvals',
   'Performance' = 'Performance',
   'Employee Management' = 'Employee Management',
+  'Onboarding' = 'Onboarding',
 }
 
 export type iAccessControl = {
