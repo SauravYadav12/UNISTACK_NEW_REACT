@@ -8,6 +8,8 @@ import {
   DialogTitle,
   IconButton,
   Stack,
+  Tab,
+  Tabs,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -38,7 +40,14 @@ import {
 } from '../../services/onboardingApi';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { UserRole } from '../../Interfaces/iUser';
-import { OnboardingCandidate } from '../../Interfaces/onboarding';
+import {
+  ONBOARDING_DOC_KINDS,
+  ONBOARDING_DOC_LABELS,
+  OnboardingCandidate,
+  OnboardingDocKind,
+} from '../../Interfaces/onboarding';
+import DocumentLetterRender from '../../components/onboarding/DocumentLetterRender';
+import moment from 'moment';
 import RequestInfoDialog from '../../components/onboarding/RequestInfoDialog';
 import OfferLetterComposeDialog from '../../components/onboarding/OfferLetterComposeDialog';
 import OfferLetterRender from '../../components/onboarding/OfferLetterRender';
@@ -92,6 +101,10 @@ export default function OnboardingCandidateDrawer({
   const [requestInfoOpen, setRequestInfoOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
   const [signedOpen, setSignedOpen] = useState(false);
+  // Which of the five signed docs is shown in the modal. Defaults to
+  // the offer letter (the canonical "the offer" doc).
+  type SignedTabKey = 'offer-letter' | OnboardingDocKind;
+  const [signedTab, setSignedTab] = useState<SignedTabKey>('offer-letter');
   const [reasonFlow, setReasonFlow] = useState<ReasonFlow>(null);
   const signedRef = useRef<HTMLDivElement | null>(null);
 
@@ -140,10 +153,18 @@ export default function OnboardingCandidateDrawer({
       '.offer-letter-page',
     ) as HTMLElement | null;
     if (!el || !doc) {
-      toast.error('Offer not ready.');
+      toast.error('Document not ready for download yet.');
       return;
     }
-    const name = `${doc.firstName}-${doc.lastName}-offer.pdf`
+    const labels: Record<string, string> = {
+      'offer-letter': 'offer-letter',
+      ...ONBOARDING_DOC_KINDS.reduce<Record<string, string>>((acc, k) => {
+        acc[k] = ONBOARDING_DOC_LABELS[k].replace(/\s+/g, '-').toLowerCase();
+        return acc;
+      }, {}),
+    };
+    const docSlug = labels[signedTab] || 'document';
+    const name = `${doc.firstName}-${doc.lastName}-${docSlug}.pdf`
       .toLowerCase()
       .replace(/\s+/g, '-');
     await downloadSlipAsPdf(el, name);
@@ -349,7 +370,8 @@ export default function OnboardingCandidateDrawer({
                   </Button>
                 </>
               )}
-              {doc.stage === 'offer-signed' && (
+              {(doc.stage === 'offer-signed' ||
+                doc.stage === 'onboarded') && (
                 <Button
                   size="small"
                   variant="contained"
@@ -357,12 +379,14 @@ export default function OnboardingCandidateDrawer({
                   startIcon={<IconUserCheck size={14} />}
                   onClick={() => setSignedOpen(true)}
                 >
-                  View signed offer
+                  View signed documents
                 </Button>
               )}
 
               {/* Reject — available at any stage except already-signed/rejected */}
-              {doc.stage !== 'offer-signed' && doc.stage !== 'rejected' && (
+              {doc.stage !== 'offer-signed' &&
+                doc.stage !== 'onboarded' &&
+                doc.stage !== 'rejected' && (
                 <Button
                   size="small"
                   variant="text"
@@ -508,14 +532,15 @@ export default function OnboardingCandidateDrawer({
             onSent={load}
           />
 
-          {/* Signed offer modal */}
+          {/* Signed documents modal — tabs across all five docs so
+              HR / super-admin can review and download any of them. */}
           <Dialog
             open={signedOpen}
             onClose={() => setSignedOpen(false)}
             fullWidth
             maxWidth="lg"
           >
-            <DialogTitle sx={{ pr: 6 }}>
+            <DialogTitle sx={{ pr: 6, pb: 1 }}>
               <Stack
                 direction="row"
                 justifyContent="space-between"
@@ -523,7 +548,7 @@ export default function OnboardingCandidateDrawer({
                 spacing={1}
               >
                 <Typography variant="h6" fontWeight={700}>
-                  Signed offer letter
+                  Signed onboarding documents
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Button
@@ -535,9 +560,6 @@ export default function OnboardingCandidateDrawer({
                   </Button>
                 </Stack>
               </Stack>
-              {/* Absolute-positioned close affordance — sits on the
-                  top-right corner of the dialog so it's discoverable
-                  regardless of how wide the title row gets. */}
               <Tooltip title="Close" placement="left" arrow>
                 <IconButton
                   onClick={() => setSignedOpen(false)}
@@ -552,23 +574,160 @@ export default function OnboardingCandidateDrawer({
                   <IconX size={18} />
                 </IconButton>
               </Tooltip>
+              {/* Tab bar — one per doc, with a green check next to the
+                  ones the candidate has signed. */}
+              <Tabs
+                value={signedTab}
+                onChange={(_, v) => setSignedTab(v as SignedTabKey)}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{
+                  mt: 1,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    minHeight: 36,
+                  },
+                }}
+              >
+                <Tab
+                  value="offer-letter"
+                  label={
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      alignItems="center"
+                    >
+                      <span>Offer Letter</span>
+                      {doc.offer?.signedAt && (
+                        <IconCheck size={12} color="green" />
+                      )}
+                    </Stack>
+                  }
+                />
+                {ONBOARDING_DOC_KINDS.map((k) => {
+                  const signed = (
+                    doc.additionalSignedDocuments || []
+                  ).some((d) => d.kind === k);
+                  return (
+                    <Tab
+                      key={k}
+                      value={k}
+                      label={
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                        >
+                          <span>{ONBOARDING_DOC_LABELS[k]}</span>
+                          {signed && <IconCheck size={12} color="green" />}
+                        </Stack>
+                      }
+                    />
+                  );
+                })}
+              </Tabs>
             </DialogTitle>
             <DialogContent dividers>
               <Box ref={signedRef}>
-                {doc.offer && (
-                  <OfferLetterRender
-                    snapshot={doc.offer.snapshot}
-                    template={doc.offer.templateAtSendTime}
-                    signatureDataUrl={doc.offer.signatureDataUrl}
-                    signatureMode={doc.offer.signatureMode}
-                    signatureTypedName={doc.offer.signatureTypedName}
-                    signedFullName={doc.offer.signedFullName}
-                    signatureDate={doc.offer.signatureDate}
-                    signedByEmail={doc.offer.signedByEmail}
-                    signedFromIp={doc.offer.signedFromIp}
-                    signedFromLocation={doc.offer.signedFromLocation}
-                  />
-                )}
+                {signedTab === 'offer-letter' &&
+                  doc.offer &&
+                  doc.offer.templateAtSendTime && (
+                    <OfferLetterRender
+                      snapshot={doc.offer.snapshot}
+                      template={doc.offer.templateAtSendTime}
+                      signatureDataUrl={doc.offer.signatureDataUrl}
+                      signatureMode={doc.offer.signatureMode}
+                      signatureTypedName={doc.offer.signatureTypedName}
+                      signedFullName={doc.offer.signedFullName}
+                      signatureDate={doc.offer.signatureDate}
+                      signedByEmail={doc.offer.signedByEmail}
+                      signedFromIp={doc.offer.signedFromIp}
+                      signedFromLocation={doc.offer.signedFromLocation}
+                    />
+                  )}
+                {signedTab !== 'offer-letter' &&
+                  (() => {
+                    const snap = (doc.additionalDocSnapshots || []).find(
+                      (s) => s.kind === signedTab,
+                    );
+                    const signedRecord = (
+                      doc.additionalSignedDocuments || []
+                    ).find((d) => d.kind === signedTab);
+                    if (!snap) {
+                      return (
+                        <Box sx={{ p: 4, textAlign: 'center' }}>
+                          <Typography color="text.secondary">
+                            No snapshot of this document exists for this
+                            candidate. The offer was likely sent before
+                            additional-document support was enabled.
+                          </Typography>
+                        </Box>
+                      );
+                    }
+                    return (
+                      <Box>
+                        {!signedRecord && (
+                          <Box
+                            sx={{
+                              mb: 2,
+                              p: 1.5,
+                              borderRadius: 2,
+                              bgcolor: alpha(tokens.colors.warning, 0.08),
+                              border: '1px solid',
+                              borderColor: alpha(tokens.colors.warning, 0.3),
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: tokens.colors.warning,
+                                fontWeight: 700,
+                              }}
+                            >
+                              The candidate hasn't signed this document yet.
+                              You're viewing the unsigned snapshot.
+                            </Typography>
+                          </Box>
+                        )}
+                        <DocumentLetterRender
+                          template={snap}
+                          vars={{
+                            firstName:
+                              doc.offer?.snapshot?.name?.split(' ')[0] ||
+                              doc.firstName,
+                            lastName:
+                              doc.offer?.snapshot?.name
+                                ?.split(' ')
+                                .slice(1)
+                                .join(' ') || doc.lastName,
+                            name:
+                              doc.offer?.snapshot?.name ||
+                              `${doc.firstName} ${doc.lastName}`,
+                            position:
+                              doc.offer?.snapshot?.position || doc.position,
+                            probationMonths:
+                              doc.offer?.snapshot?.probationMonths ||
+                              doc.probationMonths,
+                            startDate: doc.offer?.snapshot?.startDate
+                              ? moment(doc.offer.snapshot.startDate).format(
+                                  'DD MMM YYYY',
+                                )
+                              : undefined,
+                            annualSalary: doc.offer?.snapshot?.annualSalary
+                              ? new Intl.NumberFormat('en-IN').format(
+                                  doc.offer.snapshot.annualSalary,
+                                )
+                              : undefined,
+                          }}
+                          signed={signedRecord}
+                        />
+                      </Box>
+                    );
+                  })()}
               </Box>
             </DialogContent>
           </Dialog>

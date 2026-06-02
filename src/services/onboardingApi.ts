@@ -10,6 +10,8 @@ import {
   OnboardingCandidate,
   OnboardingCandidateSummary,
   OfferLetterTemplate,
+  OnboardingDocKind,
+  OnboardingDocTemplate,
   PublicCandidateView,
   ResolveTokenResult,
 } from '../Interfaces/onboarding';
@@ -138,6 +140,26 @@ export async function deleteCandidate(id: string) {
   return res.data;
 }
 
+// ── Additional doc templates (super-admin) ──────────────────────
+
+export async function getOnboardingDocTemplates() {
+  const res = await axiosClient.get<{
+    data: Record<OnboardingDocKind, OnboardingDocTemplate>;
+  }>('/onboarding/doc-templates');
+  return res.data;
+}
+
+export async function updateOnboardingDocTemplate(
+  kind: OnboardingDocKind,
+  patch: Partial<OnboardingDocTemplate>,
+) {
+  const res = await axiosClient.patch<{ data: OnboardingDocTemplate }>(
+    `/onboarding/doc-templates/${kind}`,
+    patch,
+  );
+  return res.data;
+}
+
 // ── Template editor (super-admin) ───────────────────────────────
 
 export async function getOfferTemplate() {
@@ -222,6 +244,45 @@ export async function signPublicOffer(
   // resolve-token round-trip.
   const res = await axiosClient.post<SignOfferResponse>(
     `/p/onboarding/${token}/sign-offer`,
+    payload,
+  );
+  return res.data;
+}
+
+export interface SignAdditionalDocPayload {
+  signedFullName: string;
+  signatureDate: string;
+  signatureMode: 'drawn' | 'typed';
+  signatureDataUrl?: string;
+  signatureTypedName?: string;
+  geoLocation?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+  };
+}
+
+export interface SignAdditionalDocResponse {
+  ok: boolean;
+  data?: {
+    candidate: PublicCandidateView;
+    /** True when this signature was the final one (candidate is now
+     *  fully onboarded). The signing UI uses this to flip into the
+     *  thank-you screen. */
+    justOnboarded?: boolean;
+    /** True when the endpoint returned idempotently because this
+     *  doc was already signed previously. */
+    alreadySigned?: boolean;
+  };
+}
+
+export async function signPublicAdditionalDoc(
+  token: string,
+  kind: OnboardingDocKind,
+  payload: SignAdditionalDocPayload,
+): Promise<SignAdditionalDocResponse> {
+  const res = await axiosClient.post<SignAdditionalDocResponse>(
+    `/p/onboarding/${token}/sign-additional/${kind}`,
     payload,
   );
   return res.data;

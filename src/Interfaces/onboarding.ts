@@ -15,6 +15,7 @@ export type OnboardingStage =
   | 'bg-check-passed'
   | 'offer-sent'
   | 'offer-signed'
+  | 'onboarded'
   | 'rejected';
 
 export const STAGE_PROGRESS_INDEX: Record<OnboardingStage, number> = {
@@ -25,10 +26,11 @@ export const STAGE_PROGRESS_INDEX: Record<OnboardingStage, number> = {
   'bg-check-passed': 5,
   'offer-sent': 6,
   'offer-signed': 7,
+  onboarded: 8,
   rejected: 0,
 };
 
-export const ONBOARDING_TOTAL_STEPS = 7;
+export const ONBOARDING_TOTAL_STEPS = 8;
 
 // User-facing labels for the stepper + chips.
 export const STAGE_LABELS: Record<OnboardingStage, string> = {
@@ -38,9 +40,87 @@ export const STAGE_LABELS: Record<OnboardingStage, string> = {
   'bg-check': 'BG Check',
   'bg-check-passed': 'BG Check Passed',
   'offer-sent': 'Offer Sent',
-  'offer-signed': 'Onboarded',
+  'offer-signed': 'Offer Signed',
+  onboarded: 'Onboarded',
   rejected: 'Rejected',
 };
+
+// Four additional documents the candidate signs after the offer
+// letter to complete onboarding. Kind + display label kept in sync
+// with the server's onboardingDocTemplateModel.
+export type OnboardingDocKind =
+  | 'employment-agreement'
+  | 'code-of-conduct'
+  | 'nda'
+  | 'leave-policy';
+
+export const ONBOARDING_DOC_KINDS: OnboardingDocKind[] = [
+  'employment-agreement',
+  'code-of-conduct',
+  'nda',
+  'leave-policy',
+];
+
+export const ONBOARDING_DOC_LABELS: Record<OnboardingDocKind, string> = {
+  'employment-agreement': 'Employment Agreement',
+  'code-of-conduct': 'Code of Conduct',
+  nda: 'Non-Disclosure Agreement',
+  'leave-policy': 'Leave & Attendance Policy',
+};
+
+export interface OnboardingDocSection {
+  heading: string;
+  body: string;
+}
+
+export interface OnboardingDocTemplate {
+  _id: string;
+  kind: OnboardingDocKind;
+  title: string;
+  preamble: string;
+  sections: OnboardingDocSection[];
+  acknowledgment: string;
+  signatoryName: string;
+  signatoryTitle: string;
+  companyName: string;
+  companyAddress: string;
+  companyEmail: string;
+  companyWebsite: string;
+  directorSignatureDataUrl?: string;
+  active: boolean;
+  updatedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OnboardingDocTemplateSnapshot {
+  kind: OnboardingDocKind;
+  title: string;
+  preamble: string;
+  sections: OnboardingDocSection[];
+  acknowledgment: string;
+  signatoryName: string;
+  signatoryTitle: string;
+  companyName: string;
+  companyAddress: string;
+  companyEmail: string;
+  companyWebsite: string;
+  directorSignatureDataUrl?: string;
+}
+
+export interface OnboardingSignedAdditionalDoc {
+  kind: OnboardingDocKind;
+  signedAt: string;
+  signatureMode: 'drawn' | 'typed';
+  signatureDataUrl?: string;
+  signatureTypedName?: string;
+  signedFullName: string;
+  signatureDate: string;
+  signedByEmail?: string;
+  signedFromIp?: string;
+  signedFromUserAgent?: string;
+  signedFromLocation?: OnboardingSignedLocation;
+}
 
 export interface OnboardingReference {
   name?: string;
@@ -170,6 +250,8 @@ export interface OnboardingCandidate {
   bgCheckStartedAt?: string;
   bgCheckCompletedAt?: string;
   offer?: OnboardingOffer;
+  additionalDocSnapshots?: OnboardingDocTemplateSnapshot[];
+  additionalSignedDocuments?: OnboardingSignedAdditionalDoc[];
   invitedBy: string;
   auditLog: OnboardingAuditEntry[];
   createdAt: string;
@@ -207,6 +289,8 @@ export interface PublicCandidateView {
   formData?: OnboardingFormData;
   offer?: OnboardingOffer;
   stage: OnboardingStage;
+  additionalDocSnapshots?: OnboardingDocTemplateSnapshot[];
+  additionalSignedDocuments?: OnboardingSignedAdditionalDoc[];
 }
 
 // Public resolveToken payload.

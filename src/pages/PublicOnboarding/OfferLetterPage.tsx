@@ -3,10 +3,14 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   CircularProgress,
   Container,
   FormControlLabel,
   Stack,
+  Step,
+  StepLabel,
+  Stepper,
   Tab,
   Tabs,
   TextField,
@@ -14,6 +18,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
+  IconArrowRight,
   IconCheck,
   IconDownload,
   IconMapPin,
@@ -22,44 +27,84 @@ import {
   IconSignature,
   IconTypography,
 } from '@tabler/icons-react';
-import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import moment from 'moment';
+import { motion } from 'framer-motion';
 import {
   resolvePublicToken,
   signPublicOffer,
+  signPublicAdditionalDoc,
   SignOfferPayload,
+  SignAdditionalDocPayload,
 } from '../../services/onboardingApi';
-import { ResolveTokenResult } from '../../Interfaces/onboarding';
+import {
+  ONBOARDING_DOC_KINDS,
+  ONBOARDING_DOC_LABELS,
+  OnboardingDocKind,
+  OnboardingDocTemplateSnapshot,
+  PublicCandidateView,
+  ResolveTokenResult,
+} from '../../Interfaces/onboarding';
 import SignatureCanvas from '../../components/onboarding/SignatureCanvas';
 import OfferLetterRender, {
   SIGNATURE_CURSIVE_FONT_STACK,
 } from '../../components/onboarding/OfferLetterRender';
+import DocumentLetterRender from '../../components/onboarding/DocumentLetterRender';
 import LinkUnavailable from './LinkUnavailable';
 import { downloadSlipAsPdf } from '../../components/salary/downloadSlipPdf';
 import { tokens } from '../../theme';
 
 /**
- * Candidate's offer letter page.
+ * Candidate's onboarding signing page — five sequential documents:
  *
- * Two states the page handles:
+ *   Step 0: Offer letter (the OfferLetterRender we already had)
+ *   Step 1-4: Employment Agreement, Code of Conduct, NDA,
+ *             Leave & Attendance Policy (DocumentLetterRender)
  *
- *   1. Pre-signing → renders the letter, shows the signature interface
- *      (Draw or Type tabs) + name field + acceptance checkbox + an
- *      optional "share my location for the verification stamp" toggle.
- *      Submit POSTs the signature back; on success we flip to state 2.
+ * Each step has its own signature interface (Draw / Type tabs) plus
+ * a "Save & next" button that persists the signature and advances.
+ * The final step's button reads "Submit & complete" and flips the
+ * candidate to `onboarded`. After all five, the page paints a
+ * celebratory thank-you screen with per-doc download buttons.
  *
- *   2. Post-signing → renders the letter again with the signature
- *      painted into the signature line and a "Digitally verified"
- *      block beneath it showing who/when/where. A Download-PDF button
- *      captures the rendered DOM via html2canvas and ships an A4 PDF
- *      to the candidate's device.
- *
- * Mounted outside ProtectedRoute. Token in URL is the credential.
+ * State persistence is server-side: every "Save & next" hits the
+ * server. If the candidate closes the tab mid-flow, opening the link
+ * later jumps them straight to the next unsigned doc (the resume
+ * logic reads `offer.signedAt` + `additionalSignedDocuments[]` from
+ * the resolved candidate to pick the right step).
  */
 
 type SignatureMode = 'drawn' | 'typed';
+type StepKey = 'offer-letter' | OnboardingDocKind;
+
+const STEP_ORDER: StepKey[] = [
+  'offer-letter',
+  ...ONBOARDING_DOC_KINDS,
+];
+
+const STEP_LABELS: Record<StepKey, string> = {
+  'offer-letter': 'Offer Letter',
+  'employment-agreement': ONBOARDING_DOC_LABELS['employment-agreement'],
+  'code-of-conduct': ONBOARDING_DOC_LABELS['code-of-conduct'],
+  nda: ONBOARDING_DOC_LABELS['nda'],
+  'leave-policy': ONBOARDING_DOC_LABELS['leave-policy'],
+};
+
+function computeInitialStep(candidate: PublicCandidateView | undefined): number {
+  if (!candidate) return 0;
+  // Offer letter unsigned → step 0
+  if (!candidate.offer?.signedAt) return 0;
+  // Otherwise find the first additional doc that's still unsigned
+  const signedKinds = new Set(
+    (candidate.additionalSignedDocuments || []).map((d) => d.kind),
+  );
+  for (let i = 0; i < ONBOARDING_DOC_KINDS.length; i++) {
+    if (!signedKinds.has(ONBOARDING_DOC_KINDS[i])) return i + 1;
+  }
+  // All five signed → past the end (render thank-you)
+  return STEP_ORDER.length;
+}
 
 export default function OfferLetterPage() {
   const { token = '' } = useParams<{ token: string }>();
@@ -67,42 +112,49 @@ export default function OfferLetterPage() {
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
 
-  // Mode toggle + per-mode state. Persist both so toggling tabs
-  // doesn't lose the user's in-progress work.
+  // Active step index into STEP_ORDER (0=offer-letter ... 4=leave-policy,
+  // 5=thank-you).
+  const [stepIdx, setStepIdx] = useState(0);
+
+  // Signature state — reset each time we advance to a new step.
   const [mode, setMode] = useState<SignatureMode>('drawn');
   const [drawnDataUrl, setDrawnDataUrl] = useState('');
   const [typedName, setTypedName] = useState('');
-
   const [fullName, setFullName] = useState('');
   const [accept, setAccept] = useState(false);
-  // Opt-in geolocation. We don't ask for permission on page load —
-  // only when the candidate ticks the box, so the prompt feels
-  // explicit (per the user's "if allowed then" framing).
   const [shareLocation, setShareLocation] = useState(false);
-  const [
-    capturedGeo,
-    setCapturedGeo,
-  ] = useState<SignOfferPayload['geoLocation']>(undefined);
+  const [capturedGeo, setCapturedGeo] =
+    useState<SignOfferPayload['geoLocation']>(undefined);
   const [geoStatus, setGeoStatus] = useState<
     'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable'
   >('idle');
 
-  // Visual flag — flipped immediately on successful sign so the
-  // post-sign view paints without a refetch round-trip.
-  const [signedLocally, setSignedLocally] = useState(false);
   const letterRef = useRef<HTMLDivElement | null>(null);
+  const downloadRefs = useRef<Record<StepKey, HTMLDivElement | null>>(
+    {} as Record<StepKey, HTMLDivElement | null>,
+  );
 
   useEffect(() => {
     resolvePublicToken(token).then((r) => {
       setResolved(r);
       setLoading(false);
-      if (r.ok && r.data.candidate.offer?.signedAt) setSignedLocally(true);
+      if (r.ok) {
+        const initial = computeInitialStep(r.data.candidate);
+        setStepIdx(initial);
+      }
     });
   }, [token]);
 
-  // When the user checks "share my location", actively prompt the
-  // browser. Drop the toggle if they deny so they're not stuck in an
-  // ambiguous "loading" state.
+  // Reset per-step signature state whenever we advance.
+  useEffect(() => {
+    setDrawnDataUrl('');
+    setTypedName('');
+    setFullName('');
+    setAccept(false);
+    setMode('drawn');
+  }, [stepIdx]);
+
+  // Opt-in geolocation — same UX as the previous version.
   useEffect(() => {
     if (!shareLocation) {
       setCapturedGeo(undefined);
@@ -132,28 +184,42 @@ export default function OfferLetterPage() {
     );
   }, [shareLocation]);
 
-  // Derive once from the resolved payload. We deliberately compute
-  // these BEFORE any conditional early-return below so the hook order
-  // stays stable across all render states (Rules of Hooks).
   const candidate =
     resolved && resolved.ok ? resolved.data.candidate : undefined;
   const offer = candidate?.offer;
   const expectedName = offer?.snapshot?.name || '';
-  const isAlreadySigned = signedLocally || Boolean(offer?.signedAt);
 
-  // Choose what to paint in the candidate's signature card. Pre-sign:
-  // whatever the user is currently working on. Post-sign: pull the
-  // values from the offer doc itself so a refresh shows the same.
-  // Hooks MUST run on every render — keep them above the early returns.
-  const liveSig = useMemo(() => {
-    if (isAlreadySigned) return offer?.signatureDataUrl || '';
-    return mode === 'drawn' ? drawnDataUrl : '';
-  }, [isAlreadySigned, offer?.signatureDataUrl, mode, drawnDataUrl]);
+  // Build placeholder vars used by all four additional docs.
+  const docVars = useMemo(() => {
+    if (!offer) {
+      return {
+        firstName: '',
+        lastName: '',
+        name: '',
+        position: '',
+        probationMonths: 3,
+      };
+    }
+    return {
+      firstName: offer.snapshot.name.split(' ')[0] || offer.snapshot.name,
+      lastName: offer.snapshot.name.split(' ').slice(1).join(' '),
+      name: offer.snapshot.name,
+      position: offer.snapshot.position,
+      probationMonths: offer.snapshot.probationMonths,
+      startDate: moment(offer.snapshot.startDate).format('DD MMM YYYY'),
+      annualSalary: new Intl.NumberFormat('en-IN').format(
+        offer.snapshot.annualSalary,
+      ),
+    };
+  }, [offer]);
 
-  const liveTypedName = useMemo(() => {
-    if (isAlreadySigned) return offer?.signatureTypedName || '';
-    return mode === 'typed' ? typedName : '';
-  }, [isAlreadySigned, offer?.signatureTypedName, mode, typedName]);
+  const snapshotsByKind = useMemo(() => {
+    const map = new Map<OnboardingDocKind, OnboardingDocTemplateSnapshot>();
+    for (const s of candidate?.additionalDocSnapshots || []) {
+      map.set(s.kind, s);
+    }
+    return map;
+  }, [candidate?.additionalDocSnapshots]);
 
   if (loading) {
     return (
@@ -182,54 +248,73 @@ export default function OfferLetterPage() {
     return <LinkUnavailable reason="not-found" />;
   }
 
-  const liveSignatureMode: SignatureMode | undefined = isAlreadySigned
-    ? offer.signatureMode
-    : mode;
+  const isDone = stepIdx >= STEP_ORDER.length;
+  const currentKey = isDone ? null : STEP_ORDER[stepIdx];
+  const isFinalStep = stepIdx === STEP_ORDER.length - 1;
 
-  const liveSignedName = isAlreadySigned
-    ? offer.signedFullName || expectedName
-    : '';
-  const liveSignedDate = isAlreadySigned ? offer.signatureDate : undefined;
+  // Per-step "is this one already signed on the server?" check —
+  // critical for the resume case where we want the page to show the
+  // saved signature on revisit, not a blank canvas.
+  const isStepSignedRemote = (key: StepKey): boolean => {
+    if (key === 'offer-letter') return Boolean(offer.signedAt);
+    return (candidate.additionalSignedDocuments || []).some(
+      (d) => d.kind === key,
+    );
+  };
 
-  // Submit-button enable rule. Drawn mode → needs a drawn image.
-  // Typed mode → needs a typed name long enough to be plausible.
+  const currentSignedRemote =
+    currentKey != null && isStepSignedRemote(currentKey);
+
+  // Submit-enable gate.
   const signatureReady =
     mode === 'drawn'
       ? Boolean(drawnDataUrl)
       : typedName.trim().length >= 2;
-
   const nameMatches =
     fullName.trim().toLowerCase() === expectedName.trim().toLowerCase();
+  const canSubmit = signatureReady && nameMatches && accept;
 
-  async function submit() {
-    if (!signatureReady || !fullName.trim() || !nameMatches || !accept) {
+  async function submitOfferLetter() {
+    const payload: SignOfferPayload = {
+      signedFullName: fullName,
+      signatureDate: new Date().toISOString(),
+      signatureMode: mode,
+    };
+    if (mode === 'drawn') payload.signatureDataUrl = drawnDataUrl;
+    else payload.signatureTypedName = typedName.trim();
+    if (capturedGeo) payload.geoLocation = capturedGeo;
+    const result = await signPublicOffer(token, payload);
+    return result?.data?.candidate;
+  }
+
+  async function submitAdditional(kind: OnboardingDocKind) {
+    const payload: SignAdditionalDocPayload = {
+      signedFullName: fullName,
+      signatureDate: new Date().toISOString(),
+      signatureMode: mode,
+    };
+    if (mode === 'drawn') payload.signatureDataUrl = drawnDataUrl;
+    else payload.signatureTypedName = typedName.trim();
+    if (capturedGeo) payload.geoLocation = capturedGeo;
+    const result = await signPublicAdditionalDoc(token, kind, payload);
+    return result?.data?.candidate;
+  }
+
+  async function handleSaveAndNext() {
+    if (!canSubmit || !currentKey) {
       toast.error(
         mode === 'drawn'
-          ? 'Draw your signature, type your full name as it appears on the offer, and tick the acceptance box.'
-          : 'Type your signature, confirm your full name as it appears on the offer, and tick the acceptance box.',
+          ? 'Draw your signature, confirm your full name, and tick acceptance.'
+          : 'Type your signature, confirm your full name, and tick acceptance.',
       );
       return;
     }
     setSigning(true);
     try {
-      const payload: SignOfferPayload = {
-        signedFullName: fullName,
-        signatureDate: new Date().toISOString(),
-        signatureMode: mode,
-      };
-      if (mode === 'drawn') {
-        payload.signatureDataUrl = drawnDataUrl;
-      } else {
-        payload.signatureTypedName = typedName.trim();
-      }
-      if (capturedGeo) payload.geoLocation = capturedGeo;
-      // The sign endpoint returns the updated candidate so we can
-      // paint the post-sign view (with the server-stamped IP +
-      // timestamp + stored geo) WITHOUT another round-trip — and
-      // critically, without re-resolving the token in a way that
-      // could 410 if the token were ever consumed.
-      const signResult = await signPublicOffer(token, payload);
-      const updatedCandidate = signResult?.data?.candidate;
+      const updatedCandidate =
+        currentKey === 'offer-letter'
+          ? await submitOfferLetter()
+          : await submitAdditional(currentKey);
       if (updatedCandidate && resolved && resolved.ok) {
         setResolved({
           ok: true,
@@ -239,8 +324,12 @@ export default function OfferLetterPage() {
           },
         });
       }
-      setSignedLocally(true);
-      toast.success('Welcome aboard — your signed copy is ready to download.');
+      toast.success(
+        isFinalStep
+          ? 'Onboarding complete — welcome to Unicodez!'
+          : 'Saved. Moving to the next document.',
+      );
+      setStepIdx((p) => p + 1);
     } catch (e) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data
@@ -251,29 +340,116 @@ export default function OfferLetterPage() {
     }
   }
 
-  async function downloadPdf() {
-    const el = letterRef.current?.querySelector(
-      '.offer-letter-page',
-    ) as HTMLElement | null;
-    if (!el || !candidate) return;
-    const filename = `Offer-${candidate.candId}.pdf`;
+  async function downloadStepPdf(key: StepKey) {
+    const containerEl = downloadRefs.current[key];
+    const el = containerEl?.querySelector('.offer-letter-page') as
+      | HTMLElement
+      | null;
+    if (!el) {
+      toast.error('Document not ready for download yet.');
+      return;
+    }
+    const filename = `${STEP_LABELS[key].replace(/\s+/g, '-')}-${
+      candidate?.candId
+    }.pdf`;
     await downloadSlipAsPdf(el, filename);
   }
 
-  return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: tokens.gradients.warmGlow,
-        py: { xs: 3, sm: 5 },
-      }}
-    >
-      <Container maxWidth="md">
-        <Stack spacing={3}>
-          {isAlreadySigned ? (
-            // Celebratory thank-you card — animated entrance so it
-            // feels like a "we got it" confirmation right after the
-            // candidate clicks Accept & sign.
+  // ── Render the active document (used by both pre-sign and review) ──
+  // Closure-scoped — narrowing on `offer` from the guard above doesn't
+  // carry into nested functions, so we re-check the snapshot/template
+  // and bail to null when missing. Callers only invoke after a non-null
+  // candidate is in scope, so this is purely a TS satisfier.
+  function renderDoc(
+    key: StepKey,
+    options: {
+      signedFullName?: string;
+      live?: {
+        mode: SignatureMode;
+        dataUrl?: string;
+        typedName?: string;
+      };
+      mountRef?: boolean;
+    } = {},
+  ): React.ReactNode {
+    if (!offer?.snapshot || !offer.templateAtSendTime) return null;
+    const localOffer = offer;
+    if (key === 'offer-letter') {
+      // Pre-sign vs post-sign — same as the previous single-doc page.
+      const stepSigned = Boolean(localOffer.signedAt);
+      const liveDataUrl = stepSigned
+        ? localOffer.signatureDataUrl
+        : options.live?.mode === 'drawn'
+          ? options.live.dataUrl
+          : undefined;
+      const liveTyped = stepSigned
+        ? localOffer.signatureTypedName
+        : options.live?.mode === 'typed'
+          ? options.live.typedName
+          : undefined;
+      const liveSignatureMode = stepSigned
+        ? localOffer.signatureMode
+        : options.live?.mode;
+      return (
+        <Box ref={options.mountRef ? bindDownloadRef(key) : undefined}>
+          <OfferLetterRender
+            snapshot={localOffer.snapshot}
+            template={localOffer.templateAtSendTime}
+            signatureDataUrl={liveDataUrl || undefined}
+            signatureMode={liveSignatureMode}
+            signatureTypedName={liveTyped || undefined}
+            signedFullName={
+              stepSigned
+                ? localOffer.signedFullName || expectedName
+                : options.signedFullName
+            }
+            signatureDate={stepSigned ? localOffer.signatureDate : undefined}
+            signedByEmail={stepSigned ? localOffer.signedByEmail : undefined}
+            signedFromIp={stepSigned ? localOffer.signedFromIp : undefined}
+            signedFromLocation={
+              stepSigned ? localOffer.signedFromLocation : undefined
+            }
+          />
+        </Box>
+      );
+    }
+    // Additional doc.
+    const snap = snapshotsByKind.get(key);
+    if (!snap) return null;
+    const signedRecord = (candidate?.additionalSignedDocuments || []).find(
+      (d) => d.kind === key,
+    );
+    return (
+      <Box ref={options.mountRef ? bindDownloadRef(key) : undefined}>
+        <DocumentLetterRender
+          template={snap}
+          vars={docVars}
+          signed={signedRecord}
+          liveSignature={signedRecord ? undefined : options.live}
+          signedFullName={options.signedFullName}
+        />
+      </Box>
+    );
+  }
+
+  function bindDownloadRef(key: StepKey) {
+    return (el: HTMLDivElement | null) => {
+      downloadRefs.current[key] = el;
+    };
+  }
+
+  // Thank-you screen — all 5 signed, candidate landed past the end.
+  if (isDone) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: tokens.gradients.warmGlow,
+          py: { xs: 3, sm: 5 },
+        }}
+      >
+        <Container maxWidth="md">
+          <Stack spacing={3}>
             <motion.div
               initial={{ opacity: 0, y: -8, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -331,7 +507,8 @@ export default function OfferLetterPage() {
                         mt: 0.5,
                       }}
                     >
-                      Thank you for accepting your offer!
+                      Thank you, {offer.snapshot.name.split(' ')[0]} — onboarding
+                      is complete!
                     </Typography>
                     <Typography
                       sx={{
@@ -341,90 +518,248 @@ export default function OfferLetterPage() {
                         lineHeight: 1.5,
                       }}
                     >
-                      We've recorded your signature and a confirmation
-                      email is on its way. Your signed copy is ready —
-                      download it below for your records.
+                      All five documents have been signed and verified. A
+                      confirmation email is on its way. You can download your
+                      copies of every document below — keep them for your
+                      records.
                     </Typography>
                   </Box>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<IconDownload size={16} />}
-                    onClick={downloadPdf}
-                    sx={{
-                      bgcolor: '#fff',
-                      color: tokens.colors.success,
-                      fontWeight: 800,
-                      flexShrink: 0,
-                      '&:hover': {
-                        bgcolor: alpha('#fff', 0.92),
-                      },
-                    }}
-                  >
-                    Download PDF
-                  </Button>
                 </Stack>
               </Box>
             </motion.div>
-          ) : (
-            <Box sx={{ textAlign: 'center' }}>
+
+            {/* Download grid — one card per signed doc */}
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
               <Typography
-                variant="caption"
                 sx={{
-                  color: tokens.colors.pink,
+                  fontSize: 11,
                   fontWeight: 800,
-                  letterSpacing: 1,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  color: tokens.colors.pink,
+                  mb: 1.5,
                 }}
               >
-                UNICODEZ SOFTCORP — OFFER OF EMPLOYMENT
+                Your signed documents
               </Typography>
-              <Typography variant="h4" fontWeight={800}>
-                Please review and sign
-              </Typography>
-              <Typography color="text.secondary">
-                Read through the letter, then sign at the bottom.
-              </Typography>
+              <Stack spacing={1}>
+                {STEP_ORDER.map((key) => (
+                  <Stack
+                    key={key}
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      bgcolor: alpha(tokens.colors.success, 0.04),
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      spacing={1.25}
+                      sx={{ minWidth: 0, flex: 1 }}
+                    >
+                      <Box
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 1.5,
+                          bgcolor: alpha(tokens.colors.success, 0.15),
+                          color: tokens.colors.success,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <IconCheck size={16} stroke={3} />
+                      </Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                        {STEP_LABELS[key]}
+                      </Typography>
+                    </Stack>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<IconDownload size={14} />}
+                      onClick={() => downloadStepPdf(key)}
+                    >
+                      Download
+                    </Button>
+                  </Stack>
+                ))}
+              </Stack>
             </Box>
-          )}
 
-          <Box ref={letterRef}>
-            <OfferLetterRender
-              snapshot={offer.snapshot}
-              template={offer.templateAtSendTime}
-              signatureDataUrl={liveSig || undefined}
-              signatureMode={liveSignatureMode}
-              signatureTypedName={liveTypedName || undefined}
-              signedFullName={liveSignedName || undefined}
-              signatureDate={liveSignedDate}
-              signedByEmail={
-                isAlreadySigned ? offer.signedByEmail : undefined
-              }
-              signedFromIp={
-                isAlreadySigned ? offer.signedFromIp : undefined
-              }
-              signedFromLocation={
-                isAlreadySigned ? offer.signedFromLocation : undefined
-              }
-            />
+            {/* Hidden render area — every doc rendered offscreen so the
+                Download buttons can capture them via html2canvas. Placed
+                in the live DOM (not display:none, which html2canvas can't
+                reliably capture) but moved off-screen with absolute
+                positioning. */}
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: -99999,
+                pointerEvents: 'none',
+                opacity: 0,
+              }}
+            >
+              {STEP_ORDER.map((key) => (
+                <Box key={key} sx={{ mb: 4 }}>
+                  {renderDoc(key, { mountRef: true })}
+                </Box>
+              ))}
+            </Box>
+          </Stack>
+        </Container>
+      </Box>
+    );
+  }
+
+  // Active-step view — header + stepper + doc + sign panel.
+  if (!currentKey) return null;
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: tokens.gradients.warmGlow,
+        py: { xs: 3, sm: 5 },
+      }}
+    >
+      <Container maxWidth="md">
+        <Stack spacing={3}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: tokens.colors.pink,
+                fontWeight: 800,
+                letterSpacing: 1,
+              }}
+            >
+              UNICODEZ SOFTCORP — ONBOARDING DOCUMENTS
+            </Typography>
+            <Typography variant="h4" fontWeight={800}>
+              Step {stepIdx + 1} of {STEP_ORDER.length}:{' '}
+              {STEP_LABELS[currentKey]}
+            </Typography>
+            <Typography color="text.secondary">
+              Review the document, then sign and continue.
+            </Typography>
           </Box>
 
-          {isAlreadySigned ? (
-            // Secondary download button below the letter so users who
-            // scroll past the hero card still have a clear CTA.
-            <Stack
-              direction="row"
-              justifyContent="center"
-              sx={{ pb: 4 }}
+          {/* Stepper — clickable for already-signed past steps */}
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Stepper activeStep={stepIdx} alternativeLabel>
+              {STEP_ORDER.map((key, idx) => {
+                const signed = isStepSignedRemote(key);
+                return (
+                  <Step key={key} completed={signed}>
+                    <StepLabel
+                      sx={{
+                        '& .MuiStepLabel-label': {
+                          fontSize: 11,
+                          fontWeight: stepIdx === idx ? 800 : 600,
+                        },
+                      }}
+                    >
+                      {STEP_LABELS[key]}
+                    </StepLabel>
+                  </Step>
+                );
+              })}
+            </Stepper>
+          </Box>
+
+          {/* Rendered document with live signature preview */}
+          <Box ref={letterRef}>
+            {renderDoc(currentKey, {
+              live: {
+                mode,
+                dataUrl: drawnDataUrl,
+                typedName: typedName.trim(),
+              },
+              signedFullName: nameMatches ? fullName : undefined,
+            })}
+          </Box>
+
+          {/* Sign panel — same UI we already built for the offer letter
+              alone, parametrised on the current step's key. If the
+              candidate is REVIEWING an already-signed past step (e.g.
+              they hit Back), we show a read-only "Signed" banner and
+              a continue button. */}
+          {currentSignedRemote ? (
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 4,
+                bgcolor: alpha(tokens.colors.success, 0.05),
+                border: `1px solid ${alpha(tokens.colors.success, 0.3)}`,
+              }}
             >
-              <Button
-                variant="outlined"
-                size="large"
-                startIcon={<IconDownload size={16} />}
-                onClick={downloadPdf}
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                spacing={2}
               >
-                Download signed copy
-              </Button>
-            </Stack>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      bgcolor: alpha(tokens.colors.success, 0.15),
+                      color: tokens.colors.success,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <IconCheck size={18} stroke={3} />
+                  </Box>
+                  <Box>
+                    <Typography fontWeight={800}>
+                      Already signed
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      You signed this document previously. Continue to the
+                      next.
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Button
+                  variant="contained"
+                  endIcon={<IconArrowRight size={16} />}
+                  onClick={() => setStepIdx((p) => p + 1)}
+                >
+                  Continue
+                </Button>
+              </Stack>
+            </Box>
           ) : (
             <Box
               sx={{
@@ -436,7 +771,7 @@ export default function OfferLetterPage() {
               }}
             >
               <Typography fontWeight={800} sx={{ mb: 0.5 }}>
-                Sign &amp; accept
+                Sign &amp; continue
               </Typography>
               <Typography
                 variant="caption"
@@ -446,7 +781,7 @@ export default function OfferLetterPage() {
                 Date today: {moment().format('DD MMM YYYY')} · we'll record
                 this along with your IP address
                 {shareLocation ? ' and approximate location' : ''} as part of
-                the digital verification stamp.
+                the digital verification stamp for this document.
               </Typography>
 
               <Tabs
@@ -480,21 +815,21 @@ export default function OfferLetterPage() {
 
               <Stack spacing={2}>
                 {mode === 'drawn' ? (
-                  <SignatureCanvas onChange={setDrawnDataUrl} />
+                  <SignatureCanvas
+                    key={`canvas-${stepIdx}`}
+                    onChange={setDrawnDataUrl}
+                  />
                 ) : (
                   <Box>
                     <TextField
                       size="small"
                       fullWidth
                       label="Type your signature"
-                      placeholder="e.g. Asha Verma"
+                      placeholder={`e.g. ${expectedName}`}
                       value={typedName}
                       onChange={(e) => setTypedName(e.target.value)}
                       helperText="We'll display this in a handwriting font as your signature."
                     />
-                    {/* Preview card — paints the typed name in the same
-                        cursive font the rendered offer letter uses,
-                        so what you see here is what HR sees. */}
                     <Box
                       sx={{
                         mt: 1.5,
@@ -574,9 +909,12 @@ export default function OfferLetterPage() {
                       onChange={(e) => setAccept(e.target.checked)}
                     />
                   }
-                  label="I have read and accept the terms of this offer letter."
+                  label={
+                    currentKey === 'offer-letter'
+                      ? 'I have read and accept the terms of this offer letter.'
+                      : `I have read and accept this ${STEP_LABELS[currentKey]}.`
+                  }
                 />
-                {/* Opt-in geolocation. Default off — purely additive. */}
                 <Box
                   sx={{
                     p: 1.5,
@@ -596,10 +934,7 @@ export default function OfferLetterPage() {
                     }
                     label={
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <IconMapPin
-                          size={14}
-                          color={tokens.colors.blue}
-                        />
+                        <IconMapPin size={14} color={tokens.colors.blue} />
                         <Typography variant="body2">
                           Include my approximate location with the signature
                           (optional)
@@ -607,15 +942,6 @@ export default function OfferLetterPage() {
                       </Stack>
                     }
                   />
-                  {geoStatus === 'requesting' && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', ml: 4 }}
-                    >
-                      Asking your browser for permission…
-                    </Typography>
-                  )}
                   {geoStatus === 'granted' && capturedGeo && (
                     <Typography
                       variant="caption"
@@ -642,16 +968,8 @@ export default function OfferLetterPage() {
                       Permission denied — we'll skip the location on the stamp.
                     </Typography>
                   )}
-                  {geoStatus === 'unavailable' && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', ml: 4 }}
-                    >
-                      Your browser doesn't support geolocation.
-                    </Typography>
-                  )}
                 </Box>
+
                 <Stack
                   direction="row"
                   alignItems="center"
@@ -671,23 +989,38 @@ export default function OfferLetterPage() {
                       Your IP and timestamp are auto-captured for verification.
                     </Typography>
                   </Stack>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={
-                      signing ? (
-                        <CircularProgress size={14} color="inherit" />
-                      ) : (
-                        <IconSignature size={16} />
-                      )
-                    }
-                    disabled={
-                      signing || !signatureReady || !nameMatches || !accept
-                    }
-                    onClick={submit}
-                  >
-                    {signing ? 'Submitting…' : 'Accept & sign'}
-                  </Button>
+                  <Stack direction="row" spacing={1}>
+                    <Chip
+                      size="small"
+                      label={`Step ${stepIdx + 1} / ${STEP_ORDER.length}`}
+                      sx={{
+                        fontWeight: 700,
+                        bgcolor: alpha(tokens.colors.pink, 0.08),
+                        color: tokens.colors.pink,
+                      }}
+                    />
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={
+                        signing ? (
+                          <CircularProgress size={14} color="inherit" />
+                        ) : isFinalStep ? (
+                          <IconCheck size={16} />
+                        ) : (
+                          <IconSignature size={16} />
+                        )
+                      }
+                      disabled={signing || !canSubmit}
+                      onClick={handleSaveAndNext}
+                    >
+                      {signing
+                        ? 'Saving…'
+                        : isFinalStep
+                          ? 'Submit & complete'
+                          : 'Save & next'}
+                    </Button>
+                  </Stack>
                 </Stack>
               </Stack>
             </Box>

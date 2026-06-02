@@ -27,6 +27,7 @@ import {
 } from '../../Interfaces/onboarding';
 import OfferLetterRender from './OfferLetterRender';
 import { displayNumber } from '../../utils/onboardingValidators';
+import { salaryInWords } from '../../utils/numberToIndianWords';
 
 /**
  * Compose dialog for generating + sending an offer letter.
@@ -191,6 +192,13 @@ export default function OfferLetterComposeDialog({
                   }
                   disabled={submitting}
                   inputProps={{ min: 0, step: 1000 }}
+                  // Live "in words" helper — gives the admin a sanity
+                  // check before the offer ships (catches "added an
+                  // extra zero" type mistakes).
+                  helperText={salaryInWords(form.annualSalary) || ' '}
+                  FormHelperTextProps={{
+                    sx: { fontStyle: 'italic', fontWeight: 600 },
+                  }}
                 />
                 <TextField
                   type="number"

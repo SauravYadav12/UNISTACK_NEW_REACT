@@ -5,6 +5,7 @@ import {
   OnboardingOfferTemplateSnapshot,
   OnboardingSignedLocation,
 } from '../../Interfaces/onboarding';
+import { salaryInWords } from '../../utils/numberToIndianWords';
 
 /**
  * Shared cursive font stack for the typed-signature mode. Exported so
@@ -514,6 +515,31 @@ export default function OfferLetterRender({
             label="Annual Salary"
             value={`₹${formattedSalary} LPA CTC (Annually)`}
           />
+          {/* Salary in words — formal legal cue ("Twelve Lakh
+              Rupees Only") rendered as an italic right-aligned line
+              directly below the numeric value. Same pattern used on
+              salary slips. */}
+          {snapshot.annualSalary > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                py: 0.4,
+                borderBottom: `1px dashed ${COLORS.rule}`,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 10,
+                  fontStyle: 'italic',
+                  color: COLORS.muted,
+                  fontWeight: 500,
+                }}
+              >
+                ({salaryInWords(snapshot.annualSalary)})
+              </Typography>
+            </Box>
+          )}
           <InfoRow
             label="Probation Period"
             value={`${snapshot.probationMonths} months`}

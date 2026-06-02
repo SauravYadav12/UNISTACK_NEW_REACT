@@ -24,6 +24,7 @@ import {
   digitsOnly,
   displayNumber,
 } from '../../utils/onboardingValidators';
+import { salaryInWords } from '../../utils/numberToIndianWords';
 
 /**
  * Single-step form to initiate an onboarding candidate. Captures the
@@ -223,6 +224,13 @@ export default function AddCandidateDialog({ open, onClose, onCreated }: Props) 
               }
               disabled={submitting}
               inputProps={{ min: 0, step: 1000 }}
+              // Live "in words" helper text — Indian lakh/crore form.
+              // Empty until a positive number is typed (the helper
+              // returns '' for 0/null so this collapses naturally).
+              helperText={salaryInWords(form.proposedAnnualSalary) || ' '}
+              FormHelperTextProps={{
+                sx: { fontStyle: 'italic', fontWeight: 600 },
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
