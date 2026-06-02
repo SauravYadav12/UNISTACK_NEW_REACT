@@ -4,6 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthGaurd/AuthContextProvider';
 import { NotificationItem } from '../Interfaces/notification';
 import {
+  deleteAllNotifications,
+  deleteNotification,
   getUnreadCount,
   listNotifications,
   markAllNotificationsRead,
@@ -35,6 +37,13 @@ export interface UseNotificationsApi {
   reload: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
+  /** Optimistically remove a single notification + delete it
+   *  server-side. UI updates immediately; the API call is
+   *  fire-and-forget. */
+  removeOne: (id: string) => void;
+  /** Optimistically clear every notification + wipe them server-side.
+   *  Same fire-and-forget pattern as removeOne. */
+  clearAll: () => void;
   drawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
@@ -196,6 +205,43 @@ export function useNotifications(): UseNotificationsApi {
     }
   }, []);
 
+  /**
+   * Optimistic single-row delete. The row vanishes from state
+   * immediately; the API call fires in the background and we don't
+   * await it. Failures are silently ignored — the next poll cycle
+   * will reconcile if the server didn't actually delete (e.g. user
+   * lost connectivity). We also prune the seen-id set so a re-poll
+   * doesn't re-toast the deleted item.
+   */
+  const removeOne = useCallback((id: string) => {
+    // Decrement unread counter if the doomed row was unread.
+    setItems((prev) => {
+      const row = prev.find((n) => n._id === id);
+      if (row && !row.readAt) {
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+      return prev.filter((n) => n._id !== id);
+    });
+    seenIdsRef.current.delete(id);
+    // Fire-and-forget — no spinner, no await, no toast.
+    void deleteNotification(id).catch(() => {
+      /* swallow */
+    });
+  }, []);
+
+  /**
+   * Optimistic clear-all. Local state empties immediately; the bulk
+   * DELETE call goes out in the background.
+   */
+  const clearAll = useCallback(() => {
+    setItems([]);
+    setUnreadCount(0);
+    seenIdsRef.current.clear();
+    void deleteAllNotifications().catch(() => {
+      /* swallow */
+    });
+  }, []);
+
   const openDrawer = useCallback(() => {
     setDrawerOpen(true);
     void reload();
@@ -209,6 +255,8 @@ export function useNotifications(): UseNotificationsApi {
     reload,
     markRead,
     markAllRead,
+    removeOne,
+    clearAll,
     drawerOpen,
     openDrawer,
     closeDrawer,

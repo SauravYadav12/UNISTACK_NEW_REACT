@@ -29,6 +29,10 @@ interface Props {
   loading: boolean;
   markRead: (id: string) => void | Promise<void>;
   markAllRead: () => void | Promise<void>;
+  /** Optimistically remove one row + delete it server-side (no spinner). */
+  removeOne: (id: string) => void;
+  /** Optimistically wipe every row + delete them server-side (no spinner). */
+  clearAll: () => void;
 }
 
 /**
@@ -43,6 +47,8 @@ export default function NotificationDrawer({
   loading,
   markRead,
   markAllRead,
+  removeOne,
+  clearAll,
 }: Props) {
   const navigate = useNavigate();
 
@@ -60,6 +66,7 @@ export default function NotificationDrawer({
   };
 
   const hasUnread = items.some((n) => !n.readAt);
+  const hasAny = items.length > 0;
 
   return (
     <Drawer
@@ -146,6 +153,47 @@ export default function NotificationDrawer({
               Mark all read
             </Typography>
           )}
+          {/* Clear-all permanently removes every notification for this
+              user. Confirm before doing it — there's no undo path. */}
+          {hasAny && (
+            <Typography
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    'Clear all notifications? This cannot be undone.',
+                  )
+                ) {
+                  clearAll();
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (
+                    window.confirm(
+                      'Clear all notifications? This cannot be undone.',
+                    )
+                  ) {
+                    clearAll();
+                  }
+                }
+              }}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#fff',
+                px: 1,
+                py: 0.5,
+                borderRadius: 1.5,
+                bgcolor: alpha('#fff', 0.12),
+                '&:hover': { bgcolor: alpha('#fff', 0.2) },
+              }}
+            >
+              Clear all
+            </Typography>
+          )}
           <IconButton
             size="small"
             onClick={onClose}
@@ -195,7 +243,12 @@ export default function NotificationDrawer({
                 </Typography>
                 <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                   {g.items.map((n) => (
-                    <Row key={n._id} n={n} onClick={() => handleClick(n)} />
+                    <Row
+                      key={n._id}
+                      n={n}
+                      onClick={() => handleClick(n)}
+                      onRemove={() => removeOne(n._id)}
+                    />
                   ))}
                 </Stack>
               </Box>
@@ -210,9 +263,11 @@ export default function NotificationDrawer({
 function Row({
   n,
   onClick,
+  onRemove,
 }: {
   n: NotificationItem;
   onClick: () => void;
+  onRemove: () => void;
 }) {
   const unread = !n.readAt;
   const Icon = iconForType(n.type);
@@ -220,8 +275,12 @@ function Row({
   return (
     <Box
       onClick={onClick}
+      // `.notif-actions` is targeted by the hover rule below so the X
+      // button only fades in when the cursor is over the row — keeps
+      // the resting-state visually clean.
       sx={{
         cursor: 'pointer',
+        position: 'relative',
         p: 1.25,
         borderRadius: 2,
         border: '1px solid',
@@ -235,6 +294,7 @@ function Row({
           borderColor: alpha(color, 0.5),
           boxShadow: `0 2px 8px ${alpha(color, 0.1)}`,
         },
+        '&:hover .notif-actions': { opacity: 1 },
       }}
     >
       <Box
@@ -290,18 +350,54 @@ function Row({
           {n.actor?.name ? ` · ${n.actor.name}` : ''}
         </Typography>
       </Box>
-      {unread && (
-        <Box
-          sx={{
-            width: 8,
-            height: 8,
-            mt: 0.75,
-            borderRadius: '50%',
-            bgcolor: color,
-            flexShrink: 0,
+      {/* Right rail: unread dot (always rendered when unread) +
+          fade-on-hover X button (always rendered, opacity controlled
+          by parent's `:hover .notif-actions` rule). Stack uses
+          column direction so they sit one above the other when both
+          present. */}
+      <Stack
+        direction="column"
+        alignItems="center"
+        spacing={0.75}
+        sx={{ flexShrink: 0, mt: 0.25 }}
+      >
+        {unread && (
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              mt: 0.5,
+              borderRadius: '50%',
+              bgcolor: color,
+            }}
+          />
+        )}
+        <IconButton
+          size="small"
+          className="notif-actions"
+          aria-label="Remove notification"
+          onClick={(e) => {
+            // Stop propagation so the row's onClick doesn't fire
+            // (which would mark-read + navigate). The user clicked
+            // X — they don't want either.
+            e.stopPropagation();
+            onRemove();
           }}
-        />
-      )}
+          sx={{
+            opacity: 0,
+            transition: 'opacity 0.15s ease',
+            color: 'text.secondary',
+            width: 22,
+            height: 22,
+            '&:hover': {
+              color: 'error.main',
+              bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
+            },
+          }}
+        >
+          <IconX size={14} />
+        </IconButton>
+      </Stack>
     </Box>
   );
 }

@@ -36,3 +36,24 @@ export async function markAllNotificationsRead() {
     `/notifications/read-all`,
   );
 }
+
+/**
+ * Hard-delete a single notification. The drawer fires this as a
+ * background promise after optimistically removing the row from
+ * local state — callers don't need to await the response.
+ */
+export async function deleteNotification(id: string) {
+  return axiosClient.delete<ApiQueryRes<{ deleted: number }>>(
+    `/notifications/${id}`,
+  );
+}
+
+/**
+ * Hard-delete every notification for the caller. Same fire-and-forget
+ * semantics as deleteNotification.
+ */
+export async function deleteAllNotifications() {
+  return axiosClient.delete<ApiQueryRes<{ deleted: number }>>(
+    `/notifications`,
+  );
+}

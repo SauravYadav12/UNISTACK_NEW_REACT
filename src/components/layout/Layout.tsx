@@ -60,6 +60,8 @@ function Layout() {
         loading={notifications.loading}
         markRead={notifications.markRead}
         markAllRead={notifications.markAllRead}
+        removeOne={notifications.removeOne}
+        clearAll={notifications.clearAll}
       />
 
       <Box
