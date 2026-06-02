@@ -154,6 +154,16 @@ export default function OfferLetterPage() {
     setMode('drawn');
   }, [stepIdx]);
 
+  // Auto-scroll to the top whenever the step changes so the candidate
+  // lands at the document title (not at the previous step's Save
+  // button, where they were when they clicked "Save & next"). Smooth
+  // behavior so the transition feels intentional. No-op on initial
+  // mount because the window is already at the top.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [stepIdx]);
+
   // Opt-in geolocation — same UX as the previous version.
   useEffect(() => {
     if (!shareLocation) {
