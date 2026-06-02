@@ -81,6 +81,11 @@ export interface IRequirement {
   duplicateWith?: string;
   parentReqID?: string;
   childSuffix?: string;
+  /** Star colour any team member can cycle (transparent → green →
+   *  yellow → orange → transparent). Only meaningful on parent rows
+   *  (those without `parentReqID`). 'none' renders as a transparent
+   *  outline; the others as a filled star in that colour. */
+  starColor?: 'none' | 'green' | 'yellow' | 'orange';
   /** Server-enriched flag on parent rows — `true` when at least one child
    *  row exists with `parentReqID === this.reqID`. The grid uses it to
    *  render the expand chevron only on parents that actually have

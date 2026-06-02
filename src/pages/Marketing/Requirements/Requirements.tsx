@@ -29,6 +29,8 @@ import {
   IconCopy,
   IconEye,
   IconRefresh,
+  IconStar,
+  IconStarFilled,
   IconTrash,
   IconUsersPlus,
 } from '@tabler/icons-react';
@@ -55,12 +57,15 @@ import {
   listChildAssignments,
   requirementCounts,
   requirementsList,
+  updateRequirementStar,
+  RequirementStarColor,
 } from '../../../services/requirementApi';
 import { archiveRequirementsList } from '../../../services/archivesApi';
 import { usersList } from '../../../services/authApi';
 import { consultantsList } from '../../../services/consultantApi';
 
 import {
+  initialPaginationModel,
   initialSearchModel,
   usePagination,
 } from '../../../hooks/paginationHook';
@@ -673,6 +678,99 @@ export default function Requirements() {
     setExpandedParents(new Set());
   };
 
+  // ── Star colour cycle ──
+  // Anyone on the team can click the star to mark a parent requirement
+  // with a colour. Cycle order: none → green → yellow → orange → none.
+  // Optimistic: local row mutates immediately, server PATCH fires in
+  // the background, errors silently revert.
+  const STAR_CYCLE: RequirementStarColor[] = ['none', 'green', 'yellow', 'orange'];
+  const nextStarColor = (cur?: string): RequirementStarColor => {
+    const i = STAR_CYCLE.indexOf((cur || 'none') as RequirementStarColor);
+    return STAR_CYCLE[(i + 1) % STAR_CYCLE.length];
+  };
+
+  // The displayed star colour: 'none' renders as a transparent outline
+  // with a faint grey stroke; the rest as a filled icon in that hex.
+  const STAR_HEX: Record<RequirementStarColor, string> = {
+    none: 'transparent',
+    green: '#16A34A',
+    yellow: '#FACC15',
+    orange: '#F97316',
+  };
+
+  const handleCycleStar = async (row: Row) => {
+    const cur = (row.starColor as RequirementStarColor | undefined) || 'none';
+    const next = nextStarColor(cur);
+
+    // Optimistic patch — we deliberately DO NOT use patchRowEverywhere /
+    // setResults here, because the pagination hook's setResults helper
+    // overwrites `totalDocuments` to the current page-length, which
+    // visibly empties the grid (MUI X treats it as "page out of range").
+    // Updating `gridData` directly preserves the full PaginationResult
+    // shape so the row count + pagination state stay intact.
+    const patchRow = (color: RequirementStarColor) => {
+      setGridData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          results: (prev.results || []).map((r) =>
+            r._id === row._id ? { ...r, starColor: color } : r,
+          ),
+        };
+      });
+      // Also patch any cached children buckets so a star on a child row
+      // (if we ever add it there) would also reflect immediately.
+      setChildrenMap((prev) => {
+        let touched = false;
+        const out = new Map(prev);
+        for (const [k, kids] of prev.entries()) {
+          let any = false;
+          const updated = kids.map((kid) => {
+            if (kid._id === row._id) {
+              any = true;
+              return { ...kid, starColor: color, isChildRow: true as const };
+            }
+            return kid;
+          });
+          if (any) {
+            out.set(k, updated);
+            touched = true;
+          }
+        }
+        return touched ? out : prev;
+      });
+    };
+
+    patchRow(next);
+    try {
+      await updateRequirementStar(row._id, next);
+    } catch {
+      // Revert on failure — keep local state honest.
+      patchRow(cur);
+    }
+  };
+
+  // ── Star colour filter (URL-synced) ──
+  // We piggyback on `searchParams` so the pagination hook auto-refetches
+  // whenever the filter changes. Empty string = no filter (show all).
+  // CRITICAL: don't put `page` into searchParams — the pagination hook
+  // appends its own `page=X` in createQueryString, and a duplicate
+  // `page=…&page=…` URL makes the server's filter parser fall over and
+  // the request 400s, which the hook catches by clearing gridData and
+  // emptying the grid. Use setPaginationModel() instead to reset to
+  // page 1 when the filter changes.
+  const activeStarFilter =
+    (searchParams.get('starColor') as RequirementStarColor | null) || '';
+  const setStarFilter = (color: RequirementStarColor | '') => {
+    const next = new URLSearchParams(searchParams);
+    if (color) next.set('starColor', color);
+    else next.delete('starColor');
+    setSearchParams(next, { replace: true });
+    // Reset to page 1 so we don't land on an empty page from the
+    // previous filter (handled via the pagination model, not the URL).
+    setPaginationModel(initialPaginationModel);
+  };
+
   // ── Row synthesis: splice cached children in right after their expanded parent ──
   // Children are stored pre-stamped + pre-sorted (see `stampChildren`), so
   // this loop just pushes the references back in. Each toggle therefore
@@ -787,7 +885,9 @@ export default function Requirements() {
     {
       field: 'view',
       headerName: '',
-      width: 90,
+      // Bumped from 90 → 130 to fit the star toggle on parent rows
+      // alongside the existing View button.
+      width: 130,
       filterable: false,
       sortable: false,
       // Span every column to the right when this row is a date separator
@@ -849,30 +949,67 @@ export default function Requirements() {
             </Box>
           );
         }
+        // Parent rows get the star toggle to the LEFT of the View
+        // button. Child rows skip it (the star is a parent-only flag).
+        const showStar = !row.isChildRow;
+        const cur = (row.starColor as RequirementStarColor | undefined) || 'none';
+        const filled = cur !== 'none';
+        const starColor = STAR_HEX[cur];
         return (
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<IconEye size={14} />}
-            onClick={() => handleViewDetails(row)}
-            sx={{
-              background: 'linear-gradient(135deg, #032840 0%, #0A3555 100%)',
-              color: '#fff',
-              px: 1.5,
-              py: 0.5,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              textTransform: 'none',
-              minWidth: 'auto',
-              borderRadius: '8px',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #0A3555 0%, #032840 100%)',
-                boxShadow: `0 4px 12px ${alpha('#032840', 0.25)}`,
-              },
-            }}
-          >
-            View
-          </Button>
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            {showStar && (
+              <Tooltip
+                title={
+                  cur === 'none'
+                    ? 'Click to flag · cycles green → yellow → orange'
+                    : `Star: ${cur}. Click to cycle.`
+                }
+                arrow
+              >
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCycleStar(row);
+                  }}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    color: filled ? starColor : '#94A3B8',
+                  }}
+                >
+                  {filled ? (
+                    <IconStarFilled size={16} color={starColor} />
+                  ) : (
+                    <IconStar size={16} />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<IconEye size={14} />}
+              onClick={() => handleViewDetails(row)}
+              sx={{
+                background: 'linear-gradient(135deg, #032840 0%, #0A3555 100%)',
+                color: '#fff',
+                px: 1.5,
+                py: 0.5,
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                minWidth: 'auto',
+                borderRadius: '8px',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #0A3555 0%, #032840 100%)',
+                  boxShadow: `0 4px 12px ${alpha('#032840', 0.25)}`,
+                },
+              }}
+            >
+              View
+            </Button>
+          </Stack>
         );
       },
     },
@@ -1498,6 +1635,57 @@ export default function Requirements() {
                 Add new
               </Button>
             )}
+            {/* Star colour filter — chips for All / Green / Yellow /
+                Orange. Clicking a colour pins the grid to parent rows
+                with that star; clicking it again (or "All") clears
+                the filter. Lives in the header strip alongside the
+                Refresh button so it sits with the other view-level
+                controls. */}
+            <Tooltip title="Filter by star colour" arrow>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{
+                  bgcolor: alpha('#fff', 0.1),
+                  borderRadius: 2,
+                  px: 0.5,
+                  py: 0.25,
+                  alignItems: 'center',
+                }}
+              >
+                {(['', 'green', 'yellow', 'orange'] as const).map((c) => {
+                  const active = activeStarFilter === c;
+                  const hex = c === ''
+                    ? '#FFFFFF'
+                    : STAR_HEX[c as RequirementStarColor];
+                  return (
+                    <IconButton
+                      key={c || 'all'}
+                      size="small"
+                      onClick={() =>
+                        setStarFilter(c as RequirementStarColor | '')
+                      }
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        color: hex,
+                        bgcolor: active ? alpha(hex, 0.3) : 'transparent',
+                        border: active
+                          ? `1px solid ${alpha(hex, 0.7)}`
+                          : '1px solid transparent',
+                        '&:hover': { bgcolor: alpha(hex, 0.2) },
+                      }}
+                    >
+                      {c === '' ? (
+                        <IconStar size={14} />
+                      ) : (
+                        <IconStarFilled size={14} color={hex} />
+                      )}
+                    </IconButton>
+                  );
+                })}
+              </Stack>
+            </Tooltip>
             <Tooltip title="Refresh all">
               <IconButton
                 onClick={handleRefreshAll}

@@ -51,6 +51,24 @@ export async function deleteRequirement(id: string) {
   return response;
 }
 
+/**
+ * Lightweight cycle-the-star endpoint. Doesn't go through the usual
+ * updateRequirement (which logs every change) — star colour is UI
+ * decoration HR shouldn't have polluting the audit trail. Optimistic
+ * UI in the grid; this call is fire-and-forget from there.
+ */
+export type RequirementStarColor = 'none' | 'green' | 'yellow' | 'orange';
+
+export async function updateRequirementStar(
+  id: string,
+  starColor: RequirementStarColor,
+) {
+  return axiosClient.patch<{
+    status: 'success' | 'failed';
+    data?: { _id: string; reqID: string; starColor: RequirementStarColor };
+  }>(`/requirements/${id}/star`, { starColor });
+}
+
 export async function createRequirementLog(data: CreateRequirementLogPayload) {
   const response = await axiosClient.post(`/requirements/create-log`, data);
 
