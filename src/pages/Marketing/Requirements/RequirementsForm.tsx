@@ -669,7 +669,15 @@ export default function RequirementsForm(props: Props) {
   function ChipSummary({
     items,
   }: {
-    items: { label: string; value?: string }[];
+    items: {
+      label: string;
+      value?: string;
+      /** When true, the value is rendered as a clickable anchor that
+       *  opens in a new tab, single-line truncated with ellipsis, and
+       *  followed by a copy-to-clipboard icon. Use for URLs that bloat
+       *  the layout (e.g. LinkedIn deeplinks). */
+      link?: boolean;
+    }[];
   }) {
     const nonEmpty = items.filter((i) => !!i.value);
     if (nonEmpty.length === 0)
@@ -678,48 +686,138 @@ export default function RequirementsForm(props: Props) {
           No details on file.
         </Typography>
       );
+
+    const handleCopy = async (value: string) => {
+      try {
+        await navigator.clipboard.writeText(value);
+        toast.success('Copied to clipboard');
+      } catch {
+        toast.error('Could not copy');
+      }
+    };
+
     return (
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-        {nonEmpty.map((it) => (
-          <Box
-            key={it.label}
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.75,
-              px: 1.5,
-              py: 0.625,
-              borderRadius: '999px',
-              bgcolor: alpha(tokens.colors.blue, 0.08),
-              border: `1px solid ${alpha(tokens.colors.blue, 0.18)}`,
-              maxWidth: '100%',
-            }}
-          >
+        {nonEmpty.map((it) => {
+          // Link chip: single row of bounded width with ellipsis on
+          // overflow + a copy icon at the end. The chip stretches to
+          // the row width so the URL has room without breaking layout.
+          if (it.link) {
+            return (
+              <Box
+                key={it.label}
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  px: 1.5,
+                  py: 0.625,
+                  borderRadius: '999px',
+                  bgcolor: alpha(tokens.colors.blue, 0.08),
+                  border: `1px solid ${alpha(tokens.colors.blue, 0.18)}`,
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    color: tokens.colors.blueDark,
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  {it.label}:
+                </Box>
+                <Box
+                  component="a"
+                  href={it.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={it.value}
+                  sx={{
+                    color: '#EA580C',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '2px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    flex: 1,
+                    minWidth: 0,
+                    '&:hover': { color: '#C2410C' },
+                  }}
+                >
+                  {it.value}
+                </Box>
+                <Tooltip title="Copy link" arrow>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopy(it.value || '');
+                    }}
+                    sx={{
+                      width: 22,
+                      height: 22,
+                      flexShrink: 0,
+                      color: tokens.colors.blueDark,
+                      '&:hover': {
+                        bgcolor: alpha(tokens.colors.blue, 0.16),
+                      },
+                    }}
+                  >
+                    <IconCopy size={13} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            );
+          }
+          return (
             <Box
-              component="span"
+              key={it.label}
               sx={{
-                color: tokens.colors.blueDark,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.75,
+                px: 1.5,
+                py: 0.625,
+                borderRadius: '999px',
+                bgcolor: alpha(tokens.colors.blue, 0.08),
+                border: `1px solid ${alpha(tokens.colors.blue, 0.18)}`,
+                maxWidth: '100%',
               }}
             >
-              {it.label}:
+              <Box
+                component="span"
+                sx={{
+                  color: tokens.colors.blueDark,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {it.label}:
+              </Box>
+              <Box
+                component="span"
+                sx={{
+                  color: '#EA580C',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  wordBreak: 'break-word',
+                  minWidth: 0,
+                }}
+              >
+                {it.value}
+              </Box>
             </Box>
-            <Box
-              component="span"
-              sx={{
-                color: '#EA580C',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                wordBreak: 'break-word',
-                minWidth: 0,
-              }}
-            >
-              {it.value}
-            </Box>
-          </Box>
-        ))}
+          );
+        })}
       </Stack>
     );
   }
@@ -1594,7 +1692,11 @@ export default function RequirementsForm(props: Props) {
                     { label: 'Secondary Tech', value: values.secondaryTech },
                     { label: 'Tech Stack', value: values.primaryTechStack },
                     { label: 'Keywords', value: values.reqKeywords },
-                    { label: 'Portal', value: values.jobPortalLink },
+                    {
+                      label: 'Portal',
+                      value: values.jobPortalLink,
+                      link: true,
+                    },
                     { label: 'Got Req From', value: values.gotReqFrom },
                   ]}
                 />
