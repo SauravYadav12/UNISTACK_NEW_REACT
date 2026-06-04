@@ -20,9 +20,14 @@ export async function upsertSalaryConfig(
 }
 
 export async function generateSlipsForMonth(year: number, month: number) {
-  const res = await axiosClient.post<{ year: number; month: number; ok: number; failed: number }>(
-    `/salary/generate/${year}/${month}`
-  );
+  const res = await axiosClient.post<{
+    year: number;
+    month: number;
+    ok: number;
+    /** Users skipped because the month is pre-DOJ or post-relieving for them. */
+    skipped?: number;
+    failed: number;
+  }>(`/salary/generate/${year}/${month}`);
   return res.data;
 }
 

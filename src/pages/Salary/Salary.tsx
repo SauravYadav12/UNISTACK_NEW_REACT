@@ -112,7 +112,12 @@ export default function Salary() {
     setGenerating(true);
     try {
       const res = await generateSlipsForMonth(year, month);
-      toast.success(`Generated ${res.ok} slips${res.failed ? ` (${res.failed} failed)` : ''}`);
+      const parts: string[] = [`Generated ${res.ok} slips`];
+      // Pre-DOJ / post-relieving users get skipped deliberately — show
+      // separately so HR doesn't read it as a failure.
+      if (res.skipped) parts.push(`${res.skipped} skipped (not on payroll)`);
+      if (res.failed) parts.push(`${res.failed} failed`);
+      toast.success(parts.join(' · '));
       loadData();
     } catch (e) {
       toast.error('Failed to generate slips');
