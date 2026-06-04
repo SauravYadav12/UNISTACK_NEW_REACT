@@ -43,6 +43,7 @@ import {
   IconCircleDot,
   IconX,
   IconRadar2,
+  IconChevronDown,
 } from '@tabler/icons-react';
 
 import CustomDrawer from '../../components/drawer/CustomDrawer';
@@ -884,6 +885,150 @@ function StatTile({ label, value, accent, icon, dark }: StatTileProps) {
   );
 }
 
+// ── Section helpers ───────────────────────────────────────────────────────
+// Used so the Active and Inactive rosters can render as visually distinct
+// sections (header chip + thin divider line) on the "All" view. The grid
+// itself is identical between the two — only the heading changes — so we
+// extract it here to keep the page body declarative.
+
+interface UserGridProps {
+  users: iUser[];
+  onOpen: (u: iUser) => void;
+  onMutate: (u: iUser) => void;
+}
+
+function UserGrid({ users, onOpen, onMutate }: UserGridProps) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'repeat(auto-fill, minmax(320px, 1fr))',
+        },
+        gap: 2,
+      }}
+    >
+      {users.map((u) => (
+        <UserCard
+          key={u._id}
+          user={u}
+          onOpen={() => onOpen(u)}
+          onMutate={onMutate}
+        />
+      ))}
+    </Box>
+  );
+}
+
+interface RosterSectionProps {
+  title: string;
+  count: number;
+  accent: string;
+  icon: ReactElement;
+  collapsible?: boolean;
+  defaultExpanded?: boolean;
+  children: React.ReactNode;
+}
+
+function RosterSection({
+  title,
+  count,
+  accent,
+  icon,
+  collapsible = false,
+  defaultExpanded = true,
+  children,
+}: RosterSectionProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1.25}
+        sx={{
+          mb: 1.5,
+          cursor: collapsible ? 'pointer' : 'default',
+          userSelect: 'none',
+        }}
+        onClick={() => collapsible && setExpanded((v) => !v)}
+        role={collapsible ? 'button' : undefined}
+        tabIndex={collapsible ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (
+            collapsible &&
+            (e.key === 'Enter' || e.key === ' ')
+          ) {
+            e.preventDefault();
+            setExpanded((v) => !v);
+          }
+        }}
+      >
+        <Box
+          sx={{
+            width: 26,
+            height: 26,
+            borderRadius: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: accent,
+            bgcolor: alpha(accent, 0.12),
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </Box>
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            color: '#0A3555',
+            letterSpacing: '0.01em',
+          }}
+        >
+          {title}
+        </Typography>
+        <Chip
+          label={count}
+          size="small"
+          sx={{
+            height: 20,
+            fontWeight: 800,
+            fontSize: '0.7rem',
+            bgcolor: alpha(accent, 0.12),
+            color: accent,
+            border: `1px solid ${alpha(accent, 0.25)}`,
+          }}
+        />
+        <Box
+          sx={{
+            flex: 1,
+            height: 1,
+            bgcolor: 'divider',
+            ml: 1,
+            minWidth: 16,
+          }}
+        />
+        {collapsible && (
+          <IconChevronDown
+            size={16}
+            color={tokens.colors.lightTextSecondary}
+            style={{
+              transition: 'transform 0.2s ease',
+              transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+              flexShrink: 0,
+            }}
+          />
+        )}
+      </Stack>
+      {expanded && children}
+    </Box>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────
 
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -978,6 +1123,20 @@ function UserManagement() {
         return (a.firstName || '').localeCompare(b.firstName || '');
       });
   }, [list, search, status, roleFilter]);
+
+  // Partition for the split-by-status render on the "All" view.
+  // The `filtered` sort already keeps each subset alphabetically ordered;
+  // splitting just removes the active-first ordering at the boundary,
+  // which is irrelevant once each side has its own labeled section.
+  const { activeList, inactiveList } = useMemo(() => {
+    const act: iUser[] = [];
+    const inact: iUser[] = [];
+    for (const u of filtered) {
+      if (u.active) act.push(u);
+      else inact.push(u);
+    }
+    return { activeList: act, inactiveList: inact };
+  }, [filtered]);
 
   const hasActiveFilter =
     search.trim().length > 0 || status !== 'all' || roleFilter.length > 0;
@@ -1491,25 +1650,59 @@ function UserManagement() {
           )}
         </Box>
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(auto-fill, minmax(320px, 1fr))',
-            },
-            gap: 2,
-          }}
-        >
-          {filtered.map((u) => (
-            <UserCard
-              key={u._id}
-              user={u}
-              onOpen={() => handleViewDetails(u)}
-              onMutate={handleMutate}
-            />
-          ))}
-        </Box>
+        // ── Roster — split by active state ──
+        // On the "All" tab we render two labeled sections so HR can see at
+        // a glance who's currently active vs. deactivated. The inactive
+        // section is collapsible (default expanded) because the count is
+        // often smaller but still worth scanning.
+        // When the user has narrowed the status filter to one of them the
+        // single matching grid renders without any section header (no
+        // point repeating "Active users" when that's the only filter).
+        status === 'active' ? (
+          <UserGrid
+            users={activeList}
+            onOpen={handleViewDetails}
+            onMutate={handleMutate}
+          />
+        ) : status === 'inactive' ? (
+          <UserGrid
+            users={inactiveList}
+            onOpen={handleViewDetails}
+            onMutate={handleMutate}
+          />
+        ) : (
+          <>
+            {activeList.length > 0 && (
+              <RosterSection
+                title="Active users"
+                count={activeList.length}
+                accent="#10B981"
+                icon={<IconUserCheck size={14} />}
+              >
+                <UserGrid
+                  users={activeList}
+                  onOpen={handleViewDetails}
+                  onMutate={handleMutate}
+                />
+              </RosterSection>
+            )}
+            {inactiveList.length > 0 && (
+              <RosterSection
+                title="Inactive users"
+                count={inactiveList.length}
+                accent="#94A3B8"
+                icon={<IconUserOff size={14} />}
+                collapsible
+              >
+                <UserGrid
+                  users={inactiveList}
+                  onOpen={handleViewDetails}
+                  onMutate={handleMutate}
+                />
+              </RosterSection>
+            )}
+          </>
+        )
       )}
 
       {/* Drawer: profile form + login activity — unchanged */}
