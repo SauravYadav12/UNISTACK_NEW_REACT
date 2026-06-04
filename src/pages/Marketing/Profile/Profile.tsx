@@ -324,26 +324,36 @@ function Profile() {
         </Box>
       </MotionBox>
 
-      {/* Edit Drawers */}
-      {!!myProfile && (
-        <CustomDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          title="Edit Profile"
-          closeOnOutSideClick={false}
-        >
-          <ProfileForm
-            onSubmitSuccessfully={(p) => {
-              setMyProfile(p);
-              setDrawerOpen(false);
-            }}
-            template={getProfileFormInitialValues(myProfile)}
-            profileFormSections={profileFormSections}
-            documentFormSection={documentFormSection}
-            onClickCancel={() => setDrawerOpen(false)}
-          />
-        </CustomDrawer>
-      )}
+      {/* Edit / Create profile drawer.
+          Important: this is NOT gated on `myProfile` existing. The
+          previous `{!!myProfile && <CustomDrawer ...>}` guard meant
+          anyone who didn't yet have a profile row in the DB (fresh
+          super-admin, never-saved HR, newly activated employee mid-
+          onboarding) saw the Edit Profile button but the drawer never
+          mounted — clicking did nothing. `getProfileFormInitialValues`
+          already produces a complete empty template when `myProfile`
+          is undefined, and ProfileForm's existing branch (create when
+          `myProfile._id` is empty, update otherwise) routes the submit
+          to the right endpoint. So unblocking the wrapper is enough to
+          enable both edit-existing AND first-time create from this
+          page. */}
+      <CustomDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={myProfile ? 'Edit Profile' : 'Set Up Profile'}
+        closeOnOutSideClick={false}
+      >
+        <ProfileForm
+          onSubmitSuccessfully={(p) => {
+            setMyProfile(p);
+            setDrawerOpen(false);
+          }}
+          template={getProfileFormInitialValues(myProfile)}
+          profileFormSections={profileFormSections}
+          documentFormSection={documentFormSection}
+          onClickCancel={() => setDrawerOpen(false)}
+        />
+      </CustomDrawer>
       {/* Profile Photo Modal */}
       {!!myProfile && (
         <ProfilePhotoModal
