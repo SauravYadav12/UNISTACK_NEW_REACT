@@ -53,8 +53,11 @@ const FIXED_MOBILE = 3000;
 const FIXED_BOOKS = 2000;
 // Reimbursements (Mobile + Books) only kick in for salaries at or above
 // this monthly CTC threshold. Below it, both components stay 0 and the
-// fields are hidden from the form entirely.
-const REIMBURSEMENT_CTC_THRESHOLD = 20000;
+// fields are hidden from the form entirely — the equivalent amount
+// flows into Special Allowances instead (manually entered by HR).
+// Policy: anyone earning ≤ ₹30,000 is paid through Special Allowances
+// only; the Mobile/Books split kicks in from ₹30,001 onwards.
+const REIMBURSEMENT_CTC_THRESHOLD = 30001;
 
 // Show empty string when the stored value is 0 so the user doesn't fight a
 // leading zero when typing. Empty strings parse back to 0 on save.
