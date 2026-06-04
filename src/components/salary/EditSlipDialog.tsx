@@ -25,7 +25,8 @@ const EARNING_KEYS = [
 ] as const;
 
 const DEDUCTION_KEYS = [
-  ['pf', 'PF'],
+  // PF intentionally hidden — not a deduction this org uses. Schema
+  // field stays at 0 for backward compatibility.
   // Professional Tax is now a separate statutory deduction (flat ₹208 /
   // month — set on the salary config). Editable on the slip so HR can
   // override in unusual months without touching the config.
@@ -51,7 +52,7 @@ const ZERO_EARNINGS: EarningsState = {
   booksReimbursement: 0, specialAllowances: 0, incentives: 0,
 };
 const ZERO_DEDUCTIONS: DeductionsState = {
-  pf: 0, professionalTax: 0, tds: 0, otherDeductions: 0, lopDeduction: 0,
+  professionalTax: 0, tds: 0, otherDeductions: 0, lopDeduction: 0,
 };
 
 export default function EditSlipDialog({ open, slip, onClose, onSaved }: Props) {
@@ -74,7 +75,6 @@ export default function EditSlipDialog({ open, slip, onClose, onSaved }: Props) 
       incentives: slip.earnings?.incentives || 0,
     });
     setDeductions({
-      pf: slip.deductions?.pf || 0,
       professionalTax: slip.deductions?.professionalTax || 0,
       tds: slip.deductions?.tds || 0,
       otherDeductions: slip.deductions?.otherDeductions || 0,
@@ -109,7 +109,10 @@ export default function EditSlipDialog({ open, slip, onClose, onSaved }: Props) 
         workingDays,
         presentDays,
         earnings: { ...earnings, total: grossEarnings },
-        deductions: { ...deductions, total: totalDeductions },
+        // PF is hidden from the UI but still required by the schema —
+        // ship a 0 so the type-check is happy and the field stays at
+        // its baseline value on save.
+        deductions: { pf: 0, ...deductions, total: totalDeductions },
         leaves: { ...slip.leaves, unpaidDays },
       });
       toast.success('Payslip updated');

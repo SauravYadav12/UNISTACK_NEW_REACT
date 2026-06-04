@@ -113,8 +113,9 @@ const SalarySlipView = forwardRef<HTMLDivElement, Props>(({ slip }, ref) => {
     ['Incentives', slip.earnings.incentives],
   ];
 
+  // PF is intentionally not rendered — this org doesn't deduct it. The
+  // schema field stays at 0 and isn't surfaced anywhere in the UI.
   const deductions: Array<[string, number, string?]> = [
-    ['PF', slip.deductions.pf],
     // Professional Tax — separate statutory line, flat 208 / mo.
     ['Professional Tax', slip.deductions.professionalTax || 0],
     ['TDS', slip.deductions.tds],

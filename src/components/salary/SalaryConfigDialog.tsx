@@ -34,7 +34,9 @@ const EARNING_FIELDS: Array<{ key: keyof SalaryConfig; label: string; derived: b
 ];
 
 const DEDUCTION_FIELDS: Array<{ key: keyof SalaryConfig; label: string }> = [
-  { key: 'pf',              label: 'PF' },
+  // PF is intentionally NOT exposed here. The schema field stays for
+  // backward compatibility (always 0 in new configs); HR doesn't manage
+  // it from this dialog.
   // Standard statutory deduction — flat ₹208 / month for everyone (set
   // on Apply, can be overridden in the field if regulations change).
   { key: 'professionalTax', label: 'Professional Tax' },
