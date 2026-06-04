@@ -62,11 +62,12 @@ export type RequirementStarColor = 'none' | 'green' | 'yellow' | 'orange';
 export async function updateRequirementStar(
   id: string,
   starColor: RequirementStarColor,
+  signal?: AbortSignal,
 ) {
   return axiosClient.patch<{
     status: 'success' | 'failed';
     data?: { _id: string; reqID: string; starColor: RequirementStarColor };
-  }>(`/requirements/${id}/star`, { starColor });
+  }>(`/requirements/${id}/star`, { starColor }, { signal });
 }
 
 export async function createRequirementLog(data: CreateRequirementLogPayload) {

@@ -701,193 +701,220 @@ export default function Requirements() {
     orange: '#F97316',
   };
 
-  // ── Debounced audit log for star cycles ──
-  // A click cycles colour by ONE step. If HR wants orange they may
-  // click 3× in a row (none → green → yellow → orange). We don't want
-  // to log every intermediate stop — only the eventual settled colour,
-  // and only ONE entry per "burst" of clicks. Per-row debounce:
+  // ── Star colour: debounced + cancellable save ──
+  // The UI cycles instantly on every click (optimistic update). The
+  // PATCH itself is debounced per row: only the *latest* colour in a
+  // ~1s burst hits the server, and any in-flight request is aborted
+  // if a newer click comes in. The audit log entry is fired right
+  // after the PATCH lands so the colour on disk and the log entry
+  // always agree.
   //
-  //   • First click in a window: capture `cur` as the original colour.
-  //   • Each subsequent click: update `finalColor`, reset the 2.5s timer.
-  //   • Timer fires → POST one log entry of original → final.
-  //   • If original === final (cycled all the way back), skip the log.
+  //   T=0    click   → UI green, schedule PATCH at T+1000
+  //   T=400  click   → UI yellow, abort previous, schedule at T+1400
+  //   T=800  click   → UI orange, abort previous, schedule at T+1800
+  //   T=1800 PATCH   → server saves orange
+  //   T=1800 LOG     → audit log {from: none, to: orange}
   //
-  // The user identity + requirement id are stashed on the timer entry
-  // so the unmount cleanup can flush pending logs (user clicked then
-  // navigated away — the action still happened).
-  const STAR_LOG_DEBOUNCE_MS = 2500;
-  type PendingStarLog = {
-    originalColor: RequirementStarColor;
+  // If the PATCH fails (network / 4xx / 5xx), the UI rolls back to the
+  // pre-burst colour so the grid doesn't lie about what's on disk.
+  const STAR_PATCH_DEBOUNCE_MS = 1000;
+  type PendingStarPatch = {
+    /** Final colour the user has cycled to — updated on every click. */
     finalColor: RequirementStarColor;
+    /** Colour before the burst started — used for revert + audit log "from". */
+    originalColor: RequirementStarColor;
+    /** Snapshot of the actor at burst start; cheap insurance against the
+     *  auth context flipping mid-burst (unlikely but trivial to guard). */
     userName: string;
     userRef: string;
-    requirementRef: string;
     timer: ReturnType<typeof setTimeout>;
+    abortController: AbortController;
   };
-  const starLogTimersRef = useRef<Map<string, PendingStarLog>>(new Map());
+  const starPatchRef = useRef<Map<string, PendingStarPatch>>(new Map());
 
-  const flushPendingStarLog = (id: string) => {
-    const entry = starLogTimersRef.current.get(id);
-    if (!entry) return;
-    starLogTimersRef.current.delete(id);
-    // Net-zero cycle (e.g. user cycled all the way back to where they
-    // started) — nothing meaningful to log.
-    if (entry.originalColor === entry.finalColor) return;
-    // Server stores requirementRef + userRef as ObjectIds — the TS
-    // type is Mongoose's branded ObjectId, but every existing call site
-    // (e.g. RequirementsForm.tsx → createLog) passes plain string IDs
-    // and the cast collapses at runtime. Match that convention.
+  // Per-row UI patcher — used for both optimistic forwards updates and
+  // rollback on PATCH failure. Touches `gridData` directly (NOT
+  // setResults) for the same reason as before: the pagination hook's
+  // setResults helper clobbers totalDocuments to results.length and the
+  // grid jumps to an empty page.
+  const setRowStarColor = (
+    rowId: string,
+    color: RequirementStarColor,
+  ) => {
+    setGridData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        results: (prev.results || []).map((r) =>
+          r._id === rowId ? { ...r, starColor: color } : r,
+        ),
+      };
+    });
+    setChildrenMap((prev) => {
+      let touched = false;
+      const out = new Map(prev);
+      for (const [k, kids] of prev.entries()) {
+        let any = false;
+        const updated = kids.map((kid) => {
+          if (kid._id === rowId) {
+            any = true;
+            return { ...kid, starColor: color, isChildRow: true as const };
+          }
+          return kid;
+        });
+        if (any) {
+          out.set(k, updated);
+          touched = true;
+        }
+      }
+      return touched ? out : prev;
+    });
+  };
+
+  // Fire the audit log entry. Net-zero cycles (originalColor ===
+  // finalColor — the user cycled all the way back) are dropped so the
+  // log only reflects meaningful state transitions.
+  const fireStarLog = (
+    rowId: string,
+    originalColor: RequirementStarColor,
+    finalColor: RequirementStarColor,
+    userName: string,
+    userRef: string,
+  ) => {
+    if (originalColor === finalColor) return;
+    if (!userRef) {
+      console.warn(
+        '[requirements] star log skipped — no authenticated user',
+      );
+      return;
+    }
+    // Server stores ObjectIds; matches existing call sites that pass
+    // plain string ids (see RequirementsForm.tsx → createLog).
     const payload: CreateRequirementLogPayload = {
-      requirementRef: entry.requirementRef as any,
-      userName: entry.userName,
-      userRef: entry.userRef as any,
+      requirementRef: rowId as any,
+      userName,
+      userRef: userRef as any,
       operation: 'update',
-      oldData: { starColor: entry.originalColor },
-      newData: { starColor: entry.finalColor },
+      oldData: { starColor: originalColor },
+      newData: { starColor: finalColor },
     };
-    // Diagnostic — keeps a paper trail in the browser console so a
-    // silent timing / payload bug becomes traceable. The colour itself
-    // is already on disk by this point (PATCH ran inside handleCycleStar).
     console.debug('[requirements] star log POST', {
-      requirementRef: entry.requirementRef,
-      from: entry.originalColor,
-      to: entry.finalColor,
+      requirementRef: rowId,
+      from: originalColor,
+      to: finalColor,
     });
     void createRequirementLog(payload)
-      .then(() => {
-        console.debug(
-          '[requirements] star log saved',
-          entry.requirementRef,
-        );
-      })
+      .then(() =>
+        console.debug('[requirements] star log saved', rowId),
+      )
       .catch((err) => {
-        // Surface to the user so a 4xx/network drop doesn't disappear.
         console.warn('[requirements] star log failed', err);
         toast.error('Failed to save star audit log');
       });
   };
 
-  // Cleanup on unmount: flush every pending entry IMMEDIATELY rather
-  // than dropping them silently. If the user cycled to orange then
-  // navigated away within the debounce window, the audit log still
-  // gets that entry.
+  // The timer's callback: actually save the latest colour. Runs once
+  // per burst when the user stops clicking for STAR_PATCH_DEBOUNCE_MS.
+  const flushStarPatch = async (rowId: string) => {
+    const entry = starPatchRef.current.get(rowId);
+    if (!entry) return;
+    starPatchRef.current.delete(rowId);
+    try {
+      await updateRequirementStar(
+        rowId,
+        entry.finalColor,
+        entry.abortController.signal,
+      );
+      fireStarLog(
+        rowId,
+        entry.originalColor,
+        entry.finalColor,
+        entry.userName,
+        entry.userRef,
+      );
+    } catch (err: any) {
+      // Aborted means a newer click took over — let *that* timer save
+      // the latest colour. The UI is already showing the newest cycle.
+      if (
+        entry.abortController.signal.aborted ||
+        err?.code === 'ERR_CANCELED' ||
+        err?.name === 'CanceledError'
+      ) {
+        return;
+      }
+      // Real failure — roll the UI back to the pre-burst colour so the
+      // grid agrees with the database, and let the user know.
+      setRowStarColor(rowId, entry.originalColor);
+      toast.error('Failed to save star colour');
+    }
+  };
+
+  // Cleanup on unmount: fire any pending PATCH immediately so the
+  // user's clicks aren't lost on navigation. The browser keeps
+  // in-flight requests alive past React's teardown.
   useEffect(() => {
     return () => {
-      const timers = starLogTimersRef.current;
-      const ids = Array.from(timers.keys());
+      const patches = starPatchRef.current;
+      const ids = Array.from(patches.keys());
       for (const id of ids) {
-        const entry = timers.get(id);
+        const entry = patches.get(id);
         if (entry) clearTimeout(entry.timer);
-        flushPendingStarLog(id);
+        void flushStarPatch(id);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCycleStar = async (row: Row) => {
+  const handleCycleStar = (row: Row) => {
     const cur = (row.starColor as RequirementStarColor | undefined) || 'none';
     const next = nextStarColor(cur);
 
-    // Optimistic patch — we deliberately DO NOT use patchRowEverywhere /
-    // setResults here, because the pagination hook's setResults helper
-    // overwrites `totalDocuments` to the current page-length, which
-    // visibly empties the grid (MUI X treats it as "page out of range").
-    // Updating `gridData` directly preserves the full PaginationResult
-    // shape so the row count + pagination state stay intact.
-    const patchRow = (color: RequirementStarColor) => {
-      setGridData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          results: (prev.results || []).map((r) =>
-            r._id === row._id ? { ...r, starColor: color } : r,
-          ),
-        };
-      });
-      // Also patch any cached children buckets so a star on a child row
-      // (if we ever add it there) would also reflect immediately.
-      setChildrenMap((prev) => {
-        let touched = false;
-        const out = new Map(prev);
-        for (const [k, kids] of prev.entries()) {
-          let any = false;
-          const updated = kids.map((kid) => {
-            if (kid._id === row._id) {
-              any = true;
-              return { ...kid, starColor: color, isChildRow: true as const };
-            }
-            return kid;
-          });
-          if (any) {
-            out.set(k, updated);
-            touched = true;
-          }
-        }
-        return touched ? out : prev;
-      });
-    };
+    // 1. Instant visual feedback — the user sees the colour change on
+    //    every click, even though the network call is debounced.
+    setRowStarColor(row._id, next);
 
-    patchRow(next);
-    try {
-      await updateRequirementStar(row._id, next);
-      // Schedule the debounced audit log entry. We do this only on
-      // success — if the star save itself failed (rare, the catch
-      // below reverts the UI), there's nothing to log.
-      // Resolve the actor's id from whichever shape the auth context
-      // populated. In practice iUser exposes both `_id` and `id` (see
-      // server's extractIUser → returns both). Falling back to either
-      // keeps the audit log honest even if one channel goes stale.
-      const actorId = iUser
-        ? String(iUser._id || iUser.id || '')
-        : '';
-      if (iUser && actorId) {
-        const existing = starLogTimersRef.current.get(row._id);
-        if (existing) clearTimeout(existing.timer);
-        // First click in a window snapshots `cur` (the colour BEFORE
-        // this click) as the audit-log "from" value. Subsequent clicks
-        // preserve that original — only `finalColor` updates each time.
-        const originalColor = existing ? existing.originalColor : cur;
-        const userName =
-          `${iUser.firstName ?? ''} ${iUser.lastName ?? ''}`.trim() ||
-          iUser.email ||
-          'User';
-        const timer = setTimeout(
-          () => flushPendingStarLog(row._id),
-          STAR_LOG_DEBOUNCE_MS,
-        );
-        starLogTimersRef.current.set(row._id, {
-          originalColor,
-          finalColor: next,
-          userName,
-          userRef: actorId,
-          requirementRef: row._id,
-          timer,
-        });
-        console.debug('[requirements] star log scheduled', {
-          row: row._id,
-          from: originalColor,
-          to: next,
-          inMs: STAR_LOG_DEBOUNCE_MS,
-        });
-      } else {
-        // If we ever land here in practice the audit trail is
-        // incomplete — surface it so we know to investigate the auth
-        // context rather than silently dropping log entries.
-        console.warn(
-          '[requirements] star log skipped — no authenticated user',
-          { iUser },
-        );
-      }
-    } catch {
-      // Revert on failure — keep local state honest. Also drop any
-      // pending log entry for this row since the action didn't take.
-      patchRow(cur);
-      const existing = starLogTimersRef.current.get(row._id);
-      if (existing) {
-        clearTimeout(existing.timer);
-        starLogTimersRef.current.delete(row._id);
-      }
+    // 2. Resolve the actor (used by the audit log fired after PATCH
+    //    success). Falling back to `id` if `_id` is ever missing.
+    const actorId = iUser
+      ? String(iUser._id || iUser.id || '')
+      : '';
+    const userName = iUser
+      ? `${iUser.firstName ?? ''} ${iUser.lastName ?? ''}`.trim() ||
+        iUser.email ||
+        'User'
+      : '';
+
+    // 3. Cancel any pending PATCH for this row, AND abort any PATCH
+    //    that's already gone out for it — both timer and in-flight
+    //    request need to clear so the burst collapses to one save.
+    const existing = starPatchRef.current.get(row._id);
+    if (existing) {
+      clearTimeout(existing.timer);
+      existing.abortController.abort();
     }
+    // First click in a burst captures the pre-burst colour; subsequent
+    // clicks preserve it so the audit log records the *real* starting
+    // point (none → orange) not the intermediate stops (yellow → orange).
+    const originalColor = existing ? existing.originalColor : cur;
+    const abortController = new AbortController();
+    const timer = setTimeout(
+      () => void flushStarPatch(row._id),
+      STAR_PATCH_DEBOUNCE_MS,
+    );
+    starPatchRef.current.set(row._id, {
+      finalColor: next,
+      originalColor,
+      userName,
+      userRef: actorId,
+      timer,
+      abortController,
+    });
+    console.debug('[requirements] star patch scheduled', {
+      row: row._id,
+      from: originalColor,
+      to: next,
+      inMs: STAR_PATCH_DEBOUNCE_MS,
+    });
   };
 
   // ── Star colour filter (URL-synced) ──
