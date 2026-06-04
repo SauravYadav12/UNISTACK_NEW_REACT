@@ -80,6 +80,17 @@ export async function publishSlipsForMonth(year: number, month: number) {
   return res.data;
 }
 
+/** Super-admin only: nuke every slip for a month so HR can re-run
+ *  generation from scratch after a misconfiguration. */
+export async function resetSlipsForMonth(year: number, month: number) {
+  const res = await axiosClient.delete<{
+    year: number;
+    month: number;
+    deleted: number;
+  }>(`/salary/slips/${year}/${month}`);
+  return res.data;
+}
+
 export async function getMySlip(year: number, month: number) {
   const res = await axiosClient.get<{ data: SalarySlip }>(
     `/salary/my-slip/${year}/${month}`

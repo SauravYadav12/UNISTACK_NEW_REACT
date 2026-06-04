@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import {
   IconCash, IconUsers, IconCalendarEvent, IconReportMoney,
   IconDownload, IconChevronLeft, IconChevronRight, IconEdit, IconEye,
-  IconFileInvoice, IconSend, IconEyeOff,
+  IconFileInvoice, IconSend, IconEyeOff, IconTrash, IconAlertTriangle,
 } from '@tabler/icons-react';
 
 import { useFetchData } from '../../hooks/fetchDataHook';
@@ -19,9 +19,11 @@ import {
   getSlipsForMonth, generateSlipsForMonth,
   monthlyReportCsvUrl,
   publishSlip, unpublishSlip, publishSlipsForMonth,
+  resetSlipsForMonth,
 } from '../../services/salaryApi';
 import { usersList } from '../../services/authApi';
 import { iUser, UserRole } from '../../Interfaces/iUser';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { axiosClient } from '../../config/axios.config';
 import { SalarySlip } from '../../Interfaces/salary';
 
@@ -55,6 +57,8 @@ const MONTH_NAMES = [
 
 export default function Salary() {
   const now = moment();
+  const { iUser } = useAuth();
+  const isSuperAdmin = !!iUser?.role?.includes(UserRole['super-admin']);
   const [year, setYear] = useState<number>(now.year());
   const [month, setMonth] = useState<number>(now.month() + 1);
   const [configUser, setConfigUser] = useState<{ id: string; name: string } | null>(null);
@@ -67,6 +71,35 @@ export default function Salary() {
   // Track per-row publish-button busy state so a row-level click doesn't
   // freeze the whole grid.
   const [rowPublishBusy, setRowPublishBusy] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  // Selected month status — drives the mid-month warning + future-month
+  // block in the generate confirmation dialog.
+  // `monthEnd` = end-of-day on the last day of the selected month.
+  // `monthStatus` = 'past' | 'current' | 'future', where 'current' means
+  // today is somewhere inside the month and the slip will only cover
+  // days elapsed so far.
+  const selectedMonthEnd = useMemo(
+    () => moment({ year, month: month - 1 }).endOf('month'),
+    [year, month],
+  );
+  const selectedMonthStart = useMemo(
+    () => moment({ year, month: month - 1 }).startOf('month'),
+    [year, month],
+  );
+  const monthStatus: 'past' | 'current' | 'future' = useMemo(() => {
+    const today = moment().endOf('day');
+    if (today.isAfter(selectedMonthEnd)) return 'past';
+    if (today.isBefore(selectedMonthStart)) return 'future';
+    return 'current';
+  }, [selectedMonthEnd, selectedMonthStart]);
+  // Days elapsed in the current month (capped at the month end) — used
+  // only in the warning copy so HR knows what slice will be covered.
+  const elapsedDaysInMonth = useMemo(() => {
+    if (monthStatus !== 'current') return 0;
+    return moment().diff(selectedMonthStart, 'days') + 1;
+  }, [monthStatus, selectedMonthStart]);
 
   const {
     data, loading, loadData,
@@ -149,6 +182,24 @@ export default function Salary() {
       throw e; // keep ConfirmDialog open so admin can retry
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function runReset() {
+    setResetting(true);
+    try {
+      const res = await resetSlipsForMonth(year, month);
+      toast.success(
+        res.deleted > 0
+          ? `Reset complete — deleted ${res.deleted} slip${res.deleted > 1 ? 's' : ''}`
+          : 'Nothing to reset — no slips existed for this month',
+      );
+      loadData();
+    } catch (e) {
+      toast.error('Failed to reset slips');
+      throw e;
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -527,6 +578,27 @@ export default function Salary() {
                 ? `Publish ${unpublishedCount}`
                 : 'All Published'}
           </Button>
+          {/* Reset = nuke every slip for the month. Super-admin only; the
+              endpoint itself enforces the role too. Hidden when there's
+              nothing to reset so the button doesn't tempt a misclick. */}
+          {isSuperAdmin && slipCount > 0 && (
+            <Button
+              variant="outlined" size="small"
+              startIcon={resetting ? <CircularProgress size={14} /> : <IconTrash size={16} />}
+              onClick={() => setResetConfirmOpen(true)}
+              disabled={resetting}
+              sx={{
+                borderColor: tokens.colors.error,
+                color: tokens.colors.error,
+                '&:hover': {
+                  borderColor: tokens.colors.error,
+                  bgcolor: alpha(tokens.colors.error, 0.06),
+                },
+              }}
+            >
+              {resetting ? 'Resetting…' : 'Reset Month'}
+            </Button>
+          )}
         </Stack>
       </MotionBox>
 
@@ -606,12 +678,80 @@ export default function Salary() {
         open={generateConfirmOpen}
         onClose={() => setGenerateConfirmOpen(false)}
         onConfirm={runGenerate}
-        tone="neutral"
+        tone={monthStatus === 'current' ? 'warning' : 'neutral'}
         title={`Generate payslips for ${MONTH_NAMES[month - 1]} ${year}?`}
         confirmLabel="Yes, generate"
         cancelLabel="Cancel"
         description={
           <Stack spacing={1.25} sx={{ textAlign: 'left' }}>
+            {/* Incomplete-month warning — shown when admin tries to
+                generate slips for the month that's currently in
+                progress. The server now clips the effective slice by
+                `today`, so the slip will only cover days elapsed so
+                far. Make sure HR sees this BEFORE confirming. */}
+            {monthStatus === 'current' && (
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(tokens.colors.yellowDark, 0.1),
+                  border: `1px solid ${alpha(tokens.colors.yellowDark, 0.35)}`,
+                  display: 'flex',
+                  gap: 1.25,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <IconAlertTriangle
+                  size={18}
+                  color={tokens.colors.yellowDark}
+                  style={{ flexShrink: 0, marginTop: 2 }}
+                />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: tokens.colors.yellowDark, fontWeight: 800, letterSpacing: 0.5, display: 'block' }}
+                  >
+                    THIS MONTH HASN&rsquo;T ENDED YET
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5, lineHeight: 1.5 }}>
+                    Today is <strong>{moment().format('MMM D')}</strong>. Slips will only cover the first <strong>{elapsedDaysInMonth} day{elapsedDaysInMonth > 1 ? 's' : ''}</strong> of {MONTH_NAMES[month - 1]} — the rest of the month counts as LOP until you re-generate after month-end.
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            {/* Future month → server will throw PRE_DOJ_OR_POST_RELIEVING
+                for everyone, so all slips would skip. Block the click
+                upstream and explain why. */}
+            {monthStatus === 'future' && (
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(tokens.colors.error, 0.08),
+                  border: `1px solid ${alpha(tokens.colors.error, 0.3)}`,
+                  display: 'flex',
+                  gap: 1.25,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <IconAlertTriangle
+                  size={18}
+                  color={tokens.colors.error}
+                  style={{ flexShrink: 0, marginTop: 2 }}
+                />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: tokens.colors.error, fontWeight: 800, letterSpacing: 0.5, display: 'block' }}
+                  >
+                    FUTURE MONTH
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5, lineHeight: 1.5 }}>
+                    {MONTH_NAMES[month - 1]} {year} hasn&rsquo;t started yet. Nothing will be generated.
+                  </Typography>
+                </Box>
+              </Box>
+            )}
             <Typography variant="body2" color="text.secondary">
               Runs the payroll calculation for <strong>every active employee</strong> ({rows.length}) for <strong>{MONTH_NAMES[month - 1]} {year}</strong> and stores their payslip in the database.
             </Typography>
@@ -681,6 +821,49 @@ export default function Salary() {
                 each row. Once published, an employee can see and download
                 their slip immediately. You can still unpublish individually
                 from the row action if you spot an issue later.
+              </Typography>
+            </Box>
+          </Stack>
+        }
+      />
+
+      {/* Super-admin "panic button" — wipes every slip for the
+          selected month so HR can generate from scratch after a
+          misconfiguration (wrong CTC, missing DOJ, accidentally
+          generating for the wrong month). Confirm dialog is
+          deliberately loud about the destructive nature. */}
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        onClose={() => setResetConfirmOpen(false)}
+        onConfirm={runReset}
+        tone="danger"
+        title={`Reset all payslips for ${MONTH_NAMES[month - 1]} ${year}?`}
+        confirmLabel="Yes, delete all slips"
+        cancelLabel="Cancel"
+        description={
+          <Stack spacing={1.25} sx={{ textAlign: 'left' }}>
+            <Typography variant="body2" color="text.secondary">
+              This deletes <strong>every</strong> payslip ({slipCount}) for{' '}
+              <strong>{MONTH_NAMES[month - 1]} {year}</strong>, including
+              published ones. There is no per-row undo. Use this when
+              payroll inputs were wrong and you want a clean slate
+              before clicking Generate Slips again.
+            </Typography>
+            <Box
+              sx={{
+                p: 1.25,
+                borderRadius: 1.5,
+                bgcolor: alpha(tokens.colors.error, 0.08),
+                border: `1px solid ${alpha(tokens.colors.error, 0.3)}`,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: tokens.colors.error, fontWeight: 800, letterSpacing: 1 }}>
+                IRREVERSIBLE
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 0.25, lineHeight: 1.5 }}>
+                Slips are wiped from the database. Anyone whose slip was already
+                published will see the &ldquo;No payslip&rdquo; empty state on
+                their Salary page until you regenerate and re-publish.
               </Typography>
             </Box>
           </Stack>
