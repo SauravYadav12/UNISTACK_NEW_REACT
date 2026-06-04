@@ -15,6 +15,13 @@ import {
   validatePhone,
 } from '../../../utils/validators';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { dateFormate } from '../../../components/constants';
+
+// Required for strict-format parsing (the second + third args to
+// `dayjs(value, format, strict)`); without it dayjs silently ignores
+// the format mask and falls back to its loose parser.
+dayjs.extend(customParseFormat);
 
 export function getProfileFormInitialValues(val?: Partial<UserProfile>) {
   const template: UserProfile = {
@@ -100,8 +107,21 @@ export const profileFormSections: FormSections[] = [
         // already blocks anything from (today − 18 years) forward via the
         // `maxDate` prop in RenderFields, but a user can still type into
         // the field — so we re-check the 18-year minimum here.
+        //
+        // The form's `dob` value can arrive in two shapes:
+        //   • From the picker → `dateFormate` ('YYYY/MM/DD'), because
+        //     RenderFields formats the picker output via
+        //     `dayjs(newValue).format(dateFormate)`.
+        //   • From the server on load → an ISO timestamp like
+        //     '2000-05-15T00:00:00.000Z' (Mongo stores it as a Date).
+        // Strict-parsing against a single 'YYYY-MM-DD' mask rejected
+        // both shapes, which is why a perfectly valid DOB was reading
+        // as invalid. Try the picker's format first, then fall back to
+        // the loose ISO parser.
         customValidation: (val) => {
-          const d = dayjs(val, 'YYYY-MM-DD', true);
+          if (!val) return false;
+          let d = dayjs(val, dateFormate, true);
+          if (!d.isValid()) d = dayjs(val);
           if (!d.isValid()) return false;
           return d.isBefore(dayjs().subtract(18, 'years'));
         },
