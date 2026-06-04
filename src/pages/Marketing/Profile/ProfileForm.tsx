@@ -101,14 +101,31 @@ const ProfileForm = ({
         payload[element.field.fieldName] = element.value;
       }
     }
+    // Normalize phone numbers — the server schema's `match` regex is
+    // strict (no whitespace allowed), but HR / employees naturally
+    // type "+91 98232 32434" with spaces. Strip every separator the
+    // input might carry so a perfectly valid phone number never reads
+    // as invalid on the server side.
+    const normPhone = (v: unknown) =>
+      typeof v === 'string' ? v.replace(/[\s()\-.]/g, '') : v;
+    payload.phoneNumber = normPhone(payload.phoneNumber) as string;
+    payload.emergencyPhoneNumber = normPhone(
+      payload.emergencyPhoneNumber,
+    ) as string;
     try {
       // Branch on `_id`: update an existing profile, or create one the
       // first time the user hits Save. Super-admin / newly-created
       // accounts often land on this form with no profile doc yet — an
       // update to /user-profiles/ (empty id) 404s, so create instead.
       const hasProfileId = !!myProfile._id;
+      // Drop `_id` from the create payload — the template seeds it as
+      // an empty string when no profile exists yet, but POSTing
+      // `_id: ""` makes Mongoose try to cast "" → ObjectId and fail
+      // with "Cast to ObjectId failed for value \"\"". The server will
+      // mint the real _id on insert.
+      const { _id: _stripIdOnCreate, ...payloadWithoutId } = payload;
       const createBody: Partial<UserProfile> = {
-        ...payload,
+        ...payloadWithoutId,
         // If the template didn't carry a `user` (common when the admin
         // opens a never-profiled user), fall back to the logged-in
         // user's id so the profile is at least self-owned. Prevents
