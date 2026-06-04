@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import moment from 'moment';
+import { toast } from 'react-toastify';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -744,11 +745,26 @@ export default function Requirements() {
       oldData: { starColor: entry.originalColor },
       newData: { starColor: entry.finalColor },
     };
-    void createRequirementLog(payload).catch((err) => {
-      // Don't bubble — logging is best-effort. The colour itself was
-      // already saved by handleCycleStar's PATCH call.
-      console.warn('[requirements] star log failed', err);
+    // Diagnostic — keeps a paper trail in the browser console so a
+    // silent timing / payload bug becomes traceable. The colour itself
+    // is already on disk by this point (PATCH ran inside handleCycleStar).
+    console.debug('[requirements] star log POST', {
+      requirementRef: entry.requirementRef,
+      from: entry.originalColor,
+      to: entry.finalColor,
     });
+    void createRequirementLog(payload)
+      .then(() => {
+        console.debug(
+          '[requirements] star log saved',
+          entry.requirementRef,
+        );
+      })
+      .catch((err) => {
+        // Surface to the user so a 4xx/network drop doesn't disappear.
+        console.warn('[requirements] star log failed', err);
+        toast.error('Failed to save star audit log');
+      });
   };
 
   // Cleanup on unmount: flush every pending entry IMMEDIATELY rather
@@ -817,7 +833,14 @@ export default function Requirements() {
       // Schedule the debounced audit log entry. We do this only on
       // success — if the star save itself failed (rare, the catch
       // below reverts the UI), there's nothing to log.
-      if (iUser) {
+      // Resolve the actor's id from whichever shape the auth context
+      // populated. In practice iUser exposes both `_id` and `id` (see
+      // server's extractIUser → returns both). Falling back to either
+      // keeps the audit log honest even if one channel goes stale.
+      const actorId = iUser
+        ? String(iUser._id || iUser.id || '')
+        : '';
+      if (iUser && actorId) {
         const existing = starLogTimersRef.current.get(row._id);
         if (existing) clearTimeout(existing.timer);
         // First click in a window snapshots `cur` (the colour BEFORE
@@ -836,10 +859,24 @@ export default function Requirements() {
           originalColor,
           finalColor: next,
           userName,
-          userRef: String(iUser._id ?? ''),
+          userRef: actorId,
           requirementRef: row._id,
           timer,
         });
+        console.debug('[requirements] star log scheduled', {
+          row: row._id,
+          from: originalColor,
+          to: next,
+          inMs: STAR_LOG_DEBOUNCE_MS,
+        });
+      } else {
+        // If we ever land here in practice the audit trail is
+        // incomplete — surface it so we know to investigate the auth
+        // context rather than silently dropping log entries.
+        console.warn(
+          '[requirements] star log skipped — no authenticated user',
+          { iUser },
+        );
       }
     } catch {
       // Revert on failure — keep local state honest. Also drop any
