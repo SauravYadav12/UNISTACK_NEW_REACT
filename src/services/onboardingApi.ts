@@ -51,6 +51,30 @@ export async function createCandidate(payload: CreateCandidatePayload) {
   return res.data;
 }
 
+/**
+ * Edit the basic AddCandidate fields on an existing candidate. Same
+ * payload shape as createCandidate. Pass `reinvite: true` to also
+ * revoke the previous onboarding-form token and send a fresh invite
+ * email to the (now corrected) address.
+ *
+ * Server allows this for any non-terminal stage (rejected + onboarded
+ * are blocked). Re-inviting from invited / form-submitted /
+ * info-requested rewinds the stage back to `invited` so the candidate
+ * sees a clean start.
+ */
+  reinvite?: boolean;
+}
+
+export async function updateCandidateDetails(
+  id: string,
+  payload: UpdateCandidateDetailsPayload,
+) {
+  const res = await axiosClient.patch<{
+    data: OnboardingCandidateSummary & { reinviteSent?: boolean };
+  }>(`/onboarding/candidates/${id}/details`, payload);
+  return res.data;
+}
+
 export async function requestInfo(
   id: string,
   subject: string,

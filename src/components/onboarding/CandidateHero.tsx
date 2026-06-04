@@ -2,6 +2,7 @@ import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
   IconBriefcase,
+  IconEdit,
   IconMail,
   IconPhone,
   IconRefresh,
@@ -36,9 +37,20 @@ interface Props {
   candidate: OnboardingCandidate;
   busy?: boolean;
   onRefresh: () => void;
+  /** When set, shows an Edit pencil icon next to the Refresh button.
+   *  The caller decides who sees it (super-admin / admin / HR) by
+   *  passing `undefined` for unauthorized viewers. The pencil is also
+   *  hidden by this component for terminal stages — the server rejects
+   *  edits on rejected/onboarded candidates anyway. */
+  onEdit?: () => void;
 }
 
-export default function CandidateHero({ candidate, busy, onRefresh }: Props) {
+export default function CandidateHero({
+  candidate,
+  busy,
+  onRefresh,
+  onEdit,
+}: Props) {
   const fullName = `${candidate.firstName} ${candidate.lastName}`.trim();
   const isRejected = candidate.stage === 'rejected';
   // Both `offer-signed` (legacy single-doc terminal) and `onboarded`
@@ -210,27 +222,54 @@ export default function CandidateHero({ candidate, busy, onRefresh }: Props) {
           </Stack>
         </Box>
 
-        {/* Reload */}
-        <Tooltip title="Reload" placement="left">
-          <span>
-            <IconButton
-              size="small"
-              onClick={onRefresh}
-              disabled={busy}
-              sx={{
-                bgcolor: alpha('#fff', 0.7),
-                border: '1px solid',
-                borderColor: 'divider',
-                '&:hover': {
-                  bgcolor: '#fff',
-                  borderColor: alpha(accent, 0.4),
-                },
-              }}
-            >
-              <IconRefresh size={16} />
-            </IconButton>
-          </span>
-        </Tooltip>
+        {/* Edit details — sits beside Reload as a quiet secondary
+            affordance. Hidden on terminal stages because the server
+            blocks edits there; hidden for unauthorised viewers because
+            the caller doesn't pass `onEdit`. */}
+        <Stack direction="row" spacing={0.75}>
+          {onEdit && !isRejected && !isComplete && (
+            <Tooltip title="Edit candidate details" placement="left">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onEdit}
+                  disabled={busy}
+                  sx={{
+                    bgcolor: alpha('#fff', 0.7),
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': {
+                      bgcolor: '#fff',
+                      borderColor: alpha(accent, 0.4),
+                    },
+                  }}
+                >
+                  <IconEdit size={16} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+          <Tooltip title="Reload" placement="left">
+            <span>
+              <IconButton
+                size="small"
+                onClick={onRefresh}
+                disabled={busy}
+                sx={{
+                  bgcolor: alpha('#fff', 0.7),
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  '&:hover': {
+                    bgcolor: '#fff',
+                    borderColor: alpha(accent, 0.4),
+                  },
+                }}
+              >
+                <IconRefresh size={16} />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
       </Stack>
     </Box>
   );

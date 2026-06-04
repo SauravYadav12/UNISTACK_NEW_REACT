@@ -55,6 +55,7 @@ import ReasonDialog from '../../components/onboarding/ReasonDialog';
 import FormSnapshotPanel from '../../components/onboarding/FormSnapshotPanel';
 import OnboardingTimeline from '../../components/onboarding/OnboardingTimeline';
 import CandidateHero from '../../components/onboarding/CandidateHero';
+import EditCandidateDialog from '../../components/onboarding/EditCandidateDialog';
 import AuditLogPanel from '../../components/onboarding/AuditLogPanel';
 import { downloadSlipAsPdf } from '../../components/salary/downloadSlipPdf';
 import { tokens } from '../../theme';
@@ -95,6 +96,14 @@ export default function OnboardingCandidateDrawer({
   const isSuperAdmin = Boolean(
     iUser?.role?.includes(UserRole['super-admin']),
   );
+  // Anyone in the team-admin tier (super-admin, admin, HR) can edit
+  // the basic candidate details. Server gate enforces the same.
+  const canEditDetails = Boolean(
+    iUser?.role?.includes(UserRole['super-admin']) ||
+      iUser?.role?.includes(UserRole.admin) ||
+      iUser?.role?.includes(UserRole.hr),
+  );
+  const [editOpen, setEditOpen] = useState(false);
   const [doc, setDoc] = useState<OnboardingCandidate | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -190,7 +199,12 @@ export default function OnboardingCandidateDrawer({
       {!loading && doc && (
         <Box sx={{ px: 1, pb: 4 }}>
           <Box sx={{ mb: 2.5 }}>
-            <CandidateHero candidate={doc} busy={busy} onRefresh={load} />
+            <CandidateHero
+              candidate={doc}
+              busy={busy}
+              onRefresh={load}
+              onEdit={canEditDetails ? () => setEditOpen(true) : undefined}
+            />
           </Box>
 
           {/* ── Progress Stepper ─────────────────────────────── */}
@@ -530,6 +544,12 @@ export default function OnboardingCandidateDrawer({
             candidate={doc}
             onClose={() => setOfferOpen(false)}
             onSent={load}
+          />
+          <EditCandidateDialog
+            open={editOpen}
+            candidate={doc}
+            onClose={() => setEditOpen(false)}
+            onSaved={load}
           />
 
           {/* Signed documents modal — tabs across all five docs so

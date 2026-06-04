@@ -1,0 +1,397 @@
+import { useEffect, useState } from 'react';
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  IconButton,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import {
+  IconDeviceFloppy,
+  IconEdit,
+  IconMailForward,
+  IconX,
+} from '@tabler/icons-react';
+import { toast } from 'react-toastify';
+import moment from 'moment';
+import {
+  updateCandidateDetails,
+  UpdateCandidateDetailsPayload,
+} from '../../services/onboardingApi';
+import { OnboardingCandidate } from '../../Interfaces/onboarding';
+import {
+  isValidEmail,
+  isValidPhone,
+  digitsOnly,
+  displayNumber,
+} from '../../utils/onboardingValidators';
+import { salaryInWords } from '../../utils/numberToIndianWords';
+
+/**
+ * Edit a candidate's basic details after the invite has already been
+ * sent. Same field set as AddCandidateDialog (name, email, phone,
+ * position, start date, salary, probation) but two distinct save paths:
+ *
+ *   - "Save" → persist the new values silently.
+ *   - "Save & re-invite" → persist + revoke any active onboarding-form
+ *     token + issue a fresh one + email the candidate at the (now
+ *     corrected) address.
+ *
+ * Server blocks editing on terminal candidates (rejected / onboarded).
+ * The trigger affordance in the drawer is hidden for those stages.
+ */
+
+interface Props {
+  open: boolean;
+  candidate: OnboardingCandidate | null;
+  onClose: () => void;
+  /** Called after a successful save so the drawer can refetch and the
+   *  panel grid can reload. */
+  onSaved: () => void;
+}
+
+type FormState = Omit<
+  UpdateCandidateDetailsPayload,
+  'reinvite'
+> & {
+  proposedAnnualSalary: number;
+  probationMonths: number;
+};
+
+function fromCandidate(c: OnboardingCandidate): FormState {
+  return {
+    firstName: c.firstName,
+    lastName: c.lastName,
+    email: c.email,
+    phone: c.phone || '',
+    position: c.position,
+    proposedStartDate: c.proposedStartDate
+      ? moment(c.proposedStartDate).format('YYYY-MM-DD')
+      : moment().add(15, 'days').format('YYYY-MM-DD'),
+    proposedAnnualSalary: c.proposedAnnualSalary || 0,
+    probationMonths: c.probationMonths || 3,
+  };
+}
+
+export default function EditCandidateDialog({
+  open,
+  candidate,
+  onClose,
+  onSaved,
+}: Props) {
+  const [form, setForm] = useState<FormState | null>(null);
+  // Two in-flight flags so the button that's "loading" can show its
+  // own spinner without disabling the other one prematurely.
+  const [savingPlain, setSavingPlain] = useState(false);
+  const [savingReinvite, setSavingReinvite] = useState(false);
+  const submitting = savingPlain || savingReinvite;
+
+  // Re-seed the form every time the dialog opens with a new candidate
+  // so a previous edit-in-flight isn't preserved across drawer
+  // openings. Bails to a no-op when closed.
+  useEffect(() => {
+    if (open && candidate) {
+      setForm(fromCandidate(candidate));
+    } else if (!open) {
+      setForm(null);
+    }
+  }, [open, candidate]);
+
+  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((p) => (p ? { ...p, [key]: value } : p));
+  }
+
+  const emailValid = form ? isValidEmail(form.email) : false;
+  const phoneOk = form ? !form.phone || isValidPhone(form.phone) : false;
+
+  function valid(): boolean {
+    if (!form) return false;
+    return Boolean(
+      form.firstName.trim() &&
+        form.lastName.trim() &&
+        form.email.trim() &&
+        emailValid &&
+        phoneOk &&
+        form.position.trim() &&
+        form.proposedStartDate &&
+        form.proposedAnnualSalary > 0 &&
+        form.probationMonths >= 1,
+    );
+  }
+
+  async function submit(reinvite: boolean) {
+    if (!form || !candidate || !valid()) {
+      toast.error('Fill all required fields.');
+      return;
+    }
+    const flagSetter = reinvite ? setSavingReinvite : setSavingPlain;
+    flagSetter(true);
+    try {
+      const res = await updateCandidateDetails(candidate._id, {
+        ...form,
+        reinvite,
+      });
+      if (reinvite) {
+        // Only claim "invite sent" if the server actually managed it
+        // (it might have failed silently — SMTP hiccup, etc.). The
+        // boolean is bubbled up in the response payload.
+        if (res.data.reinviteSent) {
+          toast.success(
+            `Details saved. Fresh invite sent to ${form.firstName}.`,
+          );
+        } else {
+          toast.warning(
+            'Details saved but the re-invite email failed to send. Use Resend link from the actions panel to retry.',
+          );
+        }
+      } else {
+        toast.success('Details saved.');
+      }
+      onSaved();
+      onClose();
+    } catch (e) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ||
+        (e as Error)?.message ||
+        'Failed to save changes.';
+      toast.error(msg);
+    } finally {
+      flagSetter(false);
+    }
+  }
+
+  // Detect any change vs the original candidate so the buttons can be
+  // disabled when there's nothing to save — prevents pointless audit
+  // entries and the unnecessary token churn on Save & re-invite.
+  const dirty =
+    form && candidate
+      ? form.firstName !== candidate.firstName ||
+        form.lastName !== candidate.lastName ||
+        form.email !== candidate.email ||
+        form.phone !== (candidate.phone || '') ||
+        form.position !== candidate.position ||
+        form.proposedStartDate !==
+          (candidate.proposedStartDate
+            ? moment(candidate.proposedStartDate).format('YYYY-MM-DD')
+            : '') ||
+        form.proposedAnnualSalary !== (candidate.proposedAnnualSalary || 0) ||
+        form.probationMonths !== (candidate.probationMonths || 3)
+      : false;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={submitting ? undefined : onClose}
+      fullWidth
+      maxWidth="sm"
+    >
+      <DialogTitle sx={{ pr: 6 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <IconEdit size={20} />
+          <Typography variant="h6" fontWeight={700}>
+            Edit candidate details
+          </Typography>
+        </Stack>
+        <Typography variant="caption" color="text.secondary">
+          Update the basics if HR typed something wrong or the candidate's
+          info changed. Choose <strong>Save &amp; re-invite</strong> to email
+          the candidate a fresh link at the new address.
+        </Typography>
+        <Tooltip title="Close" arrow placement="left">
+          <IconButton
+            onClick={onClose}
+            size="small"
+            disabled={submitting}
+            sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              color: 'text.secondary',
+            }}
+          >
+            <IconX size={18} />
+          </IconButton>
+        </Tooltip>
+      </DialogTitle>
+      <DialogContent>
+        {!form ? (
+          <Stack direction="row" justifyContent="center" sx={{ py: 6 }}>
+            <CircularProgress size={24} />
+          </Stack>
+        ) : (
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                required
+                size="small"
+                label="First name"
+                value={form.firstName}
+                onChange={(e) => set('firstName', e.target.value)}
+                disabled={submitting}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                required
+                size="small"
+                label="Last name"
+                value={form.lastName}
+                onChange={(e) => set('lastName', e.target.value)}
+                disabled={submitting}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                required
+                size="small"
+                type="email"
+                label="Email"
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+                disabled={submitting}
+                error={Boolean(form.email) && !emailValid}
+                helperText={
+                  form.email && !emailValid
+                    ? 'Enter a valid email address.'
+                    : ' '
+                }
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Phone (10 digits)"
+                value={form.phone}
+                onChange={(e) => set('phone', digitsOnly(e.target.value, 10))}
+                disabled={submitting}
+                inputProps={{ inputMode: 'numeric', pattern: '\\d*' }}
+                error={Boolean(form.phone) && !phoneOk}
+                helperText={
+                  form.phone && !phoneOk
+                    ? 'Phone must be exactly 10 digits.'
+                    : ' '
+                }
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                required
+                size="small"
+                label="Position"
+                value={form.position}
+                onChange={(e) => set('position', e.target.value)}
+                disabled={submitting}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                fullWidth
+                required
+                size="small"
+                type="date"
+                label="Proposed start date"
+                value={form.proposedStartDate}
+                onChange={(e) => set('proposedStartDate', e.target.value)}
+                disabled={submitting}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                fullWidth
+                required
+                size="small"
+                type="number"
+                label="Annual salary"
+                value={displayNumber(form.proposedAnnualSalary)}
+                onChange={(e) =>
+                  set('proposedAnnualSalary', Number(e.target.value) || 0)
+                }
+                disabled={submitting}
+                inputProps={{ min: 0, step: 1000 }}
+                helperText={salaryInWords(form.proposedAnnualSalary) || ' '}
+                FormHelperTextProps={{
+                  sx: { fontStyle: 'italic', fontWeight: 600 },
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                fullWidth
+                required
+                size="small"
+                type="number"
+                label="Probation (months)"
+                value={displayNumber(form.probationMonths ?? undefined)}
+                onChange={(e) =>
+                  set(
+                    'probationMonths',
+                    Math.max(0, Math.min(12, Number(e.target.value) || 0)),
+                  )
+                }
+                disabled={submitting}
+                inputProps={{ min: 1, max: 12 }}
+                error={form.probationMonths < 1}
+                helperText={
+                  form.probationMonths < 1
+                    ? 'Probation must be at least 1 month.'
+                    : ' '
+                }
+              />
+            </Grid>
+          </Grid>
+        )}
+      </DialogContent>
+      <Divider />
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} disabled={submitting}>
+          Cancel
+        </Button>
+        <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
+          <Button
+            onClick={() => submit(false)}
+            disabled={submitting || !dirty || !valid()}
+            startIcon={
+              savingPlain ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                <IconDeviceFloppy size={16} />
+              )
+            }
+            variant="outlined"
+          >
+            {savingPlain ? 'Saving…' : 'Save'}
+          </Button>
+          <Button
+            onClick={() => submit(true)}
+            disabled={submitting || !valid()}
+            startIcon={
+              savingReinvite ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                <IconMailForward size={16} />
+              )
+            }
+            variant="contained"
+          >
+            {savingReinvite ? 'Saving…' : 'Save & re-invite'}
+          </Button>
+        </Stack>
+      </DialogActions>
+    </Dialog>
+  );
+}
