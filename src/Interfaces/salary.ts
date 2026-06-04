@@ -127,4 +127,8 @@ export interface SalarySlip {
   netPay: number;
   netPayWords: string;
   generatedAt?: string;
+  /** Publish gate — until HR flips this, the employee endpoints
+   *  (`getMySlip`, `getMySlipsList`) hide the slip. */
+  published?: boolean;
+  publishedAt?: string;
 }

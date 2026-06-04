@@ -40,7 +40,6 @@ import {
   getProfileFormInitialValues,
   profileFormSections,
 } from './constants';
-import { UserRole } from '../../../Interfaces/iUser';
 import { tokens } from '../../../theme/theme';
 import SkeletonLoader from '../../../components/ui/SkeletonLoader';
 import { fadeInUp } from '../../../theme/animations';
@@ -66,7 +65,18 @@ function Profile() {
   const [value, setValue] = React.useState(0);
   const { myProfileState, iUser } = useAuth();
 
-  const canEdit = iUser?.canEdit || iUser?.role.includes(UserRole['super-admin']);
+  // Self-profile editing is open by default for every authenticated user
+  // — this is their OWN profile, and the old `iUser.canEdit` gate (which
+  // defaults to `false` on the User schema and only flips when super-admin
+  // toggles it via User Management) was over-restrictive here: the
+  // Edit Profile button and the avatar's photo-edit affordance just
+  // never appeared for the vast majority of accounts.
+  //
+  // The `canEdit` flag is still meaningful elsewhere — admin / super-admin
+  // can lock down a SPECIFIC user via the User Management drawer, and
+  // routes that surface OTHER users' profiles still respect it. Here,
+  // we only need to check the viewer is authenticated.
+  const canEdit = !!iUser;
 
   const handleChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);

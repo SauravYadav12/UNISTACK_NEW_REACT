@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import {
   IconCash, IconUsers, IconCalendarEvent, IconReportMoney,
   IconDownload, IconChevronLeft, IconChevronRight, IconEdit, IconEye,
-  IconFileInvoice,
+  IconFileInvoice, IconSend, IconEyeOff,
 } from '@tabler/icons-react';
 
 import { useFetchData } from '../../hooks/fetchDataHook';
@@ -18,6 +18,7 @@ import { tokens } from '../../theme/theme';
 import {
   getSlipsForMonth, generateSlipsForMonth,
   monthlyReportCsvUrl,
+  publishSlip, unpublishSlip, publishSlipsForMonth,
 } from '../../services/salaryApi';
 import { usersList } from '../../services/authApi';
 import { iUser, UserRole } from '../../Interfaces/iUser';
@@ -61,6 +62,11 @@ export default function Salary() {
   const [editingSlip, setEditingSlip] = useState<SalarySlip | undefined>();
   const [generating, setGenerating] = useState(false);
   const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  // Track per-row publish-button busy state so a row-level click doesn't
+  // freeze the whole grid.
+  const [rowPublishBusy, setRowPublishBusy] = useState<string | null>(null);
 
   const {
     data, loading, loadData,
@@ -113,6 +119,54 @@ export default function Salary() {
       throw e; // keep ConfirmDialog open so admin can retry
     } finally {
       setGenerating(false);
+    }
+  }
+
+  // Count slips that are generated but not yet published — drives both
+  // the publish-all button enable state and the helper text under it.
+  const unpublishedCount = rows.filter(
+    (r) => r.slip && !r.slip.published,
+  ).length;
+  const publishedCount = rows.filter((r) => r.slip?.published).length;
+
+  async function runPublishAll() {
+    setPublishing(true);
+    try {
+      const res = await publishSlipsForMonth(year, month);
+      toast.success(
+        res.published > 0
+          ? `Published ${res.published} payslip${res.published > 1 ? 's' : ''}`
+          : 'Nothing to publish — all slips already published',
+      );
+      loadData();
+    } catch (e) {
+      toast.error('Failed to publish slips');
+      throw e; // keep ConfirmDialog open so admin can retry
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function toggleRowPublish(row: SalaryRow) {
+    if (!row.slip?._id) return;
+    const slipId = row.slip._id;
+    const wasPublished = !!row.slip.published;
+    setRowPublishBusy(slipId);
+    try {
+      if (wasPublished) {
+        await unpublishSlip(slipId);
+        toast.success(`Unpublished ${row.name}'s payslip`);
+      } else {
+        await publishSlip(slipId);
+        toast.success(`Published ${row.name}'s payslip`);
+      }
+      loadData();
+    } catch {
+      toast.error(
+        wasPublished ? 'Failed to unpublish' : 'Failed to publish',
+      );
+    } finally {
+      setRowPublishBusy(null);
     }
   }
 
@@ -206,8 +260,37 @@ export default function Salary() {
         ),
     },
     {
-      field: 'actions', headerName: '', width: 160, sortable: false, filterable: false,
-      renderCell: ({ row }) => (
+      field: 'publishStatus', headerName: 'Status', width: 110, sortable: false, filterable: false,
+      renderCell: ({ row }) =>
+        !row.slip ? (
+          <Chip label="—" size="small" sx={{ height: 22, fontSize: 10, color: tokens.colors.lightTextSecondary }} />
+        ) : row.slip.published ? (
+          <Chip
+            label="Published"
+            size="small"
+            sx={{
+              bgcolor: alpha(tokens.colors.success, 0.12),
+              color: tokens.colors.success,
+              fontWeight: 700, fontSize: 10, height: 22,
+            }}
+          />
+        ) : (
+          <Chip
+            label="Draft"
+            size="small"
+            sx={{
+              bgcolor: alpha(tokens.colors.yellowDark, 0.12),
+              color: tokens.colors.yellowDark,
+              fontWeight: 700, fontSize: 10, height: 22,
+            }}
+          />
+        ),
+    },
+    {
+      field: 'actions', headerName: '', width: 200, sortable: false, filterable: false,
+      renderCell: ({ row }) => {
+        const busy = rowPublishBusy === row.slip?._id;
+        return (
         <Stack direction="row" spacing={0.5}>
           <Tooltip title={row.slip ? 'View slip' : 'No slip yet'}>
             <span>
@@ -232,15 +315,42 @@ export default function Salary() {
               </IconButton>
             </span>
           </Tooltip>
+          <Tooltip
+            title={
+              !row.slip
+                ? 'Generate the slip first'
+                : row.slip.published
+                  ? 'Unpublish — hide this slip from the employee'
+                  : 'Publish — make this slip visible to the employee'
+            }
+          >
+            <span>
+              <IconButton
+                size="small"
+                disabled={!row.slip || busy}
+                onClick={() => toggleRowPublish(row)}
+                sx={{ color: row.slip?.published ? tokens.colors.lightTextSecondary : tokens.colors.success }}
+              >
+                {busy ? (
+                  <CircularProgress size={14} />
+                ) : row.slip?.published ? (
+                  <IconEyeOff size={16} />
+                ) : (
+                  <IconSend size={16} />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
           <Tooltip title="Edit salary config">
             <IconButton size="small" onClick={() => setConfigUser({ id: row.userId, name: row.name })}>
               <IconEdit size={16} />
             </IconButton>
           </Tooltip>
         </Stack>
-      ),
+        );
+      },
     },
-  ], []);
+  ], [rowPublishBusy]);
 
   const statCards = [
     { title: 'Total Payroll', count: totalPayroll, prefix: '₹', icon: <IconCash size={22} />, color: tokens.colors.pink },
@@ -358,7 +468,23 @@ export default function Salary() {
             <LeaveDeductionFormula />
           </Stack>
           <Typography variant="caption" color="text.secondary">
-            {slipCount} of {rows.length} employees have slips for this month
+            {slipCount} of {rows.length} have slips
+            {slipCount > 0 && (
+              <>
+                {' · '}
+                <Box component="span" sx={{ color: tokens.colors.success, fontWeight: 700 }}>
+                  {publishedCount} published
+                </Box>
+                {unpublishedCount > 0 && (
+                  <>
+                    {' · '}
+                    <Box component="span" sx={{ color: tokens.colors.yellowDark, fontWeight: 700 }}>
+                      {unpublishedCount} draft
+                    </Box>
+                  </>
+                )}
+              </>
+            )}
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -378,6 +504,23 @@ export default function Salary() {
             sx={{ bgcolor: tokens.colors.pink, '&:hover': { bgcolor: tokens.colors.pinkDark } }}
           >
             {generating ? 'Generating…' : 'Generate Slips'}
+          </Button>
+          <Button
+            variant="contained" size="small"
+            startIcon={publishing ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <IconSend size={16} />}
+            onClick={() => setPublishConfirmOpen(true)}
+            disabled={publishing || unpublishedCount === 0}
+            sx={{
+              bgcolor: tokens.colors.success,
+              '&:hover': { bgcolor: '#0F855F' },
+              '&.Mui-disabled': { bgcolor: alpha(tokens.colors.success, 0.4) },
+            }}
+          >
+            {publishing
+              ? 'Publishing…'
+              : unpublishedCount > 0
+                ? `Publish ${unpublishedCount}`
+                : 'All Published'}
           </Button>
         </Stack>
       </MotionBox>
@@ -494,6 +637,47 @@ export default function Salary() {
             <Typography variant="caption" color="text.secondary">
               Manual edits you&rsquo;ve made to individual slips via the pencil icon <strong>will be overwritten</strong>. Re-apply those after regeneration.
             </Typography>
+          </Stack>
+        }
+      />
+
+      <ConfirmDialog
+        open={publishConfirmOpen}
+        onClose={() => setPublishConfirmOpen(false)}
+        onConfirm={runPublishAll}
+        tone="neutral"
+        title={`Publish ${unpublishedCount} draft payslip${unpublishedCount > 1 ? 's' : ''}?`}
+        confirmLabel="Yes, publish"
+        cancelLabel="Cancel"
+        description={
+          <Stack spacing={1.25} sx={{ textAlign: 'left' }}>
+            <Typography variant="body2" color="text.secondary">
+              Makes <strong>{unpublishedCount}</strong> draft payslip
+              {unpublishedCount > 1 ? 's' : ''} for{' '}
+              <strong>
+                {MONTH_NAMES[month - 1]} {year}
+              </strong>{' '}
+              visible to the corresponding employees and pings them with a
+              notification.
+            </Typography>
+            <Box
+              sx={{
+                p: 1.25,
+                borderRadius: 1.5,
+                bgcolor: alpha(tokens.colors.yellowDark, 0.08),
+                border: `1px solid ${alpha(tokens.colors.yellowDark, 0.25)}`,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: tokens.colors.yellowDark, fontWeight: 700, letterSpacing: 1 }}>
+                BEFORE YOU PUBLISH
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 0.25, lineHeight: 1.5 }}>
+                Review the numbers, present days, and any LOP deductions for
+                each row. Once published, an employee can see and download
+                their slip immediately. You can still unpublish individually
+                from the row action if you spot an issue later.
+              </Typography>
+            </Box>
           </Stack>
         }
       />

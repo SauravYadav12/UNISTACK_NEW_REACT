@@ -52,6 +52,29 @@ export async function updateSlip(slipId: string, payload: Partial<SalarySlip>) {
   return res.data;
 }
 
+export async function publishSlip(slipId: string) {
+  const res = await axiosClient.post<{ data: SalarySlip }>(
+    `/salary/slip/${slipId}/publish`,
+  );
+  return res.data;
+}
+
+export async function unpublishSlip(slipId: string) {
+  const res = await axiosClient.post<{ data: SalarySlip }>(
+    `/salary/slip/${slipId}/unpublish`,
+  );
+  return res.data;
+}
+
+export async function publishSlipsForMonth(year: number, month: number) {
+  const res = await axiosClient.post<{
+    year: number;
+    month: number;
+    published: number;
+  }>(`/salary/publish/${year}/${month}`);
+  return res.data;
+}
+
 export async function getMySlip(year: number, month: number) {
   const res = await axiosClient.get<{ data: SalarySlip }>(
     `/salary/my-slip/${year}/${month}`
