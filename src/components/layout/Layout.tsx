@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Box, useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Box, CircularProgress, useMediaQuery, useTheme } from '@mui/material';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../navbar/Navbar';
 import Sidebar from '../sidebar/Sidebar';
@@ -31,21 +31,39 @@ function Layout() {
     myAttendanceState.loadData();
   }, [location]);
 
-  // Auto-collapse on smaller screens
+  // Auto-collapse on smaller screens. The resize event fires
+  // continuously while the user drags the browser edge, so we
+  // coalesce updates onto the next animation frame — same end-state,
+  // 1 setState per frame instead of dozens, which keeps the sidebar
+  // and content area from re-rendering on every pixel of drag.
   useEffect(() => {
+    let frame = 0;
     const handleResize = () => {
-      setCollapsed(window.innerWidth < 1024);
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setCollapsed(window.innerWidth < 1024);
+      });
     };
     window.addEventListener('resize', handleResize);
     handleResize();
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   const sidebarWidth = collapsed ? smallDrawerWidth : drawerWidth;
+  // Stable identity — Sidebar is a 680-line subtree and shouldn't see
+  // a fresh `onToggle` reference each render.
+  const handleToggleSidebar = useCallback(
+    () => setCollapsed((prev) => !prev),
+    [],
+  );
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+      <Sidebar collapsed={collapsed} onToggle={handleToggleSidebar} />
 
       <Navbar
         collapsed={collapsed}
@@ -89,7 +107,28 @@ function Layout() {
               mx: 'auto',
             }}
           >
-            <Outlet />
+            {/* Inner Suspense — boundary lives BELOW the sidebar +
+                navbar so a lazy page chunk fetch only swaps the
+                content area for a spinner. Without this, the outer
+                Suspense in App.tsx would unmount the whole layout
+                during a chunk download (making navigation look like a
+                full-page reload). */}
+            <Suspense
+              fallback={
+                <Box
+                  sx={{
+                    minHeight: '50vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <CircularProgress size={26} />
+                </Box>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </MotionBox>
         </AnimatePresence>
       </Box>

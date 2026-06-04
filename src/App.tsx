@@ -6,24 +6,11 @@ import {
   Navigate,
   useLocation,
 } from 'react-router-dom';
-import Login from './pages/Auth/Login';
-import Dashboard from './pages/Dashboard/Dashboard';
-import Layout from './components/layout/Layout';
-import Requirements from './pages/Marketing/Requirements/Requirements';
-import Consultants from './pages/Marketing/Consultants/Consultants';
-import Teams from './pages/Marketing/Teams/Teams';
-import Profile from './pages/Marketing/Profile/Profile';
-import Reports from './pages/Marketing/Reports/Reports';
-import SignUp from './pages/Auth/Signup';
+import { lazy, Suspense } from 'react';
+import { Box, CircularProgress } from '@mui/material';
 import { AuthContextProvider, useAuth } from './AuthGaurd/AuthContextProvider';
 import ProtectedRoute from './AuthGaurd/ProtectedRoute';
-import UserManagement from './pages/UserManagement/UserManagement';
-import InterviewTabs from './components/interview/InterviewTabs';
-import SalesLead from './pages/Marketing/SalesLeads/SalesLeads';
-import AttendanceDashboard from './pages/Attendance/AttendanceDashboard';
-import MyAttendance from './pages/Attendance/MyAttendance';
-import AccessControl from './pages/AccessControl/AccessControl';
-import Leaves from './pages/Leaves/Leaves';
+import Layout from './components/layout/Layout';
 import {
   EmployeeModule,
   HomeModule,
@@ -31,30 +18,107 @@ import {
   ModuleGroup,
   SuperAdminModule,
 } from './utils/accessControlUtil';
-import ForgotPassword from './pages/Auth/ForgotPassword';
-import LeavesManagement from './pages/Leaves/LeavesManagement';
-import EmployeeManagement from './pages/EmployeeManagement/EmployeeManagement';
-import OnboardingFormPage from './pages/PublicOnboarding/OnboardingFormPage';
-import OfferLetterPage from './pages/PublicOnboarding/OfferLetterPage';
 import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
-import Salary from './pages/Salary/Salary';
-import Projects from './pages/Marketing/Projects/Projects';
-import PerformancePage from './pages/Performance/PerformancePage';
-import MyDocuments from './pages/Documents/MyDocuments';
-import Landing from './pages/Landing/Landing';
-import LegalPage from './pages/Legal/LegalPage';
+import { AiProvider } from './context/AiContext';
+import { RequirementAiChatProvider } from './context/RequirementAiChatContext';
+import { JobBoardSearchProvider } from './context/JobBoardSearchContext';
 import {
   PRIVACY_CONTENT,
   TERMS_CONTENT,
   SECURITY_CONTENT,
   STATUS_CONTENT,
 } from './pages/Legal/legalContent';
-import { AiProvider } from './context/AiContext';
-import { RequirementAiChatProvider } from './context/RequirementAiChatContext';
-import FloatingAiChat from './components/aiChat/FloatingAiChat';
-import CommandPalette from './components/commandPalette/CommandPalette';
-import JobBoards from './pages/JobBoards/JobBoards';
-import { JobBoardSearchProvider } from './context/JobBoardSearchContext';
+
+// ── Lazy-loaded route components ────────────────────────────────────
+// Each page becomes its own Vite chunk and is fetched only on
+// navigation, instead of being bundled into the initial download. For
+// a 30-page app with heavy deps (DataGrid, react-pdf, apexcharts,
+// country-state-city ~5MB), this typically shrinks the first
+// JavaScript payload by 70-90% and dramatically improves first paint
+// + login latency. Each lazy() resolves once and is cached for
+// subsequent visits, so there's no perceived delay after the first
+// click into any page.
+const Landing = lazy(() => import('./pages/Landing/Landing'));
+const Login = lazy(() => import('./pages/Auth/Login'));
+const SignUp = lazy(() => import('./pages/Auth/Signup'));
+const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
+const LegalPage = lazy(() => import('./pages/Legal/LegalPage'));
+const OnboardingFormPage = lazy(
+  () => import('./pages/PublicOnboarding/OnboardingFormPage'),
+);
+const OfferLetterPage = lazy(
+  () => import('./pages/PublicOnboarding/OfferLetterPage'),
+);
+const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
+const Salary = lazy(() => import('./pages/Salary/Salary'));
+const Projects = lazy(() => import('./pages/Marketing/Projects/Projects'));
+const PerformancePage = lazy(
+  () => import('./pages/Performance/PerformancePage'),
+);
+const MyDocuments = lazy(() => import('./pages/Documents/MyDocuments'));
+const Profile = lazy(() => import('./pages/Marketing/Profile/Profile'));
+const MyAttendance = lazy(() => import('./pages/Attendance/MyAttendance'));
+const Requirements = lazy(
+  () => import('./pages/Marketing/Requirements/Requirements'),
+);
+const InterviewTabs = lazy(
+  () => import('./components/interview/InterviewTabs'),
+);
+const JobBoards = lazy(() => import('./pages/JobBoards/JobBoards'));
+const Consultants = lazy(
+  () => import('./pages/Marketing/Consultants/Consultants'),
+);
+const Teams = lazy(() => import('./pages/Marketing/Teams/Teams'));
+const Reports = lazy(() => import('./pages/Marketing/Reports/Reports'));
+const SalesLead = lazy(
+  () => import('./pages/Marketing/SalesLeads/SalesLeads'),
+);
+const UserManagement = lazy(
+  () => import('./pages/UserManagement/UserManagement'),
+);
+const AccessControl = lazy(
+  () => import('./pages/AccessControl/AccessControl'),
+);
+const AttendanceDashboard = lazy(
+  () => import('./pages/Attendance/AttendanceDashboard'),
+);
+const LeavesManagement = lazy(
+  () => import('./pages/Leaves/LeavesManagement'),
+);
+const EmployeeManagement = lazy(
+  () => import('./pages/EmployeeManagement/EmployeeManagement'),
+);
+
+// Global authenticated-only chrome — also lazy because it loads heavy
+// AI / command-palette logic that's not needed before login.
+const FloatingAiChat = lazy(
+  () => import('./components/aiChat/FloatingAiChat'),
+);
+const CommandPalette = lazy(
+  () => import('./components/commandPalette/CommandPalette'),
+);
+
+/**
+ * Minimal centered spinner shown while a lazy chunk downloads. Kept
+ * intentionally tiny so it loads instantly and doesn't itself become
+ * a perceptible flash; on a typical home connection a code-split
+ * chunk is back within 50-150ms, well under the 200ms threshold most
+ * users register as a "delay".
+ */
+function RouteFallback() {
+  return (
+    <Box
+      sx={{
+        minHeight: '60vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <CircularProgress size={28} />
+    </Box>
+  );
+}
 
 // Outer shell — sets up providers only
 function App() {
@@ -86,325 +150,332 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
-        {/* Public landing — pitches the product to unauthed visitors;
-            authed visitors are redirected to /dashboard inside Landing. */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        {/* Public legal / policy pages — always reachable, no auth gate.
-            Each route renders the shared LegalPage shell with a content blob
-            from legalContent.ts. */}
-        <Route
-          path="/privacy"
-          element={<LegalPage content={PRIVACY_CONTENT} />}
-        />
-        <Route path="/terms" element={<LegalPage content={TERMS_CONTENT} />} />
-        <Route
-          path="/security"
-          element={<LegalPage content={SECURITY_CONTENT} />}
-        />
-        <Route
-          path="/status"
-          element={<LegalPage content={STATUS_CONTENT} />}
-        />
-        {/* Candidate-facing public pages — accessed via a magic-link
-            token in the URL, no JWT auth. Mounted OUTSIDE the
-            <ProtectedRoute> wrapper below. */}
-        <Route path="/onboarding/:token" element={<OnboardingFormPage />} />
-        <Route path="/offer/:token" element={<OfferLetterPage />} />
-        {/* Pathless layout route — children carry their own paths (e.g.
-            `dashboard` → /dashboard) and render inside <Layout/>. Keeping
-            this pathless avoids colliding with the public `/` → Landing
-            route declared above. */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
+      {/* One Suspense at the top of the route tree catches every lazy
+          page in one place — simpler than wrapping each <Route> and
+          avoids cascading fallbacks on nested routes. */}
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          {/* Public landing — pitches the product to unauthed visitors;
+              authed visitors are redirected to /dashboard inside Landing. */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Public legal / policy pages — always reachable, no auth gate. */}
           <Route
-            path="dashboard"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Home,
-                  module: HomeModule.Dashboard,
-                }}
-              >
-                <Dashboard />
-              </ProtectedRoute>
-            }
+            path="/privacy"
+            element={<LegalPage content={PRIVACY_CONTENT} />}
           />
           <Route
-            path="salary"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Super Admin Modules'],
-                  module: SuperAdminModule['SalaryManagement'],
-                }}
-              >
-                <Salary />
-              </ProtectedRoute>
-            }
+            path="/terms"
+            element={<LegalPage content={TERMS_CONTENT} />}
           />
           <Route
-            path="projects"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Super Admin Modules'],
-                  module: SuperAdminModule['Projects'],
-                }}
-              >
-                <Projects />
-              </ProtectedRoute>
-            }
+            path="/security"
+            element={<LegalPage content={SECURITY_CONTENT} />}
           />
           <Route
-            path="performance"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Super Admin Modules'],
-                  module: SuperAdminModule['Performance'],
-                }}
-              >
-                <PerformancePage />
-              </ProtectedRoute>
-            }
+            path="/status"
+            element={<LegalPage content={STATUS_CONTENT} />}
           />
+          {/* Candidate-facing public pages — accessed via a magic-link
+              token in the URL, no JWT auth. Mounted OUTSIDE the
+              <ProtectedRoute> wrapper below. */}
           <Route
-            path="my-documents"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Home,
-                  module: HomeModule['My Documents'],
-                }}
-              >
-                <MyDocuments />
-              </ProtectedRoute>
-            }
+            path="/onboarding/:token"
+            element={<OnboardingFormPage />}
           />
-          {/* Back-compat: old /my-salary bookmarks continue to work. */}
-          <Route path="my-salary" element={<Navigate to="/my-documents" replace />} />
+          <Route path="/offer/:token" element={<OfferLetterPage />} />
+          {/* Pathless layout route — children carry their own paths (e.g.
+              `dashboard` → /dashboard) and render inside <Layout/>. */}
           <Route
-            path="profile"
             element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Home,
-                  module: HomeModule.Profile,
-                }}
-              >
-                <Profile />
+              <ProtectedRoute>
+                <Layout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route
+              path="dashboard"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Home,
+                    module: HomeModule.Dashboard,
+                  }}
+                >
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="salary"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['SalaryManagement'],
+                  }}
+                >
+                  <Salary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="projects"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Projects'],
+                  }}
+                >
+                  <Projects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="performance"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Performance'],
+                  }}
+                >
+                  <PerformancePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="my-documents"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Home,
+                    module: HomeModule['My Documents'],
+                  }}
+                >
+                  <MyDocuments />
+                </ProtectedRoute>
+              }
+            />
+            {/* Back-compat: old /my-salary bookmarks continue to work. */}
+            <Route
+              path="my-salary"
+              element={<Navigate to="/my-documents" replace />}
+            />
+            <Route
+              path="profile"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Home,
+                    module: HomeModule.Profile,
+                  }}
+                >
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="attendance/my-attendance"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Presence & Leave'],
+                    module: EmployeeModule.Attendance,
+                  }}
+                >
+                  <HolidayContextProvider>
+                    <MyAttendance />
+                  </HolidayContextProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="leaves"
+              element={<Navigate to="/leaves-management" replace />}
+            />
+            <Route
+              path="requirements"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Requirements,
+                  }}
+                >
+                  <Requirements />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="interviews"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Interviews,
+                  }}
+                >
+                  <InterviewTabs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="job-boards"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule['Job Boards'],
+                  }}
+                >
+                  <JobBoardSearchProvider>
+                    <JobBoards />
+                  </JobBoardSearchProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="consultants"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Consultants,
+                  }}
+                >
+                  <Consultants />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="teams"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Teams,
+                  }}
+                >
+                  <Teams />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="reports"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule.Reports,
+                  }}
+                >
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="sales-leads"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule['Sales Leads'],
+                  }}
+                >
+                  <SalesLead />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="user-management"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['User Management'],
+                  }}
+                >
+                  <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="access-control"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Access Control'],
+                  }}
+                >
+                  <AccessControl />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="attendance/dashboard"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Attendance Dashboard'],
+                  }}
+                >
+                  <HolidayContextProvider>
+                    <AttendanceDashboard />
+                  </HolidayContextProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="leaves-management"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Presence & Leave'],
+                    module: EmployeeModule.Leaves,
+                  }}
+                >
+                  <LeavesManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="employee-management"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Employee Management'],
+                  }}
+                >
+                  <EmployeeManagement />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
 
-          <Route
-            path="attendance/my-attendance"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Presence & Leave'],
-                  module: EmployeeModule.Attendance,
-                }}
-              >
-                <HolidayContextProvider>
-                  <MyAttendance />
-                </HolidayContextProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="leaves"
-            element={<Navigate to="/leaves-management" replace />}
-          />
-          <Route
-            path="requirements"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Marketing,
-                  module: MarketingModule.Requirements,
-                }}
-              >
-                <Requirements />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="interviews"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Marketing,
-                  module: MarketingModule.Interviews,
-                }}
-              >
-                <InterviewTabs />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="job-boards"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Marketing,
-                  module: MarketingModule['Job Boards'],
-                }}
-              >
-                <JobBoardSearchProvider>
-                  <JobBoards />
-                </JobBoardSearchProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="consultants"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Marketing,
-                  module: MarketingModule.Consultants,
-                }}
-              >
-                <Consultants />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="teams"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Marketing,
-                  module: MarketingModule.Teams,
-                }}
-              >
-                <Teams />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="reports"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Marketing,
-                  module: MarketingModule.Reports,
-                }}
-              >
-                <Reports />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="sales-leads"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup.Marketing,
-                  module: MarketingModule['Sales Leads'],
-                }}
-              >
-                <SalesLead />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="user-management"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Super Admin Modules'],
-                  module: SuperAdminModule['User Management'],
-                }}
-              >
-                <UserManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="access-control"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Super Admin Modules'],
-                  module: SuperAdminModule['Access Control'],
-                }}
-              >
-                <AccessControl />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="attendance/dashboard"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Super Admin Modules'],
-                  module: SuperAdminModule['Attendance Dashboard'],
-                }}
-              >
-                <HolidayContextProvider>
-                  <AttendanceDashboard />
-                </HolidayContextProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="leaves-management"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Presence & Leave'],
-                  module: EmployeeModule.Leaves,
-                }}
-              >
-                <LeavesManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="employee-management"
-            element={
-              <ProtectedRoute
-                meta={{
-                  group: ModuleGroup['Super Admin Modules'],
-                  module: SuperAdminModule['Employee Management'],
-                }}
-              >
-                <EmployeeManagement />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-
-        {isAuthenticated ? (
-          <Route
-            path="dashboard"
-            element={<Navigate to="/dashboard" replace />}
-          />
-        ) : null}
-      </Routes>
+          {isAuthenticated ? (
+            <Route
+              path="dashboard"
+              element={<Navigate to="/dashboard" replace />}
+            />
+          ) : null}
+        </Routes>
+      </Suspense>
 
       {/* Global AI components — only visible after authentication AND
-          only on internal app routes. Hidden on the candidate-facing
-          public pages so an admin who's logged in elsewhere doesn't see
-          internal chrome while previewing the candidate experience. */}
+          only on internal app routes. Also wrapped in Suspense so the
+          chunk download is non-blocking. */}
       {showInternalChrome && (
-        <>
+        <Suspense fallback={null}>
           <CommandPalette />
           <FloatingAiChat />
-        </>
+        </Suspense>
       )}
     </>
   );

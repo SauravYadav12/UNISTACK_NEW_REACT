@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { UserProfile } from '../Interfaces/profile';
 import { getUserIdFromToken, isTokenExpired } from '../utils/utils';
 import { getProfileByUser } from '../services/userProfileApi';
@@ -101,55 +101,73 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     return profile;
   }
 
-  const isModuleAllowed = (key: string) => {
-    const me = iUserState.data;
-    const { data } = accessControlState;
-    if (!data || !me?.role.length || isTokenExpired()) return false;
-    if (me.role.includes(UserRole['super-admin'])) return true;
+  // Stable identity — many consumers pass `isModuleAllowed` into
+  // useEffect deps or wrap themselves in React.memo. A fresh function
+  // every render would defeat both.
+  const isModuleAllowed = useCallback(
+    (key: string) => {
+      const me = iUserState.data;
+      const { data } = accessControlState;
+      if (!data || !me?.role.length || isTokenExpired()) return false;
+      if (me.role.includes(UserRole['super-admin'])) return true;
 
-    // Performance page is intentionally visible to every Marketing + Support
-    // user — they're the people whose scores it shows, so transparency is
-    // by design (the scoring rules and weights are publicly visible inside
-    // the page). The gear-icon "Edit weights" affordance stays gated to
-    // super-admin only via an inline check in PerformancePage.tsx, and the
-    // weight-write API endpoints are guarded server-side by roleGuard
-    // (see `/performance/weights` PATCH / `/performance/weights/reset`),
-    // so this carve-out only affects read-only viewing.
-    const performanceKey = moduleKey(
-      ModuleGroup['Super Admin Modules'],
-      SuperAdminModule.Performance,
-    );
-    if (key === performanceKey) {
-      if (
-        me.role.includes(UserRole.marketing) ||
-        me.role.includes(UserRole.support)
-      ) {
-        return true;
+      // Performance page is intentionally visible to every Marketing + Support
+      // user — they're the people whose scores it shows, so transparency is
+      // by design (the scoring rules and weights are publicly visible inside
+      // the page). The gear-icon "Edit weights" affordance stays gated to
+      // super-admin only via an inline check in PerformancePage.tsx, and the
+      // weight-write API endpoints are guarded server-side by roleGuard
+      // (see `/performance/weights` PATCH / `/performance/weights/reset`),
+      // so this carve-out only affects read-only viewing.
+      const performanceKey = moduleKey(
+        ModuleGroup['Super Admin Modules'],
+        SuperAdminModule.Performance,
+      );
+      if (key === performanceKey) {
+        if (
+          me.role.includes(UserRole.marketing) ||
+          me.role.includes(UserRole.support)
+        ) {
+          return true;
+        }
       }
-    }
 
-    return me.role.some((role) => data[role]?.includes(key) || false);
-  };
+      return me.role.some((role) => data[role]?.includes(key) || false);
+    },
+    [iUserState.data, accessControlState.data],
+  );
+
+  // Memoise the context value to avoid forcing a re-render on every
+  // consumer of `useAuth()` (currently ~50 components, most of which
+  // only read `iUser` or `isModuleAllowed`). Without this, any state
+  // change in the provider cascades through the entire tree.
+  const value: DefaultContextValue = useMemo(
+    () => ({
+      iUserState,
+      iUser: iUserState.data,
+      myProfileState,
+      myProfile: myProfileState.data,
+      myAttendanceState,
+      accessControlState,
+      isAuthenticated,
+      syncIUser: iUserState.loadData,
+      setMyProfile: myProfileState.setData,
+      validateLogin,
+      validateLogout,
+      isModuleAllowed,
+    }),
+    [
+      iUserState,
+      myProfileState,
+      myAttendanceState,
+      accessControlState,
+      isAuthenticated,
+      isModuleAllowed,
+    ],
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        iUserState,
-        iUser: iUserState.data,
-        myProfileState,
-        myProfile: myProfileState.data,
-        myAttendanceState,
-        accessControlState,
-        isAuthenticated,
-        syncIUser: iUserState.loadData,
-        setMyProfile: myProfileState.setData,
-        validateLogin,
-        validateLogout,
-        isModuleAllowed,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
 };
 

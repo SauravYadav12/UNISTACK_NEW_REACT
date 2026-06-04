@@ -677,4 +677,11 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
   );
 }
 
-export default Sidebar;
+// React.memo on the 680-line sidebar subtree. Its only props are
+// `collapsed` + `onToggle`, and the parent (Layout) now passes a
+// stable onToggle via useCallback — so memoising means the sidebar
+// only re-renders when `collapsed` actually flips (drawer toggle /
+// responsive break), not on every Layout re-render driven by
+// navigation, notifications polling, or resize.
+import { memo } from 'react';
+export default memo(Sidebar);
