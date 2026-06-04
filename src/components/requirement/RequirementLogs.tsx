@@ -87,6 +87,7 @@ const DEFAULT_LABELS: Record<string, string> = {
   primaryTechStack: 'Primary Tech Stack',
   isDuplicate: 'Is Duplicate',
   duplicateWith: 'Duplicate With',
+  starColor: 'Star Color',
 };
 
 const defaultFormatDate = (d: string | Date) => new Date(d).toLocaleString();

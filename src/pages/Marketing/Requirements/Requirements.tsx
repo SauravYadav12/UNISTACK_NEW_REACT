@@ -58,6 +58,7 @@ import {
   requirementCounts,
   requirementsList,
   updateRequirementStar,
+  createRequirementLog,
   RequirementStarColor,
 } from '../../../services/requirementApi';
 import { archiveRequirementsList } from '../../../services/archivesApi';
@@ -83,6 +84,7 @@ import { useRequirementAiChat } from '../../../context/RequirementAiChatContext'
 
 import { iUser, UserRole } from '../../../Interfaces/iUser';
 import { IRequirement, RequirementStatus } from '../../../Interfaces/types';
+import type { CreateRequirementLogPayload } from '../../../Interfaces/requirement';
 
 const MotionBox = motion.create(Box);
 
@@ -698,6 +700,74 @@ export default function Requirements() {
     orange: '#F97316',
   };
 
+  // ── Debounced audit log for star cycles ──
+  // A click cycles colour by ONE step. If HR wants orange they may
+  // click 3× in a row (none → green → yellow → orange). We don't want
+  // to log every intermediate stop — only the eventual settled colour,
+  // and only ONE entry per "burst" of clicks. Per-row debounce:
+  //
+  //   • First click in a window: capture `cur` as the original colour.
+  //   • Each subsequent click: update `finalColor`, reset the 2.5s timer.
+  //   • Timer fires → POST one log entry of original → final.
+  //   • If original === final (cycled all the way back), skip the log.
+  //
+  // The user identity + requirement id are stashed on the timer entry
+  // so the unmount cleanup can flush pending logs (user clicked then
+  // navigated away — the action still happened).
+  const STAR_LOG_DEBOUNCE_MS = 2500;
+  type PendingStarLog = {
+    originalColor: RequirementStarColor;
+    finalColor: RequirementStarColor;
+    userName: string;
+    userRef: string;
+    requirementRef: string;
+    timer: ReturnType<typeof setTimeout>;
+  };
+  const starLogTimersRef = useRef<Map<string, PendingStarLog>>(new Map());
+
+  const flushPendingStarLog = (id: string) => {
+    const entry = starLogTimersRef.current.get(id);
+    if (!entry) return;
+    starLogTimersRef.current.delete(id);
+    // Net-zero cycle (e.g. user cycled all the way back to where they
+    // started) — nothing meaningful to log.
+    if (entry.originalColor === entry.finalColor) return;
+    // Server stores requirementRef + userRef as ObjectIds — the TS
+    // type is Mongoose's branded ObjectId, but every existing call site
+    // (e.g. RequirementsForm.tsx → createLog) passes plain string IDs
+    // and the cast collapses at runtime. Match that convention.
+    const payload: CreateRequirementLogPayload = {
+      requirementRef: entry.requirementRef as any,
+      userName: entry.userName,
+      userRef: entry.userRef as any,
+      operation: 'update',
+      oldData: { starColor: entry.originalColor },
+      newData: { starColor: entry.finalColor },
+    };
+    void createRequirementLog(payload).catch((err) => {
+      // Don't bubble — logging is best-effort. The colour itself was
+      // already saved by handleCycleStar's PATCH call.
+      console.warn('[requirements] star log failed', err);
+    });
+  };
+
+  // Cleanup on unmount: flush every pending entry IMMEDIATELY rather
+  // than dropping them silently. If the user cycled to orange then
+  // navigated away within the debounce window, the audit log still
+  // gets that entry.
+  useEffect(() => {
+    return () => {
+      const timers = starLogTimersRef.current;
+      const ids = Array.from(timers.keys());
+      for (const id of ids) {
+        const entry = timers.get(id);
+        if (entry) clearTimeout(entry.timer);
+        flushPendingStarLog(id);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCycleStar = async (row: Row) => {
     const cur = (row.starColor as RequirementStarColor | undefined) || 'none';
     const next = nextStarColor(cur);
@@ -744,9 +814,42 @@ export default function Requirements() {
     patchRow(next);
     try {
       await updateRequirementStar(row._id, next);
+      // Schedule the debounced audit log entry. We do this only on
+      // success — if the star save itself failed (rare, the catch
+      // below reverts the UI), there's nothing to log.
+      if (iUser) {
+        const existing = starLogTimersRef.current.get(row._id);
+        if (existing) clearTimeout(existing.timer);
+        // First click in a window snapshots `cur` (the colour BEFORE
+        // this click) as the audit-log "from" value. Subsequent clicks
+        // preserve that original — only `finalColor` updates each time.
+        const originalColor = existing ? existing.originalColor : cur;
+        const userName =
+          `${iUser.firstName ?? ''} ${iUser.lastName ?? ''}`.trim() ||
+          iUser.email ||
+          'User';
+        const timer = setTimeout(
+          () => flushPendingStarLog(row._id),
+          STAR_LOG_DEBOUNCE_MS,
+        );
+        starLogTimersRef.current.set(row._id, {
+          originalColor,
+          finalColor: next,
+          userName,
+          userRef: String(iUser._id ?? ''),
+          requirementRef: row._id,
+          timer,
+        });
+      }
     } catch {
-      // Revert on failure — keep local state honest.
+      // Revert on failure — keep local state honest. Also drop any
+      // pending log entry for this row since the action didn't take.
       patchRow(cur);
+      const existing = starLogTimersRef.current.get(row._id);
+      if (existing) {
+        clearTimeout(existing.timer);
+        starLogTimersRef.current.delete(row._id);
+      }
     }
   };
 
