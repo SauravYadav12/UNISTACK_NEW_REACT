@@ -62,6 +62,7 @@ export async function createCandidate(payload: CreateCandidatePayload) {
  * info-requested rewinds the stage back to `invited` so the candidate
  * sees a clean start.
  */
+export interface UpdateCandidateDetailsPayload extends CreateCandidatePayload {
   reinvite?: boolean;
 }
 
