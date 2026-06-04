@@ -114,7 +114,9 @@ const SalarySlipView = forwardRef<HTMLDivElement, Props>(({ slip }, ref) => {
   ];
 
   const deductions: Array<[string, number, string?]> = [
-    ['PF (Professional Tax)', slip.deductions.pf],
+    ['PF', slip.deductions.pf],
+    // Professional Tax — separate statutory line, flat 208 / mo.
+    ['Professional Tax', slip.deductions.professionalTax || 0],
     ['TDS', slip.deductions.tds],
     ['Other Deductions', slip.deductions.otherDeductions],
     [

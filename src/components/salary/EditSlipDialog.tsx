@@ -25,7 +25,11 @@ const EARNING_KEYS = [
 ] as const;
 
 const DEDUCTION_KEYS = [
-  ['pf', 'PF (Professional Tax)'],
+  ['pf', 'PF'],
+  // Professional Tax is now a separate statutory deduction (flat ₹208 /
+  // month — set on the salary config). Editable on the slip so HR can
+  // override in unusual months without touching the config.
+  ['professionalTax', 'Professional Tax'],
   ['tds', 'TDS'],
   ['otherDeductions', 'Other Deductions'],
   ['lopDeduction', 'Leave Deduction'],
@@ -47,7 +51,7 @@ const ZERO_EARNINGS: EarningsState = {
   booksReimbursement: 0, specialAllowances: 0, incentives: 0,
 };
 const ZERO_DEDUCTIONS: DeductionsState = {
-  pf: 0, tds: 0, otherDeductions: 0, lopDeduction: 0,
+  pf: 0, professionalTax: 0, tds: 0, otherDeductions: 0, lopDeduction: 0,
 };
 
 export default function EditSlipDialog({ open, slip, onClose, onSaved }: Props) {
@@ -71,6 +75,7 @@ export default function EditSlipDialog({ open, slip, onClose, onSaved }: Props) 
     });
     setDeductions({
       pf: slip.deductions?.pf || 0,
+      professionalTax: slip.deductions?.professionalTax || 0,
       tds: slip.deductions?.tds || 0,
       otherDeductions: slip.deductions?.otherDeductions || 0,
       lopDeduction: slip.deductions?.lopDeduction || 0,

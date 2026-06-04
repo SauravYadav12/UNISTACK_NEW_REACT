@@ -34,17 +34,25 @@ const EARNING_FIELDS: Array<{ key: keyof SalaryConfig; label: string; derived: b
 ];
 
 const DEDUCTION_FIELDS: Array<{ key: keyof SalaryConfig; label: string }> = [
-  { key: 'pf',              label: 'PF (Professional Tax)' },
+  { key: 'pf',              label: 'PF' },
+  // Standard statutory deduction — flat ₹208 / month for everyone (set
+  // on Apply, can be overridden in the field if regulations change).
+  { key: 'professionalTax', label: 'Professional Tax' },
   { key: 'tds',             label: 'TDS' },
   { key: 'otherDeductions', label: 'Other Deductions' },
 ];
+
+// Default Professional Tax — Karnataka PT slab. Applied to every config
+// so the field auto-populates whether HR clicks Apply on the CTC or
+// just opens a fresh config screen.
+const FIXED_PROFESSIONAL_TAX = 208;
 
 const EMPTY_CONFIG: SalaryConfig = {
   user: '',
   ctc: 0,
   basic: 0, hra: 0, mobileReimbursement: 0, booksReimbursement: 0,
   specialAllowances: 0, incentives: 0,
-  pf: 0, tds: 0, otherDeductions: 0,
+  pf: 0, professionalTax: FIXED_PROFESSIONAL_TAX, tds: 0, otherDeductions: 0,
   currency: 'INR',
   country: 'IN',
 };
@@ -135,6 +143,12 @@ export default function SalaryConfigDialog({
       ...c,
       ctc: parsedCtc,
       ...derived,
+      // Professional Tax is a flat statutory deduction — re-stamp it on
+      // every Apply so legacy configs that predate this field get it
+      // populated the first time HR re-applies CTC. Existing overrides
+      // (rare — usually only changes if the PT slab changes) are
+      // intentionally overwritten here; HR can still edit afterwards.
+      professionalTax: FIXED_PROFESSIONAL_TAX,
     }));
     toast.success('CTC applied — adjust components as needed');
   }

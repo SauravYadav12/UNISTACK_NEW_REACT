@@ -10,6 +10,10 @@ export interface SalaryConfig {
   specialAllowances: number;
   incentives: number;
   pf: number;
+  /** Standard statutory deduction — flat ₹208 / month for every employee
+   *  (Karnataka PT slab). Defaulted by the server schema so legacy configs
+   *  without the field also resolve to 208 on read. */
+  professionalTax: number;
   tds: number;
   otherDeductions: number;
   country: 'IN' | 'US';
@@ -81,6 +85,7 @@ export interface SalarySlipEarnings {
 
 export interface SalarySlipDeductions {
   pf: number;
+  professionalTax: number;
   tds: number;
   otherDeductions: number;
   lopDeduction: number;
