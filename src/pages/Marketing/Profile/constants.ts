@@ -92,9 +92,12 @@ export const profileFormSections: FormSections[] = [
       {
         fieldName: 'employeeId',
         label: 'Employee ID',
-        inputAttributes: {
-          required: true,
-        },
+        // NOT client-side required: the server's createUserProfile
+        // auto-generates a fresh employeeId on first save (UNI-DD-MM-
+        // YYYY/NN format). Gating Submit on this field locked out any
+        // employee whose existing profile had an empty cell — they'd
+        // click Submit, validation would silently fail, and nothing
+        // visible would happen.
       },
       {
         fieldName: 'name',
@@ -138,10 +141,11 @@ export const profileFormSections: FormSections[] = [
         fieldName: 'personal',
         label: 'Personal Email',
         fieldType: 'email',
+        // Validate format only when the employee actually types
+        // something — don't gate Submit on an empty cell. Allows
+        // partial profile saves; HR/employee can fill remaining
+        // fields later.
         customValidation: validateEmail,
-        inputAttributes: {
-          required: true,
-        },
       },
       {
         fieldName: 'phoneNumber',

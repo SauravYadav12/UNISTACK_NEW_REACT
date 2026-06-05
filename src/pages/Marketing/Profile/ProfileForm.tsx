@@ -10,7 +10,7 @@ import {
   Typography,
   alpha,
 } from '@mui/material';
-import React, { ChangeEvent, useEffect, useState } from 'react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { UserProfile } from '../../../Interfaces/profile';
 import { toast } from 'react-toastify';
 import {
@@ -86,10 +86,22 @@ const ProfileForm = ({
     return await Promise.all(promise);
   };
 
+  // Tracks the first failing field label so the Submit toast can name
+  // exactly what's wrong — generic "Invalid submission" is useless when
+  // the form is long. Populated by validateForm on each run.
+  const firstInvalidFieldRef = useRef<string | null>(null);
+
   const submitForm = async () => {
     if (isFormSubmitting) return;
     if (!validateForm()) {
-      toast.error('Invalid submission');
+      // Always surface a toast. Before this fix, the form's onSubmit
+      // used `validateForm() && submitForm()` which silently swallowed
+      // failures — the user saw "nothing happens" on click. Now the
+      // toast always fires AND names the offending field.
+      const label = firstInvalidFieldRef.current;
+      toast.error(
+        label ? `Check the "${label}" field` : 'Invalid submission',
+      );
       return;
     }
     setIsFormSubmitting(true);
@@ -204,17 +216,32 @@ const ProfileForm = ({
 
   const validateForm = () => {
     let isAllValuesValid = true;
-    profileFormSections.map((section) => {
+    // Reset the "first invalid" tracker on every run so a previous
+    // failed submit doesn't bleed into the next one.
+    firstInvalidFieldRef.current = null;
+    const recordFirstFailure = (field: SectionField | DocumentSectionField) => {
+      if (firstInvalidFieldRef.current) return;
+      const raw = field.label || field.fieldName;
+      firstInvalidFieldRef.current = raw.charAt(0).toUpperCase() + raw.slice(1);
+    };
+
+    profileFormSections.forEach((section) => {
       section.sectionFields.forEach((f) => {
         if (!validateField(f, section.parentFieldName)) {
           isAllValuesValid = false;
+          recordFirstFailure(f);
         }
       });
     });
-    documentFormSection.map((field) => {
-      if (!validateField(field)) isAllValuesValid = false;
-      if (field.associatedField && !validateField(field.associatedField))
+    documentFormSection.forEach((field) => {
+      if (!validateField(field)) {
         isAllValuesValid = false;
+        recordFirstFailure(field);
+      }
+      if (field.associatedField && !validateField(field.associatedField)) {
+        isAllValuesValid = false;
+        recordFirstFailure(field.associatedField);
+      }
     });
     return isAllValuesValid;
   };
@@ -297,7 +324,13 @@ const ProfileForm = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          validateForm() && submitForm();
+          // Always go through submitForm — it runs validateForm itself
+          // and shows a toast if it fails. The old `validateForm() &&
+          // submitForm()` silently swallowed validation failures (the
+          // toast never fired), which is why employees saw "Submit
+          // does nothing" — the click was technically processed but
+          // there was no visible feedback.
+          submitForm();
         }}
       >
         {/* Form sections */}
@@ -555,7 +588,11 @@ const ProfileForm = ({
                   px: 3,
                   boxShadow: 'none',
                 }}
-                onClick={() => validateForm()}
+                // No onClick handler — `type="submit"` triggers the
+                // form's onSubmit, which calls submitForm(), which
+                // calls validateForm() itself. Running validateForm
+                // separately here was redundant and only served to
+                // populate the (silent) red helper text earlier.
                 disabled={isFormSubmitting}
               >
                 {!isFormSubmitting ? (
