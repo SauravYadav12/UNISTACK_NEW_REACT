@@ -484,7 +484,17 @@ export default function Salary() {
         );
       },
     },
-  ], [rowPublishBusy, rowGenBusy, generating]);
+    // ── year + month MUST be in this dep array ──
+    // The per-row Generate / Regenerate button's onClick closes over
+    // `generateForRow`, which closes over `year` and `month`. If we
+    // omit them here, the column array stays cached when HR navigates
+    // months — and clicking Generate on May would silently fire the
+    // API for whatever month the columns were first computed under
+    // (typically June, the page's default landing month). HR would
+    // then see a fresh slip appear in the OTHER month and conclude
+    // "the page moved." Including the values forces a recompute so
+    // the click always uses the currently-displayed month.
+  ], [rowPublishBusy, rowGenBusy, generating, year, month]);
 
   const statCards = [
     { title: 'Total Payroll', count: totalPayroll, prefix: '₹', icon: <IconCash size={22} />, color: tokens.colors.pink },

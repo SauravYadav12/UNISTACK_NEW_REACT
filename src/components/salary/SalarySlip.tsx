@@ -74,6 +74,15 @@ const InfoRow = ({ label, value, strong }: { label: string; value: string | numb
   </Box>
 );
 
+// Format leave counts for display — keeps the maths in floats but
+// trims `0.83333333` noise for the printable slip. Integers stay
+// integers; half-day values stay as `2.5`; otherwise round to 2dp.
+const fmtLeaveCount = (n: number): string => {
+  if (!Number.isFinite(n)) return '0';
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(2).replace(/\.?0+$/, '');
+};
+
 const LeaveBar = ({ label, used, total, color }: {
   label: string; used: number; total: number; color: string;
 }) => {
@@ -85,7 +94,7 @@ const LeaveBar = ({ label, used, total, color }: {
           {label}
         </Typography>
         <Typography sx={{ fontSize: 10, color: COLORS.muted, fontVariantNumeric: 'tabular-nums' }}>
-          {used} / {total} used
+          {fmtLeaveCount(used)} / {fmtLeaveCount(total)} used
         </Typography>
       </Box>
       <Box sx={{ height: 6, bgcolor: COLORS.rule, borderRadius: 3, overflow: 'hidden' }}>
@@ -281,62 +290,97 @@ const SalarySlipView = forwardRef<HTMLDivElement, Props>(({ slip }, ref) => {
         </Box>
       </Box>
 
-      {/* Leave summary — strictly THIS MONTH so the employee can't
-          mis-read a yearly balance as "still available". Shows the
-          monthly entitlement vs what was actually used in this payroll
-          period, plus the unpaid (LOP) day count that drove the
-          deduction. Falls back to legacy YTD fields ONLY when an old
-          slip is loaded that pre-dates the monthly fields. */}
+      {/* Leave summary — strictly THIS MONTH. Two pieces of math
+          matter:
+            1. `availableThisMonth` is what the employee can STILL take
+               this month. It's capped by both the monthly quota AND
+               the remaining yearly balance: an employee who's burned
+               through their whole yearly allotment in earlier months
+               has 0 available, even if their monthly entitlement is
+               2.5. Earlier this read just `quota − usedThisMonth`,
+               which mislead employees like Shivam who'd already used
+               all 30 paid days for the year — slip would still tell
+               him 2.5 were available.
+            2. Raw decimals like `0.83333333` come from `allocated/12`
+               fallback math; they look like noise on a payslip. The
+               `fmt` helper rounds to 2 decimals and trims trailing
+               zeros so 2.5 stays "2.5", 0.833... becomes "0.83", and
+               integers like 3 stay "3". */}
       <Box sx={{ px: 5, pt: 1, pb: 1.5 }}>
-        <SectionTitle label="Leave Summary (This Month)" accent={COLORS.yellow} />
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mt: 0.5 }}>
-          <LeaveBar
-            label="Paid leaves"
-            used={slip.leaves.paidUsedThisMonth ?? slip.leaves.paidUsed}
-            total={slip.leaves.paidMonthlyQuota ?? slip.leaves.paidAccrued}
-            color={COLORS.pink}
-          />
-          <LeaveBar
-            label="Medical leaves"
-            used={slip.leaves.medicalUsedThisMonth ?? slip.leaves.medicalUsed}
-            total={slip.leaves.medicalMonthlyQuota ?? slip.leaves.medicalAccrued}
-            color={COLORS.blue}
-          />
-        </Box>
-        <Box sx={{
-          display: 'flex', gap: 2, mt: 1,
-          fontSize: 10, color: COLORS.muted,
-        }}>
-          <Box>
-            Paid available this month:{' '}
-            <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
-              {Math.max(
-                (slip.leaves.paidMonthlyQuota ?? 0) -
-                  (slip.leaves.paidUsedThisMonth ?? 0),
-                0,
-              )}
-            </Box>
-            {' '}/ {slip.leaves.paidMonthlyQuota ?? 0}
-          </Box>
-          <Box>·</Box>
-          <Box>
-            Medical available this month:{' '}
-            <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
-              {Math.max(
-                (slip.leaves.medicalMonthlyQuota ?? 0) -
-                  (slip.leaves.medicalUsedThisMonth ?? 0),
-                0,
-              )}
-            </Box>
-            {' '}/ {slip.leaves.medicalMonthlyQuota ?? 0}
-          </Box>
-          <Box>·</Box>
-          <Box>
-            Unpaid this month: <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
-              {slip.leaves.unpaidDays}
-            </Box>
-          </Box>
-        </Box>
+        {(() => {
+          const fmt = (n: number) => {
+            if (!Number.isFinite(n)) return '0';
+            if (Number.isInteger(n)) return String(n);
+            return n.toFixed(2).replace(/\.?0+$/, '');
+          };
+
+          // Resolve usable fields with legacy fallbacks.
+          const paidQuota = slip.leaves.paidMonthlyQuota ?? slip.leaves.paidAccrued ?? 0;
+          const paidUsedThisMo = slip.leaves.paidUsedThisMonth ?? slip.leaves.paidUsed ?? 0;
+          const paidBalanceLeft = Math.max(slip.leaves.paidBalance ?? 0, 0);
+          const paidAvailable = Math.max(
+            Math.min(paidQuota - paidUsedThisMo, paidBalanceLeft),
+            0,
+          );
+
+          const medQuota = slip.leaves.medicalMonthlyQuota ?? slip.leaves.medicalAccrued ?? 0;
+          const medUsedThisMo = slip.leaves.medicalUsedThisMonth ?? slip.leaves.medicalUsed ?? 0;
+          const medBalanceLeft = Math.max(slip.leaves.medicalBalance ?? 0, 0);
+          const medAvailable = Math.max(
+            Math.min(medQuota - medUsedThisMo, medBalanceLeft),
+            0,
+          );
+
+          return (
+            <>
+              <SectionTitle label="Leave Summary (This Month)" accent={COLORS.yellow} />
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mt: 0.5 }}>
+                {/* LeaveBar's denominator is the ACTUAL available
+                    this month (not the monthly quota) so an employee
+                    with zero yearly balance left sees a bar pinned to
+                    "0 / 0 used" — visually + numerically honest. */}
+                <LeaveBar
+                  label="Paid leaves"
+                  used={paidUsedThisMo}
+                  total={paidAvailable}
+                  color={COLORS.pink}
+                />
+                <LeaveBar
+                  label="Medical leaves"
+                  used={medUsedThisMo}
+                  total={medAvailable}
+                  color={COLORS.blue}
+                />
+              </Box>
+              <Box sx={{
+                display: 'flex', gap: 2, mt: 1,
+                fontSize: 10, color: COLORS.muted, flexWrap: 'wrap',
+              }}>
+                <Box>
+                  Paid available this month:{' '}
+                  <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
+                    {fmt(paidAvailable)}
+                  </Box>
+                  {' '}of {fmt(paidQuota)} monthly entitlement
+                </Box>
+                <Box>·</Box>
+                <Box>
+                  Medical available this month:{' '}
+                  <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
+                    {fmt(medAvailable)}
+                  </Box>
+                  {' '}of {fmt(medQuota)} monthly entitlement
+                </Box>
+                <Box>·</Box>
+                <Box>
+                  Unpaid this month: <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
+                    {fmt(slip.leaves.unpaidDays)}
+                  </Box>
+                </Box>
+              </Box>
+            </>
+          );
+        })()}
       </Box>
 
       {/* Net Pay hero */}
