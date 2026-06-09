@@ -26,6 +26,7 @@ import {
   OnboardingCandidate,
 } from '../../Interfaces/onboarding';
 import OfferLetterRender from './OfferLetterRender';
+import OfferLetterPreviewDialog from './OfferLetterPreviewDialog';
 import { displayNumber } from '../../utils/onboardingValidators';
 import { salaryInWords } from '../../utils/numberToIndianWords';
 
@@ -67,6 +68,11 @@ export default function OfferLetterComposeDialog({
   const [template, setTemplate] = useState<OfferLetterTemplate | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Preview gate — Send opens the preview modal first so HR sees a
+  // confirmation step (not just the side-by-side preview that they may
+  // skim past while editing). Send inside the preview commits;
+  // Revise closes it and HR can keep tweaking the variables.
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -100,21 +106,32 @@ export default function OfferLetterComposeDialog({
     setForm((p) => ({ ...p, [key]: value }));
   }
 
-  async function submit() {
-    if (
-      !form.name.trim() ||
-      !form.position.trim() ||
-      !form.startDate ||
-      !(form.annualSalary > 0) ||
-      !(form.probationMonths >= 0)
-    ) {
+  function formIsValid() {
+    return (
+      form.name.trim() !== '' &&
+      form.position.trim() !== '' &&
+      Boolean(form.startDate) &&
+      form.annualSalary > 0 &&
+      form.probationMonths >= 0
+    );
+  }
+
+  /** Button handler: validate, then open the preview. No API call here. */
+  function onPreviewClick() {
+    if (!formIsValid()) {
       toast.error('Fill all fields with valid values.');
       return;
     }
+    setPreviewOpen(true);
+  }
+
+  /** Actual send — called from inside the preview's Send button. */
+  async function commit() {
     setSubmitting(true);
     try {
       await sendOffer(candidate._id, form);
       toast.success(`Offer letter sent to ${form.name}.`);
+      setPreviewOpen(false);
       onSent();
       onClose();
     } catch (e) {
@@ -128,6 +145,7 @@ export default function OfferLetterComposeDialog({
   }
 
   return (
+    <>
     <Dialog
       open={open}
       onClose={submitting ? undefined : onClose}
@@ -243,7 +261,7 @@ export default function OfferLetterComposeDialog({
           Cancel
         </Button>
         <Button
-          onClick={submit}
+          onClick={onPreviewClick}
           variant="contained"
           disabled={submitting || loading}
           startIcon={
@@ -254,9 +272,25 @@ export default function OfferLetterComposeDialog({
             )
           }
         >
-          {submitting ? 'Sending…' : 'Send to candidate'}
+          {submitting ? 'Sending…' : 'Preview & send'}
         </Button>
       </DialogActions>
     </Dialog>
+    {/* Confirmation preview — opened from the Preview & send button.
+        Revise closes it (this dialog stays open underneath so HR can
+        keep tweaking). Send commits via the same sendOffer call the
+        old button used directly. */}
+    <OfferLetterPreviewDialog
+      open={previewOpen}
+      firstName={candidate.firstName}
+      snapshot={previewSnapshot}
+      sending={submitting}
+      onRevise={() => setPreviewOpen(false)}
+      onSend={async () => {
+        await commit();
+      }}
+      title="Preview offer letter"
+    />
+    </>
   );
 }

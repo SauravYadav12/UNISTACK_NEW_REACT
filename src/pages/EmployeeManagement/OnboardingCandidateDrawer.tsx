@@ -50,6 +50,7 @@ import DocumentLetterRender from '../../components/onboarding/DocumentLetterRend
 import moment from 'moment';
 import RequestInfoDialog from '../../components/onboarding/RequestInfoDialog';
 import OfferLetterComposeDialog from '../../components/onboarding/OfferLetterComposeDialog';
+import OfferLetterPreviewDialog from '../../components/onboarding/OfferLetterPreviewDialog';
 import OfferLetterRender from '../../components/onboarding/OfferLetterRender';
 import ReasonDialog from '../../components/onboarding/ReasonDialog';
 import FormSnapshotPanel from '../../components/onboarding/FormSnapshotPanel';
@@ -104,6 +105,11 @@ export default function OnboardingCandidateDrawer({
       iUser?.role?.includes(UserRole.hr),
   );
   const [editOpen, setEditOpen] = useState(false);
+  // Preview gate for the "Resend offer link" action — clicking it opens
+  // the preview modal first so HR confirms the offer content before the
+  // candidate gets another email. Resend itself fires from the preview's
+  // Send button via resendLink. Revise just closes the preview.
+  const [resendOfferPreviewOpen, setResendOfferPreviewOpen] = useState(false);
   const [doc, setDoc] = useState<OnboardingCandidate | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -372,13 +378,10 @@ export default function OnboardingCandidateDrawer({
                     size="small"
                     variant="outlined"
                     startIcon={<IconMail size={14} />}
-                    disabled={busy}
-                    onClick={() =>
-                      wrap(
-                        () => resendLink(doc._id, 'offer-letter'),
-                        'Offer link re-sent.',
-                      )
-                    }
+                    // Disabled if the offer somehow has no snapshot
+                    // (corrupt data — shouldn't happen at offer-sent).
+                    disabled={busy || !doc.offer?.snapshot}
+                    onClick={() => setResendOfferPreviewOpen(true)}
                   >
                     Resend offer link
                   </Button>
@@ -551,6 +554,30 @@ export default function OnboardingCandidateDrawer({
             onClose={() => setEditOpen(false)}
             onSaved={load}
           />
+
+          {/* Resend offer preview — guard on doc.offer?.snapshot so a
+              corrupt candidate (somehow at offer-sent with no offer)
+              can't crash the renderer. The Send button uses the same
+              resendLink call the button used to fire directly; Revise
+              just closes the modal and the drawer goes back to its
+              previous state. */}
+          {doc.offer?.snapshot && (
+            <OfferLetterPreviewDialog
+              open={resendOfferPreviewOpen}
+              firstName={doc.firstName}
+              snapshot={doc.offer.snapshot}
+              sending={busy}
+              onRevise={() => setResendOfferPreviewOpen(false)}
+              onSend={async () => {
+                await wrap(
+                  () => resendLink(doc._id, 'offer-letter'),
+                  'Offer link re-sent.',
+                );
+                setResendOfferPreviewOpen(false);
+              }}
+              title="Preview offer letter (resend)"
+            />
+          )}
 
           {/* Signed documents modal — tabs across all five docs so
               HR / super-admin can review and download any of them. */}
