@@ -214,11 +214,11 @@ const SalarySlipView = forwardRef<HTMLDivElement, Props>(({ slip }, ref) => {
             {monthLabel}
           </Typography>
           <Typography sx={{ fontSize: 11, color: COLORS.muted, mt: 0.3 }}>
-            {/* Calendar-day payroll model — full-time salary is paid
-                for the whole month, so we show days in the pay period
-                + days actually earned rather than the old "working
-                days · worked" framing that implied workdays-only pay. */}
-            {slip.totalDays} days in month · {slip.presentDays} earned
+            {/* Working-day attendance line. Pay is calendar-day-based
+                under the hood, but HR/employee both think in terms of
+                working days, so the attendance reads naturally:
+                "20 working days · 15 present · 5 unpaid". */}
+            {slip.workingDays} working days · {slip.presentDays} present
             {slip.leaves.unpaidDays > 0
               ? ` · ${slip.leaves.unpaidDays} unpaid`
               : ''}

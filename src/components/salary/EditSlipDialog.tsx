@@ -183,16 +183,23 @@ export default function EditSlipDialog({ open, slip, onClose, onSaved }: Props) 
                     // Mirrors the server formula. Full-time employees
                     // are paid a fixed monthly salary that covers every
                     // calendar day (weekends included), so:
-                    //   perDayRate = grossEarnings / totalDays
+                    //   baseForLop = grossEarnings − incentives
+                    //   perDayRate = baseForLop / totalDays
                     //   lop = round(perDayRate × unpaidDays)
-                    // `totalDays` comes from the slip (the calendar
-                    // days in the pay month — 31 for May, 28 for Feb,
-                    // etc.) and isn't user-editable here. HR can still
-                    // manually override the Leave Deduction field
-                    // afterwards for unusual months.
+                    // Incentives are intentionally EXCLUDED — they're
+                    // performance-based and shouldn't shrink on a sick
+                    // day. `totalDays` is the calendar days in the pay
+                    // month (31 for May, 28 for Feb, etc.) and isn't
+                    // user-editable here. HR can still manually
+                    // override the Leave Deduction field afterwards
+                    // for unusual months.
                     const totalDays = slip?.totalDays || 0;
-                    if (totalDays > 0 && grossEarnings > 0) {
-                      const perDayRate = grossEarnings / totalDays;
+                    const baseForLop = Math.max(
+                      grossEarnings - (Number(earnings.incentives) || 0),
+                      0,
+                    );
+                    if (totalDays > 0 && baseForLop > 0) {
+                      const perDayRate = baseForLop / totalDays;
                       const newLop = Math.round(perDayRate * newUnpaid);
                       setDeductions((s) => ({ ...s, lopDeduction: newLop }));
                     }
