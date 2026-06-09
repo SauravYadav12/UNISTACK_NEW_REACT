@@ -66,12 +66,22 @@ export interface UpdateCandidateDetailsPayload extends CreateCandidatePayload {
   reinvite?: boolean;
 }
 
+/** What kind of link the server resent (if any).
+ *  - `'onboarding-form'` — pre-form stages (invited / form-submitted / info-requested).
+ *  - `'offer-letter'`   — offer-sent (snapshot is re-stamped with the revised salary).
+ *  - `null`             — bg-check / bg-check-passed / offer-signed: details saved but
+ *                          no link kind applies at that stage. */
+export type ReinviteKind = "onboarding-form" | "offer-letter" | null;
+
 export async function updateCandidateDetails(
   id: string,
   payload: UpdateCandidateDetailsPayload,
 ) {
   const res = await axiosClient.patch<{
-    data: OnboardingCandidateSummary & { reinviteSent?: boolean };
+    data: OnboardingCandidateSummary & {
+      reinviteSent?: boolean;
+      reinviteKind?: ReinviteKind;
+    };
   }>(`/onboarding/candidates/${id}/details`, payload);
   return res.data;
 }

@@ -26,7 +26,11 @@ import {
   updateCandidateDetails,
   UpdateCandidateDetailsPayload,
 } from '../../services/onboardingApi';
-import { OnboardingCandidate } from '../../Interfaces/onboarding';
+import {
+  OnboardingCandidate,
+  OnboardingOfferSnapshot,
+} from '../../Interfaces/onboarding';
+import OfferLetterPreviewDialog from './OfferLetterPreviewDialog';
 import {
   isValidEmail,
   isValidPhone,
@@ -93,6 +97,16 @@ export default function EditCandidateDialog({
   const [savingPlain, setSavingPlain] = useState(false);
   const [savingReinvite, setSavingReinvite] = useState(false);
   const submitting = savingPlain || savingReinvite;
+  // Preview is only used on the offer-sent re-send flow — HR clicks
+  // Save & re-invite, we open the preview here, and only commit when
+  // they click Send inside it. Revise just closes the preview and
+  // leaves this edit dialog open so they can adjust + re-preview.
+  const [previewOpen, setPreviewOpen] = useState(false);
+  // True iff the current edit cycle is the "offer revision" path. We
+  // capture this on the click instead of reading candidate.stage every
+  // render so an off-by-one stage change between click and send can't
+  // skip the preview.
+  const isOfferRevision = candidate?.stage === 'offer-sent';
 
   // Re-seed the form every time the dialog opens with a new candidate
   // so a previous edit-in-flight isn't preserved across drawer
@@ -127,10 +141,13 @@ export default function EditCandidateDialog({
     );
   }
 
-  async function submit(reinvite: boolean) {
+  /** Actually fires the API. Split out from `submit` so both the
+   *  direct path (Save / Save & re-invite at non-offer-sent stages)
+   *  and the preview's Send button hit identical logic. */
+  async function commit(reinvite: boolean): Promise<boolean> {
     if (!form || !candidate || !valid()) {
       toast.error('Fill all required fields.');
-      return;
+      return false;
     }
     const flagSetter = reinvite ? setSavingReinvite : setSavingPlain;
     flagSetter(true);
@@ -140,23 +157,43 @@ export default function EditCandidateDialog({
         reinvite,
       });
       if (reinvite) {
-        // Only claim "invite sent" if the server actually managed it
-        // (it might have failed silently — SMTP hiccup, etc.). The
-        // boolean is bubbled up in the response payload.
-        if (res.data.reinviteSent) {
+        // Stage-aware toast — the server tells us WHICH link it
+        // resent so we don't claim "fresh invite sent" when the
+        // candidate is past the onboarding form (the previous version
+        // of this code did exactly that — always saying "invite sent"
+        // even when the stage didn't have a relevant link to resend).
+        const kind = res.data.reinviteKind;
+        if (res.data.reinviteSent && kind === 'offer-letter') {
           toast.success(
-            `Details saved. Fresh invite sent to ${form.firstName}.`,
+            `Details saved. Revised offer letter sent to ${form.firstName}.`,
+          );
+        } else if (res.data.reinviteSent && kind === 'onboarding-form') {
+          toast.success(
+            `Details saved. Onboarding link resent to ${form.firstName}.`,
+          );
+        } else if (kind === null || kind === undefined) {
+          // Stage doesn't have a relevant link to resend (bg-check,
+          // bg-check-passed, offer-signed). Details are saved but no
+          // email went out — tell HR where the right action lives.
+          toast.info(
+            'Details saved. No active link to resend at this stage — use the actions panel for the next step.',
           );
         } else {
+          // We attempted to send (kind set) but the server couldn't —
+          // SMTP hiccup. HR can retry via the actions panel.
           toast.warning(
-            'Details saved but the re-invite email failed to send. Use Resend link from the actions panel to retry.',
+            'Details saved but the re-invite email failed to send. Use the actions panel to retry.',
           );
         }
       } else {
         toast.success('Details saved.');
       }
+      // Success: close the preview (if any) AND the edit dialog so HR
+      // returns to the candidate drawer with the refreshed data.
+      setPreviewOpen(false);
       onSaved();
       onClose();
+      return true;
     } catch (e) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data
@@ -164,9 +201,29 @@ export default function EditCandidateDialog({
         (e as Error)?.message ||
         'Failed to save changes.';
       toast.error(msg);
+      return false;
     } finally {
       flagSetter(false);
     }
+  }
+
+  /** The button handler. Intercepts the "Save & re-invite" flow at the
+   *  offer-sent stage to open the preview first — the actual API call
+   *  only happens when HR clicks Send inside the preview. Every other
+   *  path commits directly (preserving the current behaviour). */
+  function submit(reinvite: boolean) {
+    if (!form || !candidate || !valid()) {
+      toast.error('Fill all required fields.');
+      return;
+    }
+    if (reinvite && isOfferRevision) {
+      // Don't fire the API yet — open the preview so HR can verify the
+      // revised letter content before the email goes out. The preview's
+      // Send button calls commit(true) when HR confirms.
+      setPreviewOpen(true);
+      return;
+    }
+    void commit(reinvite);
   }
 
   // Detect any change vs the original candidate so the buttons can be
@@ -187,7 +244,21 @@ export default function EditCandidateDialog({
         form.probationMonths !== (candidate.probationMonths || 3)
       : false;
 
+  // Build the live snapshot from the form's current values — kept up
+  // to date by setForm calls so the preview always reflects exactly
+  // what the candidate would receive if HR hit Send right now.
+  const previewSnapshot: OnboardingOfferSnapshot | null = form
+    ? {
+        name: `${form.firstName} ${form.lastName}`.trim(),
+        position: form.position,
+        startDate: form.proposedStartDate,
+        annualSalary: form.proposedAnnualSalary,
+        probationMonths: form.probationMonths,
+      }
+    : null;
+
   return (
+    <>
     <Dialog
       open={open}
       onClose={submitting ? undefined : onClose}
@@ -388,10 +459,37 @@ export default function EditCandidateDialog({
             }
             variant="contained"
           >
-            {savingReinvite ? 'Saving…' : 'Save & re-invite'}
+            {savingReinvite
+              ? 'Saving…'
+              : isOfferRevision
+                ? 'Preview & re-invite'
+                : 'Save & re-invite'}
           </Button>
         </Stack>
       </DialogActions>
     </Dialog>
+    {/* Preview modal — only used on the offer-sent re-invite path. HR
+        clicks "Preview & re-invite", we open this; Send commits, Revise
+        closes it (the edit dialog stays open so HR can adjust + re-
+        preview). Guarded on `previewSnapshot` so the renderer never
+        sees a null shape. */}
+    {previewSnapshot && form && (
+      <OfferLetterPreviewDialog
+        open={previewOpen}
+        firstName={form.firstName}
+        snapshot={previewSnapshot}
+        sending={savingReinvite}
+        onRevise={() => setPreviewOpen(false)}
+        // `commit` resolves with a boolean (true on success / false on
+        // error or validation fail) — the preview only needs a
+        // Promise<void>, so we await + return nothing. Errors are
+        // already toasted inside commit; nothing for us to bubble.
+        onSend={async () => {
+          await commit(true);
+        }}
+        title="Preview revised offer letter"
+      />
+    )}
+    </>
   );
 }
