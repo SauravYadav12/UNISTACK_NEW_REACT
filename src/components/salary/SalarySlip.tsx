@@ -274,20 +274,25 @@ const SalarySlipView = forwardRef<HTMLDivElement, Props>(({ slip }, ref) => {
         </Box>
       </Box>
 
-      {/* Leave summary with progress bars */}
+      {/* Leave summary — strictly THIS MONTH so the employee can't
+          mis-read a yearly balance as "still available". Shows the
+          monthly entitlement vs what was actually used in this payroll
+          period, plus the unpaid (LOP) day count that drove the
+          deduction. Falls back to legacy YTD fields ONLY when an old
+          slip is loaded that pre-dates the monthly fields. */}
       <Box sx={{ px: 5, pt: 1, pb: 1.5 }}>
-        <SectionTitle label="Leave Summary (Year to Date)" accent={COLORS.yellow} />
+        <SectionTitle label="Leave Summary (This Month)" accent={COLORS.yellow} />
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mt: 0.5 }}>
           <LeaveBar
             label="Paid leaves"
-            used={slip.leaves.paidUsed}
-            total={slip.leaves.paidAccrued}
+            used={slip.leaves.paidUsedThisMonth ?? slip.leaves.paidUsed}
+            total={slip.leaves.paidMonthlyQuota ?? slip.leaves.paidAccrued}
             color={COLORS.pink}
           />
           <LeaveBar
             label="Medical leaves"
-            used={slip.leaves.medicalUsed}
-            total={slip.leaves.medicalAccrued}
+            used={slip.leaves.medicalUsedThisMonth ?? slip.leaves.medicalUsed}
+            total={slip.leaves.medicalMonthlyQuota ?? slip.leaves.medicalAccrued}
             color={COLORS.blue}
           />
         </Box>
@@ -296,15 +301,27 @@ const SalarySlipView = forwardRef<HTMLDivElement, Props>(({ slip }, ref) => {
           fontSize: 10, color: COLORS.muted,
         }}>
           <Box>
-            Paid balance: <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
-              {slip.leaves.paidBalance}
+            Paid available this month:{' '}
+            <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
+              {Math.max(
+                (slip.leaves.paidMonthlyQuota ?? 0) -
+                  (slip.leaves.paidUsedThisMonth ?? 0),
+                0,
+              )}
             </Box>
+            {' '}/ {slip.leaves.paidMonthlyQuota ?? 0}
           </Box>
           <Box>·</Box>
           <Box>
-            Medical balance: <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
-              {slip.leaves.medicalBalance}
+            Medical available this month:{' '}
+            <Box component="span" sx={{ fontWeight: 700, color: COLORS.navy }}>
+              {Math.max(
+                (slip.leaves.medicalMonthlyQuota ?? 0) -
+                  (slip.leaves.medicalUsedThisMonth ?? 0),
+                0,
+              )}
             </Box>
+            {' '}/ {slip.leaves.medicalMonthlyQuota ?? 0}
           </Box>
           <Box>·</Box>
           <Box>

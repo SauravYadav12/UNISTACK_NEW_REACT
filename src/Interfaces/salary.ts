@@ -93,12 +93,23 @@ export interface SalarySlipDeductions {
 }
 
 export interface SalarySlipLeaveBreakdown {
+  // YTD figures — kept on the type for back-compat with old slips. The
+  // printable slip no longer surfaces them to avoid misleading
+  // employees ("8 yearly available, why am I being deducted?").
   paidAccrued: number;
   paidUsed: number;
   paidBalance: number;
   medicalAccrued: number;
   medicalUsed: number;
   medicalBalance: number;
+  // ── This-month figures ──
+  // What the employee was entitled to + actually used in the payroll
+  // period. Optional so reads of legacy slips don't crash; the
+  // renderer falls back to the YTD numbers when absent.
+  paidMonthlyQuota?: number;
+  paidUsedThisMonth?: number;
+  medicalMonthlyQuota?: number;
+  medicalUsedThisMonth?: number;
   unpaidDays: number;
   bonusPaid: number;
   bonusMedical: number;
