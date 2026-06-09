@@ -173,10 +173,30 @@ export default function EditSlipDialog({ open, slip, onClose, onSaved }: Props) 
                 <TextField
                   label="Unpaid days"
                   type="number" fullWidth size="small"
-                  helperText="Shown on slip's leave summary"
+                  helperText="Auto-updates Leave Deduction below"
                   value={numStr(unpaidDays)}
                   inputProps={{ min: 0, inputMode: 'numeric', step: '0.5' }}
-                  onChange={(e) => setUnpaidDays(parseNum(e.target.value))}
+                  onChange={(e) => {
+                    const newUnpaid = parseNum(e.target.value);
+                    setUnpaidDays(newUnpaid);
+                    // ── Auto-recompute Leave Deduction ──
+                    // Mirrors the server formula. Full-time employees
+                    // are paid a fixed monthly salary that covers every
+                    // calendar day (weekends included), so:
+                    //   perDayRate = grossEarnings / totalDays
+                    //   lop = round(perDayRate × unpaidDays)
+                    // `totalDays` comes from the slip (the calendar
+                    // days in the pay month — 31 for May, 28 for Feb,
+                    // etc.) and isn't user-editable here. HR can still
+                    // manually override the Leave Deduction field
+                    // afterwards for unusual months.
+                    const totalDays = slip?.totalDays || 0;
+                    if (totalDays > 0 && grossEarnings > 0) {
+                      const perDayRate = grossEarnings / totalDays;
+                      const newLop = Math.round(perDayRate * newUnpaid);
+                      setDeductions((s) => ({ ...s, lopDeduction: newLop }));
+                    }
+                  }}
                 />
               </Grid>
             </Grid>
