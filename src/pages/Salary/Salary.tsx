@@ -11,12 +11,13 @@ import {
   IconCash, IconUsers, IconCalendarEvent, IconReportMoney,
   IconDownload, IconChevronLeft, IconChevronRight, IconEdit, IconEye,
   IconFileInvoice, IconSend, IconEyeOff, IconTrash, IconAlertTriangle,
+  IconRefresh, IconPlayerPlayFilled,
 } from '@tabler/icons-react';
 
 import { useFetchData } from '../../hooks/fetchDataHook';
 import { tokens } from '../../theme/theme';
 import {
-  getSlipsForMonth, generateSlipsForMonth,
+  getSlipsForMonth, generateSlipsForMonth, generateSlipForUser,
   monthlyReportCsvUrl,
   publishSlip, unpublishSlip, publishSlipsForMonth,
   resetSlipsForMonth,
@@ -73,6 +74,9 @@ export default function Salary() {
   const [rowPublishBusy, setRowPublishBusy] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  // Per-user generate spinner — keyed by userId so each row's button
+  // shows its own busy state without freezing the rest of the grid.
+  const [rowGenBusy, setRowGenBusy] = useState<string | null>(null);
 
   // Selected month status — drives the mid-month warning + future-month
   // block in the generate confirmation dialog.
@@ -147,8 +151,13 @@ export default function Salary() {
       const res = await generateSlipsForMonth(year, month);
       const parts: string[] = [`Generated ${res.ok} slips`];
       // Pre-DOJ / post-relieving users get skipped deliberately — show
-      // separately so HR doesn't read it as a failure.
+      // separately so HR doesn't read it as a failure. Published slips
+      // are also skipped now (separately tracked) so HR knows their
+      // signed-off slips weren't touched.
       if (res.skipped) parts.push(`${res.skipped} skipped (not on payroll)`);
+      if (res.publishedSkipped) {
+        parts.push(`${res.publishedSkipped} skipped (already published)`);
+      }
       if (res.failed) parts.push(`${res.failed} failed`);
       toast.success(parts.join(' · '));
       loadData();
@@ -157,6 +166,37 @@ export default function Salary() {
       throw e; // keep ConfirmDialog open so admin can retry
     } finally {
       setGenerating(false);
+    }
+  }
+
+  /** Per-user generate / regenerate — always runs regardless of
+   *  publish state, so HR can update a single employee's slip on
+   *  demand. The published flag stays as-is (see server's
+   *  generateForUser: payload spread doesn't include `published`), so
+   *  if HR regenerates an already-published slip the new numbers go
+   *  live to the employee immediately. That's the supported
+   *  "republish" workflow. */
+  async function generateForRow(row: SalaryRow) {
+    setRowGenBusy(row.userId);
+    try {
+      await generateSlipForUser(row.userId, year, month);
+      const wasPublished = !!row.slip?.published;
+      const verb = row.slip ? 'Regenerated' : 'Generated';
+      toast.success(
+        wasPublished
+          ? `${verb} ${row.name}'s slip — employee sees the updated numbers immediately (was published).`
+          : `${verb} ${row.name}'s slip.`,
+      );
+      loadData();
+    } catch (e) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ||
+        (e as Error)?.message ||
+        'Failed to generate slip.';
+      toast.error(msg);
+    } finally {
+      setRowGenBusy(null);
     }
   }
 
@@ -343,11 +383,49 @@ export default function Salary() {
         ),
     },
     {
-      field: 'actions', headerName: '', width: 200, sortable: false, filterable: false,
+      field: 'actions', headerName: '', width: 240, sortable: false, filterable: false,
       renderCell: ({ row }) => {
-        const busy = rowPublishBusy === row.slip?._id;
+        const pubBusy = rowPublishBusy === row.slip?._id;
+        const genBusy = rowGenBusy === row.userId;
         return (
         <Stack direction="row" spacing={0.5}>
+          {/* Per-user generate / regenerate. Always runs — even on
+              published slips — so HR can push corrected numbers to a
+              single employee. Icon switches between "play" (no slip
+              yet) and "refresh" (slip exists) so the affordance reads
+              right at a glance. */}
+          <Tooltip
+            title={
+              genBusy
+                ? 'Working…'
+                : !row.slip
+                  ? `Generate slip for ${row.name}`
+                  : row.slip.published
+                    ? `Regenerate ${row.name}'s slip (will update the employee's view immediately — slip stays published)`
+                    : `Regenerate ${row.name}'s slip`
+            }
+          >
+            <span>
+              <IconButton
+                size="small"
+                disabled={genBusy || generating}
+                onClick={() => generateForRow(row)}
+                sx={{
+                  color: row.slip
+                    ? tokens.colors.blue
+                    : tokens.colors.brand,
+                }}
+              >
+                {genBusy ? (
+                  <CircularProgress size={14} />
+                ) : row.slip ? (
+                  <IconRefresh size={16} />
+                ) : (
+                  <IconPlayerPlayFilled size={14} />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
           <Tooltip title={row.slip ? 'View slip' : 'No slip yet'}>
             <span>
               <IconButton
@@ -383,11 +461,11 @@ export default function Salary() {
             <span>
               <IconButton
                 size="small"
-                disabled={!row.slip || busy}
+                disabled={!row.slip || pubBusy}
                 onClick={() => toggleRowPublish(row)}
                 sx={{ color: row.slip?.published ? tokens.colors.lightTextSecondary : tokens.colors.success }}
               >
-                {busy ? (
+                {pubBusy ? (
                   <CircularProgress size={14} />
                 ) : row.slip?.published ? (
                   <IconEyeOff size={16} />
@@ -406,7 +484,7 @@ export default function Salary() {
         );
       },
     },
-  ], [rowPublishBusy]);
+  ], [rowPublishBusy, rowGenBusy, generating]);
 
   const statCards = [
     { title: 'Total Payroll', count: totalPayroll, prefix: '₹', icon: <IconCash size={22} />, color: tokens.colors.pink },
@@ -773,14 +851,14 @@ export default function Salary() {
               border: `1px solid ${alpha(tokens.colors.success, 0.2)}`,
             }}>
               <Typography variant="caption" sx={{ color: tokens.colors.success, fontWeight: 700, letterSpacing: 1 }}>
-                SAFE TO RE-RUN
+                PUBLISHED SLIPS ARE SAFE
               </Typography>
               <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 0.25, lineHeight: 1.5 }}>
-                Each run overwrites the existing slip for the same user + month, so you can regenerate after fixing a config or approving a late leave without creating duplicates.
+                Slips you&rsquo;ve already <strong>published</strong> are skipped on this run — your sign-off and any per-slip edits stay intact. To push corrected numbers to a single published employee, use the per-row <strong>Regenerate</strong> button instead.
               </Typography>
             </Box>
             <Typography variant="caption" color="text.secondary">
-              Manual edits you&rsquo;ve made to individual slips via the pencil icon <strong>will be overwritten</strong>. Re-apply those after regeneration.
+              Draft slips (unpublished) <strong>will be overwritten</strong>. Re-apply any pencil-icon corrections after regeneration.
             </Typography>
           </Stack>
         }

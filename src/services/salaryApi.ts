@@ -26,6 +26,10 @@ export async function generateSlipsForMonth(year: number, month: number) {
     ok: number;
     /** Users skipped because the month is pre-DOJ or post-relieving for them. */
     skipped?: number;
+    /** Users skipped because their slip is already published — HR has
+     *  signed off, so bulk regen leaves them alone. Use the per-user
+     *  endpoint to override. */
+    publishedSkipped?: number;
     failed: number;
   }>(`/salary/generate/${year}/${month}`);
   return res.data;
