@@ -33,6 +33,7 @@ import {
   getSuggestedCode,
   getMyBalances, getYearBalances,
   updateAllocation, triggerYearlyReset,
+  reseedUserBalances,
 } from '../../services/leaveTypesApi';
 import { getLeaves, updateLeave, createLeave } from '../../services/leavesApi';
 import { usersList } from '../../services/authApi';
@@ -965,6 +966,17 @@ function LeaveTypeDialog({
             control={<Switch checked={!!form.paid} onChange={(e) => setForm((f) => ({ ...f, paid: e.target.checked }))} />}
             label="Paid (counts toward salary)"
           />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!form.requiresAttachment}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, requiresAttachment: e.target.checked }))
+                }
+              />
+            }
+            label="Requires attachment on apply (e.g. medical certificate)"
+          />
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
@@ -1037,6 +1049,33 @@ function EmployeeBalancesPanel() {
     } catch (err) {
       toast.error('Reset failed');
       throw err; // keep ConfirmDialog open so admin can retry
+    }
+  }
+
+  // Per-row reseed busy state — keyed by userId so each row's spinner
+  // is independent. Confirm dialog is the same pattern the bulk reset
+  // uses; the action itself is destructive (overwrites `used` too),
+  // so we make sure HR agrees before firing.
+  const [reseedBusy, setReseedBusy] = useState<string | null>(null);
+  const [pendingUserReseed, setPendingUserReseed] = useState<iUser | null>(null);
+  async function runUserReseed(u: iUser) {
+    setReseedBusy(u._id);
+    try {
+      const { data: result } = await reseedUserBalances(u._id, year);
+      toast.success(
+        `${u.firstName} ${u.lastName}'s balances reseeded — ${result.upserted} rows updated (multiplier ${result.multiplier}).`,
+      );
+      loadData();
+    } catch (err) {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ||
+        (err as Error)?.message ||
+        'Reseed failed.';
+      toast.error(msg);
+    } finally {
+      setReseedBusy(null);
+      setPendingUserReseed(null);
     }
   }
 
@@ -1143,29 +1182,76 @@ function EmployeeBalancesPanel() {
                 <Box component="th" sx={{ p: 1.5, textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#2A3547' }}>
                   Employee
                 </Box>
-                {types.map((t) => (
-                  <Box component="th" key={t._id} sx={{
-                    p: 1.5, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#2A3547',
-                    minWidth: 100,
-                  }}>
-                    <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: t.color || tokens.colors.pink }} />
-                      <span>{t.code}</span>
-                    </Stack>
-                  </Box>
-                ))}
+                {types.map((t) => {
+                  // Render a short policy hint under the column code so
+                  // admins can immediately tell "PL = 1/mo accrual, 12
+                  // yearly" without opening a tooltip. Without this hint
+                  // the big number in each cell ("9") was ambiguous —
+                  // is it monthly? yearly? remaining? Now the column
+                  // header anchors it.
+                  const policyHint =
+                    t.isUnpaidBucket
+                      ? 'unpaid · days taken'
+                      : t.monthlyQuota != null
+                        ? `${t.monthlyQuota}/mo · ${t.defaultAllocationPerYear ?? 0}/yr`
+                        : `${t.defaultAllocationPerYear ?? 0}/yr`;
+                  return (
+                    <Box component="th" key={t._id} sx={{
+                      p: 1.5, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#2A3547',
+                      minWidth: 110,
+                    }}>
+                      <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: t.color || tokens.colors.pink }} />
+                        <span>{t.code}</span>
+                      </Stack>
+                      <Typography sx={{
+                        fontSize: 9,
+                        fontWeight: 500,
+                        color: tokens.colors.lightTextSecondary,
+                        mt: 0.25,
+                        letterSpacing: 0.2,
+                      }}>
+                        {policyHint}
+                      </Typography>
+                    </Box>
+                  );
+                })}
               </Box>
             </Box>
             <Box component="tbody">
               {users.map((u) => (
                 <Box component="tr" key={u._id} sx={{ '&:hover': { bgcolor: '#F6F9FC' } }}>
                   <Box component="td" sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'grey.100' }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
-                      {u.firstName} {u.lastName}
-                    </Typography>
-                    <Typography sx={{ fontSize: 11, color: tokens.colors.lightTextSecondary }}>
-                      {u.email}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                          {u.firstName} {u.lastName}
+                        </Typography>
+                        <Typography sx={{ fontSize: 11, color: tokens.colors.lightTextSecondary }}>
+                          {u.email}
+                        </Typography>
+                      </Box>
+                      {/* Per-user reseed — opens a confirm dialog so the
+                          destructive overwrite ("used" resets to 0) is
+                          explicit. Useful when policy changed and HR
+                          wants to migrate a single employee without
+                          touching everyone. */}
+                      <Tooltip title={`Reseed ${u.firstName}'s balances for ${year} from current LeaveType defaults (resets used)`}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={reseedBusy === u._id}
+                            onClick={() => setPendingUserReseed(u)}
+                          >
+                            {reseedBusy === u._id ? (
+                              <CircularProgress size={14} />
+                            ) : (
+                              <IconRefresh size={14} color={tokens.colors.blue} />
+                            )}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
                   </Box>
                   {types.map((t) => {
                     const bal = balMap.get(`${u._id}:${t._id}`);
@@ -1255,6 +1341,50 @@ function EmployeeBalancesPanel() {
             </Box>
             <Typography variant="caption" color="text.secondary">
               Normally this only runs automatically at midnight on Jan 1 EST. Use only if you intentionally want to wipe this year&rsquo;s balance state.
+            </Typography>
+          </Stack>
+        }
+      />
+
+      {/* Per-user reseed — used when an HR change (new leave type, changed
+          monthlyQuota / yearly allocation) needs to migrate ONE employee
+          without disturbing the rest. Same destructive contract as the
+          force-reset above: allocated + monthly quota come from the current
+          LeaveType defaults, `used` resets to 0 for the year. */}
+      <ConfirmDialog
+        open={pendingUserReseed != null}
+        onClose={() => setPendingUserReseed(null)}
+        onConfirm={async () => {
+          if (pendingUserReseed) await runUserReseed(pendingUserReseed);
+        }}
+        tone="danger"
+        title={
+          pendingUserReseed
+            ? `Reseed ${pendingUserReseed.firstName} ${pendingUserReseed.lastName}'s balances for ${year}?`
+            : 'Reseed balances?'
+        }
+        confirmLabel="Yes, reseed"
+        cancelLabel="Cancel"
+        description={
+          <Stack spacing={1} sx={{ textAlign: 'left' }}>
+            <Typography variant="body2" color="text.secondary">
+              Overwrites this employee&rsquo;s allocations and monthly quotas for {year} using the <strong>current LeaveType defaults</strong>. Their <strong>used</strong> counter for every leave type also resets to <strong>0</strong>.
+            </Typography>
+            <Box sx={{
+              p: 1.25,
+              borderRadius: 1.5,
+              bgcolor: alpha(tokens.colors.error, 0.06),
+              border: `1px solid ${alpha(tokens.colors.error, 0.25)}`,
+            }}>
+              <Typography variant="caption" sx={{ color: tokens.colors.error, fontWeight: 700, letterSpacing: 1 }}>
+                DESTRUCTIVE — CANNOT BE UNDONE
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 0.25 }}>
+                Any per-user overrides on allocation or monthly quota for this employee will be lost. Their approved-leave history stays in place, but those days will no longer show as &ldquo;used&rdquo; against {year} balances.
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Use when you&rsquo;ve changed a LeaveType policy (e.g. switched paid leave to 1/month) and want this one employee to pick up the new defaults without touching everyone else.
             </Typography>
           </Stack>
         }
@@ -1413,29 +1543,75 @@ function AllocationCell({
     );
   }
 
-  // Probation-aware accrual start. When `leaveStartMonth > 1`, the user
-  // is on probation and accrual is dormant until that month — surface
-  // this in both the tooltip and a small inline chip so admins don't
-  // mistake "5 allocated" for "5 available right now".
+  // Probation-aware accrual start. We only treat the row as "probationary"
+  // for display purposes if accrual has NOT yet started — i.e. the
+  // leave-start month is still in the future relative to TODAY. Once the
+  // user crosses that month, the row should look identical to a non-
+  // probationary one: monthlyAvailable already reflects the real accrual,
+  // and a "Starts Apr 1" chip in June is just misleading clutter.
+  const currentMonthIdx = moment().month() + 1; // 1..12
+  // Server uses `leaveStartMonth = 13` as a SENTINEL for "probation in
+  // progress, nothing accrues this year — leaves will be prorated from
+  // the admin-set confirmation date once HR confirms via the Onboarding
+  // / Probation Approvals tab". Treating 13 as a real month number
+  // breaks badly: `new Date(2000, 12, 1)` wraps to January 2001 and the
+  // cell ends up labelling Satvik-joined-Jun-2026 as "Starts Jan 1".
+  // Branch the sentinel case so it renders a clear "Awaiting probation
+  // confirmation" pill instead of a misleading start-month chip.
+  const isPendingProbation =
+    hasRow && leaveStartMonth === 13;
+  const hasFutureStartMonth =
+    hasRow &&
+    typeof leaveStartMonth === 'number' &&
+    leaveStartMonth > 1 &&
+    leaveStartMonth <= 12;
+  // Only render the "Starts MMM 1" chip when accrual is genuinely in
+  // the future calendar month. Past-month hints (e.g. June showing
+  // "Starts Apr 1") cause more confusion than they prevent.
   const isProbationary =
-    hasRow && typeof leaveStartMonth === 'number' && leaveStartMonth > 1;
-  const startMonthLabel = isProbationary
+    hasFutureStartMonth && (leaveStartMonth as number) > currentMonthIdx;
+  const startMonthLabel = hasFutureStartMonth
     ? new Date(2000, (leaveStartMonth as number) - 1, 1).toLocaleString(
         undefined,
         { month: 'short' },
       )
     : null;
 
+  // Effective per-month accrual rate (override → type default). Drives
+  // the "(1/mo)" hint in the tooltip so admins can confirm policy without
+  // opening the editor.
+  const perMonthRate = supportsMonthlyQuota
+    ? (monthlyQuotaOverride ?? (monthlyQuota as number))
+    : null;
+
   const tooltipBase = hasRow
-    ? `Allocated: ${allocated} · Used: ${used}`
+    ? `Yearly allocation: ${allocated} · Used so far: ${used}`
     : 'Click to set allocation';
-  const tooltipProbation = isProbationary
-    ? ` · Accrual starts ${startMonthLabel} 1 (probation period)`
-    : '';
-  const tooltipMonthly = hasRow && monthlyAvailable != null && monthlyQuota != null
-    ? ` · This month: ${monthlyAvailable} (${monthlyQuota}/mo + carry-forward)`
+  const tooltipProbation = isPendingProbation
+    ? ' · Awaiting probation confirmation — leaves will be prorated from the confirmation date set on the Onboarding tab.'
+    : isProbationary
+      ? ` · Accrual starts ${startMonthLabel} 1 (probation period)`
+      : '';
+  const tooltipMonthly = hasRow && monthlyAvailable != null && perMonthRate != null
+    ? ` · Available this month: ${monthlyAvailable} (${perMonthRate}/mo + carry-forward)`
     : '';
   const tooltipEdit = hasRow ? ' · Click to edit allocation' : '';
+
+  // Two display modes. When the type has a monthlyQuota, the headline
+  // number is "what can they take THIS MONTH" (carry-forward aware).
+  // Otherwise (UL / ML without quota) we fall back to yearly remaining.
+  // The user explicitly asked for crystal-clear "yearly vs monthly"
+  // separation in the listing, so we always show both lines, labelled.
+  const showMonthly = hasRow && monthlyAvailable != null && perMonthRate != null;
+  const headlineValue = showMonthly ? monthlyAvailable : remaining;
+  const headlineColor = !hasRow
+    ? tokens.colors.lightTextSecondary
+    : isOverUsed
+      ? tokens.colors.error
+      : (headlineValue ?? 0) === 0
+        ? tokens.colors.warning
+        : tokens.colors.pink;
+
   return (
     <>
       <Tooltip
@@ -1450,51 +1626,93 @@ function AllocationCell({
             '&:hover': { bgcolor: alpha(tokens.colors.pink, 0.06) },
           }}
         >
+          {/* Headline — "Available now" is what admins are scanning for
+              when triaging "can this employee take a leave next week?". */}
           <Typography sx={{
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: 800,
             lineHeight: 1,
-            color: !hasRow
-              ? tokens.colors.lightTextSecondary
-              : isOverUsed
-                ? tokens.colors.error
-                : remaining === 0
-                  ? tokens.colors.warning
-                  : tokens.colors.lightText,
-          }}>
-            {hasRow ? remaining : '—'}
-          </Typography>
-          <Typography sx={{
-            fontSize: 10,
-            color: tokens.colors.lightTextSecondary,
-            mt: 0.25,
+            color: headlineColor,
             fontVariantNumeric: 'tabular-nums',
           }}>
-            {hasRow ? `of ${allocated}` : 'not seeded'}
+            {hasRow ? headlineValue : '—'}
           </Typography>
-          {/* Available this month — the server-computed per-employee
-              ceiling for the current month (carry-forward + accrual).
-              Highlighted in pink because that's the number admins are
-              actually looking at when triaging "how many leaves can this
-              person take this month". The per-month rate / "1.5/mo" chip
-              is intentionally hidden — admins want the available number,
-              not the rate, in the listing. */}
-          {hasRow && monthlyAvailable != null && (
+          <Typography sx={{
+            fontSize: 9,
+            color: tokens.colors.lightTextSecondary,
+            mt: 0.25,
+            letterSpacing: 0.4,
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}>
+            {hasRow
+              ? showMonthly
+                ? 'available this month'
+                : 'available yearly'
+              : 'not seeded'}
+          </Typography>
+          {/* Yearly breakdown — small, neutral, always present so admins
+              can answer "how many total this year?" without opening the
+              tooltip. Shows used + total side-by-side. */}
+          {hasRow && (
+            <Typography sx={{
+              fontSize: 10,
+              color: tokens.colors.lightTextSecondary,
+              mt: 0.5,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              Used <strong style={{ color: tokens.colors.lightText }}>{used}</strong>
+              {' / '}
+              Yearly <strong style={{ color: tokens.colors.lightText }}>{allocated}</strong>
+            </Typography>
+          )}
+          {/* Probation chip — three states:
+              1. Pending confirmation (sentinel startMonth=13) → "Awaiting
+                 confirmation". Tells admin the employee is in probation
+                 and leaves will be prorated from the date HR enters on
+                 the Onboarding / Probation Approvals tab.
+              2. Future start month (e.g. confirmed July, currently May)
+                 → "Starts Jul 1".
+              3. Past or no start month → no chip (accrual already live;
+                 monthlyAvailable reflects it).
+              Earlier versions of this code couldn't tell #1 apart from
+              #2 and treated 13 as a real month, wrapping it to January
+              and displaying "Starts Jan 1" — that was the Satvik bug. */}
+          {isPendingProbation && (
             <Typography sx={{
               fontSize: 9.5,
-              color: isProbationary
-                ? tokens.colors.warning
-                : hasQuotaOverride
-                  ? tokens.colors.warning
-                  : tokens.colors.pink,
+              color: tokens.colors.warning,
               fontWeight: 700,
               mt: 0.25,
-              fontVariantNumeric: 'tabular-nums',
+              letterSpacing: 0.3,
+              lineHeight: 1.2,
+            }}>
+              Awaiting confirmation
+            </Typography>
+          )}
+          {isProbationary && !isPendingProbation && (
+            <Typography sx={{
+              fontSize: 9.5,
+              color: tokens.colors.warning,
+              fontWeight: 700,
+              mt: 0.25,
               letterSpacing: 0.3,
             }}>
-              {isProbationary
-                ? `Starts ${startMonthLabel} 1`
-                : `${monthlyAvailable} avail this mo${hasQuotaOverride ? ' · custom' : ''}`}
+              Starts {startMonthLabel} 1
+            </Typography>
+          )}
+          {/* "custom" marker stays — visually different from probation
+              and admins find it useful to see at-a-glance which cells
+              have per-user overrides without checking the tooltip. */}
+          {hasRow && hasQuotaOverride && !isProbationary && !isPendingProbation && (
+            <Typography sx={{
+              fontSize: 9.5,
+              color: tokens.colors.blue,
+              fontWeight: 700,
+              mt: 0.25,
+              letterSpacing: 0.3,
+            }}>
+              custom quota
             </Typography>
           )}
         </Box>
@@ -1551,25 +1769,41 @@ function AllocationEditor({
       onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-      slotProps={{ paper: { sx: { p: 2, width: 240, borderRadius: 2 } } }}
+      slotProps={{ paper: { sx: { p: 2, width: 280, borderRadius: 2 } } }}
     >
       <Stack spacing={1.5}>
+        {/* Header — anchors the form so admins know they're editing one
+            employee's leave allocation, not a global policy. Without it
+            the popover felt like a settings dialog. */}
+        <Box>
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.colors.lightText }}>
+            Edit leave allocation
+          </Typography>
+          <Typography sx={{ fontSize: 10, color: tokens.colors.lightTextSecondary, mt: 0.25 }}>
+            Overrides apply to this employee only.
+          </Typography>
+        </Box>
+
+        {/* Yearly total — relabelled from cryptic "Allocated (yearly)"
+            to plain English so first-time admins don't have to guess. */}
         <TextField
           value={v}
           size="small"
           type="number"
           autoFocus
-          label="Allocated (yearly)"
+          label="Total leaves for the year"
           onChange={(e) => setV(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') commit();
             if (e.key === 'Escape') onClose();
           }}
+          helperText="Annual cap. The employee won't accrue more than this in a year."
           // step 0.5 supports half-day allocations (e.g. an employee with
           // 9.5 paid leaves for the year). Mongoose stores any number; the
           // earlier integer-only spinner just made decimals look unsupported.
           inputProps={{ min: 0, step: 0.5 }}
           InputLabelProps={{ shrink: true }}
+          FormHelperTextProps={{ sx: { fontSize: 10, mx: 0 } }}
           fullWidth
         />
         {supportsMonthlyQuota && (
@@ -1578,12 +1812,12 @@ function AllocationEditor({
               value={q}
               size="small"
               type="number"
-              label="Monthly quota"
+              label="Accrued each month"
               placeholder={defaultPerMonth != null ? String(defaultPerMonth) : ''}
               helperText={
                 hasQuotaOverride
-                  ? `Override active — type default is ${defaultPerMonth}/mo`
-                  : `Type default ${defaultPerMonth}/mo — override for mid-year joiners`
+                  ? `Custom rate set — leave blank to revert to the policy default (${defaultPerMonth}/mo).`
+                  : `Policy default ${defaultPerMonth}/mo. Override here for mid-year joiners or special arrangements.`
               }
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
@@ -1595,44 +1829,73 @@ function AllocationEditor({
               FormHelperTextProps={{ sx: { fontSize: 10, mx: 0 } }}
               fullWidth
             />
-            {/* Quick actions for the three common admin operations:
-                 - Reset:    drop the override, revert to type default.
-                 - +1 / +0.5: bump the current quota for stacking grants.
-                 - Set 0:    no monthly accrual (carry-forward only).
-                Each just mutates the input — admin still hits Save to persist. */}
+            {/* Quick actions — relabelled for clarity. Previously
+                "Reset / +1 / Set 0" gave no hint what they did. */}
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-              <Button
-                size="small"
-                variant="outlined"
-                disabled={q === '' && !hasQuotaOverride}
-                onClick={() => setQ('')}
-                sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
-              >
-                Reset
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => {
-                  const baseline = q.trim() === ''
-                    ? (defaultPerMonth ?? 0)
-                    : Number(q) || 0;
-                  setQ(String(baseline + 1));
-                }}
-                sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
-              >
-                +1
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => setQ('0')}
-                sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
-              >
-                Set 0
-              </Button>
+              <Tooltip title={`Revert to the leave-type's default (${defaultPerMonth}/mo)`}>
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={q === '' && !hasQuotaOverride}
+                    onClick={() => setQ('')}
+                    sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
+                  >
+                    Use default
+                  </Button>
+                </span>
+              </Tooltip>
+              <Tooltip title="Add 1 leave to this employee's monthly accrual">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    const baseline = q.trim() === ''
+                      ? (defaultPerMonth ?? 0)
+                      : Number(q) || 0;
+                    setQ(String(baseline + 1));
+                  }}
+                  sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
+                >
+                  +1/mo
+                </Button>
+              </Tooltip>
+              <Tooltip title="No leaves accrue each month (existing yearly balance still applies)">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setQ('0')}
+                  sx={{ fontSize: 10, py: 0.25, minWidth: 'auto' }}
+                >
+                  Pause accrual
+                </Button>
+              </Tooltip>
             </Stack>
           </Stack>
+        )}
+        {/* What-changes summary — translates the two numbers into plain
+            English so the admin can verify intent before hitting Save.
+            E.g. "9 yearly · 1 per month — employee accrues 1 leave each
+            month, capped at 9 for the year." */}
+        {supportsMonthlyQuota && (
+          <Box sx={{
+            p: 1, borderRadius: 1.5,
+            bgcolor: alpha(tokens.colors.blue, 0.06),
+            border: `1px solid ${alpha(tokens.colors.blue, 0.18)}`,
+          }}>
+            <Typography sx={{ fontSize: 10, color: tokens.colors.lightTextSecondary, lineHeight: 1.4 }}>
+              {(() => {
+                const yearly = Number(v) || 0;
+                const rate = q.trim() === ''
+                  ? (defaultPerMonth ?? 0)
+                  : Number(q) || 0;
+                if (rate === 0) {
+                  return `Employee gets ${yearly} leaves for the year. No monthly accrual — they can use the full ${yearly} whenever needed.`;
+                }
+                return `Employee accrues ${rate} leave${rate === 1 ? '' : 's'} per month, capped at ${yearly} for the year. Unused months carry forward.`;
+              })()}
+            </Typography>
+          </Box>
         )}
         <Stack direction="row" spacing={1} justifyContent="flex-end">
           <Button size="small" onClick={onClose}>

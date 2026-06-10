@@ -119,3 +119,14 @@ export async function triggerYearlyReset(year: number, force = false) {
   );
   return res.data;
 }
+
+/** Reseed a single user's balances for a given year against the current
+ *  LeaveType defaults. Force-mode by default — that's the whole point
+ *  of this affordance (migrate one employee to a newly-changed
+ *  monthly quota / yearly allocation). */
+export async function reseedUserBalances(userId: string, year: number) {
+  const res = await axiosClient.post<{
+    data: { userId: string; year: number; multiplier: number; upserted: number };
+  }>(`/leave-balances/reseed/${userId}/${year}`);
+  return res.data;
+}

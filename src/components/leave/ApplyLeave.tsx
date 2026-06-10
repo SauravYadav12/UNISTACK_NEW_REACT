@@ -28,6 +28,9 @@ import {
   IconSend,
   IconCalendarEvent,
   IconCategory,
+  IconPaperclip,
+  IconX,
+  IconUpload,
 } from '@tabler/icons-react';
 import { dateFormate } from '../constants';
 import {
@@ -39,6 +42,7 @@ import { LeaveType, LeaveBalance } from '../../Interfaces/salary';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { toast } from 'react-toastify';
 import { createLeave } from '../../services/leavesApi';
+import { uploadFile } from '../../services/storageApi';
 import {
   listLeaveTypes,
   getMyBalances,
@@ -81,6 +85,9 @@ interface LeaveTypeOption {
   monthlyAvailable: number;
   isUnpaid: boolean;
   hasMonthlyCap: boolean;
+  /** When true, the form requires at least one uploaded attachment
+   *  before Submit. Set on the LeaveType (e.g. Medical Leave). */
+  requiresAttachment: boolean;
 }
 
 const FALLBACK_COLORS = [
@@ -127,6 +134,11 @@ const ApplyLeave = ({ onApplied }: iProps) => {
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [typesLoading, setTypesLoading] = useState(true);
   const [probation, setProbation] = useState<ProbationStatus | null>(null);
+  // Uploaded attachment URLs — one per file the user picked. Each
+  // upload happens inline on pick; storing the URLs (not the File
+  // objects) means a successful upload survives the form re-render.
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const currentYear = moment().year();
 
@@ -205,6 +217,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
         monthlyAvailable: t.isUnpaidBucket ? Infinity : monthlyAvailable,
         isUnpaid: t.isUnpaidBucket,
         hasMonthlyCap,
+        requiresAttachment: !!t.requiresAttachment,
       });
     });
     return out;
@@ -285,6 +298,10 @@ const ApplyLeave = ({ onApplied }: iProps) => {
       type: chosen?.name,
       endDate: data.endDate || data.startDate,
       splitBreakdown: split,
+      // Always send the attachment array if the user uploaded anything,
+      // even on types that don't require it — HR may still find it
+      // useful (e.g. a doctor's note on a casual leave).
+      ...(attachments.length > 0 ? { attachments } : {}),
     };
     if (!payload.halfDayType) delete payload.halfDayType;
 
@@ -292,6 +309,7 @@ const ApplyLeave = ({ onApplied }: iProps) => {
     response.data.data && onApplied?.(response.data.data);
     reset(defaultValues);
     setFormType(iFormType.FullDay);
+    setAttachments([]);
     toast.success('Leave request submitted successfully');
   }
 
@@ -300,6 +318,15 @@ const ApplyLeave = ({ onApplied }: iProps) => {
     const chosen = options.find((o) => o.id === data.leaveType);
     if (!chosen) {
       toast.error('Pick a leave type');
+      return;
+    }
+    // Attachment requirement (e.g. Medical Leave). Server enforces
+    // the same — this is the cooperative UI so the user gets a clean
+    // toast instead of a 400.
+    if (chosen.requiresAttachment && attachments.length === 0) {
+      toast.error(
+        `${chosen.name} requires supporting documentation. Please attach a file before submitting.`,
+      );
       return;
     }
     // Compute days in the same way the server will (half-day = 0.5).
@@ -842,6 +869,136 @@ const ApplyLeave = ({ onApplied }: iProps) => {
               />
             )}
           />
+
+          {/* ── Attachment block ──
+              Shown for any leave type that has `requiresAttachment` set
+              on the LeaveType (super-admin configurable). Each picked
+              file uploads inline; the URL is stored in `attachments`
+              state, so a refresh of the form doesn't lose a completed
+              upload. Submit is gated by `attachments.length > 0` in
+              the validator above. */}
+          {selectedMeta?.requiresAttachment && (
+            <Box sx={{ mt: 2 }}>
+              <SectionHeader number={5} title="Supporting documentation" />
+              <Typography
+                variant="caption"
+                sx={{ color: 'text.secondary', display: 'block', mb: 1.5, mt: 0.5 }}
+              >
+                {selectedMeta.name} requires a supporting document
+                (e.g. medical certificate, doctor&rsquo;s note). PDF,
+                image, or DOC up to ~10MB.
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                <Button
+                  component="label"
+                  variant="outlined"
+                  size="small"
+                  disabled={loading || uploading}
+                  startIcon={
+                    uploading ? (
+                      <CircularProgress size={14} />
+                    ) : (
+                      <IconUpload size={16} />
+                    )
+                  }
+                  sx={{ textTransform: 'none' }}
+                >
+                  {uploading ? 'Uploading…' : 'Choose file'}
+                  <input
+                    hidden
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      // Reset the input so picking the same file again
+                      // still fires onChange.
+                      e.target.value = '';
+                      if (!file) return;
+                      setUploading(true);
+                      try {
+                        const res = await uploadFile(file, 'docn');
+                        const url = res.data?.data?.url;
+                        if (url) {
+                          setAttachments((prev) => [...prev, url]);
+                        } else {
+                          toast.error('Upload failed — no URL returned.');
+                        }
+                      } catch (err) {
+                        const msg =
+                          (err as { response?: { data?: { error?: string } } })
+                            ?.response?.data?.error || 'Upload failed.';
+                        toast.error(msg);
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                  />
+                </Button>
+                {attachments.length > 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    {attachments.length} file{attachments.length > 1 ? 's' : ''} attached
+                  </Typography>
+                )}
+              </Stack>
+              {attachments.length > 0 && (
+                <Stack spacing={0.75} sx={{ mt: 1.25 }}>
+                  {attachments.map((url, idx) => (
+                    <Box
+                      key={url}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 1.25,
+                        py: 0.75,
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: alpha(tokens.colors.blue, 0.04),
+                      }}
+                    >
+                      <IconPaperclip size={14} />
+                      <Box
+                        component="a"
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        sx={{
+                          flex: 1,
+                          fontSize: 12,
+                          color: tokens.colors.blue,
+                          textDecoration: 'none',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          '&:hover': { textDecoration: 'underline' },
+                        }}
+                      >
+                        Attachment {idx + 1}
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          setAttachments((prev) =>
+                            prev.filter((_, i) => i !== idx),
+                          )
+                        }
+                        disabled={loading || uploading}
+                        startIcon={<IconX size={12} />}
+                        sx={{
+                          textTransform: 'none',
+                          color: 'text.secondary',
+                          minWidth: 0,
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          )}
         </form>
       </Box>
 

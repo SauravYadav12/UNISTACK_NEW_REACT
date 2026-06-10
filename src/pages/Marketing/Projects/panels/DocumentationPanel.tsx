@@ -108,10 +108,16 @@ export default function DocumentationPanel({ project, onUpdated }: Props) {
     setLocal((s) => ({ ...s, [key]: { ...s[key], ...partial } }));
   };
 
-  async function saveStep(key: DocKey) {
+  // Send a PATCH for a single step. When `overrideStep` is passed we use
+  // that snapshot directly instead of reading from local state — needed
+  // for the auto-save path where setLocal hasn't flushed yet by the time
+  // we want to fire the request. Without this, the toggle button would
+  // save the OLD status (pre-toggle) and the next tab-switch would
+  // revert the UI exactly as the user reported.
+  async function persistStep(key: DocKey, overrideStep?: IDocStep) {
     setSavingKey(key);
     try {
-      const step = local[key];
+      const step = overrideStep ?? local[key];
       const res = await axiosClient.patch(
         `/projects/${project._id}/documentation`,
         {
@@ -124,11 +130,46 @@ export default function DocumentationPanel({ project, onUpdated }: Props) {
         }
       );
       if (res.data?.data) onUpdated(res.data.data);
-      toast.success(`${key} updated`);
+      return true;
     } catch {
       toast.error('Could not save step');
+      return false;
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  async function saveStep(key: DocKey) {
+    const ok = await persistStep(key);
+    if (ok) toast.success(`${key} updated`);
+  }
+
+  // Toggle status + auto-save in one shot. This is what users expect
+  // from a button labelled "Mark done" — they should not have to find
+  // a second "Save step" button to make the change stick. The toggle
+  // also stamps `completedOn` to "now" when flipping to Done and
+  // clears it when flipping back to Pending, mirroring the audit
+  // intent. We pass the fresh step snapshot directly into persistStep
+  // so we don't race the React state batcher.
+  async function toggleStatus(key: DocKey) {
+    const cur = local[key];
+    const nextStatus: DocStepStatus = cur.status === 'Done' ? 'Pending' : 'Done';
+    const next: IDocStep = {
+      ...cur,
+      status: nextStatus,
+      completedOn:
+        nextStatus === 'Done'
+          ? cur.completedOn || new Date().toISOString()
+          : undefined,
+    };
+    // Optimistic local update for instant UI feedback.
+    setLocal((s) => ({ ...s, [key]: next }));
+    const ok = await persistStep(key, next);
+    if (ok) {
+      toast.success(`Marked ${nextStatus.toLowerCase()}`);
+    } else {
+      // Rollback so the UI doesn't lie about what's on the server.
+      setLocal((s) => ({ ...s, [key]: cur }));
     }
   }
 
@@ -262,14 +303,24 @@ export default function DocumentationPanel({ project, onUpdated }: Props) {
                   </Stack>
 
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="stretch">
+                    {/* Status toggle auto-saves on click — fixes the bug
+                        where users marked things Done, switched tabs,
+                        and saw them revert to Pending because they
+                        hadn't also clicked "Save step". The button is
+                        disabled mid-save so the same step can't be
+                        toggled twice during a request. */}
                     <Button
                       variant={isDone ? 'outlined' : 'contained'}
                       size="small"
-                      onClick={() =>
-                        patchStep(key, {
-                          status: (isDone ? 'Pending' : 'Done') as DocStepStatus,
-                          completedOn: isDone ? undefined : new Date().toISOString(),
-                        })
+                      onClick={() => toggleStatus(key)}
+                      disabled={saving}
+                      startIcon={
+                        saving ? (
+                          <CircularProgress
+                            size={12}
+                            sx={{ color: isDone ? color : '#fff' }}
+                          />
+                        ) : undefined
                       }
                       sx={{
                         textTransform: 'none',

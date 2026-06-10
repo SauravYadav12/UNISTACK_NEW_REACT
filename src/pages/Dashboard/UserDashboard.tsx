@@ -616,99 +616,182 @@ function MiniStat({
   );
 }
 
+// Trim trailing decimal zeros so accrual values like 1.0 render as "1"
+// while 1.5 stays "1.5" and 0.83 stays "0.83". Same helper as on the
+// salary slip — kept inline here to avoid a cross-file dependency.
+const fmtLeaveNum = (n: number): string => {
+  if (!Number.isFinite(n)) return '0';
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(2).replace(/\.?0+$/, '');
+};
+
 function BalanceRing({ balance }: { balance: LeaveBalance }) {
   const type = typeof balance.leaveType === 'object' ? (balance.leaveType as LeaveTypeDef) : null;
   if (!type) return null;
   const allocated = balance.allocated || 0;
   const used = balance.used || 0;
-  const remaining = Math.max(0, allocated - used);
-  const pct = allocated > 0 ? Math.min(100, Math.round((used / allocated) * 100)) : 0;
   const accent = type.color || tokens.colors.pink;
-  const size = 92;
-  const stroke = 9;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const dash = (pct / 100) * circumference;
+  // Server sentinel for "probation in progress — leaves haven't been
+  // seeded yet, will be prorated from the admin-set confirmation date".
+  // Show a small pill so the 0/0/0 numbers below don't read as "you
+  // have no leaves" — they read as "your leaves are pending HR
+  // confirmation".
+  const isPendingProbation =
+    (balance.leaveStartMonth ?? 1) === 13 && !type.isUnpaidBucket;
+
+  // ── Three crisp numbers per user's spec ──
+  //   • Total monthly available: cumulative accrual to date this year.
+  //     For monthly-capped types: months_elapsed × monthlyQuota, capped
+  //     at the yearly `allocated`. For uncapped types (e.g. Medical),
+  //     the full annual bucket is available upfront — so the cumulative
+  //     equals `allocated`.
+  //   • Used: total taken so far this year (server-tracked).
+  //   • Monthly balance: available − used, never negative.
+  //
+  // The leave engine's `monthlyAvailable` field on the API response
+  // already encodes the same math after carry-forward. We use it when
+  // present and fall back to the client-side derivation otherwise so
+  // surfaces that don't populate it still render correctly.
+  const monthlyQuota = type.monthlyQuota;
+  const monthsElapsed = moment().month() + 1; // 1..12
+  const derivedAvailable =
+    monthlyQuota != null
+      ? Math.min(monthsElapsed * monthlyQuota, allocated)
+      : allocated;
+  const cumulativeAccrued =
+    typeof balance.monthlyAvailable === 'number'
+      ? Math.max(balance.monthlyAvailable + used, 0)
+      : derivedAvailable;
+  const balanceRemaining = Math.max(cumulativeAccrued - used, 0);
 
   return (
-    <Tooltip title={`${type.name} · ${used} used of ${allocated}`}>
-      <Box
-        sx={{
-          p: 2,
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: alpha(accent, 0.2),
-          bgcolor: alpha(accent, 0.03),
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 1,
-          transition: 'border-color 0.25s, transform 0.25s',
-          '&:hover': {
-            borderColor: alpha(accent, 0.5),
-            transform: 'translateY(-2px)',
-          },
-        }}
-      >
-        <Box sx={{ position: 'relative', width: size, height: size }}>
-          <svg width={size} height={size}>
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={alpha(accent, 0.15)}
-              strokeWidth={stroke}
-            />
-            <motion.circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={accent}
-              strokeWidth={stroke}
-              strokeLinecap="round"
-              transform={`rotate(-90 ${size / 2} ${size / 2})`}
-              initial={{ strokeDasharray: `0 ${circumference}` }}
-              animate={{ strokeDasharray: `${dash} ${circumference}` }}
-              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-            />
-          </svg>
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography
-              sx={{ fontSize: '1.4rem', fontWeight: 800, lineHeight: 1, color: accent }}
-            >
-              {remaining}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{ fontSize: '0.6rem', color: 'text.secondary', fontWeight: 600 }}
-            >
-              left
-            </Typography>
-          </Box>
-        </Box>
+    <Box
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: alpha(accent, 0.2),
+        bgcolor: alpha(accent, 0.03),
+        transition: 'border-color 0.25s, transform 0.25s',
+        '&:hover': {
+          borderColor: alpha(accent, 0.5),
+          transform: 'translateY(-2px)',
+        },
+      }}
+    >
+      {/* Type label with a thin colored accent on the left */}
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25 }}>
+        <Box
+          sx={{
+            width: 4,
+            height: 22,
+            bgcolor: accent,
+            borderRadius: 1,
+          }}
+        />
         <Typography
-          fontWeight={800}
-          sx={{ fontSize: '0.82rem', textAlign: 'center', color: 'text.primary' }}
+          sx={{
+            fontSize: '0.88rem',
+            fontWeight: 800,
+            color: 'text.primary',
+            lineHeight: 1.1,
+          }}
           noWrap
         >
           {type.name}
         </Typography>
-        <Typography variant="caption" sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>
-          {used} of {allocated} used
-        </Typography>
-      </Box>
-    </Tooltip>
+      </Stack>
+      {/* Pending-confirmation pill — explains the 0/0/0 numbers below
+          when the employee is still in probation. Without it, a new
+          joiner sees three zeros and assumes the system is broken. */}
+      {isPendingProbation && (
+        <Box
+          sx={{
+            mb: 1,
+            display: 'inline-flex',
+            alignItems: 'center',
+            px: 1,
+            py: 0.4,
+            borderRadius: 1.5,
+            bgcolor: alpha('#f59e0b', 0.12),
+            border: `1px solid ${alpha('#f59e0b', 0.3)}`,
+          }}
+        >
+          <Typography sx={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: '#92400e',
+            letterSpacing: 0.3,
+          }}>
+            Awaiting probation confirmation
+          </Typography>
+        </Box>
+      )}
+      <Stack spacing={0.75}>
+        <DashboardLeaveRow
+          label="Total monthly available"
+          value={fmtLeaveNum(cumulativeAccrued)}
+        />
+        <DashboardLeaveRow
+          label="Used"
+          value={fmtLeaveNum(used)}
+        />
+        <DashboardLeaveRow
+          label="Monthly balance"
+          value={fmtLeaveNum(balanceRemaining)}
+          accent={accent}
+          bold
+        />
+      </Stack>
+    </Box>
+  );
+}
+
+// Small helper for the label/value row pair inside BalanceRing. Bold
+// + colored variant is used for "Monthly balance" so the most actionable
+// number stands out at a glance.
+function DashboardLeaveRow({
+  label,
+  value,
+  accent,
+  bold,
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+  bold?: boolean;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: 1,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{
+          fontSize: '0.7rem',
+          color: 'text.secondary',
+          fontWeight: 500,
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          fontSize: bold ? '1.05rem' : '0.95rem',
+          fontWeight: bold ? 800 : 700,
+          color: accent || 'text.primary',
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
   );
 }
 

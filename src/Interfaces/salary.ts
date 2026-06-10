@@ -70,6 +70,9 @@ export interface LeaveType {
   // Null/undefined means no monthly cap (UL, ML).
   monthlyQuota?: number | null;
   isUnpaidBucket: boolean;
+  /** When true, the apply-leave form requires at least one
+   *  attachment. Used for Medical Leave (supporting documentation). */
+  requiresAttachment?: boolean;
   active: boolean;
 }
 
