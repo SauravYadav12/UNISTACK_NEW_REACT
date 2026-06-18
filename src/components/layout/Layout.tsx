@@ -11,6 +11,7 @@ import { useNotifications } from '../../hooks/useNotifications';
 import NotificationDrawer from '../notifications/NotificationDrawer';
 import DesktopSettingsDialog from '../desktop/DesktopSettingsDialog';
 import VersionUpdateToast from '../desktop/VersionUpdateToast';
+import { DesktopDownloadProvider } from '../../contextProviders/DesktopDownloadProvider';
 import { getDesktopBridge } from '../../utils/desktopBridge';
 
 const MotionBox = motion.create(Box);
@@ -92,6 +93,7 @@ function Layout() {
   );
 
   return (
+    <DesktopDownloadProvider>
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Sidebar collapsed={collapsed} onToggle={handleToggleSidebar} />
 
@@ -172,6 +174,7 @@ function Layout() {
         </AnimatePresence>
       </Box>
     </Box>
+    </DesktopDownloadProvider>
   );
 }
 

@@ -11,11 +11,8 @@ import {
   Divider,
   alpha,
   useTheme,
-  InputBase,
 } from '@mui/material';
 import {
-  IconSearch,
-  IconCommand,
   IconLogout,
   IconUserCircle,
   IconLayoutDashboard,
@@ -34,6 +31,7 @@ import { tokens } from '../../theme/theme';
 import Breadcrumbs from './Breadcrumbs';
 import AttendancePopUp from './AttendancePopUp';
 import NotificationBell from './NotificationBell';
+import DesktopDownloadButton from '../desktop/DesktopDownloadButton';
 import { isRunningInDesktop } from '../../utils/desktopBridge';
 
 interface NavbarProps {
@@ -97,61 +95,14 @@ function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
 
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Command palette trigger */}
-        <Box
-          sx={{
-            display: { xs: 'none', md: 'flex' },
-            alignItems: 'center',
-            gap: 1,
-            px: 2,
-            py: 0.75,
-            borderRadius: 3,
-            bgcolor: alpha(theme.palette.text.primary, 0.04),
-            border: `1px solid ${theme.palette.divider}`,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            minWidth: 220,
-            '&:hover': {
-              bgcolor: alpha(theme.palette.text.primary, 0.06),
-              borderColor: alpha(theme.palette.primary.main, 0.3),
-            },
-          }}
-          onClick={() => {
-            // Will be connected to command palette in Phase 4
-          }}
-        >
-          <IconSearch size={16} color={theme.palette.text.secondary} />
-          <InputBase
-            placeholder="Search or ask AI..."
-            readOnly
-            sx={{
-              flex: 1,
-              fontSize: '0.8125rem',
-              color: 'text.secondary',
-              cursor: 'pointer',
-              '& input': { cursor: 'pointer', p: 0 },
-            }}
-          />
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.25,
-              px: 0.75,
-              py: 0.25,
-              borderRadius: 1.5,
-              bgcolor: alpha(theme.palette.text.primary, 0.06),
-              fontSize: '0.6875rem',
-              fontWeight: 500,
-              color: 'text.secondary',
-            }}
-          >
-            <IconCommand size={12} />K
-          </Box>
-        </Box>
-
         {/* Attendance popup */}
         <AttendancePopUp />
+
+        {/* Always-on "Download app" button for web users — self-hides
+            inside Electron. Auto-detects OS to show the right icon
+            (Apple on mac, Windows on win) so the affordance feels
+            tailored to the user's device. */}
+        <DesktopDownloadButton />
 
         {/* DESKTOP pill — only renders inside Electron. Visually faint
             so it sits at the same weight as the search box but is

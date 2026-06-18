@@ -16,6 +16,7 @@
  */
 import { useEffect, useState } from 'react';
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -28,10 +29,10 @@ import {
   Typography,
   alpha,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { tokens } from '../../theme/theme';
 import { getDesktopBridge } from '../../utils/desktopBridge';
+import { useDesktopDownload } from '../../contextProviders/DesktopDownloadProvider';
 
 interface Props {
   open: boolean;
@@ -40,6 +41,7 @@ interface Props {
 
 export default function DesktopSettingsDialog({ open, onClose }: Props) {
   const bridge = getDesktopBridge();
+  const { openDownloadDialog } = useDesktopDownload();
   const [serverUrl, setServerUrl] = useState('');
   const [originalServerUrl, setOriginalServerUrl] = useState('');
   const [autoLaunch, setAutoLaunch] = useState(false);
@@ -126,7 +128,7 @@ export default function DesktopSettingsDialog({ open, onClose }: Props) {
               size="small"
               value={serverUrl}
               onChange={(e) => setServerUrl(e.target.value)}
-              placeholder="https://portal.unicodez.com"
+              placeholder="https://www.unistack.in"
               helperText="Override only for staging or local-dev. Leave blank to use the production default. Changes take effect immediately."
               FormHelperTextProps={{ sx: { mx: 0 } }}
               fullWidth
@@ -170,9 +172,24 @@ export default function DesktopSettingsDialog({ open, onClose }: Props) {
             </Typography>
             <Typography variant="caption">
               Need a re-install or want to share?{' '}
-              <RouterLink to="/download" style={{ color: tokens.colors.blueDark }} onClick={onClose}>
-                Open download page
-              </RouterLink>
+              <Box
+                component="button"
+                onClick={() => {
+                  onClose();
+                  openDownloadDialog();
+                }}
+                sx={{
+                  background: 'none',
+                  border: 'none',
+                  p: 0,
+                  font: 'inherit',
+                  cursor: 'pointer',
+                  color: tokens.colors.blueDark,
+                  textDecoration: 'underline',
+                }}
+              >
+                Open download dialog
+              </Box>
             </Typography>
           </Stack>
         </Stack>

@@ -25,7 +25,9 @@ directories:
 
 files:
   - electron/**/*.js
+  - electron/splash.html
   - electron/assets/**/*
+  - electron/package.json
   - "package.json"
 
 # Strip out everything else from the bundle — keep installers small.

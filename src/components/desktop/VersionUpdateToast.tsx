@@ -13,18 +13,18 @@
  */
 import { Box, Button, IconButton, Slide, Stack, Typography, alpha } from '@mui/material';
 import { IconRocket, IconX } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme/theme';
 import { useDesktopVersionCheck } from '../../hooks/useDesktopVersionCheck';
+import { useDesktopDownload } from '../../contextProviders/DesktopDownloadProvider';
 
 export default function VersionUpdateToast() {
-  const navigate = useNavigate();
+  const { openDownloadDialog } = useDesktopDownload();
   const { updateAvailable, currentVersion, latestVersion, notes, dismiss } =
     useDesktopVersionCheck();
 
   function handleDownload() {
     dismiss(); // close the toast as soon as the user acts
-    navigate('/download');
+    openDownloadDialog();
   }
 
   return (

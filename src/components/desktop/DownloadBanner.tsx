@@ -8,9 +8,9 @@
 import { useState } from 'react';
 import { Box, Button, IconButton, Stack, Typography, alpha } from '@mui/material';
 import { IconBrandApple, IconBrandWindows, IconX } from '@tabler/icons-react';
-import { Link as RouterLink } from 'react-router-dom';
 import { tokens } from '../../theme/theme';
 import { isRunningInDesktop } from '../../utils/desktopBridge';
+import { useDesktopDownload } from '../../contextProviders/DesktopDownloadProvider';
 
 const DISMISS_KEY = 'unistack.desktopBannerDismissed';
 
@@ -19,6 +19,7 @@ export default function DownloadBanner() {
   // banner is fully tree-shaken from the render path in Electron.
   if (isRunningInDesktop()) return null;
 
+  const { openDownloadDialog } = useDesktopDownload();
   // Initial state reads localStorage once; subsequent dismiss writes the
   // flag synchronously so a re-render doesn't reshow the banner.
   const [dismissed, setDismissed] = useState<boolean>(() => {
@@ -105,8 +106,7 @@ export default function DownloadBanner() {
         <Button
           variant="contained"
           size="small"
-          component={RouterLink}
-          to="/download"
+          onClick={openDownloadDialog}
           sx={{
             textTransform: 'none',
             fontWeight: 700,
