@@ -101,6 +101,44 @@ aws s3 cp "${SCRIPT_DIR}/latest.json" \
   --acl=public-read \
   --cache-control "no-cache, no-store, must-revalidate"
 
+# ── Prune old versions ──
+# Keep only the last N version folders under desktop/ to stop the bucket
+# from growing unbounded. Each release is ~300 MB (DMG + EXE); without
+# pruning, 100 releases = 30 GB. We default to KEEP_VERSIONS=3 — enough
+# to roll back if a release goes sideways, but no more.
+#
+# Override per-release if needed:
+#   KEEP_VERSIONS=10 npm run release:desktop
+#
+# Set KEEP_VERSIONS=0 to disable pruning entirely (keep every release
+# forever — useful during the early-adoption phase if you're nervous).
+KEEP_VERSIONS="${KEEP_VERSIONS:-3}"
+if [[ "${KEEP_VERSIONS}" -gt 0 ]]; then
+  echo "→ Pruning old releases (keeping last ${KEEP_VERSIONS})…"
+  # List all version folders under desktop/, version-sort descending
+  # so newest is first, drop the top KEEP_VERSIONS, delete the rest.
+  # `aws s3 ls` returns lines like "                           PRE v1.0.0/"
+  # for "common prefixes" (folders). We grep + awk those out.
+  ALL_VERSIONS=$(aws s3 ls "s3://unistack-migrated-from-gcp/desktop/" \
+    --endpoint-url="${ENDPOINT}" \
+    | grep -E " PRE v[0-9]+\.[0-9]+\.[0-9]+/$" \
+    | awk '{print $2}' \
+    | sed 's:/$::' \
+    | sort -V -r)
+  TO_DELETE=$(echo "${ALL_VERSIONS}" | tail -n +$((KEEP_VERSIONS + 1)))
+  if [[ -z "${TO_DELETE}" ]]; then
+    echo "  ✓ Nothing to prune — bucket already at or below the retention limit."
+  else
+    while IFS= read -r vers; do
+      [[ -z "${vers}" ]] && continue
+      echo "  ✗ Deleting ${vers}…"
+      aws s3 rm "s3://unistack-migrated-from-gcp/desktop/${vers}/" \
+        --recursive \
+        --endpoint-url="${ENDPOINT}"
+    done <<< "${TO_DELETE}"
+  fi
+fi
+
 # ── Done ──
 echo ""
 echo "✓ Release v${VERSION} published."
