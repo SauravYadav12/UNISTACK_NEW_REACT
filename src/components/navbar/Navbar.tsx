@@ -34,6 +34,7 @@ import { tokens } from '../../theme/theme';
 import Breadcrumbs from './Breadcrumbs';
 import AttendancePopUp from './AttendancePopUp';
 import NotificationBell from './NotificationBell';
+import { isRunningInDesktop } from '../../utils/desktopBridge';
 
 interface NavbarProps {
   collapsed: boolean;
@@ -151,6 +152,35 @@ function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
 
         {/* Attendance popup */}
         <AttendancePopUp />
+
+        {/* DESKTOP pill — only renders inside Electron. Visually faint
+            so it sits at the same weight as the search box but is
+            unmistakable in support tickets ("are you on desktop or
+            web?"). Click is a no-op for now; the settings dialog is
+            still accessed via Cmd/Ctrl+Shift+, keyboard shortcut. */}
+        {isRunningInDesktop() && (
+          <Tooltip title="You're using the Unistack desktop app. Press ⌘/Ctrl + Shift + , for settings.">
+            <Box
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1,
+                py: 0.35,
+                borderRadius: 2,
+                bgcolor: alpha(tokens.colors.blue, 0.1),
+                color: tokens.colors.blueDark,
+                border: `1px solid ${alpha(tokens.colors.blue, 0.25)}`,
+                fontSize: 9.5,
+                fontWeight: 800,
+                letterSpacing: 0.6,
+                textTransform: 'uppercase',
+              }}
+            >
+              Desktop
+            </Box>
+          </Tooltip>
+        )}
 
         {/* Notification bell */}
         <NotificationBell

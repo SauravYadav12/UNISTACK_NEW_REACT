@@ -30,6 +30,7 @@ import { tokens } from '../../theme/theme';
 import { UserRole, UserShift } from '../../Interfaces/iUser';
 import { dateByUserShift } from '../../utils/dateUtil';
 import UserDashboard from './UserDashboard';
+import DownloadBanner from '../../components/desktop/DownloadBanner';
 
 const MotionBox = motion.create(Box);
 
@@ -167,6 +168,9 @@ function Dashboard() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Web-only banner promoting the desktop installer. Self-hides in
+          Electron + when the user has dismissed it. */}
+      <DownloadBanner />
       {/* ── Command Hero — live clock + quick stats + mission ring ── */}
       <MotionBox
         initial={{ opacity: 0, y: 16 }}

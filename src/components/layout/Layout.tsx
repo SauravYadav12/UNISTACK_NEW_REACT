@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, useMediaQuery, useTheme } from '@mui/material';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,16 +9,46 @@ import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { pageVariants } from '../../theme/animations';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationDrawer from '../notifications/NotificationDrawer';
+import DesktopSettingsDialog from '../desktop/DesktopSettingsDialog';
+import VersionUpdateToast from '../desktop/VersionUpdateToast';
+import { getDesktopBridge } from '../../utils/desktopBridge';
 
 const MotionBox = motion.create(Box);
 
 function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { myProfileState, myAttendanceState } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [desktopSettingsOpen, setDesktopSettingsOpen] = useState(false);
   const notifications = useNotifications();
+
+  // Desktop-only wiring — keyboard shortcut + deep-link navigation
+  // listener. Both register only when running inside Electron so the
+  // web bundle stays inert. Cleanup unsubscribes on unmount.
+  useEffect(() => {
+    const bridge = getDesktopBridge();
+    if (!bridge) return;
+    function handleKey(e: KeyboardEvent) {
+      // Cmd+Shift+, (mac) / Ctrl+Shift+, (win+linux). Modifier check
+      // mirrors the OS-conventional "Preferences" shortcut.
+      const modifier = e.metaKey || e.ctrlKey;
+      if (modifier && e.shiftKey && e.key === ',') {
+        e.preventDefault();
+        setDesktopSettingsOpen(true);
+      }
+    }
+    window.addEventListener('keydown', handleKey);
+    // Deep-link from tray / notification click → bring the user to the
+    // requested in-app path without a full page reload.
+    const unsub = bridge.onNavigate((p) => navigate(p));
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      unsub();
+    };
+  }, [navigate]);
 
   useEffect(() => {
     !myProfileState.data && myProfileState.loadData();
@@ -81,6 +111,15 @@ function Layout() {
         removeOne={notifications.removeOne}
         clearAll={notifications.clearAll}
       />
+
+      {/* Desktop-only chrome: settings dialog (keyboard-triggered) +
+          new-version toast. Both internally short-circuit in browser
+          context, so they're safe to mount unconditionally here. */}
+      <DesktopSettingsDialog
+        open={desktopSettingsOpen}
+        onClose={() => setDesktopSettingsOpen(false)}
+      />
+      <VersionUpdateToast />
 
       <Box
         component="main"

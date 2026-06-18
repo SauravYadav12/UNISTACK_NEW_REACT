@@ -43,6 +43,7 @@ import { LeaveBalance, LeaveType as LeaveTypeDef } from '../../Interfaces/salary
 import { iLeave, LeaveStatus } from '../../Interfaces/leaves';
 import { Holiday } from '../../Interfaces/holiday';
 import ApplyLeave from '../../components/leave/ApplyLeave';
+import DownloadBanner from '../../components/desktop/DownloadBanner';
 
 const MotionBox = motion.create(Box);
 
@@ -170,6 +171,9 @@ export default function UserDashboard() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Web-only banner promoting the desktop installer. Self-hides
+          in Electron and after dismissal. */}
+      <DownloadBanner />
       {/* ── Hero: greeting + live clock + quick status ── */}
       <MotionBox
         initial={{ opacity: 0, y: 16 }}

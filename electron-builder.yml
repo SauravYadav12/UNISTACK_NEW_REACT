@@ -1,0 +1,63 @@
+# Electron builder config — produces installable Windows + macOS binaries.
+# Run via `npm run build:electron-mac` / `build:electron-win`.
+#
+# Notes:
+#   - "files" lists what goes into the asar archive. We bundle the
+#     compiled main + preload + assets. The renderer is the LIVE web
+#     URL (loaded over HTTPS), so we do NOT bundle src/ or dist/.
+#   - macOS universal target produces a single .dmg that runs on both
+#     Intel and Apple Silicon — half the file size of shipping two .dmgs.
+#   - No code-signing for v1 — users right-click → Open (mac) or click
+#     "More info → Run anyway" (win) the first time. We'll add certs in
+#     a later release.
+
+appId: com.unicodez.unistack
+productName: Unistack
+copyright: "Copyright © 2026 Unicodez Softcorp"
+
+# We DON'T need npm rebuild — there are no native modules in the main
+# process (electron's IPC + tray + Notification are all built-in).
+buildDependenciesFromSource: false
+
+directories:
+  output: dist-electron
+  buildResources: electron/assets
+
+files:
+  - electron/**/*.js
+  - electron/assets/**/*
+  - "package.json"
+
+# Strip out everything else from the bundle — keep installers small.
+asarUnpack: []
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch:
+        - universal
+    - target: zip
+      arch:
+        - universal
+  icon: electron/assets/icon.icns
+  # No notarization / signing for v1. Add later:
+  #   identity: "Developer ID Application: Unicodez Softcorp (TEAMID)"
+  #   notarize: { teamId: "TEAMID" }
+  identity: null
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: electron/assets/icon.ico
+  # No code-signing for v1. SmartScreen will warn on first launch.
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Unistack

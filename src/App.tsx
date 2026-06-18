@@ -49,6 +49,9 @@ const OnboardingFormPage = lazy(
 const OfferLetterPage = lazy(
   () => import('./pages/PublicOnboarding/OfferLetterPage'),
 );
+const DesktopDownloadPage = lazy(
+  () => import('./pages/DesktopDownload/DesktopDownloadPage'),
+);
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const Salary = lazy(() => import('./pages/Salary/Salary'));
 const Projects = lazy(() => import('./pages/Marketing/Projects/Projects'));
@@ -145,7 +148,8 @@ function AppContent() {
   // also be authenticated as an admin in the same browser tab.
   const isPublicCandidateRoute =
     location.pathname.startsWith('/onboarding/') ||
-    location.pathname.startsWith('/offer/');
+    location.pathname.startsWith('/offer/') ||
+    location.pathname === '/download';
   const showInternalChrome = isAuthenticated && !isPublicCandidateRoute;
 
   return (
@@ -186,6 +190,11 @@ function AppContent() {
             element={<OnboardingFormPage />}
           />
           <Route path="/offer/:token" element={<OfferLetterPage />} />
+          {/* Public desktop-installer download page — no auth required so
+              users (and prospective new joiners) can grab installers
+              from a shared link. Page itself fetches latest.json from DO
+              Spaces on mount so new releases appear without a code push. */}
+          <Route path="/download" element={<DesktopDownloadPage />} />
           {/* Pathless layout route — children carry their own paths (e.g.
               `dashboard` → /dashboard) and render inside <Layout/>. */}
           <Route
