@@ -43,7 +43,7 @@ echo ""
 echo "──────────────────────────────────────────────"
 echo " Unistack desktop release"
 echo " Version : ${VERSION}"
-echo " Bucket  : unistack-storage/desktop/v${VERSION}/"
+echo " Bucket  : unistack-migrated-from-gcp/desktop/v${VERSION}/"
 echo "──────────────────────────────────────────────"
 echo ""
 
@@ -80,23 +80,23 @@ ENDPOINT="https://blr1.digitaloceanspaces.com"
 # ── Upload artifacts ──
 echo "→ Uploading macOS DMG to Spaces…"
 aws s3 cp "${MAC_DMG}" \
-  "s3://unistack-storage/desktop/v${VERSION}/Unistack-${VERSION}.dmg" \
+  "s3://unistack-migrated-from-gcp/desktop/v${VERSION}/Unistack-${VERSION}.dmg" \
   --endpoint-url="${ENDPOINT}" \
   --acl=public-read
 
 echo "→ Uploading Windows EXE to Spaces…"
 aws s3 cp "${WIN_EXE}" \
-  "s3://unistack-storage/desktop/v${VERSION}/Unistack-Setup-${VERSION}.exe" \
+  "s3://unistack-migrated-from-gcp/desktop/v${VERSION}/Unistack-Setup-${VERSION}.exe" \
   --endpoint-url="${ENDPOINT}" \
   --acl=public-read
 
 # ── Generate + upload latest.json ──
 echo "→ Generating latest.json…"
-node "${SCRIPT_DIR}/write-latest.js" "${VERSION}"
+node "${SCRIPT_DIR}/write-latest.cjs" "${VERSION}"
 
 echo "→ Uploading latest.json to Spaces…"
 aws s3 cp "${SCRIPT_DIR}/latest.json" \
-  "s3://unistack-storage/desktop/latest.json" \
+  "s3://unistack-migrated-from-gcp/desktop/latest.json" \
   --endpoint-url="${ENDPOINT}" \
   --acl=public-read \
   --cache-control "no-cache, no-store, must-revalidate"
@@ -106,9 +106,9 @@ echo ""
 echo "✓ Release v${VERSION} published."
 echo ""
 echo "Public URLs:"
-echo "  macOS   : ${ENDPOINT}/unistack-storage/desktop/v${VERSION}/Unistack-${VERSION}.dmg"
-echo "  Windows : ${ENDPOINT}/unistack-storage/desktop/v${VERSION}/Unistack-Setup-${VERSION}.exe"
-echo "  latest  : ${ENDPOINT}/unistack-storage/desktop/latest.json"
+echo "  macOS   : ${ENDPOINT}/unistack-migrated-from-gcp/desktop/v${VERSION}/Unistack-${VERSION}.dmg"
+echo "  Windows : ${ENDPOINT}/unistack-migrated-from-gcp/desktop/v${VERSION}/Unistack-Setup-${VERSION}.exe"
+echo "  latest  : ${ENDPOINT}/unistack-migrated-from-gcp/desktop/latest.json"
 echo ""
 echo "Users on existing shells will see the upgrade nudge within 6 hours"
 echo "(or on the next window focus). New users land on /download."

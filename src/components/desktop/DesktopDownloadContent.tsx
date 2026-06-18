@@ -36,7 +36,7 @@ export interface LatestJson {
 }
 
 const LATEST_URL =
-  'https://blr1.digitaloceanspaces.com/unistack-storage/desktop/latest.json';
+  'https://blr1.digitaloceanspaces.com/unistack-migrated-from-gcp/desktop/latest.json';
 
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '—';

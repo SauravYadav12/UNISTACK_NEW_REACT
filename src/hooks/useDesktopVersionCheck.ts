@@ -24,7 +24,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDesktopBridge } from '../utils/desktopBridge';
 
 const LATEST_URL =
-  'https://blr1.digitaloceanspaces.com/unistack-storage/desktop/latest.json';
+  'https://blr1.digitaloceanspaces.com/unistack-migrated-from-gcp/desktop/latest.json';
 const POLL_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const DISMISS_KEY_PREFIX = 'unistack.desktopUpdateDismissed.';
 

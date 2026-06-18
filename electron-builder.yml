@@ -17,14 +17,19 @@ copyright: "Copyright © 2026 Unicodez Softcorp"
 
 # We DON'T need npm rebuild — there are no native modules in the main
 # process (electron's IPC + tray + Notification are all built-in).
+# Skipping the rebuild step also lets us cross-compile Windows from
+# macOS: without `npmRebuild: false`, electron-builder tries to rebuild
+# transitive native deps like `canvas` and `fsevents` for Windows from
+# a Mac, which node-gyp can't do.
 buildDependenciesFromSource: false
+npmRebuild: false
 
 directories:
   output: dist-electron
   buildResources: electron/assets
 
 files:
-  - electron/**/*.js
+  - electron/dist/**/*.js
   - electron/splash.html
   - electron/assets/**/*
   - electron/package.json
@@ -42,7 +47,15 @@ mac:
     - target: zip
       arch:
         - universal
-  icon: electron/assets/icon.icns
+  # Point at the square PNG — electron-builder auto-generates .icns
+  # at all required sizes (16/32/64/128/256/512/1024). Skipping the
+  # explicit .icns reference means there's only one icon file to keep
+  # in sync.
+  icon: electron/assets/icon.png
+  # Strip the default "-universal" suffix from artifact filenames so
+  # the release script can predict the output path (Unistack-1.0.0.dmg
+  # instead of Unistack-1.0.0-universal.dmg).
+  artifactName: ${productName}-${version}.${ext}
   # No notarization / signing for v1. Add later:
   #   identity: "Developer ID Application: Unicodez Softcorp (TEAMID)"
   #   notarize: { teamId: "TEAMID" }
@@ -53,7 +66,8 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: electron/assets/icon.ico
+  # Same story as mac — electron-builder generates .ico from the PNG.
+  icon: electron/assets/icon.png
   # No code-signing for v1. SmartScreen will warn on first launch.
 
 nsis:

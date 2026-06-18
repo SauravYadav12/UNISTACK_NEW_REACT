@@ -30,6 +30,21 @@ import {
 import * as path from "path";
 import { loadConfig, saveConfig } from "./runtimeConfig";
 
+// Path layout after compile:
+//   electron/
+//   ├── splash.html        ← lives at the SOURCE root
+//   ├── assets/icon.png    ← also at source root
+//   └── dist/              ← __dirname when this file runs
+//       ├── main.js
+//       ├── preload.js
+//       └── runtimeConfig.js
+// We walk up one level (`..`) from __dirname to reach the splash + assets.
+// The preload.js sits next to main.js, so no walk-up needed.
+const ELECTRON_DIR = path.join(__dirname, "..");
+const ASSETS_DIR = path.join(ELECTRON_DIR, "assets");
+const SPLASH_HTML = path.join(ELECTRON_DIR, "splash.html");
+const PRELOAD_JS = path.join(__dirname, "preload.js");
+
 // Force the app name immediately, BEFORE any other Electron call. In
 // dev mode (`electron .`), the process otherwise inherits "Electron"
 // from the binary's Info.plist, which shows up in the macOS menu bar,
@@ -113,7 +128,7 @@ function createSplashWindow() {
       nodeIntegration: false,
     },
   });
-  splashWindow.loadFile(path.join(__dirname, "splash.html"));
+  splashWindow.loadFile(SPLASH_HTML);
   splashWindow.once("ready-to-show", () => {
     splashWindow?.show();
     splashShownAt = Date.now();
@@ -176,9 +191,9 @@ function createMainWindow() {
     show: false,
     backgroundColor: "#032840", // matches the brand navy so the load doesn't flash white
     title: "Unistack",
-    icon: path.join(__dirname, "assets", "icon.png"),
+    icon: path.join(ASSETS_DIR, "icon.png"),
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: PRELOAD_JS,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false, // preload needs Node APIs (fs for config)
@@ -268,7 +283,7 @@ function createTray() {
   // We deliberately do NOT use macOS template-image mode here — the
   // brand colors are part of the identity and the user opted to keep
   // them in the tray even though fine detail softens at this size.
-  const iconPath = path.join(__dirname, "assets", "icon-tray.png");
+  const iconPath = path.join(ASSETS_DIR, "icon-tray.png");
   const image = nativeImage.createFromPath(iconPath);
   const trayImage = image.isEmpty()
     ? image
@@ -485,7 +500,7 @@ if (!gotLock) {
     // undefined on non-mac platforms.
     if (process.platform === "darwin") {
       try {
-        app.dock?.setIcon(path.join(__dirname, "assets", "icon.png"));
+        app.dock?.setIcon(path.join(ASSETS_DIR, "icon.png"));
       } catch (err) {
         console.warn("[unistack] Could not set dock icon:", err);
       }

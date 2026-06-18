@@ -58,11 +58,11 @@ const payload = {
   version,
   releasedAt: new Date().toISOString(),
   mac: {
-    url: `https://blr1.digitaloceanspaces.com/unistack-storage/desktop/v${version}/Unistack-${version}.dmg`,
+    url: `https://blr1.digitaloceanspaces.com/unistack-migrated-from-gcp/desktop/v${version}/Unistack-${version}.dmg`,
     sizeBytes: macSize,
   },
   win: {
-    url: `https://blr1.digitaloceanspaces.com/unistack-storage/desktop/v${version}/Unistack-Setup-${version}.exe`,
+    url: `https://blr1.digitaloceanspaces.com/unistack-migrated-from-gcp/desktop/v${version}/Unistack-Setup-${version}.exe`,
     sizeBytes: winSize,
   },
   notes,

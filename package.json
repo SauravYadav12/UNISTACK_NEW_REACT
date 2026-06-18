@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/dist/main.js",
   "description": "Unistack — internal portal + desktop shell",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,7 @@
     "test:ui": "vitest",
     "build:electron-main": "tsc -p tsconfig.electron.json",
     "postinstall": "bash scripts/patch-dev-electron-name.sh || true",
-    "dev:electron": "concurrently -k -n vite,electron -c blue,magenta \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV_URL=http://localhost:5173 npm run build:electron-main && electron ./electron/main.js\"",
+    "dev:electron": "concurrently -k -n vite,electron -c blue,magenta \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV_URL=http://localhost:5173 npm run build:electron-main && electron ./electron/dist/main.js\"",
     "build:electron-mac": "npm run build:electron-main && electron-builder --mac",
     "build:electron-win": "npm run build:electron-main && electron-builder --win",
     "build:electron": "npm run build:electron-main && electron-builder --mac --win",
