@@ -59,7 +59,15 @@ function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
       logout();
     } catch {}
     validateLogout();
-    navigate('/');
+    // Go straight to /login — what the user actually wants after they
+    // log out. Previously navigated to `/` (the marketing Landing
+    // page), which renders fine in the browser but shows as a blank
+    // BrowserWindow inside the desktop Electron shell (the Landing
+    // page's complex animation / redirect logic doesn't kick in
+    // reliably there). /login is the same destination Login.tsx and
+    // ProtectedRoute already route to, so behavior is consistent
+    // across web + desktop.
+    navigate('/login');
   };
 
   return (
