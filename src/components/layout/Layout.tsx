@@ -11,6 +11,7 @@ import { useNotifications } from '../../hooks/useNotifications';
 import NotificationDrawer from '../notifications/NotificationDrawer';
 import DesktopSettingsDialog from '../desktop/DesktopSettingsDialog';
 import VersionUpdateToast from '../desktop/VersionUpdateToast';
+import VersionUpdateBanner from '../desktop/VersionUpdateBanner';
 import { DesktopDownloadProvider } from '../../contextProviders/DesktopDownloadProvider';
 import { getDesktopBridge } from '../../utils/desktopBridge';
 
@@ -134,6 +135,12 @@ function Layout() {
           overflow: 'auto',
         }}
       >
+        {/* Persistent update notice — sits at the top of every page in
+            the desktop client. Self-hides in web, when no update is
+            available, and after per-version dismissal. Shares dismiss
+            state with VersionUpdateToast: dismissing one closes both. */}
+        <VersionUpdateBanner />
+
         <AnimatePresence mode="wait">
           <MotionBox
             key={location.pathname}

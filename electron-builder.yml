@@ -28,6 +28,14 @@ directories:
   output: dist-electron
   buildResources: electron/assets
 
+# Explicit allow-list of what goes into the asar archive. ANYTHING not
+# matched here is excluded — node_modules, src/, dist/, README files
+# etc. all stay out. For a thin-shell Electron app loading a remote
+# URL, the only runtime requirements are:
+#   - Compiled main process + preload (electron/dist/*.js)
+#   - Splash HTML + assets
+#   - package.json (Electron reads "main" + "name" from here)
+#   - electron/package.json (forces CommonJS resolution for dist/*.js)
 files:
   - electron/dist/**/*.js
   - electron/splash.html
@@ -35,26 +43,36 @@ files:
   - electron/package.json
   - "package.json"
 
-# Strip out everything else from the bundle — keep installers small.
+# Compress the asar harder. Trades CPU at build time for a smaller
+# on-disk footprint and a slightly slower startup decompression — but
+# the splash window covers cold-start anyway, so it's net win.
+compression: maximum
+# Keep asar packing enabled (default). Setting asar: false would bloat
+# the installer by 30-40% with uncompressed files.
 asarUnpack: []
 
 mac:
   category: public.app-category.productivity
+  # Universal binary — single DMG that runs on both Intel and Apple
+  # Silicon. Larger than single-arch (~300 MB vs ~150 MB) but avoids
+  # forcing users to know their CPU architecture. Acceptable trade-off
+  # for an internal tool with a mixed fleet.
+  #
+  # If you want to halve the Mac download size later, swap this for:
+  #   target:
+  #     - target: dmg
+  #       arch: [arm64]   # Apple Silicon only (M1/M2/M3, post-2020 Macs)
+  # — but you'll need to update the /download modal to surface arch
+  # selection and update release-desktop.sh to upload both files.
   target:
     - target: dmg
       arch:
         - universal
-    - target: zip
-      arch:
-        - universal
-  # Point at the square PNG — electron-builder auto-generates .icns
-  # at all required sizes (16/32/64/128/256/512/1024). Skipping the
-  # explicit .icns reference means there's only one icon file to keep
-  # in sync.
+  # ZIP target removed — DMG is the canonical install medium on macOS
+  # and the ZIP just doubles output size for no gain.
   icon: electron/assets/icon.png
   # Strip the default "-universal" suffix from artifact filenames so
-  # the release script can predict the output path (Unistack-1.0.0.dmg
-  # instead of Unistack-1.0.0-universal.dmg).
+  # the release script can predict the output path.
   artifactName: ${productName}-${version}.${ext}
   # No notarization / signing for v1. Add later:
   #   identity: "Developer ID Application: Unicodez Softcorp (TEAMID)"
