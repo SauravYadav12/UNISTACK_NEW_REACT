@@ -285,9 +285,27 @@ function createMainWindow() {
   setTimeout(revealMainWindow, SPLASH_HARD_TIMEOUT_MS);
 
   const startUrl = resolveStartUrl();
-  mainWindow.loadURL(startUrl).catch((err) => {
-    console.error("[unistack] Failed to load start URL:", startUrl, err);
-  });
+  // Clear Electron's HTTP cache before EVERY load. Without this, the
+  // cached index.html survives between app launches and keeps pointing
+  // at JS chunk filenames from before the last web deploy — when the
+  // user navigates to a lazy route (Access Control, User Management,
+  // etc.), the old chunk path 404s and the SPA hard-errors with
+  // "Failed to fetch dynamically imported module".
+  //
+  // The cost is tiny: index.html re-downloads on launch (~10 KB), but
+  // the hashed JS/CSS chunks themselves stay cached forever because
+  // their hashes change with content. Net effect: zero perceived
+  // slowdown, complete elimination of stale-bundle bugs.
+  mainWindow.webContents.session
+    .clearCache()
+    .catch((err) => {
+      console.warn("[unistack] clearCache failed (continuing):", err);
+    })
+    .finally(() => {
+      mainWindow?.loadURL(startUrl).catch((err) => {
+        console.error("[unistack] Failed to load start URL:", startUrl, err);
+      });
+    });
 
   // Open external links (target=_blank / window.open) in the user's
   // default browser instead of a new Electron window. Mostly relevant
