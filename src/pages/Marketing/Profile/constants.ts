@@ -101,6 +101,11 @@ export const profileFormSections: FormSections[] = [
       },
       {
         fieldName: 'name',
+        // Name is the bare minimum — without it the leave / salary /
+        // notification surfaces all read "—". Gating Submit on it
+        // means HR can't accidentally save a profile that's useless
+        // downstream.
+        inputAttributes: { required: true },
       },
       {
         fieldName: 'dob',
@@ -134,6 +139,12 @@ export const profileFormSections: FormSections[] = [
         fieldName: 'official',
         label: 'Official Email',
         fieldType: 'email',
+        // Required — every employee needs a corp email for OTP login,
+        // leave-request notifications, salary-slip delivery, etc.
+        // The downstream surfaces all assume this is present, so
+        // gating it at the profile-save boundary prevents broken-data
+        // bugs further down.
+        inputAttributes: { required: true },
         customValidation: validateEmail,
       },
       {
@@ -141,16 +152,19 @@ export const profileFormSections: FormSections[] = [
         fieldName: 'personal',
         label: 'Personal Email',
         fieldType: 'email',
-        // Validate format only when the employee actually types
-        // something — don't gate Submit on an empty cell. Allows
-        // partial profile saves; HR/employee can fill remaining
-        // fields later.
+        // Personal email stays optional — many employees don't want
+        // to share it. Format-validates only when typed.
         customValidation: validateEmail,
       },
       {
         fieldName: 'phoneNumber',
         label: 'Phone Number',
         fieldType: 'number',
+        // Required — used by HR for emergencies + the auth flow falls
+        // back to phone in a few edge cases (locked-out users). Same
+        // reasoning as official email: downstream surfaces assume
+        // it's present.
+        inputAttributes: { required: true },
         customValidation: validatePhone,
       },
       {

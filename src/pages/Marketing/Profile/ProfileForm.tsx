@@ -153,12 +153,23 @@ const ProfileForm = ({
       }
       onSubmitSuccessfully(data.data);
     } catch (error) {
-      const { codeName, keyPattern, keyValue } =
-        (error as any)?.response?.data?.error || {};
-      if (codeName === 'DuplicateKey' && keyPattern?.employeeId) {
+      // The server now sends a human-readable string in `error.error`
+      // (see formatProfileError in userProfileController) — Mongoose
+      // ValidationErrors are flattened to "Field: message; …", dup-key
+      // errors name the conflicting field. Surfacing that directly
+      // tells the employee EXACTLY what's wrong instead of the old
+      // generic "Something went wrong".
+      const resp = (error as { response?: { data?: { error?: unknown } } })?.response?.data;
+      const serverMsg = resp?.error;
+      // Older clients / paths might still get the legacy nested object
+      // — keep the duplicate-employeeId message that worked before.
+      const legacyDup = (serverMsg as { codeName?: string; keyValue?: { employeeId?: string } } | undefined);
+      if (legacyDup && typeof legacyDup === 'object' && legacyDup.codeName === 'DuplicateKey' && legacyDup.keyValue?.employeeId) {
         toast.error(
-          `Employee Id ${keyValue?.employeeId} already Associated with another profile`
+          `Employee Id ${legacyDup.keyValue.employeeId} is already associated with another profile`,
         );
+      } else if (typeof serverMsg === 'string' && serverMsg.trim()) {
+        toast.error(serverMsg);
       } else {
         toast.error('Something went wrong');
       }
