@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Box, Tab, Tabs, Typography, alpha } from '@mui/material';
+import { Box, Tab, Tabs, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { IconFileDollar, IconUserPlus } from '@tabler/icons-react';
 
 import { tokens } from '../../theme/theme';
 import PaySlipPanel from './PaySlipPanel';
+import OnboardingDocsPanel from './OnboardingDocsPanel';
 
 const MotionBox = motion.create(Box);
 
@@ -64,42 +65,7 @@ export default function MyDocuments() {
       </Tabs>
 
       {tab === 'payslip' && <PaySlipPanel />}
-      {tab === 'onboarding' && <OnboardingPanel />}
+      {tab === 'onboarding' && <OnboardingDocsPanel />}
     </Box>
-  );
-}
-
-// Placeholder — TODO: surface onboarding checklist / paperwork here.
-function OnboardingPanel() {
-  return (
-    <MotionBox
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      sx={{
-        py: 10,
-        px: 3,
-        textAlign: 'center',
-        borderRadius: 4,
-        bgcolor: alpha(tokens.colors.blue, 0.04),
-        border: `1px dashed ${alpha(tokens.colors.blue, 0.3)}`,
-      }}
-    >
-      <Box sx={{
-        width: 60, height: 60, borderRadius: '50%',
-        bgcolor: alpha(tokens.colors.blue, 0.12),
-        color: tokens.colors.blue,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        mb: 2,
-      }}>
-        <IconUserPlus size={28} />
-      </Box>
-      <Typography sx={{ fontWeight: 700, fontSize: 16, color: tokens.colors.lightText }}>
-        Onboarding documents
-      </Typography>
-      <Typography sx={{ fontSize: 13, color: tokens.colors.lightTextSecondary, mt: 0.5, maxWidth: 420, mx: 'auto' }}>
-        This space will hold your offer letter, policy acknowledgements, and other first-day paperwork. We&rsquo;re still putting this together — check back soon.
-      </Typography>
-    </MotionBox>
   );
 }

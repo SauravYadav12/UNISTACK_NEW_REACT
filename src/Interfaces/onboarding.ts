@@ -293,6 +293,30 @@ export interface PublicCandidateView {
   additionalSignedDocuments?: OnboardingSignedAdditionalDoc[];
 }
 
+/**
+ * Response shape for GET /my-documents/onboarding — the employee-facing
+ * "show me my signed onboarding paperwork" endpoint. The server resolves
+ * the calling user → an OnboardingCandidate via lazy email match, so
+ * this responds with either `hasOnboarding: false` (no candidate on
+ * file for any email this user owns) or the full set of signed docs
+ * ready for OfferLetterRender + DocumentLetterRender.
+ */
+export type MyOnboardingDocsResponse =
+  | { hasOnboarding: false }
+  | {
+      hasOnboarding: true;
+      candidate: {
+        candId: string;
+        firstName: string;
+        lastName: string;
+        position: string;
+        stage: OnboardingStage;
+      };
+      offer: OnboardingOffer | null;
+      additionalSignedDocuments: OnboardingSignedAdditionalDoc[];
+      additionalDocSnapshots: OnboardingDocTemplateSnapshot[];
+    };
+
 // Public resolveToken payload.
 export type ResolveTokenResult =
   | {

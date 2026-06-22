@@ -14,6 +14,7 @@ import {
   OnboardingDocTemplate,
   PublicCandidateView,
   ResolveTokenResult,
+  MyOnboardingDocsResponse,
 } from '../Interfaces/onboarding';
 
 // ── Admin endpoints ─────────────────────────────────────────────
@@ -319,6 +320,21 @@ export async function signPublicAdditionalDoc(
   const res = await axiosClient.post<SignAdditionalDocResponse>(
     `/p/onboarding/${token}/sign-additional/${kind}`,
     payload,
+  );
+  return res.data;
+}
+
+// ── My Documents (employee-self) ────────────────────────────────
+
+/**
+ * Fetch the signed onboarding paperwork for the currently logged-in
+ * user. The server resolves the user → candidate via lazy email
+ * match, so existing onboarded employees see their docs the first
+ * time they open the My Documents → Onboarding tab — no admin step.
+ */
+export async function getMyOnboardingDocs() {
+  const res = await axiosClient.get<{ data: MyOnboardingDocsResponse }>(
+    '/my-documents/onboarding',
   );
   return res.data;
 }
