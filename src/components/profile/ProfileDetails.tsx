@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { MyDetail } from '../../Interfaces/profile';
 import { Box, Grid, Typography, alpha } from '@mui/material';
-import dayjs from 'dayjs';
 import { dateFormate } from '../constants';
 import { tokens } from '../../theme/theme';
+import { formatCalendarDate } from '../../utils/dateUtil';
 import {
   IconUser,
   IconCalendar,
@@ -38,13 +38,18 @@ const ProfileDetails = () => {
   useEffect(() => {
     const schema: MyDetail[] = [
       { label: 'Name', value: myProfile?.name },
-      { label: 'Date of Birth', value: myProfile?.dob ? dayjs(myProfile.dob).format(dateFormate) : '' },
+      // Use the UTC-based calendar formatter so the displayed date is
+      // exactly the calendar date that was saved, regardless of the
+      // viewer's timezone. Previously a user in IST who picked April
+      // 20 might see April 19 when the page reloaded — a 1-day shift
+      // caused by toISOString/local-TZ round-tripping.
+      { label: 'Date of Birth', value: formatCalendarDate(myProfile?.dob, dateFormate) },
       // Joining + relieving sit next to DOB so the timeline of the
       // employee's tenure reads top-to-bottom on the profile card.
       // Relieving renders only if set — active employees see nothing
       // there.
-      { label: 'Date of Joining', value: myProfile?.dateOfJoining ? dayjs(myProfile.dateOfJoining).format(dateFormate) : '' },
-      { label: 'Relieving Date', value: myProfile?.relievingDate ? dayjs(myProfile.relievingDate).format(dateFormate) : '' },
+      { label: 'Date of Joining', value: formatCalendarDate(myProfile?.dateOfJoining, dateFormate) },
+      { label: 'Relieving Date', value: formatCalendarDate(myProfile?.relievingDate, dateFormate) },
       { label: 'Personal Email', value: myProfile?.email.personal },
       { label: 'Official Email', value: myProfile?.email.official },
       { label: 'Phone Number', value: myProfile?.phoneNumber },

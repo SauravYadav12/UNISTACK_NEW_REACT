@@ -9,6 +9,10 @@ import PhoneField from './PhoneField';
 import { dateFormate } from '../../constants';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import { UserRole } from '../../../Interfaces/iUser';
+import {
+  toUtcMidnightISO,
+  formatCalendarDate,
+} from '../../../utils/dateUtil';
 
 const RenderFields = ({
   disabled,
@@ -94,7 +98,16 @@ const RenderFields = ({
               onClose={() => onBlur && onBlur(field)}
               disabled={disabled}
               label={label}
-              value={myProfile.dob ? dayjs(myProfile.dob) : null}
+              // Read the stored value in UTC so the picker always shows
+              // the same calendar date as when it was saved, regardless
+              // of the user's timezone. Without this, an IST user who
+              // saves April 20 might see April 19 when re-opening (the
+              // stored ISO instant slides across midnight in their TZ).
+              value={
+                myProfile.dob
+                  ? dayjs(formatCalendarDate(myProfile.dob as any, 'YYYY-MM-DD'))
+                  : null
+              }
               // The only `date` field rendered by this component is Date of
               // Birth — enforce the 18-year minimum age at the picker level
               // so the calendar itself greys out today and any date within
@@ -103,9 +116,17 @@ const RenderFields = ({
               disableFuture
               maxDate={dayjs().subtract(18, 'years')}
               onChange={(newValue) => {
+                // Convert to UTC-midnight ISO so storage is timezone-
+                // agnostic. Picker gives a local-TZ Dayjs; we extract
+                // Y/M/D and rebuild as UTC midnight. The server stores
+                // exactly the calendar date the user picked, no off-
+                // by-one regardless of server TZ.
+                const ymd = newValue
+                  ? `${newValue.year()}/${String(newValue.month() + 1).padStart(2, '0')}/${String(newValue.date()).padStart(2, '0')}`
+                  : '';
                 onChange({
                   target: {
-                    value: newValue ? dayjs(newValue).format(dateFormate) : '',
+                    value: ymd ? toUtcMidnightISO(ymd) : '',
                   },
                 } as any);
               }}

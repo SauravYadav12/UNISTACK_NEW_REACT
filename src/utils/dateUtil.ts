@@ -8,6 +8,93 @@ import mz, { Moment } from 'moment-timezone';
 import moment from 'moment';
 // import { getJUser } from './utils';
 
+/**
+ * Calendar-only date helpers — for fields that conceptually represent
+ * a CALENDAR DATE (Date of Birth, Date of Joining, etc.), not an
+ * instant in time. The naïve "send string, let Mongoose cast to Date"
+ * approach is timezone-broken: `new Date("1991/04/20")` parses as
+ * LOCAL midnight which becomes a different UTC instant depending on
+ * server TZ, and then `dayjs(stored).format('YYYY/MM/DD')` interprets
+ * the ISO back in CLIENT-local TZ. A user picks April 20 in IST, the
+ * server in UTC stores 1991-04-20T00:00Z, the client in UTC sees April
+ * 19 — classic off-by-one.
+ *
+ * The fix is to commit to UTC midnight at every boundary:
+ *   - SAVE side: `toUtcMidnightISO('1991/04/20')` → '1991-04-20T00:00:00.000Z'
+ *   - DISPLAY side: `formatCalendarDate(input, 'YYYY/MM/DD')` → '1991/04/20',
+ *     reading UTC components so the same ISO always renders the same
+ *     calendar date everywhere.
+ */
+
+/**
+ * Coerce a calendar-date input (YYYY/MM/DD string, YYYY-MM-DD string,
+ * Date, or ISO timestamp) into a UTC-midnight ISO string suitable for
+ * sending to the server. Returns '' for empty/invalid input.
+ */
+export function toUtcMidnightISO(
+  input: string | Date | undefined | null,
+): string {
+  if (!input) return '';
+  // Pull out the year/month/day components in the SOURCE's frame:
+  //   - String "YYYY/MM/DD" or "YYYY-MM-DD" → split manually so we
+  //     never go through new Date() (which would apply local-TZ
+  //     parsing rules and reintroduce the bug).
+  //   - Date / ISO string → use UTC components so we keep whatever
+  //     calendar date the storage already represents in UTC.
+  let y: number, m: number, d: number;
+  if (typeof input === 'string') {
+    const dateOnly = input.split('T')[0];
+    const parts = dateOnly.split(/[\/\-]/);
+    if (parts.length < 3) return '';
+    y = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+    d = parseInt(parts[2], 10);
+  } else {
+    const dt = input instanceof Date ? input : new Date(input);
+    if (Number.isNaN(dt.getTime())) return '';
+    y = dt.getUTCFullYear();
+    m = dt.getUTCMonth() + 1;
+    d = dt.getUTCDate();
+  }
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    return '';
+  }
+  return new Date(Date.UTC(y, m - 1, d)).toISOString();
+}
+
+/**
+ * Format a stored calendar-date value (ISO string, Date, or YYYY/MM/DD
+ * string) using UTC components — guarantees the same calendar date
+ * renders regardless of client TZ.
+ *
+ * `format` accepts a tiny set of tokens we actually use across the
+ * app: YYYY, MM, DD. Anything else passes through verbatim.
+ */
+export function formatCalendarDate(
+  input: string | Date | undefined | null,
+  format: string = 'YYYY/MM/DD',
+): string {
+  if (!input) return '';
+  let y: number, m: number, d: number;
+  if (typeof input === 'string' && /^\d{4}[\/\-]\d{2}[\/\-]\d{2}$/.test(input)) {
+    // Bare YYYY/MM/DD or YYYY-MM-DD — read literally, no parsing.
+    const parts = input.split(/[\/\-]/);
+    y = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+    d = parseInt(parts[2], 10);
+  } else {
+    const dt = input instanceof Date ? input : new Date(input);
+    if (Number.isNaN(dt.getTime())) return '';
+    y = dt.getUTCFullYear();
+    m = dt.getUTCMonth() + 1;
+    d = dt.getUTCDate();
+  }
+  return format
+    .replace('YYYY', String(y))
+    .replace('MM', String(m).padStart(2, '0'))
+    .replace('DD', String(d).padStart(2, '0'));
+}
+
 export const officeStartTimeInEst = { h: 9, m: 0 };
 export const officeStartTimeInIst = { h: 10, m: 0 };
 export const presentThresholdMinutes = 15;
