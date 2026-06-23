@@ -211,6 +211,19 @@ export default function CandidateHero({
                 color={tokens.colors.pink}
               />
             )}
+            {/* Official (corporate) email — surfaced as a separate
+                chip when HR has provisioned one. Same icon as the
+                invite email, blue accent + 'official' prefix so HR
+                can see at a glance whether this candidate is
+                already linked to a future user account. */}
+            {candidate.officialEmail && (
+              <ContactChip
+                icon={<IconMail size={12} />}
+                label={`official · ${candidate.officialEmail}`}
+                href={`mailto:${candidate.officialEmail}`}
+                color={tokens.colors.blue}
+              />
+            )}
             {candidate.phone && (
               <ContactChip
                 icon={<IconPhone size={12} />}

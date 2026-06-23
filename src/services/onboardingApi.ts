@@ -37,6 +37,10 @@ export interface CreateCandidatePayload {
   firstName: string;
   lastName: string;
   email: string;
+  /** Optional corporate email. Stored on the candidate so My
+   *  Documents → Onboarding can match it directly against
+   *  `User.email` once the candidate signs up. */
+  officialEmail?: string;
   phone?: string;
   position: string;
   proposedStartDate: string;

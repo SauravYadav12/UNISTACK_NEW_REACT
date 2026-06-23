@@ -75,6 +75,7 @@ function fromCandidate(c: OnboardingCandidate): FormState {
     firstName: c.firstName,
     lastName: c.lastName,
     email: c.email,
+    officialEmail: c.officialEmail || '',
     phone: c.phone || '',
     position: c.position,
     proposedStartDate: c.proposedStartDate
@@ -124,6 +125,9 @@ export default function EditCandidateDialog({
   }
 
   const emailValid = form ? isValidEmail(form.email) : false;
+  const officialEmailOk = form
+    ? !form.officialEmail || isValidEmail(form.officialEmail)
+    : false;
   const phoneOk = form ? !form.phone || isValidPhone(form.phone) : false;
 
   function valid(): boolean {
@@ -133,6 +137,7 @@ export default function EditCandidateDialog({
         form.lastName.trim() &&
         form.email.trim() &&
         emailValid &&
+        officialEmailOk &&
         phoneOk &&
         form.position.trim() &&
         form.proposedStartDate &&
@@ -234,6 +239,7 @@ export default function EditCandidateDialog({
       ? form.firstName !== candidate.firstName ||
         form.lastName !== candidate.lastName ||
         form.email !== candidate.email ||
+        (form.officialEmail || '') !== (candidate.officialEmail || '') ||
         form.phone !== (candidate.phone || '') ||
         form.position !== candidate.position ||
         form.proposedStartDate !==
@@ -354,6 +360,23 @@ export default function EditCandidateDialog({
                   form.phone && !phoneOk
                     ? 'Phone must be exactly 10 digits.'
                     : ' '
+                }
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="email"
+                label="Official email (optional)"
+                value={form.officialEmail ?? ''}
+                onChange={(e) => set('officialEmail', e.target.value)}
+                disabled={submitting}
+                error={Boolean(form.officialEmail) && !officialEmailOk}
+                helperText={
+                  form.officialEmail && !officialEmailOk
+                    ? 'Enter a valid email address.'
+                    : "Used to surface this candidate's signed docs to them once they sign in."
                 }
               />
             </Grid>

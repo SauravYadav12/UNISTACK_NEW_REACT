@@ -42,6 +42,7 @@ const DEFAULTS: CreateCandidatePayload = {
   firstName: '',
   lastName: '',
   email: '',
+  officialEmail: '',
   phone: '',
   position: '',
   proposedStartDate: moment().add(15, 'days').format('YYYY-MM-DD'),
@@ -65,6 +66,9 @@ export default function AddCandidateDialog({ open, onClose, onCreated }: Props) 
   // any value reaching state here is already digits-only, so all we
   // need is a length check.
   const emailValid = isValidEmail(form.email);
+  // Official email is optional; only validate when filled.
+  const officialEmailOk =
+    !form.officialEmail || isValidEmail(form.officialEmail);
   const phoneOk = !form.phone || isValidPhone(form.phone);
 
   function valid() {
@@ -73,6 +77,7 @@ export default function AddCandidateDialog({ open, onClose, onCreated }: Props) 
         form.lastName.trim() &&
         form.email.trim() &&
         emailValid &&
+        officialEmailOk &&
         phoneOk &&
         form.position.trim() &&
         form.proposedStartDate &&
@@ -181,6 +186,23 @@ export default function AddCandidateDialog({ open, onClose, onCreated }: Props) 
                 form.phone && !phoneOk
                   ? 'Phone must be exactly 10 digits.'
                   : ' '
+              }
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              size="small"
+              type="email"
+              label="Official email (optional)"
+              value={form.officialEmail ?? ''}
+              onChange={(e) => set('officialEmail', e.target.value)}
+              disabled={submitting}
+              error={Boolean(form.officialEmail) && !officialEmailOk}
+              helperText={
+                form.officialEmail && !officialEmailOk
+                  ? 'Enter a valid email address.'
+                  : "Used to surface this candidate's signed docs to them once they sign in."
               }
             />
           </Grid>

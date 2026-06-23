@@ -207,6 +207,10 @@ export interface OnboardingCandidateSummary {
   firstName: string;
   lastName: string;
   email: string;
+  /** HR-recorded corporate email — the address the candidate will log
+   *  in with after offer acceptance. Used as the primary match key for
+   *  My Documents → Onboarding. Empty when HR hasn't filled it in. */
+  officialEmail?: string;
   phone?: string;
   position: string;
   proposedStartDate: string;
@@ -239,6 +243,8 @@ export interface OnboardingCandidate {
   firstName: string;
   lastName: string;
   email: string;
+  /** See OnboardingCandidateSummary.officialEmail. */
+  officialEmail?: string;
   phone?: string;
   position: string;
   proposedStartDate: string;
