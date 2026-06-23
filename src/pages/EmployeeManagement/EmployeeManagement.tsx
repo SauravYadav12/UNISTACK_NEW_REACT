@@ -1,9 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Box, Stack, Tab, Tabs, Typography } from '@mui/material';
-import { IconShieldCheck, IconUserPlus } from '@tabler/icons-react';
+import {
+  IconHistory,
+  IconShieldCheck,
+  IconUserPlus,
+} from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ProbationApprovals from './ProbationApprovals';
 import OnboardingPanel from './OnboardingPanel';
+import BackdatedOnboardingPanel from './BackdatedOnboardingPanel';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { UserRole } from '../../Interfaces/iUser';
 
 /**
  * Employee Management
@@ -16,13 +23,17 @@ import OnboardingPanel from './OnboardingPanel';
  * deep link or browser-back/refresh lands on the right tab.
  */
 
-type TabKey = 'probation' | 'onboarding';
+type TabKey = 'probation' | 'onboarding' | 'backdated';
 
 interface TabDef {
   key: TabKey;
   label: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: React.ReactElement<any>;
+  /** Tab is hidden unless the viewer has at least one of these roles.
+   *  Undefined → visible to everyone who can already see Employee
+   *  Management at all. */
+  superAdminOnly?: boolean;
 }
 
 const TAB_DEFS: TabDef[] = [
@@ -36,19 +47,35 @@ const TAB_DEFS: TabDef[] = [
     label: 'Onboarding',
     icon: <IconUserPlus size={16} />,
   },
+  {
+    key: 'backdated',
+    label: 'Backdated Onboarding',
+    icon: <IconHistory size={16} />,
+    superAdminOnly: true,
+  },
 ];
 
 export default function EmployeeManagement() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { iUser } = useAuth();
+  const isSuperAdmin = Boolean(iUser?.role?.includes(UserRole['super-admin']));
+
+  // Tabs the current viewer is allowed to see. Backdated Onboarding
+  // is super-admin only — hidden from admin / HR so they can't even
+  // attempt a 403 from the server.
+  const visibleTabs = useMemo(
+    () => TAB_DEFS.filter((t) => !t.superAdminOnly || isSuperAdmin),
+    [isSuperAdmin],
+  );
 
   // Resolve the active tab from the URL. Unknown / missing values fall
   // back to the first tab so a stale link can't render a blank pane.
   const activeTab: TabKey = useMemo(() => {
     const raw = searchParams.get('tab');
-    const found = TAB_DEFS.find((t) => t.key === raw);
-    return found ? found.key : TAB_DEFS[0].key;
-  }, [searchParams]);
+    const found = visibleTabs.find((t) => t.key === raw);
+    return found ? found.key : visibleTabs[0].key;
+  }, [searchParams, visibleTabs]);
 
   const handleChange = (_: React.SyntheticEvent, next: TabKey) => {
     // Use replace so the back button doesn't fill up with tab-switches.
@@ -77,7 +104,7 @@ export default function EmployeeManagement() {
           variant="scrollable"
           scrollButtons="auto"
         >
-          {TAB_DEFS.map((t) => (
+          {visibleTabs.map((t) => (
             <Tab
               key={t.key}
               value={t.key}
@@ -93,6 +120,7 @@ export default function EmployeeManagement() {
       <Stack>
         {activeTab === 'probation' && <ProbationApprovals />}
         {activeTab === 'onboarding' && <OnboardingPanel />}
+        {activeTab === 'backdated' && isSuperAdmin && <BackdatedOnboardingPanel />}
         {/* Future tabs render here. Keep each as a self-contained
             sub-component fetching its own data so this shell stays
             zero-state-y and instant to render. */}

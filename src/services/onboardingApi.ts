@@ -19,9 +19,18 @@ import {
 
 // ── Admin endpoints ─────────────────────────────────────────────
 
-export async function listCandidates() {
+export interface ListCandidatesOptions {
+  /** When set, narrows the list to only-backdated (true) or
+   *  only-non-backdated (false). Omit to fetch everything (default). */
+  backdated?: boolean;
+}
+
+export async function listCandidates(opts: ListCandidatesOptions = {}) {
+  const params: Record<string, string> = {};
+  if (opts.backdated !== undefined) params.backdated = String(opts.backdated);
   const res = await axiosClient.get<{ data: OnboardingCandidateSummary[] }>(
     '/onboarding/candidates',
+    { params },
   );
   return res.data;
 }
@@ -339,6 +348,37 @@ export async function signPublicAdditionalDoc(
 export async function getMyOnboardingDocs() {
   const res = await axiosClient.get<{ data: MyOnboardingDocsResponse }>(
     '/my-documents/onboarding',
+  );
+  return res.data;
+}
+
+// ── Backdated onboarding (super-admin) ───────────────────────────
+
+export interface BackdatedOnboardingPayload {
+  userId: string;
+  position: string;
+  annualSalary: number;
+  probationMonths: number;
+  startDate: string;                // YYYY-MM-DD
+  offerSignedDate: string;          // YYYY-MM-DD
+  additionalDocsSignedDate: string; // YYYY-MM-DD
+  signedFullName: string;
+  signatureTypedName: string;
+  skipDocs?: OnboardingDocKind[];
+}
+
+/**
+ * Generate a backdated OnboardingCandidate for a legacy employee.
+ * Super-admin only on the server side. The synthesised record is
+ * automatically surfaced under My Documents → Onboarding for the
+ * picked user via the `officialEmail` primary-match path.
+ */
+export async function generateBackdatedOnboarding(
+  payload: BackdatedOnboardingPayload,
+) {
+  const res = await axiosClient.post<{ data: OnboardingCandidateSummary }>(
+    '/onboarding/candidates/backdated',
+    payload,
   );
   return res.data;
 }

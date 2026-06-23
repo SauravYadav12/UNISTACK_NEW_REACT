@@ -224,6 +224,9 @@ export interface OnboardingCandidateSummary {
   hasFormData: boolean;
   hasOffer: boolean;
   hasSignedOffer: boolean;
+  /** True for records synthesised by the super-admin Backdated
+   *  Onboarding flow (legacy / pre-portal employees). */
+  isBackdated?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -258,6 +261,8 @@ export interface OnboardingCandidate {
   offer?: OnboardingOffer;
   additionalDocSnapshots?: OnboardingDocTemplateSnapshot[];
   additionalSignedDocuments?: OnboardingSignedAdditionalDoc[];
+  /** See OnboardingCandidateSummary.isBackdated. */
+  isBackdated?: boolean;
   invitedBy: string;
   auditLog: OnboardingAuditEntry[];
   createdAt: string;

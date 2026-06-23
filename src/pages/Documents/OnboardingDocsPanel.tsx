@@ -198,20 +198,22 @@ interface OfferCardProps {
 function OfferDocumentCard({ title, description, offer, employeeName }: OfferCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const renderRef = useRef<HTMLDivElement | null>(null);
+  // Always-mounted hidden offscreen copy of the document. Download
+  // rasterises this directly so the user never sees the preview
+  // dialog flash open just to grab a PDF. Preview is its own
+  // explicit affordance.
+  const hiddenRef = useRef<HTMLDivElement | null>(null);
 
   const filename = `Unicodez-Offer-Letter-${employeeName.replace(/\s+/g, '-')}.pdf`;
 
   async function handleDownload() {
-    if (!renderRef.current) {
-      // Open preview first so the DOM exists, then download next tick.
-      setPreviewOpen(true);
-      setTimeout(() => handleDownload(), 400);
+    if (!hiddenRef.current) {
+      toast.error('Document not ready yet, try again.');
       return;
     }
     setDownloading(true);
     try {
-      await downloadSlipAsPdf(renderRef.current, filename);
+      await downloadSlipAsPdf(hiddenRef.current, filename);
     } catch (err) {
       console.error('Offer letter PDF download failed', err);
       toast.error('Could not generate PDF. Try again.');
@@ -219,6 +221,21 @@ function OfferDocumentCard({ title, description, offer, employeeName }: OfferCar
       setDownloading(false);
     }
   }
+
+  const offerRender = (
+    <OfferLetterRender
+      snapshot={offer.snapshot}
+      template={offer.templateAtSendTime}
+      signatureDataUrl={offer.signatureDataUrl}
+      signatureMode={offer.signatureMode}
+      signatureTypedName={offer.signatureTypedName}
+      signedFullName={offer.signedFullName}
+      signatureDate={offer.signatureDate}
+      signedByEmail={offer.signedByEmail}
+      signedFromIp={offer.signedFromIp}
+      signedFromLocation={offer.signedFromLocation}
+    />
+  );
 
   return (
     <>
@@ -230,6 +247,24 @@ function OfferDocumentCard({ title, description, offer, employeeName }: OfferCar
         onDownload={handleDownload}
         downloading={downloading}
       />
+      {/* Hidden offscreen mount — kept laid out (not display:none) so
+          html2canvas inside downloadSlipAsPdf can measure + clone it
+          when the user clicks Download. Pointer-events off + zIndex
+          negative so it never intercepts clicks. */}
+      <Box
+        ref={hiddenRef}
+        aria-hidden
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: '-10000px',
+          width: '210mm',
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      >
+        {offerRender}
+      </Box>
       <PreviewDialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -237,20 +272,7 @@ function OfferDocumentCard({ title, description, offer, employeeName }: OfferCar
         onDownload={handleDownload}
         downloading={downloading}
       >
-        <Box ref={renderRef}>
-          <OfferLetterRender
-            snapshot={offer.snapshot}
-            template={offer.templateAtSendTime}
-            signatureDataUrl={offer.signatureDataUrl}
-            signatureMode={offer.signatureMode}
-            signatureTypedName={offer.signatureTypedName}
-            signedFullName={offer.signedFullName}
-            signatureDate={offer.signatureDate}
-            signedByEmail={offer.signedByEmail}
-            signedFromIp={offer.signedFromIp}
-            signedFromLocation={offer.signedFromLocation}
-          />
-        </Box>
+        {offerRender}
       </PreviewDialog>
     </>
   );
@@ -270,7 +292,10 @@ function AdditionalDocumentCard({
 }: AdditionalDocCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const renderRef = useRef<HTMLDivElement | null>(null);
+  // See OfferDocumentCard — always-mounted hidden mount drives the
+  // direct-download path so the user never sees the preview dialog
+  // flash open just to grab a PDF.
+  const hiddenRef = useRef<HTMLDivElement | null>(null);
 
   const title = ONBOARDING_DOC_LABELS[kind];
   const description = signed
@@ -302,14 +327,13 @@ function AdditionalDocumentCard({
   }, [offerSnapshot, employeeName, fallbackPosition]);
 
   async function handleDownload() {
-    if (!renderRef.current) {
-      setPreviewOpen(true);
-      setTimeout(() => handleDownload(), 400);
+    if (!hiddenRef.current) {
+      toast.error('Document not ready yet, try again.');
       return;
     }
     setDownloading(true);
     try {
-      await downloadSlipAsPdf(renderRef.current, filename);
+      await downloadSlipAsPdf(hiddenRef.current, filename);
     } catch (err) {
       console.error(`${title} PDF download failed`, err);
       toast.error('Could not generate PDF. Try again.');
@@ -317,6 +341,15 @@ function AdditionalDocumentCard({
       setDownloading(false);
     }
   }
+
+  const docRender = (
+    <DocumentLetterRender
+      template={snapshot}
+      vars={vars}
+      signed={signed}
+      signedFullName={signed?.signedFullName}
+    />
+  );
 
   return (
     <>
@@ -329,6 +362,21 @@ function AdditionalDocumentCard({
         downloading={downloading}
         disabled={!signed}
       />
+      {/* Hidden offscreen mount — see OfferDocumentCard for rationale. */}
+      <Box
+        ref={hiddenRef}
+        aria-hidden
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: '-10000px',
+          width: '210mm',
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      >
+        {docRender}
+      </Box>
       <PreviewDialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -336,14 +384,7 @@ function AdditionalDocumentCard({
         onDownload={handleDownload}
         downloading={downloading}
       >
-        <Box ref={renderRef}>
-          <DocumentLetterRender
-            template={snapshot}
-            vars={vars}
-            signed={signed}
-            signedFullName={signed?.signedFullName}
-          />
-        </Box>
+        {docRender}
       </PreviewDialog>
     </>
   );
