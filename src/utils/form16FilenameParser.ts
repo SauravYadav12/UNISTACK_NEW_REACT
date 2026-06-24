@@ -3,18 +3,21 @@ import { parseFYStart } from './fiscalYearUtil';
 /**
  * Filename → structured fields + tiered employee matcher.
  *
- * TRACES + most Indian payroll systems name Form-16 PDFs with the
- * shape:
+ * Form-16 filenames from TRACES and most payroll exports embed the
+ * PAN, the financial year, and the employee name — but they use a
+ * grab-bag of separators (`_`, `-`, `.`, plain space). Earlier this
+ * parser tokenised on `_`/`-` only, which silently dropped the PAN
+ * for files like
  *
- *   NAME_PAN_FYYYYYYY_16_TAG.pdf
+ *   `Aditi.Shrivastava.NTAPS3330D.FY2024-25.16.pdf`
+ *   `Form 16 - NTAPS3330D - FY24-25 - Aditi.pdf`
  *
- * e.g. `ADITI SHRIVASTAVA_NTAPS3330D_FY202425_16_UNSIGNED.pdf`
- *
- * We extract name + PAN + FY then run a tiered match against the
- * employee lookup list (PAN exact → employeeId substring → name
- * exact → name fuzzy). Tier 1 alone resolves 95%+ of TRACES exports
- * since every Form-16 carries the PAN in its filename per TRACES
- * convention.
+ * The fix is to SEARCH for the structural fields anywhere in the
+ * filename via global regex. PAN has a uniquely-shaped 10-character
+ * pattern (`AAAAA9999A`) that never collides with English words, so a
+ * substring scan is safe. Same for the FY block. Whatever's left
+ * after the structural tokens are removed becomes the name fragment
+ * the fuzzy matcher reads.
  */
 
 export interface ParsedForm16Filename {
@@ -24,74 +27,106 @@ export interface ParsedForm16Filename {
   pan?: string;
   /** Canonical FY start year (e.g. 2024). */
   fiscalYearStart?: number;
-  /** True when the trailing tag is the literal "UNSIGNED". */
+  /** True when the filename carried the literal "UNSIGNED" tag. */
   isUnsigned?: boolean;
   /** Original filename (no extension), for debug surfaces. */
   raw: string;
 }
 
-const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const PAN_GLOBAL_RE = /[A-Z]{5}[0-9]{4}[A-Z]/;
+const FY_GLOBAL_RE = /FY\s*[-_]?\s*(\d{2,4})\s*[-_/]?\s*(\d{2,4})?/i;
 const EMPLOYEE_ID_RE = /UNI-\d{4}-\d{3}/i;
+const UNSIGNED_RE = /\bUNSIGNED\b/i;
 
 function stripExtension(name: string): string {
   return name.replace(/\.[A-Za-z0-9]+$/, '');
 }
 
 /**
- * Parse a single filename. Tolerant of underscores, spaces, dashes
- * between segments — these are normalised to a single `_` before
- * tokenising.
+ * Normalise raw text to A-Z + space tokens for name extraction. Digits
+ * and punctuation become spaces so we keep word boundaries without
+ * carrying noise into the matcher.
+ */
+function normaliseForName(s: string): string {
+  return s
+    .toUpperCase()
+    .replace(/[^A-Z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Parse a single filename. Tolerant of any separator scheme — `_`, `-`,
+ * `.`, space, or none — because PAN + FY are pulled out by global
+ * regex, not by tokenising on a specific delimiter.
  */
 export function parseForm16Filename(filename: string): ParsedForm16Filename {
   const stem = stripExtension(filename).trim();
   const raw = stem;
   if (!stem) return { raw };
 
-  // Allow either underscore or " - " between fields. Keep spaces
-  // inside the name token by NOT splitting on space here.
-  const normalised = stem.replace(/\s*[-_]\s*/g, '_').replace(/_+/g, '_');
-  const tokens = normalised
-    .split('_')
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
+  const upper = stem.toUpperCase();
 
+  // ── PAN ─────────────────────────────────────────────────────────
+  // Find the FIRST PAN-shaped substring anywhere in the filename.
+  // PAN is `AAAAA9999A` — a 10-char pattern that never accidentally
+  // matches an English word, so substring search is safe.
   let pan: string | undefined;
-  let fiscalYearStart: number | undefined;
-  let isUnsigned: boolean | undefined;
-  const nonStructuralTokens: string[] = [];
+  const panMatch = upper.match(PAN_GLOBAL_RE);
+  if (panMatch) pan = panMatch[0];
 
-  for (const token of tokens) {
-    const upper = token.toUpperCase();
-    if (!pan && PAN_RE.test(upper)) {
-      pan = upper;
-      continue;
+  // ── FY ──────────────────────────────────────────────────────────
+  // Match `FY2024-25`, `FY 2024 25`, `FY24-25`, `FY2425`, etc. Also
+  // a bare `FY2024` falls through to the parseFYStart helper.
+  let fiscalYearStart: number | undefined;
+  const fyMatch = stem.match(FY_GLOBAL_RE);
+  if (fyMatch) {
+    // Pass the matched substring through the canonical parser so
+    // the FY-with-end-year shorthand (`FY2024-25`, `FY2425`) is
+    // normalised to a start year.
+    const fy = parseFYStart(fyMatch[0]);
+    if (Number.isFinite(fy)) fiscalYearStart = fy;
+  }
+  // Fallback: if `FY` prefix wasn't present, try a bare 4-digit
+  // year followed by 2-digit end (e.g. `2024-25`) — common when the
+  // payroll system strips the `FY` label.
+  if (fiscalYearStart === undefined) {
+    const bare = stem.match(/\b(\d{4})\s*[-_/]\s*(\d{2})\b/);
+    if (bare) {
+      const fy = parseFYStart(`${bare[1]}-${bare[2]}`);
+      if (Number.isFinite(fy)) fiscalYearStart = fy;
     }
-    if (fiscalYearStart === undefined) {
-      const fy = parseFYStart(token);
-      if (Number.isFinite(fy)) {
-        fiscalYearStart = fy;
-        continue;
-      }
-    }
-    if (upper === 'UNSIGNED') {
-      isUnsigned = true;
-      continue;
-    }
-    // The literal "16" marker is a no-op for matching; skip it so
-    // the name extractor below doesn't mistake it for part of the name.
-    if (upper === '16' || upper === 'FORM16' || upper === 'FORM-16') {
-      continue;
-    }
-    nonStructuralTokens.push(token);
   }
 
-  // Name = whatever leading tokens are left after pulling out the
-  // structural fields. If multiple, join with space.
-  const employeeName = nonStructuralTokens
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toUpperCase();
+  // ── UNSIGNED tag ───────────────────────────────────────────────
+  const isUnsigned = UNSIGNED_RE.test(stem) || undefined;
+
+  // ── Name ────────────────────────────────────────────────────────
+  // Strip out everything we've already extracted from a copy of the
+  // filename, then normalise what's left. Whatever survives is the
+  // candidate's name fragment.
+  let nameSource = stem;
+  if (pan) nameSource = nameSource.replace(new RegExp(pan, 'gi'), ' ');
+  if (fyMatch) nameSource = nameSource.replace(fyMatch[0], ' ');
+  // Strip standalone year tokens (e.g. "2024-25", "2425") so they
+  // don't bleed into the name.
+  nameSource = nameSource
+    .replace(/\bFY\d{2,4}[-_/]?\d{0,2}\b/gi, ' ')
+    .replace(/\b\d{4}[-_/]\d{2}\b/g, ' ')
+    .replace(/\b\d{4}\d{2}\b/g, ' ');
+  // Strip the literal "Form 16" / "16" form-type marker.
+  nameSource = nameSource
+    .replace(/\bFORM[\s_-]*16\b/gi, ' ')
+    .replace(/\b16\b/g, ' ');
+  // Strip the UNSIGNED / SIGNED tag.
+  nameSource = nameSource
+    .replace(/\bUN?SIGNED\b/gi, ' ')
+    .replace(/\bSIGNED\b/gi, ' ');
+  // Strip any employee-id token (we keep it for matching but
+  // it shouldn't be part of the name).
+  nameSource = nameSource.replace(EMPLOYEE_ID_RE, ' ');
+
+  const employeeName = normaliseForName(nameSource);
 
   return {
     employeeName: employeeName || undefined,

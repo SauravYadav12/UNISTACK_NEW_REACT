@@ -58,6 +58,17 @@ interface Row {
   uploadedUrl?: string;
   errorMessage?: string;
   previewUrl?: string;          // object URL for the small preview iframe
+  /** PAN extracted by the filename parser, surfaced on the row so the
+   *  admin can visually verify what we detected even when the display
+   *  filename has been ellipsis-truncated. */
+  detectedPan?: string;
+  /** FY label parsed from the filename (separate from the row's
+   *  effective fyStart so the admin can tell when our parser found
+   *  one vs. when the row inherits the session default). */
+  detectedFYLabel?: string;
+  /** Name fragment the parser pulled out, for sanity-checking the
+   *  match when no PAN was present. */
+  detectedName?: string;
   /** AbortController for the in-flight axios upload — used on cancel. */
   abort?: AbortController;
 }
@@ -180,6 +191,11 @@ export default function UploadForm16Drawer({
       matchTier: match.tier,
       matchScore: match.score,
       ambiguous: match.ambiguous,
+      detectedPan: parsed.pan,
+      detectedFYLabel: parsed.fiscalYearStart
+        ? getFYLabel(parsed.fiscalYearStart)
+        : undefined,
+      detectedName: parsed.employeeName,
       status: 'pending',
       loadedBytes: 0,
       previewUrl,
@@ -839,68 +855,39 @@ export default function UploadForm16Drawer({
         </Stack>
 
         {/* ── Footer actions ──────────────────────────────────────── */}
+        {/* Order is Upload & Publish → Close. Close lives to the right
+            of the primary CTA so the eye lands on the primary first
+            and Close is only one tab away after the run completes. */}
         {!done && (
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 1 }}>
+          <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1} sx={{ pt: 1 }}>
+            <Button
+              variant="contained"
+              onClick={runUploadsAndPublish}
+              disabled={!allReady || running || employeesLoading || rows.length === 0}
+              startIcon={
+                running ? (
+                  <CircularProgress size={14} color="inherit" />
+                ) : (
+                  <IconUpload size={16} />
+                )
+              }
+              sx={{
+                bgcolor: tokens.colors.pink,
+                '&:hover': { bgcolor: tokens.colors.pinkDark },
+                textTransform: 'none',
+                fontWeight: 700,
+              }}
+            >
+              {running ? 'Uploading…' : `Upload & Publish (${rows.length})`}
+            </Button>
             <Button
               onClick={handleClose}
               disabled={running}
               startIcon={<IconX size={16} />}
+              sx={{ textTransform: 'none' }}
             >
-              Cancel
+              Close
             </Button>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Tooltip
-                title={
-                  sessionFY === null
-                    ? 'Pick a financial year first.'
-                    : employees.length > 0 && rows.length >= employees.length
-                      ? `One Form-16 per employee — cap reached (${employees.length}).`
-                      : ''
-                }
-              >
-                <span>
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      if (sessionFY === null) {
-                        toast.error('Pick a financial year first.');
-                        return;
-                      }
-                      fileInputRef.current?.click();
-                    }}
-                    disabled={
-                      running ||
-                      sessionFY === null ||
-                      (employees.length > 0 && rows.length >= employees.length)
-                    }
-                    startIcon={<IconFolderOpen size={16} />}
-                    sx={{ textTransform: 'none' }}
-                  >
-                    Add more files
-                  </Button>
-                </span>
-              </Tooltip>
-              <Button
-                variant="contained"
-                onClick={runUploadsAndPublish}
-                disabled={!allReady || running || employeesLoading || rows.length === 0}
-                startIcon={
-                  running ? (
-                    <CircularProgress size={14} color="inherit" />
-                  ) : (
-                    <IconUpload size={16} />
-                  )
-                }
-                sx={{
-                  bgcolor: tokens.colors.pink,
-                  '&:hover': { bgcolor: tokens.colors.pinkDark },
-                  textTransform: 'none',
-                  fontWeight: 700,
-                }}
-              >
-                {running ? 'Uploading…' : `Upload & Publish (${rows.length})`}
-              </Button>
-            </Stack>
           </Stack>
         )}
         {done && (
@@ -1049,6 +1036,52 @@ function RowCard({
               {oversize ? ' (over 10 MB cap)' : ''}
             </Typography>
             {statusChip}
+          </Stack>
+
+          {/* Parser-detected fields — surfaces PAN / FY / name found
+              in the filename so the admin can verify the match wasn't
+              fooled by visually-truncated text. Hidden once the row
+              has uploaded. */}
+          {(row.detectedPan || row.detectedFYLabel || row.detectedName) &&
+            row.status !== 'uploaded' && (
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: -0.5 }}>
+                <Typography
+                  sx={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    textTransform: 'uppercase',
+                    color: tokens.colors.lightTextSecondary,
+                  }}
+                >
+                  Detected:
+                </Typography>
+                {row.detectedPan && (
+                  <Typography sx={{ fontSize: 10.5, fontWeight: 600 }}>
+                    PAN <Box component="span" sx={{ fontFamily: 'monospace', color: '#10B981' }}>
+                      {row.detectedPan}
+                    </Box>
+                  </Typography>
+                )}
+                {row.detectedFYLabel && (
+                  <Typography sx={{ fontSize: 10.5, fontWeight: 600 }}>
+                    · FY <Box component="span" sx={{ color: '#10B981' }}>{row.detectedFYLabel}</Box>
+                  </Typography>
+                )}
+                {row.detectedName && (
+                  <Typography sx={{ fontSize: 10.5, fontWeight: 600 }}>
+                    · Name <Box component="span" sx={{ color: '#37B7EA' }}>{row.detectedName}</Box>
+                  </Typography>
+                )}
+                {!row.detectedPan && !row.detectedFYLabel && !row.detectedName && (
+                  <Typography sx={{ fontSize: 10.5, color: '#EF4444', fontWeight: 600 }}>
+                    Nothing parsed — pick the employee manually.
+                  </Typography>
+                )}
+              </Stack>
+            )}
+
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
             {tier && row.status === 'pending' && (
               <Chip
                 size="small"

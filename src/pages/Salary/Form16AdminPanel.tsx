@@ -17,7 +17,7 @@ import { tokens } from '../../theme/theme';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import {
   listForm16, publishForm16, unpublishForm16,
-  publishAllForFY, deleteForm16,
+  deleteForm16,
 } from '../../services/form16Api';
 import { usersList } from '../../services/authApi';
 import { Form16 } from '../../Interfaces/form16';
@@ -65,8 +65,6 @@ export default function Form16AdminPanel() {
   const [fyStart, setFyStart] = useState<number>(getCurrentFYStart());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [publishingAll, setPublishingAll] = useState(false);
-  const [confirmPublishAllOpen, setConfirmPublishAllOpen] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<Form16 | null>(null);
   // Per-row busy keyed by form16 id so a row action doesn't freeze
   // the whole grid.
@@ -118,34 +116,8 @@ export default function Form16AdminPanel() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [usersState.data, docsState.data]);
 
-  const draftCount = useMemo(
-    () => (docsState.data || []).filter((d) => !d.published).length,
-    [docsState.data],
-  );
-
   function refresh() {
     setRefreshKey((k) => k + 1);
-  }
-
-  async function handlePublishAll() {
-    setPublishingAll(true);
-    try {
-      const res = await publishAllForFY(fyStart);
-      toast.success(
-        `Published ${res.data.modifiedCount} Form-16${
-          res.data.modifiedCount === 1 ? '' : 's'
-        } for FY ${getFYLabel(fyStart)}.`,
-      );
-      refresh();
-    } catch (err) {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error || 'Publish all failed.';
-      toast.error(msg);
-    } finally {
-      setPublishingAll(false);
-      setConfirmPublishAllOpen(false);
-    }
   }
 
   async function handlePublishRow(row: RowData) {
@@ -400,17 +372,6 @@ export default function Form16AdminPanel() {
         </Stack>
         <Stack direction="row" spacing={1.25}>
           <Button
-            variant="outlined"
-            startIcon={<IconRocket size={16} />}
-            disabled={draftCount === 0 || publishingAll}
-            onClick={() => setConfirmPublishAllOpen(true)}
-            sx={{ textTransform: 'none' }}
-          >
-            {publishingAll
-              ? 'Publishing…'
-              : `Publish all draft (${draftCount}) · FY ${getFYLabel(fyStart)}`}
-          </Button>
-          <Button
             variant="contained"
             startIcon={<IconUpload size={16} />}
             onClick={() => setDrawerOpen(true)}
@@ -487,19 +448,6 @@ export default function Form16AdminPanel() {
         defaultFYStart={fyStart}
         onClose={() => setDrawerOpen(false)}
         onUploaded={refresh}
-      />
-
-      {/* ── Confirm: publish all ───────────────────────────────── */}
-      <ConfirmDialog
-        open={confirmPublishAllOpen}
-        title={`Publish all drafts for FY ${getFYLabel(fyStart)}?`}
-        description={`This will make ${draftCount} Form-16${
-          draftCount === 1 ? '' : 's'
-        } visible to the respective employees.`}
-        confirmLabel="Publish all"
-        tone="warning"
-        onClose={() => setConfirmPublishAllOpen(false)}
-        onConfirm={handlePublishAll}
       />
 
       {/* ── Confirm: delete row ────────────────────────────────── */}
