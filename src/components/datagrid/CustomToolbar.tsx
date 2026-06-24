@@ -1,4 +1,5 @@
 import { FormControlLabel, Box } from '@mui/material';
+import type { ReactNode } from 'react';
 import { Android12Switch } from '../../pages/Marketing/Profile/constants';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import {
@@ -26,8 +27,23 @@ import { dateFormate2 } from '../constants';
 import moment, { Moment } from 'moment';
 import { SearchOperator } from '../../hooks/paginationHook';
 
+// MUI X module augmentation — declare the extra prop callers can pass
+// through `slotProps.toolbar`, so the typed `slotProps.toolbar` block
+// in CustomDataGrid accepts our addition without an `as any` cast.
+declare module '@mui/x-data-grid' {
+  interface ToolbarPropsOverrides {
+    /** Optional ReactNode rendered inside the toolbar, between the
+     *  built-in actions (Columns / Density / Filters / Archive / Export)
+     *  and the QuickFilter search box. Used by pages that need a
+     *  page-specific filter chip cluster (e.g. star-colour filter on
+     *  the Requirements grid) without each page rolling its own toolbar. */
+    toolbarRightSlot?: ReactNode;
+  }
+}
+
 export default function CustomToolbar({
   setFilterButtonEl,
+  toolbarRightSlot,
 }: GridToolbarProps & ToolbarPropsOverrides) {
   const apiRef = useGridApiContext();
   const { isModuleAllowed } = useAuth();
@@ -85,6 +101,11 @@ export default function CustomToolbar({
       )}
       <GridToolbarExport csvOptions={csvOptions} />
       <Box sx={{ flexGrow: 1 }} />
+
+      {/* Page-supplied right-cluster content (renders between the
+          flex spacer and the QuickFilter, so it visually sits with
+          the search box rather than the built-in toolbar buttons). */}
+      {toolbarRightSlot}
 
       <GridToolbarQuickFilter
         placeholder="Search requirements..."

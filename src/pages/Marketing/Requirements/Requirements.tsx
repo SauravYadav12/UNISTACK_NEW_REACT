@@ -1802,57 +1802,6 @@ export default function Requirements() {
                 Add new
               </Button>
             )}
-            {/* Star colour filter — chips for All / Green / Yellow /
-                Orange. Clicking a colour pins the grid to parent rows
-                with that star; clicking it again (or "All") clears
-                the filter. Lives in the header strip alongside the
-                Refresh button so it sits with the other view-level
-                controls. */}
-            <Tooltip title="Filter by star colour" arrow>
-              <Stack
-                direction="row"
-                spacing={0.5}
-                sx={{
-                  bgcolor: alpha('#fff', 0.1),
-                  borderRadius: 2,
-                  px: 0.5,
-                  py: 0.25,
-                  alignItems: 'center',
-                }}
-              >
-                {(['', 'green', 'yellow', 'orange'] as const).map((c) => {
-                  const active = activeStarFilter === c;
-                  const hex = c === ''
-                    ? '#FFFFFF'
-                    : STAR_HEX[c as RequirementStarColor];
-                  return (
-                    <IconButton
-                      key={c || 'all'}
-                      size="small"
-                      onClick={() =>
-                        setStarFilter(c as RequirementStarColor | '')
-                      }
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        color: hex,
-                        bgcolor: active ? alpha(hex, 0.3) : 'transparent',
-                        border: active
-                          ? `1px solid ${alpha(hex, 0.7)}`
-                          : '1px solid transparent',
-                        '&:hover': { bgcolor: alpha(hex, 0.2) },
-                      }}
-                    >
-                      {c === '' ? (
-                        <IconStar size={14} />
-                      ) : (
-                        <IconStarFilled size={14} color={hex} />
-                      )}
-                    </IconButton>
-                  );
-                })}
-              </Stack>
-            </Tooltip>
             <Tooltip title="Refresh all">
               <IconButton
                 onClick={handleRefreshAll}
@@ -1889,7 +1838,74 @@ export default function Requirements() {
           />
         </MotionBox>
       )}
+
     </Box>
+  );
+
+  // ── Star-colour filter cluster ──
+  // Rendered inside the DataGrid's own toolbar via the new
+  // `toolbarRightSlot` prop, so it sits between the built-in actions
+  // (Columns / Density / Filters / Archive / Export) and the search
+  // box — exactly where it's most reachable for filtering work.
+  const starFilterSlot = (
+    <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mr: 1 }}>
+      <Typography
+        sx={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: 'text.secondary',
+          letterSpacing: 0.2,
+        }}
+      >
+        Stars:
+      </Typography>
+      <Stack
+        direction="row"
+        spacing={0.25}
+        sx={{
+          bgcolor: '#F6F9FC',
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'grey.200',
+          px: 0.5,
+          py: 0.25,
+          alignItems: 'center',
+        }}
+      >
+        {(['', 'green', 'yellow', 'orange'] as const).map((c) => {
+          const active = activeStarFilter === c;
+          const hex = c === '' ? '#94A3B8' : STAR_HEX[c as RequirementStarColor];
+          return (
+            <Tooltip
+              key={c || 'all'}
+              title={c === '' ? 'Show all' : `Show ${c} only`}
+              arrow
+            >
+              <IconButton
+                size="small"
+                onClick={() => setStarFilter(c as RequirementStarColor | '')}
+                sx={{
+                  width: 24,
+                  height: 24,
+                  color: hex,
+                  bgcolor: active ? alpha(hex, 0.15) : 'transparent',
+                  border: active
+                    ? `1px solid ${alpha(hex, 0.6)}`
+                    : '1px solid transparent',
+                  '&:hover': { bgcolor: alpha(hex, 0.12) },
+                }}
+              >
+                {c === '' ? (
+                  <IconStar size={12} />
+                ) : (
+                  <IconStarFilled size={12} color={hex} />
+                )}
+              </IconButton>
+            </Tooltip>
+          );
+        })}
+      </Stack>
+    </Stack>
   );
 
   // ── Form body (deferred behind loading / error) ──
@@ -1949,6 +1965,7 @@ export default function Requirements() {
         error={error}
         retry={reload}
         header={dataGridHeader}
+        toolbarRightSlot={starFilterSlot}
         rows={displayRows as unknown as any[]}
         columns={columns as unknown as GridColDef[]}
         loading={loading}

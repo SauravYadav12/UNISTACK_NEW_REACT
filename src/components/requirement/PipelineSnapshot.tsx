@@ -74,6 +74,12 @@ const STATUS_META: Record<
   },
 };
 
+// `Project Active` / `Project Inactive` are intentionally NOT rendered
+// here even though their meta lives in STATUS_META above — the team
+// found those tiles weren't useful for day-to-day pipeline scanning
+// and wanted them off the filter strip. The meta entries are kept so
+// any other surface that maps over STATUS_META (status chips, drawer
+// labels, etc.) keeps rendering the right label/colour.
 const STATUS_ORDER: (keyof typeof STATUS_META)[] = [
   'All',
   'AllAssigned',
@@ -81,8 +87,6 @@ const STATUS_ORDER: (keyof typeof STATUS_META)[] = [
   'Submission in progress',
   'Submitted',
   'Interviewed',
-  'Project Active',
-  'Project Inactive',
   'Cancelled',
 ];
 

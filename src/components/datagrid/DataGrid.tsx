@@ -137,7 +137,10 @@ function MyDataGrid(props: Iprops) {
               disabled: props.loading,
             },
             panel: { anchorEl: filterButtonEl },
-            toolbar: { setFilterButtonEl },
+            // Pass page-supplied right-cluster content through to the
+            // toolbar (rendered between the spacer and the search box).
+            // See `ToolbarPropsOverrides` augmentation in CustomToolbar.tsx.
+            toolbar: { setFilterButtonEl, toolbarRightSlot: props.toolbarRightSlot },
           }}
           getRowClassName={(params) =>
             params.row.dateSeparator ? 'date-separator-row' : ''
@@ -284,6 +287,10 @@ interface Iprops {
   archiveState?: ArchiveState;
   retry: () => void;
   onFilterModelChange?: (model: GridFilterModel, details: GridCallbackDetails<'filter'>) => void;
+  /** Optional content rendered inside the toolbar, between the built-in
+   *  buttons and the search box. Used by pages that need a page-specific
+   *  filter chip cluster (e.g. star-colour filter on Requirements). */
+  toolbarRightSlot?: React.ReactNode;
 }
 export interface PaginateState {
   totalRows: number;
