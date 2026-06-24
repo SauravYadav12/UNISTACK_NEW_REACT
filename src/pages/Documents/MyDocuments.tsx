@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { Box, Tab, Tabs, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
-import { IconFileDollar, IconUserPlus } from '@tabler/icons-react';
+import {
+  IconFileDollar,
+  IconUserPlus,
+  IconReceiptTax,
+} from '@tabler/icons-react';
 
 import { tokens } from '../../theme/theme';
 import PaySlipPanel from './PaySlipPanel';
 import OnboardingDocsPanel from './OnboardingDocsPanel';
+import Form16Panel from './Form16Panel';
 
 const MotionBox = motion.create(Box);
 
-type DocTab = 'payslip' | 'onboarding';
+type DocTab = 'payslip' | 'onboarding' | 'taxCenter';
 
 export default function MyDocuments() {
   const [tab, setTab] = useState<DocTab>('payslip');
@@ -34,7 +39,7 @@ export default function MyDocuments() {
           </Box>
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Payslips, onboarding paperwork, and anything else HR sends you
+          Payslips, onboarding paperwork, Form-16, and anything else HR sends you
         </Typography>
       </MotionBox>
 
@@ -62,10 +67,17 @@ export default function MyDocuments() {
           icon={<IconUserPlus size={16} />}
           iconPosition="start"
         />
+        <Tab
+          value="taxCenter"
+          label="Tax Center"
+          icon={<IconReceiptTax size={16} />}
+          iconPosition="start"
+        />
       </Tabs>
 
       {tab === 'payslip' && <PaySlipPanel />}
       {tab === 'onboarding' && <OnboardingDocsPanel />}
+      {tab === 'taxCenter' && <Form16Panel />}
     </Box>
   );
 }

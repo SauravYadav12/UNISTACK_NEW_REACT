@@ -56,7 +56,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-export default function Salary() {
+function PaySlipsAdminPanel() {
   const now = moment();
   const { iUser } = useAuth();
   const isSuperAdmin = !!iUser?.role?.includes(UserRole['super-admin']);
@@ -957,6 +957,67 @@ export default function Salary() {
           </Stack>
         }
       />
+    </Box>
+  );
+}
+
+// ── Top-level wrapper with tabs ──────────────────────────────────
+// The original Salary page now lives in `PaySlipsAdminPanel`. The
+// default export wraps it in a tab ribbon alongside the new Form-16
+// admin tab. URL syncs to ?tab=payslips|form16 so a deep link lands
+// the user on the right panel.
+
+import { Tab, Tabs } from '@mui/material';
+import { useSearchParams } from 'react-router-dom';
+import { IconReceiptTax, IconReceipt2 } from '@tabler/icons-react';
+import Form16AdminPanel from './Form16AdminPanel';
+
+type SalaryTab = 'payslips' | 'form16';
+
+export default function Salary() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as SalaryTab) === 'form16'
+    ? 'form16'
+    : 'payslips';
+  const [tab, setTab] = useState<SalaryTab>(initialTab);
+
+  function changeTab(next: SalaryTab) {
+    setTab(next);
+    const params = new URLSearchParams(searchParams);
+    if (next === 'payslips') params.delete('tab');
+    else params.set('tab', next);
+    setSearchParams(params, { replace: true });
+  }
+
+  return (
+    <Box>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => changeTab(v as SalaryTab)}
+        sx={{
+          mb: 2,
+          borderBottom: 1,
+          borderColor: 'divider',
+          '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 },
+          '& .Mui-selected': { color: tokens.colors.pink },
+          '& .MuiTabs-indicator': { bgcolor: tokens.colors.pink },
+        }}
+      >
+        <Tab
+          value="payslips"
+          label="Pay Slips"
+          icon={<IconReceipt2 size={16} />}
+          iconPosition="start"
+        />
+        <Tab
+          value="form16"
+          label="Form 16"
+          icon={<IconReceiptTax size={16} />}
+          iconPosition="start"
+        />
+      </Tabs>
+      {tab === 'payslips' && <PaySlipsAdminPanel />}
+      {tab === 'form16' && <Form16AdminPanel />}
     </Box>
   );
 }

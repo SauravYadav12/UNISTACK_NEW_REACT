@@ -27,11 +27,22 @@ export type StorageType =
   | 'invoice'
   | 'logo'
   | 'timesheet-screenshot'
-  | 'script';
+  | 'script'
+  | 'form16';
+
+export interface UploadFileOptions {
+  /** Fires as the upload progresses. `loaded` / `total` are bytes.
+   *  Used by the Form-16 drawer to drive the aggregate progress bar. */
+  onProgress?: (loaded: number, total: number) => void;
+  /** Optional AbortSignal so the caller can cancel an in-flight upload
+   *  (e.g. user closes the drawer mid-batch). */
+  signal?: AbortSignal;
+}
 
 export async function uploadFile(
   file: File,
   storageType: StorageType = 'docn',
+  options: UploadFileOptions = {},
 ) {
   const formData = new FormData();
   formData.append('file', file);
@@ -49,6 +60,16 @@ export async function uploadFile(
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      signal: options.signal,
+      onUploadProgress: options.onProgress
+        ? (evt) => {
+            // Axios reports `loaded` always; `total` may be missing
+            // when the runtime can't compute it (rare). Default to
+            // the file size we already know.
+            const total = evt.total ?? file.size;
+            options.onProgress?.(evt.loaded, total);
+          }
+        : undefined,
     },
   );
   return response;
