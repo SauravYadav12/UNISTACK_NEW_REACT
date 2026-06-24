@@ -32,8 +32,6 @@ import {
   IconCash,
   IconChevronLeft,
   IconChevronRight,
-  IconMoon,
-  IconSun,
   IconChevronDown,
   IconCalendarStats,
   IconUmbrella,
@@ -47,7 +45,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { drawerWidth, smallDrawerWidth } from '../constants';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { useThemeMode } from '../../theme/ThemeProvider';
 import {
   HomeModule,
   MarketingModule,
@@ -83,9 +80,7 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-  const { toggleMode, resolvedMode } = useThemeMode();
   const { isModuleAllowed, iUser, myProfileState } = useAuth();
-  const isDark = resolvedMode === 'dark';
 
   const profile = myProfileState?.data;
   const isSuperAdmin = iUser?.role?.includes(UserRole['super-admin']);
@@ -583,23 +578,6 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Bottom section */}
       <Box sx={{ mt: 'auto' }}>
-        <Divider sx={{ mx: collapsed ? 1 : 2, borderColor: alpha('#FFFFFF', 0.08) }} />
-
-        {/* Theme toggle */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            py: 1,
-          }}
-        >
-          <Tooltip title={isDark ? 'Light mode' : 'Dark mode'} placement="right">
-            <IconButton onClick={toggleMode} size="small" sx={{ color: alpha('#FFFFFF', 0.5), '&:hover': { color: tokens.colors.yellow } }}>
-              {isDark ? <IconSun size={18} /> : <IconMoon size={18} />}
-            </IconButton>
-          </Tooltip>
-        </Box>
-
         {/* User mini card */}
         {!collapsed && profile && (
           <Box
