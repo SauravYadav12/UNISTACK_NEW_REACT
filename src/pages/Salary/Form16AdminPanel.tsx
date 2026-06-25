@@ -210,33 +210,40 @@ export default function Form16AdminPanel() {
         headerAlign: 'center',
         renderCell: ({ row }) => {
           const doc = row.form16;
-          if (!doc) {
-            return (
-              <Chip
-                size="small"
-                label="Not uploaded"
-                variant="outlined"
-                sx={{ color: tokens.colors.lightTextSecondary }}
-              />
-            );
-          }
-          if (doc.published) {
-            return (
-              <Chip
-                size="small"
-                color="success"
-                icon={<IconCheck size={12} />}
-                label="Published"
-              />
-            );
-          }
-          return (
+          const chip = !doc ? (
+            <Chip
+              size="small"
+              label="Not uploaded"
+              variant="outlined"
+              sx={{ color: tokens.colors.lightTextSecondary }}
+            />
+          ) : doc.published ? (
+            <Chip
+              size="small"
+              color="success"
+              icon={<IconCheck size={12} />}
+              label="Published"
+            />
+          ) : (
             <Chip
               size="small"
               color="warning"
               icon={<IconAlertCircle size={12} />}
               label="Draft"
             />
+          );
+          return (
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {chip}
+            </Box>
           );
         },
       },
@@ -246,16 +253,31 @@ export default function Form16AdminPanel() {
         width: 150,
         align: 'center',
         headerAlign: 'center',
-        renderCell: ({ row }) =>
-          row.form16 ? (
-            <Tooltip title={row.form16.originalFilename || ''}>
-              <Typography sx={{ fontSize: 12 }}>
-                {moment(row.form16.uploadedAt).format('DD MMM YYYY')}
-              </Typography>
-            </Tooltip>
-          ) : (
-            <span>—</span>
-          ),
+        renderCell: ({ row }) => (
+          // Block-level Typography fills the cell and its text aligns
+          // left by default — even when the column has align:'center'.
+          // Wrap in a flex Box that fills the cell so the date sits
+          // dead-centre both horizontally and vertically.
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {row.form16 ? (
+              <Tooltip title={row.form16.originalFilename || ''}>
+                <Typography sx={{ fontSize: 12 }}>
+                  {moment(row.form16.uploadedAt).format('DD MMM YYYY')}
+                </Typography>
+              </Tooltip>
+            ) : (
+              <span>—</span>
+            )}
+          </Box>
+        ),
       },
       {
         field: 'published',
@@ -263,14 +285,25 @@ export default function Form16AdminPanel() {
         width: 150,
         align: 'center',
         headerAlign: 'center',
-        renderCell: ({ row }) =>
-          row.form16?.publishedAt ? (
-            <Typography sx={{ fontSize: 12 }}>
-              {moment(row.form16.publishedAt).format('DD MMM YYYY')}
-            </Typography>
-          ) : (
-            <span>—</span>
-          ),
+        renderCell: ({ row }) => (
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {row.form16?.publishedAt ? (
+              <Typography sx={{ fontSize: 12 }}>
+                {moment(row.form16.publishedAt).format('DD MMM YYYY')}
+              </Typography>
+            ) : (
+              <span>—</span>
+            )}
+          </Box>
+        ),
       },
       {
         field: 'actions',
@@ -284,7 +317,16 @@ export default function Form16AdminPanel() {
           const doc = row.form16;
           const busy = doc && rowBusyId === doc._id;
           return (
-            <Stack direction="row" spacing={0.5}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{
+                width: '100%',
+                height: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               {doc && (
                 <Tooltip title="Open PDF">
                   <IconButton
