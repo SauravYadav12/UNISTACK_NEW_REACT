@@ -179,6 +179,10 @@ export default function Form16AdminPanel() {
         headerName: 'Employee',
         flex: 1.4,
         minWidth: 200,
+        // Multi-line cell (name + email). Keep left so the two lines
+        // align cleanly with the column header.
+        align: 'left',
+        headerAlign: 'left',
         renderCell: ({ row }) => (
           <Box>
             <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{row.name}</Typography>
@@ -198,6 +202,12 @@ export default function Form16AdminPanel() {
         field: 'status',
         headerName: 'Status',
         width: 150,
+        // Short content (chip, date, icon row) reads cleanly when the
+        // header and cell share the same centred anchor. Without this,
+        // small content sits at the cell's left edge while the header
+        // sits at its own left edge — the eye reads them as misaligned.
+        align: 'center',
+        headerAlign: 'center',
         renderCell: ({ row }) => {
           const doc = row.form16;
           if (!doc) {
@@ -234,6 +244,8 @@ export default function Form16AdminPanel() {
         field: 'uploaded',
         headerName: 'Uploaded',
         width: 150,
+        align: 'center',
+        headerAlign: 'center',
         renderCell: ({ row }) =>
           row.form16 ? (
             <Tooltip title={row.form16.originalFilename || ''}>
@@ -249,6 +261,8 @@ export default function Form16AdminPanel() {
         field: 'published',
         headerName: 'Published on',
         width: 150,
+        align: 'center',
+        headerAlign: 'center',
         renderCell: ({ row }) =>
           row.form16?.publishedAt ? (
             <Typography sx={{ fontSize: 12 }}>
@@ -264,6 +278,8 @@ export default function Form16AdminPanel() {
         width: 260,
         sortable: false,
         filterable: false,
+        align: 'center',
+        headerAlign: 'center',
         renderCell: ({ row }) => {
           const doc = row.form16;
           const busy = doc && rowBusyId === doc._id;
