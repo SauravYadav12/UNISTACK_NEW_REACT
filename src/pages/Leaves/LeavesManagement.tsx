@@ -13,8 +13,9 @@ import moment from 'moment';
 import {
   IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconRefresh,
   IconPlaneDeparture, IconCalendar, IconChecks, IconPencil,
-  IconFlag, IconSettings,
+  IconFlag, IconSettings, IconPaperclip, IconUpload, IconFileText,
 } from '@tabler/icons-react';
+import { uploadFile } from '../../services/storageApi';
 import EditLeaveDialog from '../../components/leave/EditLeaveDialog';
 import LeaveSplitBadges from '../../components/leave/LeaveSplitBadges';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -34,6 +35,8 @@ import {
   getMyBalances, getYearBalances,
   updateAllocation, triggerYearlyReset,
   reseedUserBalances,
+  getMyProbationStatus,
+  ProbationStatus,
 } from '../../services/leaveTypesApi';
 import { getLeaves, updateLeave, createLeave } from '../../services/leavesApi';
 import { usersList } from '../../services/authApi';
@@ -429,15 +432,66 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
   });
   const [saving, setSaving] = useState(false);
   const [types, setTypes] = useState<LeaveType[]>([]);
+  // Probation snapshot — drives the type filter (UL-only) and the
+  // banner shown at the top of the dialog. Best-effort: if the lookup
+  // fails the user is treated as non-probation so the dialog stays
+  // usable; the server-side guard still 400s for any genuinely-on-
+  // probation user who tries to apply for paid leave.
+  const [probation, setProbation] = useState<ProbationStatus | null>(null);
+  // Uploaded supporting documents (e.g. medical certificate for ML).
+  // Stored as DO Spaces URLs once each upload succeeds — losing a
+  // re-render mid-upload doesn't lose progress because the URL is the
+  // single source of truth (the picked File is not retained).
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Filter the type picker:
+  //  - probationary users see ONLY the unpaid bucket (UL) since they
+  //    don't accrue any paid balance during probation;
+  //  - everyone else sees only the paid types — the dialog's footer
+  //    note explains the auto-overflow to UL on insufficient balance.
+  const visibleTypes = useMemo(() => {
+    if (probation?.onProbation) {
+      return types.filter((t) => t.active && t.isUnpaidBucket);
+    }
+    return types.filter((t) => t.active && !t.isUnpaidBucket);
+  }, [types, probation]);
+
+  // Derive the selected type so we can light up the attachment block
+  // for types that mandate supporting documentation (Medical Leave).
+  const selectedType = useMemo(
+    () => types.find((t) => t._id === form.leaveTypeId),
+    [types, form.leaveTypeId],
+  );
+  const requiresAttachment = !!selectedType?.requiresAttachment;
 
   useMemo(() => {
     (async () => {
       try {
-        const { data } = await listLeaveTypes();
-        setTypes(data || []);
-        if (data?.length && !form.leaveTypeId) {
-          const paidFirst = data.find((t) => t.paid && !t.isUnpaidBucket) || data[0];
-          setForm((f) => ({ ...f, leaveTypeId: paidFirst._id }));
+        // Fetch types + probation in parallel. Probation is best-
+        // effort — older servers without the endpoint return a
+        // shape that triggers the catch, and we degrade to
+        // non-probation so the dialog remains usable.
+        const [typesRes, probationData] = await Promise.all([
+          listLeaveTypes(),
+          getMyProbationStatus()
+            .then((r) => r.data)
+            .catch(() => ({ onProbation: false } as ProbationStatus)),
+        ]);
+        const data = typesRes.data || [];
+        setTypes(data);
+        setProbation(probationData);
+        // Default-pick honours the same rule as the dropdown filter:
+        // probation users default to UL, everyone else to the first
+        // paid type they can use.
+        if (data.length && !form.leaveTypeId) {
+          const onProb = !!probationData?.onProbation;
+          const firstChoice = onProb
+            ? data.find((t) => t.active && t.isUnpaidBucket)
+            : data.find((t) => t.paid && !t.isUnpaidBucket) || data[0];
+          if (firstChoice) {
+            setForm((f) => ({ ...f, leaveTypeId: firstChoice._id }));
+          }
         }
       } catch {
         toast.error('Failed to load leave types');
@@ -452,6 +506,15 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
       toast.error('End date must be after start date');
       return;
     }
+    // Attachment gate — the server enforces the same check, but
+    // surfacing it client-side avoids a needless round-trip and the
+    // user gets a clean toast instead of a 400.
+    if (requiresAttachment && attachments.length === 0) {
+      toast.error(
+        `${selectedType?.name || 'This leave type'} requires supporting documentation. Please attach a file before submitting.`,
+      );
+      return;
+    }
     setSaving(true);
     try {
       const fullname = `${me.firstName || ''} ${me.lastName || ''}`.trim() || me.email;
@@ -464,8 +527,11 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
         reason: form.reason,
         isHalfDay: form.isHalfDay,
         halfDayType: form.isHalfDay ? form.halfDayType : undefined,
+        ...(attachments.length > 0 ? { attachments } : {}),
       });
       toast.success('Leave request submitted');
+      // Reset attachments so a new request next time starts clean.
+      setAttachments([]);
       onCreated();
       onClose();
     } catch {
@@ -475,11 +541,58 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
     }
   }
 
+  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      // Upload sequentially — leave attachments are rarely more than a
+      // couple of files, and sequential keeps error attribution simple.
+      for (const file of Array.from(files)) {
+        const res = await uploadFile(file, 'docn');
+        const url = res.data?.data?.url;
+        if (url) setAttachments((prev) => [...prev, url]);
+      }
+    } catch {
+      toast.error('Upload failed. Try again.');
+    } finally {
+      setUploading(false);
+      // Reset the input so picking the same file again re-fires change.
+      e.target.value = '';
+    }
+  }
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Apply for Leave</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          {/* Probation banner — visible only when the user is in the
+              probation window. The picker below is auto-narrowed to
+              UL when this is true. */}
+          {probation?.onProbation && (
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: alpha('#f59e0b', 0.4),
+                bgcolor: alpha('#f59e0b', 0.08),
+              }}
+            >
+              <Typography sx={{ fontWeight: 700, fontSize: 12.5, color: '#92400e' }}>
+                Probation period
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: '#78350f', mt: 0.25 }}>
+                Paid leaves aren&rsquo;t available until{' '}
+                {probation.probationEnd
+                  ? moment(probation.probationEnd).format('DD MMM YYYY')
+                  : 'your probation ends'}
+                . Any leave during this period must be filed as Unpaid Leave (UL).
+              </Typography>
+            </Box>
+          )}
           <FormControl size="small" fullWidth>
             <InputLabel>Leave type</InputLabel>
             <Select
@@ -487,7 +600,7 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
               value={form.leaveTypeId}
               onChange={(e) => setForm((f) => ({ ...f, leaveTypeId: e.target.value }))}
             >
-              {types.filter((t) => t.active && !t.isUnpaidBucket).map((t) => (
+              {visibleTypes.map((t) => (
                 <MenuItem key={t._id} value={t._id}>
                   {t.name} ({t.code}) — {t.paid ? 'Paid' : 'Unpaid'}
                 </MenuItem>
@@ -541,15 +654,143 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
             value={form.reason}
             onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
           />
-          <Typography variant="caption" color="text.secondary">
-            If your balance is insufficient, the leave will be reclassified to Unpaid Leave (UL) on approval.
-          </Typography>
+
+          {/* Attachment block — shown when the picked leave type
+              requires supporting documentation (e.g. Medical Leave).
+              Files upload inline; the URL is stored in `attachments`
+              and persists across re-renders even if MUI tears down
+              the inner file input. */}
+          {requiresAttachment && (
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: attachments.length === 0
+                  ? alpha('#EF4444', 0.4)
+                  : alpha(tokens.colors.success, 0.4),
+                bgcolor: attachments.length === 0
+                  ? alpha('#EF4444', 0.04)
+                  : alpha(tokens.colors.success, 0.04),
+              }}
+            >
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <IconPaperclip size={16} color={tokens.colors.pink} />
+                <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
+                  Supporting document required
+                </Typography>
+              </Stack>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 1 }}
+              >
+                {selectedType?.name || 'This leave type'} needs a medical
+                certificate or doctor&rsquo;s note. Attach at least one PDF or
+                image before submitting.
+              </Typography>
+
+              <Button
+                component="label"
+                variant="outlined"
+                size="small"
+                startIcon={
+                  uploading ? (
+                    <CircularProgress size={14} />
+                  ) : (
+                    <IconUpload size={14} />
+                  )
+                }
+                disabled={uploading || saving}
+                sx={{ textTransform: 'none' }}
+              >
+                {uploading ? 'Uploading…' : 'Attach file'}
+                <input
+                  type="file"
+                  hidden
+                  multiple
+                  accept="application/pdf,image/*"
+                  onChange={handleFilePick}
+                />
+              </Button>
+
+              {attachments.length > 0 && (
+                <Stack spacing={0.5} sx={{ mt: 1.5 }}>
+                  {attachments.map((url, idx) => (
+                    <Stack
+                      key={url + idx}
+                      direction="row"
+                      alignItems="center"
+                      spacing={1}
+                      sx={{
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        bgcolor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    >
+                      <IconFileText size={14} color={tokens.colors.lightTextSecondary} />
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          flex: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: tokens.colors.blue,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          Attachment {idx + 1}
+                        </a>
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() =>
+                          setAttachments((prev) =>
+                            prev.filter((_, i) => i !== idx),
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        <IconX size={14} />
+                      </IconButton>
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          )}
+
+          {!probation?.onProbation && (
+            <Typography variant="caption" color="text.secondary">
+              If your balance is insufficient, the leave will be reclassified to Unpaid Leave (UL) on approval.
+            </Typography>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose} disabled={saving}>Cancel</Button>
         <Button
-          variant="contained" onClick={handleSubmit} disabled={saving}
+          variant="contained"
+          onClick={handleSubmit}
+          // Block submit while an upload is in-flight or the required
+          // attachment for the picked type is still missing. Server
+          // enforces the same; this is the cooperative UI.
+          disabled={
+            saving ||
+            uploading ||
+            (requiresAttachment && attachments.length === 0)
+          }
           sx={{ bgcolor: tokens.colors.pink, '&:hover': { bgcolor: tokens.colors.pinkDark } }}
         >
           {saving ? 'Submitting…' : 'Submit'}
