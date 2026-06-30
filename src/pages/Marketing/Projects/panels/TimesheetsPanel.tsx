@@ -28,6 +28,7 @@ import {
   IconDeviceFloppy,
   IconFileInvoice,
   IconPhoto,
+  IconPlus,
   IconSend,
   IconTrash,
   IconX,
@@ -40,6 +41,7 @@ import {
   ITimesheetApproval,
   ITimesheetEntry,
   ITimesheetScreenshot,
+  ITimesheetScreenshotSlot,
   TimesheetApprovalStatus,
 } from '../../../../Interfaces/timesheet';
 import { UserRole } from '../../../../Interfaces/iUser';
@@ -55,6 +57,7 @@ import {
   getTimesheetByMonth,
   markTimesheetComplete,
   removeTimesheetScreenshot,
+  setTimesheetScreenshotSlots,
   upsertTimesheet,
 } from '../../../../services/timesheetApi';
 import { uploadFile } from '../../../../services/storageApi';
@@ -938,6 +941,7 @@ export default function TimesheetsPanel({
           timesheetId={doc._id}
           periodMonth={periodMonth}
           screenshots={doc.screenshots || []}
+          persistedSlots={doc.screenshotSlots || []}
           disabled={lockedForViewer}
           onChange={(next) => setDoc(next)}
         />
@@ -997,26 +1001,45 @@ export default function TimesheetsPanel({
 }
 
 // ── Screenshots section ──────────────────────────────────────────────────
-// Groups the monthly timesheet's screenshots into 7-day week buckets,
-// matching the invoice line-item chunking (Day 1-7, 8-14, etc.). Each week
-// card has an upload button + thumbnail list. Screenshots ride along as
-// email attachments on invoice raise.
+// Each timesheet exposes a list of free-text "upload row" slots. When the
+// timesheet has never been edited, the panel renders auto-derived weekly
+// buckets as a starting suggestion; the first time the user adds a row,
+// renames one, or uploads to one, the entire slot list is persisted as
+// canonical (and any legacy weekStart/weekEnd-keyed screenshots are rebound
+// by their bounds via the server's backfill hint).
 
-interface WeekSlot {
-  startDate: string;
-  endDate: string;
+interface SlotView {
+  /** Stable client key for React. Equals the slot's _id when persisted,
+   *  or a synthetic key derived from the row index when not. */
+  key: string;
+  /** Slot _id once persisted; undefined for ephemeral auto-derived rows. */
+  _id?: string;
   label: string;
+  /** First-save backfill hints — only present on auto-derived rows. */
+  weekStart?: string;
+  weekEnd?: string;
   shots: ITimesheetScreenshot[];
 }
 
-function buildWeekSlots(
+function deriveSlots(
   periodMonth: string,
+  persistedSlots: ITimesheetScreenshotSlot[],
   shots: ITimesheetScreenshot[]
-): WeekSlot[] {
+): SlotView[] {
+  if (persistedSlots.length > 0) {
+    return persistedSlots.map((slot, i) => ({
+      key: slot._id || `persisted-${i}`,
+      _id: slot._id,
+      label: slot.label,
+      shots: shots.filter((s) => s._id && s.slotId === slot._id),
+    }));
+  }
+  // Auto-derive default week buckets. Legacy screenshots pair to these by
+  // weekStart/weekEnd; they'll be rebound to the persisted slot _id on
+  // first save (server-side backfill).
   const [year, month] = periodMonth.split('-').map(Number);
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const slots: WeekSlot[] = [];
-
+  const slots: SlotView[] = [];
   for (let start = 1; start <= lastDay; start += 7) {
     const end = Math.min(start + 6, lastDay);
     const startISO = `${periodMonth}-${String(start).padStart(2, '0')}`;
@@ -1025,7 +1048,13 @@ function buildWeekSlots(
     const bucket = shots.filter(
       (s) => s.weekStart === startISO && s.weekEnd === endISO
     );
-    slots.push({ startDate: startISO, endDate: endISO, label, shots: bucket });
+    slots.push({
+      key: `auto-${startISO}`,
+      label,
+      weekStart: startISO,
+      weekEnd: endISO,
+      shots: bucket,
+    });
   }
   return slots;
 }
@@ -1034,21 +1063,104 @@ function ScreenshotsSection({
   timesheetId,
   periodMonth,
   screenshots,
+  persistedSlots,
   disabled,
   onChange,
 }: {
   timesheetId: string;
   periodMonth: string;
   screenshots: ITimesheetScreenshot[];
+  persistedSlots: ITimesheetScreenshotSlot[];
   disabled: boolean;
   onChange: (next: ITimesheet) => void;
 }) {
-  const slots = buildWeekSlots(periodMonth, screenshots);
-  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const baseSlots = useMemo(
+    () => deriveSlots(periodMonth, persistedSlots, screenshots),
+    [periodMonth, persistedSlots, screenshots]
+  );
+  // Locally-edited labels keyed by slot.key. Cleared after a successful save.
+  const [labelDrafts, setLabelDrafts] = useState<Record<string, string>>({});
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [savingSlots, setSavingSlots] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const debounceRef = useRef<number | null>(null);
 
-  async function handleUpload(slot: WeekSlot, file: File) {
+  // The "view" the UI renders — base slots overlaid with any in-flight
+  // label drafts so the input doesn't snap back to the saved value mid-typing.
+  const slots: SlotView[] = baseSlots.map((s) => ({
+    ...s,
+    label: labelDrafts[s.key] ?? s.label,
+  }));
+
+  // Build a payload for the slot-set endpoint from the current view.
+  // Auto-derived rows include their weekStart/weekEnd as backfill hints.
+  function buildPayload(view: SlotView[]) {
+    return view.map((s) => ({
+      _id: s._id,
+      label: s.label,
+      weekStart: s.weekStart,
+      weekEnd: s.weekEnd,
+    }));
+  }
+
+  async function persistSlots(nextView: SlotView[]) {
+    setSavingSlots(true);
+    try {
+      const res = await setTimesheetScreenshotSlots(
+        timesheetId,
+        buildPayload(nextView)
+      );
+      if (res.data?.data) {
+        onChange(res.data.data);
+        setLabelDrafts({});
+        return res.data.data;
+      }
+    } catch {
+      toast.error('Could not save row');
+    } finally {
+      setSavingSlots(false);
+    }
+    return null;
+  }
+
+  function handleLabelChange(key: string, val: string) {
+    setLabelDrafts((d) => ({ ...d, [key]: val }));
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      const next = baseSlots.map((s) =>
+        s.key === key
+          ? { ...s, label: val }
+          : { ...s, label: labelDrafts[s.key] ?? s.label }
+      );
+      void persistSlots(next);
+    }, 700);
+  }
+
+  async function handleAddRow() {
+    const next: SlotView[] = [
+      ...slots,
+      { key: `new-${slots.length}`, label: 'New row', shots: [] },
+    ];
+    await persistSlots(next);
+  }
+
+  async function handleRemoveRow(target: SlotView) {
+    if (
+      target.shots.length > 0 &&
+      !window.confirm(
+        `Remove "${target.label || 'this row'}"? Its ${target.shots.length} screenshot${
+          target.shots.length === 1 ? '' : 's'
+        } will be deleted too.`
+      )
+    ) {
+      return;
+    }
+    const next = slots.filter((s) => s.key !== target.key);
+    await persistSlots(next);
+  }
+
+  async function handleUpload(slot: SlotView, file: File) {
     if (!file.type.startsWith('image/')) {
       toast.error('Only image files are allowed');
       return;
@@ -1057,16 +1169,26 @@ function ScreenshotsSection({
       toast.error('Screenshot must be under 5 MB');
       return;
     }
-    setUploadingSlot(slot.startDate);
+    setUploadingKey(slot.key);
     try {
+      // Step 1: ensure the slot is persisted so we have a stable slotId.
+      let slotId = slot._id;
+      if (!slotId) {
+        const saved = await persistSlots(slots);
+        if (!saved) return;
+        const idx = slots.findIndex((s) => s.key === slot.key);
+        slotId = (saved.screenshotSlots || [])[idx]?._id;
+        if (!slotId) {
+          toast.error('Could not resolve row');
+          return;
+        }
+      }
+      // Step 2: upload the file + bind to the slot.
       const uploadRes = await uploadFile(file, 'timesheet-screenshot');
       const url = uploadRes.data?.data?.url;
       if (!url) throw new Error('Upload failed — no URL');
-
       const res = await addTimesheetScreenshot(timesheetId, {
-        weekStart: slot.startDate,
-        weekEnd: slot.endDate,
-        weekLabel: slot.label,
+        slotId,
         url,
         fileName: file.name,
         sizeBytes: file.size,
@@ -1084,7 +1206,7 @@ function ScreenshotsSection({
         'Upload failed';
       toast.error(msg);
     } finally {
-      setUploadingSlot(null);
+      setUploadingKey(null);
     }
   }
 
@@ -1137,10 +1259,10 @@ function ScreenshotsSection({
 
       <Stack spacing={1}>
         {slots.map((slot) => {
-          const uploading = uploadingSlot === slot.startDate;
+          const uploading = uploadingKey === slot.key;
           return (
             <Box
-              key={slot.startDate}
+              key={slot.key}
               sx={{
                 borderRadius: 2.5,
                 border: '1px solid',
@@ -1155,13 +1277,32 @@ function ScreenshotsSection({
                 spacing={1}
                 sx={{ px: 1.5, py: 1 }}
               >
-                <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>
-                    {slot.label}
-                  </Typography>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <TextField
+                    size="small"
+                    variant="standard"
+                    fullWidth
+                    value={slot.label}
+                    placeholder="Untitled row"
+                    disabled={disabled}
+                    onChange={(e) => handleLabelChange(slot.key, e.target.value)}
+                    InputProps={{
+                      disableUnderline: true,
+                      sx: {
+                        fontWeight: 800,
+                        fontSize: '0.85rem',
+                        '&:hover': { bgcolor: alpha(tokens.colors.blue, 0.04) },
+                        '&.Mui-focused': {
+                          bgcolor: alpha(tokens.colors.blue, 0.06),
+                        },
+                        borderRadius: 1,
+                        px: 0.5,
+                      },
+                    }}
+                  />
                   <Typography
                     variant="caption"
-                    sx={{ color: tokens.colors.lightTextSecondary }}
+                    sx={{ color: tokens.colors.lightTextSecondary, pl: 0.5 }}
                   >
                     {slot.shots.length} screenshot
                     {slot.shots.length === 1 ? '' : 's'}
@@ -1171,7 +1312,7 @@ function ScreenshotsSection({
                   type="file"
                   accept="image/*"
                   hidden
-                  ref={(el) => (fileRefs.current[slot.startDate] = el)}
+                  ref={(el) => (fileRefs.current[slot.key] = el)}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     e.target.value = '';
@@ -1181,8 +1322,8 @@ function ScreenshotsSection({
                 <Button
                   size="small"
                   variant="outlined"
-                  disabled={disabled || uploading}
-                  onClick={() => fileRefs.current[slot.startDate]?.click()}
+                  disabled={disabled || uploading || savingSlots}
+                  onClick={() => fileRefs.current[slot.key]?.click()}
                   startIcon={
                     uploading ? (
                       <CircularProgress size={12} />
@@ -1204,6 +1345,21 @@ function ScreenshotsSection({
                 >
                   {uploading ? 'Uploading…' : 'Upload'}
                 </Button>
+                <Tooltip title="Remove row">
+                  <span>
+                    <IconButton
+                      size="small"
+                      disabled={disabled || uploading || savingSlots}
+                      onClick={() => handleRemoveRow(slot)}
+                      sx={{
+                        color: '#EF4444',
+                        '&:hover': { bgcolor: alpha('#EF4444', 0.08) },
+                      }}
+                    >
+                      <IconTrash size={14} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
               </Stack>
 
               {slot.shots.length > 0 && (
@@ -1294,6 +1450,32 @@ function ScreenshotsSection({
           );
         })}
       </Stack>
+
+      <Box sx={{ mt: 1.25, display: 'flex', justifyContent: 'flex-start' }}>
+        <Button
+          size="small"
+          variant="outlined"
+          disabled={disabled || savingSlots}
+          onClick={handleAddRow}
+          startIcon={
+            savingSlots ? <CircularProgress size={12} /> : <IconPlus size={14} />
+          }
+          sx={{
+            textTransform: 'none',
+            fontWeight: 700,
+            borderRadius: 2,
+            borderStyle: 'dashed',
+            borderColor: alpha(tokens.colors.blue, 0.4),
+            color: tokens.colors.blueDark,
+            '&:hover': {
+              bgcolor: alpha(tokens.colors.blue, 0.06),
+              borderColor: tokens.colors.blueDark,
+            },
+          }}
+        >
+          Add row
+        </Button>
+      </Box>
 
       {/* Lightbox — click a thumbnail to zoom. Plain <img> in a centered
           overlay, no library needed. */}

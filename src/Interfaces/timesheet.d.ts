@@ -3,10 +3,18 @@ export interface ITimesheetEntry {
   hours: number;
 }
 
+export interface ITimesheetScreenshotSlot {
+  _id?: string;
+  label: string;
+}
+
 export interface ITimesheetScreenshot {
   _id?: string;
-  weekStart: string;
-  weekEnd: string;
+  /** Binds the screenshot to a slot in `ITimesheet.screenshotSlots`. */
+  slotId?: string;
+  /** Legacy / optional now that slots are free-text. */
+  weekStart?: string;
+  weekEnd?: string;
   weekLabel?: string;
   url: string;
   fileName: string;
@@ -28,6 +36,7 @@ export interface ITimesheet {
   completedAt?: string;
   completedBy?: string;
   screenshots?: ITimesheetScreenshot[];
+  screenshotSlots?: ITimesheetScreenshotSlot[];
   filledBy?: string;
   notes?: string;
   createdAt: string;
