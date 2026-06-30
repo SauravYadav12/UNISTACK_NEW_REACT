@@ -624,10 +624,15 @@ export default function TimesheetsPanel({
               {approval.requestedAt && ` · ${moment(approval.requestedAt).fromNow()}`}
             </Typography>
           )}
-          {approval?.status === 'Approved' && (
+          {approval?.status === 'Approved' && approval.generatedInvoiceRef && (
             <Typography sx={{ fontWeight: 700 }}>
               Approved — invoice drafted
               {approval.approvedAt && ` · ${moment(approval.approvedAt).fromNow()}`}
+            </Typography>
+          )}
+          {approval?.status === 'Approved' && !approval.generatedInvoiceRef && (
+            <Typography sx={{ fontWeight: 700, color: '#B45309' }}>
+              Approved — invoice was removed. Ask super-admin to regenerate.
             </Typography>
           )}
           {approval?.status === 'Rejected' && (
@@ -827,15 +832,20 @@ export default function TimesheetsPanel({
 
               <Tooltip
                 title={
-                  approval?.status === 'Approved'
+                  approval?.status === 'Approved' && approval.generatedInvoiceRef
                     ? 'Open the drafted invoice'
-                    : 'Enabled once super-admin approves'
+                    : approval?.status === 'Approved'
+                      ? 'The drafted invoice was removed — ask super-admin to regenerate'
+                      : 'Enabled once super-admin approves'
                 }
               >
                 <span>
                   <Button
                     variant="contained"
-                    disabled={approval?.status !== 'Approved'}
+                    disabled={
+                      approval?.status !== 'Approved' ||
+                      !approval.generatedInvoiceRef
+                    }
                     onClick={() => onInvoiceMaybeCreated?.()}
                     startIcon={<IconFileInvoice size={16} />}
                     sx={{
