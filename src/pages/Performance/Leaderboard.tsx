@@ -43,11 +43,7 @@ function scoringLinesForRole(
       },
       {
         kind: 'earn',
-        text: `+${w.INTERVIEW_CONFIRM_WEIGHT ?? 3} points for every client interview that lands in Confirmed (partial credit — confirms that never complete get clawed back below)`,
-      },
-      {
-        kind: 'earn',
-        text: `+${w.INTERVIEW_COMPLETED_WEIGHT ?? 10} points for every client interview that reaches Completed (the real win)`,
+        text: `+${w.INTERVIEW_COMPLETED_WEIGHT ?? 10} points for every client interview that reaches Completed (the real win — Confirmed alone no longer earns points)`,
       },
       {
         kind: 'earn',
