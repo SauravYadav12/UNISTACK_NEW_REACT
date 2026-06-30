@@ -345,6 +345,11 @@ function InvoiceModal({
         notes: invoice.notes,
         invoiceNumber: invoice.invoiceNumber,
         issueDate: invoice.issueDate || moment().format('YYYY-MM-DD'),
+        // Pre-seed the manual due-date override only when the invoice
+        // already carries one (rare on a fresh draft — usually empty).
+        // Empty here means the editor's auto-suggest will populate the
+        // visible field from issueDate + paymentTerms.days.
+        dueDate: invoice.dueDate || '',
       });
       setDirty(false);
     } else {
@@ -486,6 +491,11 @@ function InvoiceModal({
               cc: ccList,
               subject: emailForm.subject,
               body: emailForm.body,
+              // Pass the admin's issueDate + dueDate overrides through
+              // to the server. Empty / undefined values fall back to
+              // today (issue) and issue + paymentTerms.days (due).
+              issueDate: draft?.issueDate || undefined,
+              dueDate: draft?.dueDate || undefined,
             })
           : await resendInvoiceEmail(inv._id, {
               pdfUrl,
@@ -607,6 +617,7 @@ function InvoiceModal({
             value={draft}
             currency={inv.currency}
             canEditMeta={canEditMeta}
+            paymentTermsDays={project.paymentTerms?.days ?? 30}
             onChange={(next) => {
               setDraft(next);
               setDirty(true);

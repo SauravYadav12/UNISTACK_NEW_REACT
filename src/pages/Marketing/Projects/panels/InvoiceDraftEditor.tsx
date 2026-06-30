@@ -8,6 +8,7 @@ import {
   alpha,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
+import moment from 'moment';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { tokens } from '../../../../theme/theme';
 import { IInvoiceLineItem } from '../../../../Interfaces/invoice';
@@ -23,15 +24,33 @@ interface DraftEditorState {
   invoiceNumber?: string;
   /** Admin / super-admin only — issue date as YYYY-MM-DD. */
   issueDate?: string;
+  /** Admin / super-admin only — manual override of the auto-computed
+   *  due date (YYYY-MM-DD). Empty string clears the override and the
+   *  server falls back to `issueDate + project.paymentTerms.days`. */
+  dueDate?: string;
 }
 
 interface Props {
   value: DraftEditorState;
   currency: string;
-  /** When true, renders the Invoice # + Issue date inputs. Only admin
-   *  and super-admin get this privilege. */
+  /** When true, renders the Invoice # + Issue date + Due date inputs.
+   *  Only admin and super-admin get this privilege. */
   canEditMeta?: boolean;
+  /** Project's payment-terms days (e.g. 30, 45). Drives the auto-
+   *  suggestion for due date when admin hasn't typed an override. */
+  paymentTermsDays?: number;
   onChange: (next: DraftEditorState) => void;
+}
+
+/**
+ * Add a number of days to a YYYY-MM-DD date string and return the
+ * resulting YYYY-MM-DD. Returns '' on invalid input.
+ */
+function addDays(isoDate: string | undefined, days: number): string {
+  if (!isoDate || days == null) return '';
+  const m = moment(isoDate, 'YYYY-MM-DD', true);
+  if (!m.isValid()) return '';
+  return m.clone().add(days, 'days').format('YYYY-MM-DD');
 }
 
 function roundMoney(n: number): number {
@@ -43,8 +62,20 @@ export default function InvoiceDraftEditor({
   value,
   currency,
   canEditMeta,
+  paymentTermsDays,
   onChange,
 }: Props) {
+  // Auto-suggestion that fills the Due date field when the admin
+  // hasn't supplied a manual value. Recomputes whenever the issue
+  // date or term days change — stays in sync without surprising the
+  // admin who's already typed a custom date (we never overwrite their
+  // explicit input here; the onChange of the due-date field is the
+  // sole writer of `value.dueDate`).
+  const autoDueDate = useMemo(
+    () => addDays(value.issueDate, paymentTermsDays ?? 30),
+    [value.issueDate, paymentTermsDays],
+  );
+  const effectiveDueDate = value.dueDate || autoDueDate;
   const { subtotal, taxAmount, total } = useMemo(() => {
     const subtotal = roundMoney(
       value.lineItems.reduce(
@@ -132,6 +163,27 @@ export default function InvoiceDraftEditor({
                 onChange({ ...value, issueDate: e.target.value })
               }
               helperText="Used on the PDF and due-date calc"
+              sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <TextField
+              size="small"
+              type="date"
+              label="Due date"
+              InputLabelProps={{ shrink: true }}
+              value={effectiveDueDate || ''}
+              onChange={(e) =>
+                // Typed value becomes the manual override. Clearing
+                // the field (empty string) drops the override so the
+                // auto-suggestion re-takes over next render.
+                onChange({ ...value, dueDate: e.target.value })
+              }
+              helperText={
+                value.dueDate
+                  ? 'Manual override — clear to auto-compute again'
+                  : autoDueDate
+                    ? `Auto · issue + ${paymentTermsDays ?? 30} days`
+                    : 'Auto-fills from issue date'
+              }
               sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Stack>

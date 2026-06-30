@@ -106,18 +106,14 @@ const InvoicePreview = forwardRef<HTMLDivElement, Props>(function InvoicePreview
       : billTo === 'Prime Vendor'
         ? project.primeVendorAddress
         : project.clientAddress;
-  const billToContact =
-    billTo === 'Vendor'
-      ? project.vendorPersonName
-      : billTo === 'Prime Vendor'
-        ? project.primeVendorName
-        : project.clientPerson;
-  const billToEmail =
-    billTo === 'Vendor'
-      ? project.vendorEmail
-      : billTo === 'Prime Vendor'
-        ? project.primeVendorEmail
-        : project.clientEmail;
+  // The org record on disk still has the legacy "info@unicodez.com"
+  // mailbox; billing has since rebranded to a dedicated "accounts@"
+  // inbox. Rewrite at render so old + new projects both reflect the
+  // current channel without a data migration.
+  const displayedOrgEmail =
+    project.organizationEmail?.trim().toLowerCase() === 'info@unicodez.com'
+      ? 'accounts@unicodez.com'
+      : project.organizationEmail;
 
   return (
     <Box
@@ -250,7 +246,7 @@ const InvoicePreview = forwardRef<HTMLDivElement, Props>(function InvoicePreview
             name={invoice.organizationName}
             lines={[
               project.organizationAddress,
-              project.organizationEmail && `Email · ${project.organizationEmail}`,
+              displayedOrgEmail && `Email · ${displayedOrgEmail}`,
               project.organizationWebsite,
             ]}
             accent="blue"
@@ -258,38 +254,9 @@ const InvoicePreview = forwardRef<HTMLDivElement, Props>(function InvoicePreview
           <PartyCard
             title={`Bill to · ${billTo}`}
             name={billToName || '—'}
-            lines={[
-              billToAddress,
-              billToContact && `Attn · ${billToContact}`,
-              billToEmail && `Email · ${billToEmail}`,
-            ]}
+            lines={[billToAddress]}
             accent="pink"
           />
-        </Stack>
-      </Box>
-
-      {/* ── Consultant / project meta strip ── */}
-      <Box
-        sx={{
-          mx: 6,
-          mb: 2.5,
-          p: 1.5,
-          borderRadius: 2,
-          bgcolor: BRAND_SOFT_BG,
-          border: `1px solid ${BRAND_RULE}`,
-        }}
-      >
-        <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap>
-          <MetaBit label="Project" value={invoice.projectId} />
-          {project.consultant && (
-            <MetaBit label="Candidate" value={project.consultant} />
-          )}
-          {project.vendorCompany && (
-            <MetaBit label="Vendor" value={project.vendorCompany} />
-          )}
-          {project.primeVendorCompany && (
-            <MetaBit label="Prime vendor" value={project.primeVendorCompany} />
-          )}
         </Stack>
       </Box>
 
@@ -600,27 +567,6 @@ function PartyCard({
           {l}
         </Typography>
       ))}
-    </Box>
-  );
-}
-
-function MetaBit({ label, value }: { label: string; value: string }) {
-  return (
-    <Box>
-      <Typography
-        sx={{
-          fontSize: 9.5,
-          fontWeight: 800,
-          color: BRAND_MUTED,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-        }}
-      >
-        {label}
-      </Typography>
-      <Typography sx={{ fontSize: 12, fontWeight: 700, color: BRAND_INK }}>
-        {value}
-      </Typography>
     </Box>
   );
 }

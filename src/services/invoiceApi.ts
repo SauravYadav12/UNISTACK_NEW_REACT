@@ -25,6 +25,10 @@ export async function updateInvoice(
     invoiceNumber: string;
     /** Admin / super-admin only — YYYY-MM-DD. */
     issueDate: string;
+    /** Admin / super-admin only — YYYY-MM-DD. Manual override of the
+     *  auto-computed due date. Empty string clears the override and
+     *  falls back to issueDate + project.paymentTerms.days. */
+    dueDate: string;
   }>
 ) {
   return axiosClient.patch<ApiQueryRes<IInvoice>>(`/invoices/${id}`, payload);
@@ -34,6 +38,9 @@ export async function raiseInvoice(
   id: string,
   payload: {
     issueDate?: string;
+    /** Optional manual due date. When supplied + valid, overrides the
+     *  computed `issueDate + paymentTerms.days`. */
+    dueDate?: string;
     to?: string[];
     cc?: string[];
     subject?: string;
