@@ -1022,41 +1022,17 @@ interface SlotView {
 }
 
 function deriveSlots(
-  periodMonth: string,
   persistedSlots: ITimesheetScreenshotSlot[],
   shots: ITimesheetScreenshot[]
 ): SlotView[] {
-  if (persistedSlots.length > 0) {
-    return persistedSlots.map((slot, i) => ({
-      key: slot._id || `persisted-${i}`,
-      _id: slot._id,
-      label: slot.label,
-      shots: shots.filter((s) => s._id && s.slotId === slot._id),
-    }));
-  }
-  // Auto-derive default week buckets. Legacy screenshots pair to these by
-  // weekStart/weekEnd; they'll be rebound to the persisted slot _id on
-  // first save (server-side backfill).
-  const [year, month] = periodMonth.split('-').map(Number);
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const slots: SlotView[] = [];
-  for (let start = 1; start <= lastDay; start += 7) {
-    const end = Math.min(start + 6, lastDay);
-    const startISO = `${periodMonth}-${String(start).padStart(2, '0')}`;
-    const endISO = `${periodMonth}-${String(end).padStart(2, '0')}`;
-    const label = `Week of ${moment(startISO).format('MMM D')} – ${moment(endISO).format('MMM D')}`;
-    const bucket = shots.filter(
-      (s) => s.weekStart === startISO && s.weekEnd === endISO
-    );
-    slots.push({
-      key: `auto-${startISO}`,
-      label,
-      weekStart: startISO,
-      weekEnd: endISO,
-      shots: bucket,
-    });
-  }
-  return slots;
+  // Empty by default — the user adds rows on demand. No auto-derived
+  // weekly buckets, no implicit "you must upload weekly" assumption.
+  return persistedSlots.map((slot, i) => ({
+    key: slot._id || `persisted-${i}`,
+    _id: slot._id,
+    label: slot.label,
+    shots: shots.filter((s) => s._id && s.slotId === slot._id),
+  }));
 }
 
 function ScreenshotsSection({
@@ -1075,8 +1051,8 @@ function ScreenshotsSection({
   onChange: (next: ITimesheet) => void;
 }) {
   const baseSlots = useMemo(
-    () => deriveSlots(periodMonth, persistedSlots, screenshots),
-    [periodMonth, persistedSlots, screenshots]
+    () => deriveSlots(persistedSlots, screenshots),
+    [persistedSlots, screenshots]
   );
   // Locally-edited labels keyed by slot.key. Cleared after a successful save.
   const [labelDrafts, setLabelDrafts] = useState<Record<string, string>>({});
@@ -1252,12 +1228,31 @@ function ScreenshotsSection({
             Approved timesheet screenshots
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Upload weekly proofs — they attach to the invoice email when it's raised.
+            Add a row for each proof you want to attach (weekly, monthly, etc.) — they ride along on the invoice email when it's raised.
           </Typography>
         </Box>
       </Stack>
 
       <Stack spacing={1}>
+        {slots.length === 0 && (
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2.5,
+              border: `1px dashed ${alpha(tokens.colors.blue, 0.3)}`,
+              bgcolor: alpha(tokens.colors.blue, 0.02),
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              No proofs added yet. Use{' '}
+              <Box component="span" sx={{ fontWeight: 700 }}>
+                Add row
+              </Box>{' '}
+              below to attach weekly or monthly timesheet screenshots.
+            </Typography>
+          </Box>
+        )}
         {slots.map((slot) => {
           const uploading = uploadingKey === slot.key;
           return (
