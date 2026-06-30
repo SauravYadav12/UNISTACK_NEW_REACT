@@ -228,11 +228,41 @@ function MyDashboard() {
               );
             }
 
-            const remaining = Math.max((b.allocated || 0) - (b.used || 0), 0);
-            const pct = b.allocated ? Math.min((b.used / b.allocated) * 100, 100) : 0;
             const accent = type.color || tokens.colors.pink;
             const hasMonthlyCap = type.monthlyQuota != null && !type.isUnpaidBucket;
-            const monthlyAvailable = b.monthlyAvailable;
+            // Per-month accrual rate to use as the denominator. Prefer
+            // the per-user override when present, fall back to the type
+            // default.
+            const effectiveQuota =
+              b.effectiveMonthlyQuota ?? b.monthlyQuota ?? type.monthlyQuota ?? null;
+            // Cap the cumulative `monthlyAvailable` (which the server
+            // computes as min(monthsElapsed × quota, allocated) - used)
+            // at the per-month quota so the employee card reflects
+            // STRICT monthly allowance — not the carry-forward stack.
+            // Example: quota=1, no usage by June → server returns 6,
+            // we display 1. Server-side overflow-to-UL logic still
+            // uses the cumulative number; this is a display rule only.
+            const cumulativeAvailable = b.monthlyAvailable;
+            const monthlyAvailable = (() => {
+              if (cumulativeAvailable == null) return cumulativeAvailable;
+              if (effectiveQuota == null) return cumulativeAvailable;
+              return Math.min(cumulativeAvailable, effectiveQuota);
+            })();
+            // Employee-facing view shows ONLY the monthly slice — the
+            // yearly allocation is admin context and would just confuse
+            // the employee at the apply-leave stage. Annual figures
+            // stay visible in the admin grid (LeaveBalancesPanel),
+            // where they're relevant.
+            const monthlyPct =
+              effectiveQuota && monthlyAvailable != null
+                ? Math.min(
+                    Math.max(
+                      ((effectiveQuota - monthlyAvailable) / effectiveQuota) * 100,
+                      0,
+                    ),
+                    100,
+                  )
+                : 0;
             return (
               <Grid key={b._id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                 <Box sx={{
@@ -253,45 +283,30 @@ function MyDashboard() {
                       fontWeight: 700, fontSize: 10, height: 22,
                     }} />
                   </Stack>
+                  {/* Primary metric: monthly available. */}
                   <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1 }}>
                     <Typography sx={{ fontSize: 28, fontWeight: 800, color: tokens.colors.lightText, lineHeight: 1 }}>
-                      {remaining}
+                      {monthlyAvailable != null ? monthlyAvailable : '—'}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: tokens.colors.lightTextSecondary }}>
-                      / {b.allocated} left
+                      {hasMonthlyCap && effectiveQuota
+                        ? `/ ${effectiveQuota} this month`
+                        : 'available'}
                     </Typography>
                   </Box>
-                  <LinearProgress
-                    variant="determinate" value={pct}
-                    sx={{
-                      height: 6, borderRadius: 3, bgcolor: alpha(accent, 0.1),
-                      '& .MuiLinearProgress-bar': { bgcolor: accent },
-                    }}
-                  />
-                  <Typography sx={{ fontSize: 10, color: tokens.colors.lightTextSecondary, mt: 0.5 }}>
-                    {b.used} used · {type.paid ? 'Paid' : 'Unpaid'}
-                  </Typography>
-
-                  {hasMonthlyCap && monthlyAvailable != null && (
-                    <Box sx={{
-                      mt: 1.25, pt: 1.25,
-                      borderTop: `1px dashed ${alpha(accent, 0.25)}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    }}>
-                      <Typography sx={{
-                        fontSize: 9, letterSpacing: 1.5, fontWeight: 700,
-                        color: tokens.colors.lightTextSecondary, textTransform: 'uppercase',
-                      }}>
-                        Available this month
-                      </Typography>
-                      <Typography sx={{
-                        fontSize: 18, fontWeight: 800, color: accent, lineHeight: 1,
-                        fontVariantNumeric: 'tabular-nums',
-                      }}>
-                        {monthlyAvailable}
-                      </Typography>
-                    </Box>
+                  {hasMonthlyCap && effectiveQuota != null && (
+                    <LinearProgress
+                      variant="determinate"
+                      value={monthlyPct}
+                      sx={{
+                        height: 6, borderRadius: 3, bgcolor: alpha(accent, 0.1),
+                        '& .MuiLinearProgress-bar': { bgcolor: accent },
+                      }}
+                    />
                   )}
+                  <Typography sx={{ fontSize: 10, color: tokens.colors.lightTextSecondary, mt: 0.5 }}>
+                    {hasMonthlyCap ? 'Monthly accrual' : 'Available balance'} · {type.paid ? 'Paid' : 'Unpaid'}
+                  </Typography>
                 </Box>
               </Grid>
             );
@@ -463,7 +478,25 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
     () => types.find((t) => t._id === form.leaveTypeId),
     [types, form.leaveTypeId],
   );
-  const requiresAttachment = !!selectedType?.requiresAttachment;
+  // Attachment requirement is gated on TWO conditions:
+  //   1. either the type's `requiresAttachment` flag is true OR the
+  //      canonical Medical Leave code ("ML") is selected, AND
+  //   2. it's NOT the unpaid bucket (UL).
+  //
+  // Rule (2) protects against a careless admin (or stale data) that
+  // accidentally turned the flag on for UL — Unpaid Leave is loss-of-
+  // pay, not a medical claim, so demanding a doctor's note for it is
+  // never the right ask.
+  //
+  // The OR on `code === 'ML'` is the hard guarantee: even when an
+  // older DB row never had `requiresAttachment` set, picking Medical
+  // Leave still shows the attachment block. The server's self-heal
+  // will eventually flip the flag, but this keeps the UI correct in
+  // the meantime.
+  const isMedicalLeaveCode = (selectedType?.code || '').toUpperCase() === 'ML';
+  const requiresAttachment =
+    (!!selectedType?.requiresAttachment || isMedicalLeaveCode) &&
+    !selectedType?.isUnpaidBucket;
 
   useMemo(() => {
     (async () => {
@@ -482,13 +515,26 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
         setTypes(data);
         setProbation(probationData);
         // Default-pick honours the same rule as the dropdown filter:
-        // probation users default to UL, everyone else to the first
-        // paid type they can use.
+        // probation users default to UL; everyone else defaults to
+        // Paid Leave (code "PL"). Falling back to "first paid non-UL"
+        // covers the edge case where an org renamed/removed PL.
+        // Explicit PL preference avoids defaulting to Medical Leave
+        // (which alphabetically sorts above PL) — picking ML by
+        // default would surface the "supporting document required"
+        // block on every open, which is the wrong primary action.
         if (data.length && !form.leaveTypeId) {
           const onProb = !!probationData?.onProbation;
           const firstChoice = onProb
             ? data.find((t) => t.active && t.isUnpaidBucket)
-            : data.find((t) => t.paid && !t.isUnpaidBucket) || data[0];
+            : data.find(
+                (t) =>
+                  t.active &&
+                  t.paid &&
+                  !t.isUnpaidBucket &&
+                  (t.code || '').toUpperCase() === 'PL',
+              ) ||
+              data.find((t) => t.active && t.paid && !t.isUnpaidBucket) ||
+              data[0];
           if (firstChoice) {
             setForm((f) => ({ ...f, leaveTypeId: firstChoice._id }));
           }
@@ -685,9 +731,12 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
                 color="text.secondary"
                 sx={{ display: 'block', mb: 1 }}
               >
-                {selectedType?.name || 'This leave type'} needs a medical
-                certificate or doctor&rsquo;s note. Attach at least one PDF or
-                image before submitting.
+                {/* Medical Leave is the canonical use case (medical
+                    cert / doctor's note); other admin-flagged types
+                    get a generic "supporting documentation" prompt. */}
+                {selectedType?.code === 'ML'
+                  ? <>Medical Leave needs a medical certificate or doctor&rsquo;s note. Attach at least one PDF or image before submitting.</>
+                  : <>{selectedType?.name || 'This leave type'} needs supporting documentation. Attach at least one PDF or image before submitting.</>}
               </Typography>
 
               <Button

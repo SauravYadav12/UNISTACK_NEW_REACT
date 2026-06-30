@@ -217,7 +217,17 @@ const ApplyLeave = ({ onApplied }: iProps) => {
         monthlyAvailable: t.isUnpaidBucket ? Infinity : monthlyAvailable,
         isUnpaid: t.isUnpaidBucket,
         hasMonthlyCap,
-        requiresAttachment: !!t.requiresAttachment,
+        // UL (the unpaid bucket) is never an "attach a doctor's note"
+        // type even if stale data has the flag turned on — that's a
+        // medical-claim concept and UL is loss-of-pay. Suppress here
+        // so the UI doesn't ask, and the server mirrors the same skip.
+        //
+        // The OR on the canonical Medical Leave code is the hard
+        // guarantee that ML always shows the attachment block, even
+        // for DB rows that pre-date the `requiresAttachment` flag.
+        requiresAttachment:
+          (!!t.requiresAttachment || (t.code || '').toUpperCase() === 'ML') &&
+          !t.isUnpaidBucket,
       });
     });
     return out;
@@ -256,11 +266,20 @@ const ApplyLeave = ({ onApplied }: iProps) => {
 
   const watchedValues = watch();
 
-  // Pre-select the first available option once types load
+  // Pre-select the default leave type once options load. Prefer
+  // Paid Leave (code "PL") over alphabetical order so the form
+  // doesn't default to Medical Leave (which would surface the
+  // attachment requirement on every open). For probationary users
+  // the options list is already filtered down to UL only, so
+  // `options[0]` is correctly UL — the PL preference applies to
+  // non-probation employees.
   useEffect(() => {
     if (!watchedValues.leaveType && options.length) {
-      setValue('leaveType', options[0].id);
-      setValue('type', options[0].name);
+      const preferred =
+        options.find((o) => (o.code || '').toUpperCase() === 'PL') ||
+        options[0];
+      setValue('leaveType', preferred.id);
+      setValue('type', preferred.name);
     }
   }, [options, watchedValues.leaveType, setValue]);
 
