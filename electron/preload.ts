@@ -65,6 +65,22 @@ const api = {
     ipcRenderer.on("unistack:navigate", listener);
     return () => ipcRenderer.removeListener("unistack:navigate", listener);
   },
+
+  /** Bypass-cache reload of the current window — clears the HTTP cache
+   *  first then reloads the live URL. Use as the "the app looks stuck"
+   *  escape hatch (a plain in-page refresh doesn't reset the SPA). */
+  hardRefresh: (): Promise<boolean> =>
+    ipcRenderer.invoke("unistack:hardRefresh"),
+
+  /** Current Chromium zoom level (log scale — 0 = 100%). */
+  getZoomLevel: (): Promise<number> =>
+    ipcRenderer.invoke("unistack:getZoomLevel"),
+
+  /** Step the zoom in / out / back to 100%. Persist to config so the
+   *  chosen level survives restarts. Returns the new level. */
+  zoomIn: (): Promise<number> => ipcRenderer.invoke("unistack:zoomIn"),
+  zoomOut: (): Promise<number> => ipcRenderer.invoke("unistack:zoomOut"),
+  zoomReset: (): Promise<number> => ipcRenderer.invoke("unistack:zoomReset"),
 };
 
 contextBridge.exposeInMainWorld("unistack", api);

@@ -272,6 +272,14 @@ function createMainWindow() {
     });
   }
   mainWindow.webContents.on("did-finish-load", revealMainWindow);
+  // Reapply the persisted zoom level after every navigation / reload —
+  // Chromium resets zoom on cross-origin navigations and hard refresh.
+  mainWindow.webContents.on("did-finish-load", () => {
+    const cfg = loadConfig();
+    if (typeof cfg.zoomLevel === "number" && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.setZoomLevel(cfg.zoomLevel);
+    }
+  });
   // Even if loading fails (server down, DNS issue), tear down the
   // splash so the user can see the failure chrome and react.
   mainWindow.webContents.on("did-fail-load", (_e, _code, desc, url) => {
@@ -540,6 +548,51 @@ function registerIpc() {
   );
 
   ipcMain.handle("unistack:isDesktop", () => true);
+
+  // ── View controls ────────────────────────────────────────────────────
+  // Hard refresh: clear the HTTP cache first (same policy as first-load)
+  // then reload ignoring cache. This is the "the app looks stuck / stale
+  // bundle" escape hatch that the plain in-page reload doesn't cover
+  // because the SPA re-uses the already-mounted React root.
+  ipcMain.handle("unistack:hardRefresh", async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return false;
+    try {
+      await mainWindow.webContents.session.clearCache();
+    } catch {
+      /* best-effort — reload proceeds even if clear fails */
+    }
+    mainWindow.webContents.reloadIgnoringCache();
+    return true;
+  });
+
+  const ZOOM_STEP = 0.5;
+  const ZOOM_MIN = -3;
+  const ZOOM_MAX = 5;
+  function applyZoom(next: number): number {
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, next));
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.setZoomLevel(clamped);
+    }
+    const cfg = loadConfig();
+    cfg.zoomLevel = clamped;
+    saveConfig(cfg);
+    return clamped;
+  }
+  ipcMain.handle("unistack:getZoomLevel", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      return mainWindow.webContents.getZoomLevel();
+    }
+    return loadConfig().zoomLevel ?? 0;
+  });
+  ipcMain.handle("unistack:zoomIn", () => {
+    const current = mainWindow?.webContents.getZoomLevel() ?? 0;
+    return applyZoom(current + ZOOM_STEP);
+  });
+  ipcMain.handle("unistack:zoomOut", () => {
+    const current = mainWindow?.webContents.getZoomLevel() ?? 0;
+    return applyZoom(current - ZOOM_STEP);
+  });
+  ipcMain.handle("unistack:zoomReset", () => applyZoom(0));
 }
 
 // Single-instance lock: second launch focuses the existing window

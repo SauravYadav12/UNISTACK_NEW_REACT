@@ -51,6 +51,20 @@ export interface DesktopBridge {
    *  click). Returns an unsubscribe function — callers should call it on
    *  unmount to avoid leaking listeners across hot-reload. */
   onNavigate(cb: (path: string) => void): () => void;
+
+  /** Bypass-cache reload — clears the HTTP cache first, then reloads
+   *  ignoring cache. Escape hatch when the SPA appears stale. */
+  hardRefresh(): Promise<boolean>;
+
+  /** Current Chromium zoom level. 0 = 100%. */
+  getZoomLevel(): Promise<number>;
+
+  /** Step zoom in / out. Persists via runtimeConfig so the level
+   *  survives restarts. Returns the new level. */
+  zoomIn(): Promise<number>;
+  zoomOut(): Promise<number>;
+  /** Snap zoom back to 100%. */
+  zoomReset(): Promise<number>;
 }
 
 declare global {

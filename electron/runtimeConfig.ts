@@ -21,6 +21,10 @@ import * as path from "path";
 export interface UnistackConfig {
   /** Override for the backend URL. Undefined = use baked default. */
   serverUrl?: string;
+  /** Persistent zoom level (Chromium log scale — 0 = 100%, +1 ≈ 120%,
+   *  -1 ≈ 83%). Reapplied to `webContents` on every window load so the
+   *  user's chosen zoom survives restarts. Clamped to [-3, 5]. */
+  zoomLevel?: number;
 }
 
 function configPath(): string {

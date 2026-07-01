@@ -32,6 +32,7 @@ import Breadcrumbs from './Breadcrumbs';
 import AttendancePopUp from './AttendancePopUp';
 import NotificationBell from './NotificationBell';
 import DesktopDownloadButton from '../desktop/DesktopDownloadButton';
+import DesktopViewControls from '../desktop/DesktopViewControls';
 import { isRunningInDesktop } from '../../utils/desktopBridge';
 
 interface NavbarProps {
@@ -111,6 +112,10 @@ function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
             (Apple on mac, Windows on win) so the affordance feels
             tailored to the user's device. */}
         <DesktopDownloadButton />
+
+        {/* Electron-only: reload + zoom controls. Renders null in the
+            web build, so it's safe to mount unconditionally. */}
+        <DesktopViewControls />
 
         {/* DESKTOP pill — only renders inside Electron. Visually faint
             so it sits at the same weight as the search box but is
