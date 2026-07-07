@@ -287,6 +287,16 @@ export default function ChessLeadForm({
             />
           </Box>
 
+          {/* Read-only computed pair. Derived from Total IDs × Pricing
+              per ID and (Amount + GST). Kept as their own inputs so
+              the sales team can copy the numbers into an email quickly
+              without hunting through the preview strip. */}
+          <ComputedAmountRow
+            totalIds={form.totalIds}
+            pricingPerId={form.pricingPerId}
+            gstPercent={form.gstPercent}
+          />
+
           <PricingPreview
             totalIds={form.totalIds}
             pricingPerId={form.pricingPerId}
@@ -377,6 +387,63 @@ export default function ChessLeadForm({
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function ComputedAmountRow({
+  totalIds,
+  pricingPerId,
+  gstPercent,
+}: {
+  totalIds?: number;
+  pricingPerId?: number;
+  gstPercent?: number;
+}) {
+  const { subtotal, grandTotal } = computePricing(
+    totalIds,
+    pricingPerId,
+    gstPercent,
+  );
+  const fmt = (n: number) =>
+    `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+        gap: 1.5,
+      }}
+    >
+      <TextField
+        size="small"
+        label="Amount"
+        value={fmt(subtotal)}
+        InputProps={{ readOnly: true }}
+        InputLabelProps={{ shrink: true }}
+        helperText="Total IDs × Pricing per ID"
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 2,
+            bgcolor: alpha(tokens.colors.blue, 0.04),
+          },
+        }}
+      />
+      <TextField
+        size="small"
+        label="Total"
+        value={fmt(grandTotal)}
+        InputProps={{ readOnly: true }}
+        InputLabelProps={{ shrink: true }}
+        helperText="Amount + GST"
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 2,
+            bgcolor: alpha(tokens.colors.pink, 0.05),
+            fontWeight: 800,
+          },
+        }}
+      />
+    </Box>
   );
 }
 

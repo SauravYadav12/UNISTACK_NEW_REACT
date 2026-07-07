@@ -229,6 +229,31 @@ export default function ChessLeads() {
           p.value != null ? `₹${(p.value as number).toLocaleString('en-IN')}` : '—',
       },
       {
+        // Amount = Total IDs × Pricing per ID. Read-only / auto-calc.
+        field: '__amount',
+        headerName: 'Amount',
+        width: 110,
+        sortable: false,
+        valueGetter: (_v, row) => {
+          const r = row as ChessLead;
+          return computePricing(r.totalIds, r.pricingPerId, r.gstPercent).subtotal;
+        },
+        renderCell: (p) => {
+          const r = p.row as ChessLead;
+          const { subtotal } = computePricing(
+            r.totalIds,
+            r.pricingPerId,
+            r.gstPercent,
+          );
+          if (subtotal === 0) return '—';
+          return (
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
+              ₹{subtotal.toLocaleString('en-IN')}
+            </Typography>
+          );
+        },
+      },
+      {
         // Computed — not on the doc. valueGetter drives sort/filter,
         // renderCell handles the ₹ formatting.
         field: '__gstAmount',

@@ -125,6 +125,7 @@ const ROLE_ORDER: UserRole[] = [
   UserRole['project-coordinator'],
   UserRole.support,
   UserRole.marketing,
+  UserRole['chess-sales'],
   UserRole.user,
 ];
 

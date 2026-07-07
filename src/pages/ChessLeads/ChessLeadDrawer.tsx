@@ -194,7 +194,12 @@ export default function ChessLeadDrawer({ open, leadId, onClose, onChanged }: Pr
         anchor="right"
         open={open}
         onClose={onClose}
-        PaperProps={{ sx: { width: { xs: '100vw', sm: 520 }, p: 0 } }}
+        PaperProps={{
+          sx: {
+            width: { xs: '100vw', sm: 640, md: 780, lg: 860 },
+            p: 0,
+          },
+        }}
       >
         <Box
           sx={{

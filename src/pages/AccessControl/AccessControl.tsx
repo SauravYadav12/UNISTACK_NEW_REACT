@@ -43,6 +43,7 @@ import {
   IconCalendarEvent,
   IconCrown,
   IconCheck,
+  IconChessKnight,
 } from '@tabler/icons-react';
 import { tokens } from '../../theme/theme';
 
@@ -83,6 +84,11 @@ const roleConfig: Partial<Record<UserRole, { icon: React.ReactNode; label: strin
   [UserRole.user]: { icon: <IconUser size={18} />, label: 'User', description: 'Standard employee access' },
   [UserRole.admin]: { icon: <IconBriefcase size={18} />, label: 'Admin', description: 'Administrative capabilities' },
   [UserRole.hr]: { icon: <IconUserCircle size={18} />, label: 'HR', description: 'Human resources team' },
+  [UserRole['chess-sales']]: {
+    icon: <IconChessKnight size={18} />,
+    label: 'Chess Sales',
+    description: 'Manages chess-academy subscription pipeline',
+  },
 };
 
 const AccessControl = () => {
