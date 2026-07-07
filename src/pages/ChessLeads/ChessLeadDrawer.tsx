@@ -29,7 +29,11 @@ import {
   updateChessLead,
 } from '../../services/chessLeadApi';
 import ChessLeadForm from './ChessLeadForm';
-import { CHESS_PRIORITY_COLORS, CHESS_STATUS_COLORS } from './chessLeadsValues';
+import {
+  CHESS_PRIORITY_COLORS,
+  CHESS_STATUS_COLORS,
+  computePricing,
+} from './chessLeadsValues';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { UserRole } from '../../Interfaces/iUser';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -49,10 +53,15 @@ const READABLE_FIELD: Record<string, string> = {
   mobileNumber: 'Mobile number',
   stateOrCity: 'State / City',
   pricingPerId: 'Pricing per ID',
+  gstPercent: 'GST %',
   status: 'Status',
   priority: 'Priority',
   reason: 'Reason',
   nextFollowUpDate: 'Next follow-up',
+  lastRenewalDate: 'Last renewal',
+  country: 'Country',
+  state: 'State',
+  city: 'City',
 };
 
 export default function ChessLeadDrawer({ open, leadId, onClose, onChanged }: Props) {
@@ -273,8 +282,16 @@ export default function ChessLeadDrawer({ open, leadId, onClose, onChanged }: Pr
                   }
                 />
                 <Field label="Mobile" value={lead.mobileNumber || '—'} />
-                <Field label="State / City" value={lead.stateOrCity || '—'} />
+                <Field label="Location" value={formatLocation(lead)} />
+                <Field label="Last renewal" value={fmtDate(lead.lastRenewalDate)} />
+                <Field label="Country" value={lead.country || '—'} />
               </Box>
+
+              <PricingSummary
+                totalIds={lead.totalIds}
+                pricingPerId={lead.pricingPerId}
+                gstPercent={lead.gstPercent}
+              />
 
               {lead.reason && (
                 <Box sx={{ mb: 2 }}>
@@ -370,6 +387,81 @@ export default function ChessLeadDrawer({ open, leadId, onClose, onChanged }: Pr
   );
 }
 
+function PricingSummary({
+  totalIds,
+  pricingPerId,
+  gstPercent,
+}: {
+  totalIds?: number;
+  pricingPerId?: number;
+  gstPercent?: number;
+}) {
+  const { subtotal, gstAmount, grandTotal } = computePricing(
+    totalIds,
+    pricingPerId,
+    gstPercent,
+  );
+  if (subtotal === 0) return null;
+  return (
+    <Box
+      sx={{
+        p: 1.5,
+        borderRadius: 2,
+        border: `1px solid ${alpha(tokens.colors.blue, 0.2)}`,
+        bgcolor: alpha(tokens.colors.blue, 0.03),
+        mb: 2,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: tokens.colors.blueDark,
+          fontSize: '0.65rem',
+          display: 'block',
+          mb: 0.5,
+        }}
+      >
+        Pricing
+      </Typography>
+      <Stack direction="row" spacing={2}>
+        <SummaryCell label="Subtotal" value={subtotal} />
+        <SummaryCell label={`GST (${gstPercent ?? 18}%)`} value={gstAmount} />
+        <SummaryCell label="Total" value={grandTotal} bold />
+      </Stack>
+    </Box>
+  );
+}
+
+function SummaryCell({
+  label,
+  value,
+  bold,
+}: {
+  label: string;
+  value: number;
+  bold?: boolean;
+}) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          fontWeight: bold ? 900 : 700,
+          fontSize: bold ? '1rem' : '0.85rem',
+          color: bold ? tokens.colors.pinkDark : 'text.primary',
+        }}
+      >
+        ₹{value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </Typography>
+    </Box>
+  );
+}
+
 function Field({
   label,
   value,
@@ -457,6 +549,14 @@ function LogRow({ log }: { log: ChessLeadLog }) {
       )}
     </Box>
   );
+}
+
+/** Renders "City, State" — or falls back to the legacy free-text field
+ *  for old rows that pre-date the country/state/city triplet. */
+function formatLocation(lead: ChessLead): string {
+  const parts = [lead.city, lead.state].filter(Boolean);
+  if (parts.length > 0) return parts.join(', ');
+  return lead.stateOrCity || '—';
 }
 
 function fmtDate(iso?: string): string {

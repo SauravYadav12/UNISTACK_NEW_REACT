@@ -13,12 +13,25 @@ export interface ChessLead {
   subscriptionDate?: string;
   totalIds?: number;
   mobileNumber?: string;
+  /** @deprecated — legacy free-text location. New rows populate the
+   *  country / state / city triplet below; this stays for backward
+   *  compat + free-text search. */
   stateOrCity?: string;
+  country?: string;
+  countryIso?: string;
+  state?: string;
+  stateIso?: string;
+  city?: string;
   pricingPerId?: number;
+  /** GST rate (%) applied on top of totalIds × pricingPerId. Defaults
+   *  to 18 server-side. Kept editable per-lead for the occasional 0 %
+   *  / 5 % client. */
+  gstPercent?: number;
   status: ChessLeadStatus;
   priority: ChessLeadPriority;
   reason?: string;
   nextFollowUpDate?: string;
+  lastRenewalDate?: string;
   createdBy?: string;
   createdByName?: string;
   createdAt: string;

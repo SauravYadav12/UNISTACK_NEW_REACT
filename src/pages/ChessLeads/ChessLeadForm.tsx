@@ -1,4 +1,5 @@
 import {
+  Autocomplete,
   Box,
   Button,
   CircularProgress,
@@ -9,15 +10,18 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Typography,
   alpha,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Country, State, City } from 'country-state-city';
 import { tokens } from '../../theme/theme';
 import { ChessLead, ChessLeadPayload } from '../../Interfaces/chessLead';
 import {
   CHESS_LEAD_PRIORITIES,
   CHESS_LEAD_STATUSES,
   INITIAL_CHESS_LEAD,
+  computePricing,
 } from './chessLeadsValues';
 
 interface Props {
@@ -56,11 +60,18 @@ export default function ChessLeadForm({
               totalIds: initial.totalIds,
               mobileNumber: initial.mobileNumber || '',
               stateOrCity: initial.stateOrCity || '',
+              country: initial.country || 'India',
+              countryIso: initial.countryIso || 'IN',
+              state: initial.state || '',
+              stateIso: initial.stateIso || '',
+              city: initial.city || '',
               pricingPerId: initial.pricingPerId,
+              gstPercent: initial.gstPercent ?? 18,
               status: initial.status,
               priority: initial.priority,
               reason: initial.reason || '',
               nextFollowUpDate: initial.nextFollowUpDate || '',
+              lastRenewalDate: initial.lastRenewalDate || '',
             }
           : { ...INITIAL_CHESS_LEAD },
       );
@@ -71,6 +82,22 @@ export default function ChessLeadForm({
     setForm((f) => ({ ...f, [k]: v }));
     if (errors[k as string]) setErrors((e) => ({ ...e, [k as string]: '' }));
   }
+
+  // Cascading location dropdowns. Country list is static; state + city
+  // are derived from the current ISO codes so picking a country resets
+  // the state picker, and picking a state resets the city picker.
+  const countryOptions = useMemo(() => Country.getAllCountries(), []);
+  const stateOptions = useMemo(
+    () => (form.countryIso ? State.getStatesOfCountry(form.countryIso) : []),
+    [form.countryIso],
+  );
+  const cityOptions = useMemo(
+    () =>
+      form.countryIso && form.stateIso
+        ? City.getCitiesOfState(form.countryIso, form.stateIso)
+        : [],
+    [form.countryIso, form.stateIso],
+  );
 
   function handleSubmit() {
     const next: Record<string, string> = {};
@@ -114,27 +141,105 @@ export default function ChessLeadForm({
             required
           />
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-            <TextField
+          <TextField
+            size="small"
+            label="Mobile number"
+            value={form.mobileNumber || ''}
+            onChange={(e) => patch('mobileNumber', e.target.value)}
+            error={!!errors.mobileNumber}
+            helperText={errors.mobileNumber || ''}
+            fullWidth
+          />
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
+              gap: 1.5,
+            }}
+          >
+            <Autocomplete
               size="small"
-              label="Mobile number"
-              value={form.mobileNumber || ''}
-              onChange={(e) => patch('mobileNumber', e.target.value)}
-              error={!!errors.mobileNumber}
-              helperText={errors.mobileNumber || ''}
+              disableClearable={false}
+              options={countryOptions}
+              getOptionLabel={(o) => o.name}
+              value={
+                countryOptions.find((c) => c.isoCode === form.countryIso) ||
+                null
+              }
+              onChange={(_e, v) =>
+                setForm((f) => ({
+                  ...f,
+                  country: v?.name || '',
+                  countryIso: v?.isoCode || '',
+                  // Reset downstream selections when country changes.
+                  state: '',
+                  stateIso: '',
+                  city: '',
+                }))
+              }
+              renderInput={(p) => <TextField {...p} label="Country" />}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
-            <TextField
+            <Autocomplete
               size="small"
-              label="State / City"
-              value={form.stateOrCity || ''}
-              onChange={(e) => patch('stateOrCity', e.target.value)}
+              disabled={!form.countryIso || stateOptions.length === 0}
+              options={stateOptions}
+              getOptionLabel={(o) => o.name}
+              value={
+                stateOptions.find((s) => s.isoCode === form.stateIso) || null
+              }
+              onChange={(_e, v) =>
+                setForm((f) => ({
+                  ...f,
+                  state: v?.name || '',
+                  stateIso: v?.isoCode || '',
+                  city: '',
+                }))
+              }
+              renderInput={(p) => (
+                <TextField
+                  {...p}
+                  label="State"
+                  helperText={
+                    !form.countryIso
+                      ? 'Pick a country first'
+                      : stateOptions.length === 0
+                        ? 'No states listed'
+                        : ' '
+                  }
+                />
+              )}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <Autocomplete
+              size="small"
+              disabled={!form.stateIso || cityOptions.length === 0}
+              options={cityOptions}
+              getOptionLabel={(o) => o.name}
+              value={cityOptions.find((c) => c.name === form.city) || null}
+              onChange={(_e, v) => patch('city', v?.name || '')}
+              renderInput={(p) => (
+                <TextField
+                  {...p}
+                  label="City"
+                  helperText={
+                    !form.stateIso
+                      ? 'Pick a state first'
+                      : cityOptions.length === 0
+                        ? 'No cities listed'
+                        : ' '
+                  }
+                />
+              )}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Box>
 
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' },
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr 1fr' },
               gap: 1.5,
             }}
           >
@@ -166,9 +271,35 @@ export default function ChessLeadForm({
                 patch('pricingPerId', e.target.value === '' ? undefined : Number(e.target.value))
               }
             />
+            <TextField
+              size="small"
+              type="number"
+              label="GST %"
+              inputProps={{ min: 0, max: 100, step: 0.5 }}
+              value={form.gstPercent ?? 18}
+              onChange={(e) =>
+                patch(
+                  'gstPercent',
+                  e.target.value === '' ? 18 : Number(e.target.value),
+                )
+              }
+              helperText="Default 18"
+            />
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5 }}>
+          <PricingPreview
+            totalIds={form.totalIds}
+            pricingPerId={form.pricingPerId}
+            gstPercent={form.gstPercent}
+          />
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+              gap: 1.5,
+            }}
+          >
             <TextField
               size="small"
               select
@@ -195,6 +326,15 @@ export default function ChessLeadForm({
                 </MenuItem>
               ))}
             </TextField>
+            <TextField
+              size="small"
+              type="date"
+              label="Last renewal"
+              InputLabelProps={{ shrink: true }}
+              value={form.lastRenewalDate || ''}
+              onChange={(e) => patch('lastRenewalDate', e.target.value)}
+              helperText="Most recent renewal"
+            />
             <TextField
               size="small"
               type="date"
@@ -237,5 +377,85 @@ export default function ChessLeadForm({
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function PricingPreview({
+  totalIds,
+  pricingPerId,
+  gstPercent,
+}: {
+  totalIds?: number;
+  pricingPerId?: number;
+  gstPercent?: number;
+}) {
+  const { subtotal, gstAmount, grandTotal } = computePricing(
+    totalIds,
+    pricingPerId,
+    gstPercent,
+  );
+  const empty = subtotal === 0;
+  return (
+    <Box
+      sx={{
+        p: 1.5,
+        borderRadius: 2,
+        bgcolor: alpha(tokens.colors.blue, 0.04),
+        border: `1px dashed ${alpha(tokens.colors.blue, 0.3)}`,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 800,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: tokens.colors.blueDark,
+          fontSize: '0.65rem',
+          display: 'block',
+          mb: 0.5,
+        }}
+      >
+        Auto-calculated
+      </Typography>
+      {empty ? (
+        <Typography variant="caption" color="text.secondary">
+          Enter Total IDs + Pricing per ID to see the totals.
+        </Typography>
+      ) : (
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <PricingCell label="Subtotal" value={subtotal} />
+          <PricingCell label={`GST (${gstPercent ?? 18}%)`} value={gstAmount} />
+          <PricingCell label="Grand total" value={grandTotal} bold />
+        </Stack>
+      )}
+    </Box>
+  );
+}
+
+function PricingCell({
+  label,
+  value,
+  bold,
+}: {
+  label: string;
+  value: number;
+  bold?: boolean;
+}) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          fontWeight: bold ? 900 : 700,
+          fontSize: bold ? '1rem' : '0.9rem',
+          color: bold ? tokens.colors.pinkDark : 'text.primary',
+        }}
+      >
+        ₹{value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </Typography>
+    </Box>
   );
 }
