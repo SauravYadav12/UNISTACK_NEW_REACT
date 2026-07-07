@@ -76,6 +76,7 @@ const Reports = lazy(() => import('./pages/Marketing/Reports/Reports'));
 const SalesLead = lazy(
   () => import('./pages/Marketing/SalesLeads/SalesLeads'),
 );
+const ChessLeads = lazy(() => import('./pages/ChessLeads/ChessLeads'));
 const UserManagement = lazy(
   () => import('./pages/UserManagement/UserManagement'),
 );
@@ -316,6 +317,19 @@ function AppContent() {
                   }}
                 >
                   <Requirements />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="chess-leads"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule['Chess Leads'],
+                  }}
+                >
+                  <ChessLeads />
                 </ProtectedRoute>
               }
             />

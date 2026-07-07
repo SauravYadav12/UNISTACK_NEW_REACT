@@ -40,6 +40,7 @@ import {
   IconClipboardCheck,
   IconWorldSearch,
   IconUserCheck,
+  IconChessKnight,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -163,6 +164,13 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       path: '/job-boards',
       group: ModuleGroup.Marketing,
       module: MarketingModule['Job Boards'],
+    },
+    {
+      text: 'Chess Leads',
+      icon: <IconChessKnight size={20} />,
+      path: '/chess-leads',
+      group: ModuleGroup.Marketing,
+      module: MarketingModule['Chess Leads'],
     },
     // Sales Leads hidden — not needed
     // {

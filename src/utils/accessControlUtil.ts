@@ -15,6 +15,7 @@ export enum MarketingModule {
   'Reports' = 'Reports',
   'Sales Leads' = 'Sales Leads',
   'Job Boards' = 'Job Boards',
+  'Chess Leads' = 'Chess Leads',
 }
 export enum HomeModule {
   'Dashboard' = 'Dashboard',

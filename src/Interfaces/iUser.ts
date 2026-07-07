@@ -57,6 +57,7 @@ export enum UserRole {
   support = 'support',
   user = 'user',
   'project-coordinator' = 'project-coordinator',
+  'chess-sales' = 'chess-sales',
 }
 
 export enum WorkLocation {

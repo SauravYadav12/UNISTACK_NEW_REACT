@@ -106,6 +106,11 @@ const ROLE_META: Record<
     accent: '#0369A1',
     softBg: alpha('#0EA5E9', 0.1),
   },
+  [UserRole['chess-sales']]: {
+    label: 'chess-sales',
+    accent: '#EA580C',
+    softBg: alpha('#F97316', 0.12),
+  },
   [UserRole.user]: {
     label: 'user',
     accent: '#475569',
