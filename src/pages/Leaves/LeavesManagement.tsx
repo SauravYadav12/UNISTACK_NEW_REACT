@@ -12,7 +12,7 @@ import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
   IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconRefresh,
-  IconPlaneDeparture, IconCalendar, IconChecks, IconPencil,
+  IconPlaneDeparture, IconCalendar, IconChecks, IconPencil, IconArrowBackUp,
   IconFlag, IconSettings, IconPaperclip, IconUpload, IconFileText,
 } from '@tabler/icons-react';
 import { uploadFile } from '../../services/storageApi';
@@ -38,7 +38,7 @@ import {
   getMyProbationStatus,
   ProbationStatus,
 } from '../../services/leaveTypesApi';
-import { getLeaves, updateLeave, createLeave } from '../../services/leavesApi';
+import { getLeaves, updateLeave, createLeave, revokeLeave } from '../../services/leavesApi';
 import { usersList } from '../../services/authApi';
 import { iUser } from '../../Interfaces/iUser';
 import { iLeave, LeaveStatus, HalfDayType } from '../../Interfaces/leaves';
@@ -427,6 +427,9 @@ function StatusChip({ status }: { status: LeaveStatus }) {
     [LeaveStatus.Pending]: { bg: alpha(tokens.colors.yellowDark, 0.12), color: tokens.colors.yellowDark },
     [LeaveStatus.Approved]: { bg: alpha(tokens.colors.success, 0.12), color: tokens.colors.success },
     [LeaveStatus.Rejected]: { bg: alpha(tokens.colors.error, 0.12), color: tokens.colors.error },
+    // Revoked = HR undid an Approved leave. Rendered with the same
+    // muted grey as "cancelled" states elsewhere in the app.
+    [LeaveStatus.Revoked]: { bg: alpha('#64748B', 0.14), color: '#475569' },
   };
   const s = map[status];
   return <Chip label={status} size="small" sx={{ bgcolor: s.bg, color: s.color, fontWeight: 700, fontSize: 10, height: 22 }} />;
@@ -853,8 +856,18 @@ function ApplyLeaveDialog({ open, onClose, onCreated }: { open: boolean; onClose
 // ALL REQUESTS TAB (admin) — approve/reject
 // ─────────────────────────────────────────────────────────────────────────────
 function AllRequestsPanel() {
+  const { iUser: me } = useAuth();
+  const canRevoke =
+    !!me?.role?.includes(UserRole['super-admin']) ||
+    !!me?.role?.includes(UserRole.admin) ||
+    !!me?.role?.includes(UserRole.hr);
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | 'all'>(LeaveStatus.Pending);
   const [pending, setPending] = useState<{ leave: iLeave; status: LeaveStatus } | null>(null);
+  // Revoke dialog state — separate from the approve/reject flow because
+  // it needs its own free-text reason input.
+  const [revokeTarget, setRevokeTarget] = useState<iLeave | null>(null);
+  const [revokeReason, setRevokeReason] = useState('');
+  const [revoking, setRevoking] = useState(false);
 
   const { data, loading, loadData } = useFetchData<iLeave[]>(async () => {
     const q = new URLSearchParams({ limit: '500' });
@@ -913,25 +926,46 @@ function AllRequestsPanel() {
       renderCell: ({ value }) => <StatusChip status={value as LeaveStatus} />,
     },
     {
-      field: 'actions', headerName: '', width: 130, sortable: false, filterable: false,
-      renderCell: ({ row }) => (
-        row.status === LeaveStatus.Pending ? (
-          <Stack direction="row" spacing={0.5}>
-            <Tooltip title="Approve">
-              <IconButton size="small" onClick={() => setPending({ leave: row, status: LeaveStatus.Approved })}>
-                <IconCheck size={16} color={tokens.colors.success} />
+      field: 'actions', headerName: '', width: 160, sortable: false, filterable: false,
+      renderCell: ({ row }) => {
+        if (row.status === LeaveStatus.Pending) {
+          return (
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title="Approve">
+                <IconButton size="small" onClick={() => setPending({ leave: row, status: LeaveStatus.Approved })}>
+                  <IconCheck size={16} color={tokens.colors.success} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Reject">
+                <IconButton size="small" onClick={() => setPending({ leave: row, status: LeaveStatus.Rejected })}>
+                  <IconX size={16} color={tokens.colors.error} />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        }
+        // Approved → offer Revoke (HR/Admin/SuperAdmin only). Restores
+        // the balance + unmarks the attendance stamps + flips status to
+        // Revoked so the employee can apply for a fresh date.
+        if (row.status === LeaveStatus.Approved && canRevoke) {
+          return (
+            <Tooltip title="Revoke leave (restore balance)">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setRevokeTarget(row);
+                  setRevokeReason('');
+                }}
+              >
+                <IconArrowBackUp size={16} color="#475569" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Reject">
-              <IconButton size="small" onClick={() => setPending({ leave: row, status: LeaveStatus.Rejected })}>
-                <IconX size={16} color={tokens.colors.error} />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ) : null
-      ),
+          );
+        }
+        return null;
+      },
     },
-  ], []);
+  ], [canRevoke]);
 
   const isApprove = pending?.status === LeaveStatus.Approved;
   const daysLabel = pending
@@ -1013,6 +1047,99 @@ function AllRequestsPanel() {
           </Stack>
         ) : undefined}
       />
+
+      {/* Revoke dialog — free-text reason input separate from the
+          approve/reject ConfirmDialog above. The server refuses if any
+          month in the leave range already has a published salary slip;
+          that error surfaces as a toast. */}
+      <Dialog
+        open={!!revokeTarget}
+        onClose={revoking ? undefined : () => setRevokeTarget(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Revoke this approved leave?</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              This restores the employee's leave balance, unmarks the
+              attendance stamps for those days, and flips the status to
+              Revoked. The employee will be notified — they can then
+              apply for a new date.
+            </Typography>
+            {revokeTarget && (
+              <Box
+                sx={{
+                  p: 1.25,
+                  borderRadius: 2,
+                  bgcolor: alpha('#64748B', 0.06),
+                  border: `1px solid ${alpha('#64748B', 0.15)}`,
+                }}
+              >
+                <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
+                  {revokeTarget.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {moment(revokeTarget.startDate).format('DD MMM')} —{' '}
+                  {moment(revokeTarget.endDate).format('DD MMM YYYY')}
+                  {revokeTarget.isHalfDay && ` · ${revokeTarget.halfDayType}`}
+                </Typography>
+              </Box>
+            )}
+            <TextField
+              size="small"
+              label="Reason (optional)"
+              value={revokeReason}
+              onChange={(e) => setRevokeReason(e.target.value)}
+              disabled={revoking}
+              multiline
+              minRows={2}
+              maxRows={4}
+              helperText="Shown in the notification the employee receives."
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setRevokeTarget(null)}
+            disabled={revoking}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={revoking || !revokeTarget}
+            onClick={async () => {
+              if (!revokeTarget) return;
+              setRevoking(true);
+              try {
+                await revokeLeave(revokeTarget._id, revokeReason.trim() || undefined);
+                toast.success('Leave revoked — balance restored');
+                setRevokeTarget(null);
+                setRevokeReason('');
+                loadData();
+              } catch (e: unknown) {
+                const msg =
+                  (e as { response?: { data?: { error?: string } } })?.response
+                    ?.data?.error || 'Failed to revoke leave';
+                toast.error(msg);
+              } finally {
+                setRevoking(false);
+              }
+            }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 700,
+              bgcolor: '#475569',
+              '&:hover': { bgcolor: '#334155' },
+            }}
+          >
+            {revoking ? 'Revoking…' : 'Revoke leave'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

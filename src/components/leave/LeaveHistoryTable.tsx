@@ -71,6 +71,12 @@ const STATUS_META: Record<
     icon: <IconCircleX size={12} />,
     label: 'Rejected',
   },
+  [LeaveStatus.Revoked]: {
+    color: '#475569',
+    bg: alpha('#64748B', 0.14),
+    icon: <IconCircleX size={12} />,
+    label: 'Revoked',
+  },
 };
 
 const TYPE_META: Record<LeaveType, { color: string; icon: JSX.Element }> = {

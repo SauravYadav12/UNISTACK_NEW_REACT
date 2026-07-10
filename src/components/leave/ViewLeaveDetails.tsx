@@ -48,6 +48,10 @@ const StatusChip = styled(Chip)<{ status: LeaveStatus }>(({
       bg: theme.palette.error.light,
       color: theme.palette.error.dark,
     },
+    [LeaveStatus.Revoked]: {
+      bg: '#E2E8F0',
+      color: '#475569',
+    },
   };
 
   return {

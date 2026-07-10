@@ -52,6 +52,12 @@ const STATUS_META = {
     icon: <IconCircleX size={14} />,
     label: 'Rejected',
   },
+  [LeaveStatus.Revoked]: {
+    color: '#475569',
+    bg: alpha('#64748B', 0.14),
+    icon: <IconCircleX size={14} />,
+    label: 'Revoked',
+  },
 };
 
 const RecentLeaveApplicationStatus = ({ refreshTrigger = 0 }: Props) => {

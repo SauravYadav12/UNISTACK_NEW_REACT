@@ -25,3 +25,10 @@ export async function updateLeave(id:string,params:Partial<iLeave>) {
   const response = await axiosClient.patch<ApiQueryRes<iLeave>>(`/leaves/${id}`, params);
   return response.data.data;
 }
+export async function revokeLeave(id: string, reason?: string) {
+  const response = await axiosClient.post<ApiQueryRes<iLeave>>(
+    `/leaves/${id}/revoke`,
+    { reason },
+  );
+  return response.data.data;
+}
