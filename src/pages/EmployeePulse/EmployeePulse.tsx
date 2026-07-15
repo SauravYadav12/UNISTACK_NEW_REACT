@@ -60,7 +60,8 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import RequirementDrawer from '../../components/requirement/RequirementDrawer';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import Chart from 'react-apexcharts';
@@ -451,6 +452,10 @@ export default function EmployeePulse() {
   const [drilldownTarget, setDrilldownTarget] = useState<
     { userId: string; statusKey: string; statusLabel: string } | null
   >(null);
+  // Which requirement (by reqID) is being previewed via the shared
+  // RequirementDrawer. Set from the Proactivity board's clickable
+  // reqID cell; cleared on close.
+  const [previewReqID, setPreviewReqID] = useState<string | null>(null);
 
   // Employees list — fetched once.
   useEffect(() => {
@@ -706,6 +711,7 @@ export default function EmployeePulse() {
         <ProactivityBoard
           proactivity={bundle.proactivity}
           selectedUserIds={selectedUserIds}
+          onOpenReq={setPreviewReqID}
         />
       )}
 
@@ -760,6 +766,18 @@ export default function EmployeePulse() {
         range={range}
         reqFilter={reqFilter}
       />
+
+      {/* Inline requirement preview — reuses the shared drawer used by
+          the Requirements grid so behaviour stays consistent (edit,
+          delete, logs, etc.). Opened by the Proactivity board's reqID
+          cell. */}
+      {previewReqID && (
+        <RequirementDrawer
+          open={!!previewReqID}
+          reqID={previewReqID}
+          onClose={() => setPreviewReqID(null)}
+        />
+      )}
     </Box>
   );
 }
@@ -1489,9 +1507,11 @@ function formatT(ms: number): string {
 function ProactivityBoard({
   proactivity,
   selectedUserIds,
+  onOpenReq,
 }: {
   proactivity: PulseProactivity;
   selectedUserIds: string[];
+  onOpenReq: (reqID: string) => void;
 }) {
   const [view, setView] = useState<'positions' | 'leaderboard'>('positions');
   const highlightSet = useMemo(() => new Set(selectedUserIds), [selectedUserIds]);
@@ -1571,6 +1591,7 @@ function ProactivityBoard({
           <ProactivityPositionsTable
             reqs={proactivity.reqs}
             highlightSet={highlightSet}
+            onOpenReq={onOpenReq}
           />
         ) : (
           <EmptyState
@@ -1650,9 +1671,11 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
 function ProactivityPositionsTable({
   reqs,
   highlightSet,
+  onOpenReq,
 }: {
   reqs: PulseProactivity['reqs'];
   highlightSet: Set<string>;
+  onOpenReq: (reqID: string) => void;
 }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'unclaimed' | 'claimed'>(
@@ -1816,14 +1839,19 @@ function ProactivityPositionsTable({
               >
                 <td>
                   <Typography
-                    component={RouterLink}
-                    to={`/requirements?openReqID=${encodeURIComponent(r.parentReqID)}`}
+                    component="button"
+                    type="button"
+                    onClick={() => onOpenReq(r.parentReqID)}
                     sx={{
                       fontWeight: 700,
                       fontSize: 13,
                       color: tokens.colors.pinkDark,
-                      textDecoration: 'none',
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
                       cursor: 'pointer',
+                      textAlign: 'left',
+                      font: 'inherit',
                       '&:hover': {
                         textDecoration: 'underline',
                       },
