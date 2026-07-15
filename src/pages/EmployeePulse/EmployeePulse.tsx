@@ -2099,28 +2099,11 @@ function MetricCompareTable({
         <Typography sx={{ fontWeight: 800 }}>Head-to-head comparison</Typography>
       </Stack>
       <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
-        Rows are metrics, columns are the picked employees. Each row compares
-        the same six parameters across everyone in the selected window:
-        <Box component="span" sx={{ display: 'block', mt: 0.5, ml: 1 }}>
-          <strong>submissions</strong> — reqs with <code>_perfSubmittedAt</code> in window
-          ·{' '}
-          <strong>interviewsConfirmed</strong> — client interviews with{' '}
-          <code>_perfConfirmedAt</code> in window ·{' '}
-          <strong>interviewsCompleted</strong> — client interviews with{' '}
-          <code>_perfCompletedAt</code> in window ·{' '}
-          <strong>offers</strong> — client interviews with{' '}
-          <code>_perfOfferAt</code> in window ·{' '}
-          <strong>score</strong> — composite leaderboard score using the same
-          weights as the Performance page ·{' '}
-          <strong>activeDayStreak</strong> — consecutive days (ending at the
-          window's end date) with at least one perf event.
-        </Box>
-        For every row the cohort's <span style={{ color: '#059669', fontWeight: 700 }}>best</span> cell
-        is tinted green and the <span style={{ color: '#DC2626', fontWeight: 700 }}>worst</span> is
-        tinted red — a quick scan tells you who leads on what. Rows where
-        everyone is equal stay neutral. Only the picked employees are compared
-        (up to 4); requirement filters at the top of the page narrow the pool
-        every metric is drawn from.
+        Compares each picked employee's flow through the pipeline in the
+        selected window — submitted → interviewed → offered — plus their
+        composite score and active-day streak. Row-wise{' '}
+        <span style={{ color: '#059669', fontWeight: 700 }}>best</span> is green,{' '}
+        <span style={{ color: '#DC2626', fontWeight: 700 }}>worst</span> is red.
       </Typography>
       <Box sx={{ overflowX: 'auto' }}>
         <Box
