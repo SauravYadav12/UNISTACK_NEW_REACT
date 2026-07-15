@@ -35,6 +35,7 @@ import {
   Paper,
   Select,
   Stack,
+  TablePagination,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -52,13 +53,14 @@ import {
   IconGauge,
   IconPlus,
   IconRefresh,
+  IconSearch,
   IconSettings,
   IconTrophy,
   IconUsers,
   IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import Chart from 'react-apexcharts';
@@ -934,12 +936,18 @@ function KpiRibbon({
       <Box
         sx={{
           display: 'grid',
+          // `minmax(0, 1fr)` lets each cell shrink below its content width
+          // when needed — without it, 4 dense cards side-by-side overflow
+          // the viewport. 4-across only kicks in at `lg` so mid-width
+          // screens (like a 13-inch with the sidebar open) stay at 2 rows.
           gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: `repeat(${Math.min(kpis.length, 4)}, 1fr)`,
+            xs: 'minmax(0, 1fr)',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            lg: `repeat(${Math.min(kpis.length, 4)}, minmax(0, 1fr))`,
           },
           gap: 1.5,
+          width: '100%',
+          minWidth: 0,
         }}
       >
         {kpis.map((k) => {
@@ -955,6 +963,10 @@ function KpiRibbon({
                 borderRadius: 3,
                 border: `1px solid ${alpha(color, 0.25)}`,
                 borderLeft: `4px solid ${color}`,
+                // Guard against descendants (long names, stat labels)
+                // widening the card past its grid track.
+                minWidth: 0,
+                overflow: 'hidden',
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
@@ -1642,10 +1654,124 @@ function ProactivityPositionsTable({
   reqs: PulseProactivity['reqs'];
   highlightSet: Set<string>;
 }) {
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'unclaimed' | 'claimed'>(
+    'all',
+  );
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Reset back to page 0 whenever the filter/search changes the row set —
+  // otherwise "page 5 of 3" leaves the view stuck on an empty page.
+  useEffect(() => setPage(0), [search, statusFilter, reqs.length]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return reqs.filter((r) => {
+      if (statusFilter === 'unclaimed' && r.actors.length > 0) return false;
+      if (statusFilter === 'claimed' && r.actors.length === 0) return false;
+      if (!q) return true;
+      return (
+        r.parentReqID.toLowerCase().includes(q) ||
+        (r.jobTitle || '').toLowerCase().includes(q) ||
+        (r.clientCompany || '').toLowerCase().includes(q)
+      );
+    });
+  }, [reqs, search, statusFilter]);
+
+  const unclaimedCount = useMemo(
+    () => reqs.filter((r) => r.actors.length === 0).length,
+    [reqs],
+  );
+
+  const paged = filtered.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage,
+  );
+
   return (
-    <Box sx={{ overflowX: 'auto' }}>
-      <Box
-        component="table"
+    <Box>
+      {/* Toolbar: search + filter chips + count */}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1.5}
+        alignItems={{ sm: 'center' }}
+        justifyContent="space-between"
+        sx={{ mb: 1.5 }}
+      >
+        <TextField
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search reqID, job title or client…"
+          sx={{ minWidth: { xs: '100%', sm: 320 } }}
+          InputProps={{
+            startAdornment: (
+              <IconSearch
+                size={16}
+                style={{ marginRight: 8, opacity: 0.5, flexShrink: 0 }}
+              />
+            ),
+          }}
+        />
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Chip
+            size="small"
+            label={`All · ${reqs.length}`}
+            onClick={() => setStatusFilter('all')}
+            variant={statusFilter === 'all' ? 'filled' : 'outlined'}
+            sx={{
+              fontWeight: 700,
+              fontSize: 11,
+              bgcolor:
+                statusFilter === 'all' ? tokens.colors.blueDark : 'transparent',
+              color: statusFilter === 'all' ? '#fff' : 'text.primary',
+            }}
+          />
+          <Chip
+            size="small"
+            label={`Unclaimed · ${unclaimedCount}`}
+            onClick={() => setStatusFilter('unclaimed')}
+            variant={statusFilter === 'unclaimed' ? 'filled' : 'outlined'}
+            sx={{
+              fontWeight: 700,
+              fontSize: 11,
+              bgcolor:
+                statusFilter === 'unclaimed' ? '#DC2626' : 'transparent',
+              color:
+                statusFilter === 'unclaimed' ? '#fff' : '#DC2626',
+              borderColor: '#DC2626',
+            }}
+          />
+          <Chip
+            size="small"
+            label={`Claimed · ${reqs.length - unclaimedCount}`}
+            onClick={() => setStatusFilter('claimed')}
+            variant={statusFilter === 'claimed' ? 'filled' : 'outlined'}
+            sx={{
+              fontWeight: 700,
+              fontSize: 11,
+              bgcolor:
+                statusFilter === 'claimed' ? '#059669' : 'transparent',
+              color: statusFilter === 'claimed' ? '#fff' : '#059669',
+              borderColor: '#059669',
+            }}
+          />
+        </Stack>
+      </Stack>
+
+      {paged.length === 0 ? (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: 'block', textAlign: 'center', py: 4 }}
+        >
+          No positions match your search or filter.
+        </Typography>
+      ) : (
+        <Box sx={{ overflowX: 'auto' }}>
+          <Box
+            component="table"
         sx={{
           width: '100%',
           borderCollapse: 'collapse',
@@ -1675,7 +1801,7 @@ function ProactivityPositionsTable({
           </tr>
         </thead>
         <tbody>
-          {reqs.map((r) => {
+          {paged.map((r) => {
             const unclaimed = r.actors.length === 0;
             return (
               <tr
@@ -1689,10 +1815,23 @@ function ProactivityPositionsTable({
                 }
               >
                 <td>
-                  <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
+                  <Typography
+                    component={RouterLink}
+                    to={`/requirements?openReqID=${encodeURIComponent(r.parentReqID)}`}
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: tokens.colors.pinkDark,
+                      textDecoration: 'none',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
                     {r.parentReqID}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     {[r.jobTitle, r.clientCompany].filter(Boolean).join(' @ ') ||
                       '—'}
                   </Typography>
@@ -1772,7 +1911,30 @@ function ProactivityPositionsTable({
             );
           })}
         </tbody>
-      </Box>
+          </Box>
+        </Box>
+      )}
+
+      {filtered.length > 0 && (
+        <TablePagination
+          component="div"
+          count={filtered.length}
+          page={page}
+          onPageChange={(_e, next) => setPage(next)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          sx={{
+            borderTop: `1px solid ${alpha(tokens.colors.blue, 0.08)}`,
+            '.MuiTablePagination-toolbar': { minHeight: 44, px: 0.5 },
+            '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows':
+              { fontSize: 12, fontWeight: 600 },
+          }}
+        />
+      )}
     </Box>
   );
 }
@@ -1904,10 +2066,16 @@ function MetricCompareTable({
         mb: 2,
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
         <IconUsers size={18} color={tokens.colors.blueDark} />
         <Typography sx={{ fontWeight: 800 }}>Head-to-head comparison</Typography>
       </Stack>
+      <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
+        Rows are metrics, columns are the picked employees. For each metric the
+        cohort's best cell is tinted green and the worst is tinted red — a
+        quick scan tells you who leads on what within the selected window.
+        Ties (everyone equal) stay neutral.
+      </Typography>
       <Box sx={{ overflowX: 'auto' }}>
         <Box
           component="table"
