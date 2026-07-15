@@ -66,6 +66,7 @@ import type { ApexOptions } from 'apexcharts';
 import { tokens } from '../../theme/theme';
 import {
   getEmployeePulse,
+  getStatusDrilldown,
   listPulseEmployees,
 } from '../../services/employeePulseApi';
 import type {
@@ -77,6 +78,7 @@ import type {
   PulseMetric,
   PulseProactivity,
   PulseReqFilter,
+  PulseStatusDrilldownReq,
 } from '../../Interfaces/employeePulse';
 
 // ─── Constants ─────────────────────────────────────────────────────
@@ -113,16 +115,22 @@ interface StatDef {
   group: 'Status' | 'Activity' | 'Streak';
   extract: (k: PulseKpi) => number;
   highlight?: boolean;
+  /**
+   * Raw server-facing status name (must match the reqStatus enum
+   * exactly). Present only for Status-group stats — powers the
+   * drilldown drawer's server call.
+   */
+  statusKey?: string;
 }
 
 const STAT_CATALOG: StatDef[] = [
-  { id: 'status.newWorking', label: 'New Working', group: 'Status', extract: (k) => k.statusCounts?.['New Working'] || 0 },
-  { id: 'status.submissionInProgress', label: 'In progress', group: 'Status', extract: (k) => k.statusCounts?.['Submission in progress'] || 0 },
-  { id: 'status.submitted', label: 'Submitted', group: 'Status', extract: (k) => k.statusCounts?.['Submitted'] || 0 },
-  { id: 'status.interviewed', label: 'Interviewed', group: 'Status', extract: (k) => k.statusCounts?.['Interviewed'] || 0 },
-  { id: 'status.projectActive', label: 'Project Active', group: 'Status', extract: (k) => k.statusCounts?.['Project Active'] || 0, highlight: true },
-  { id: 'status.projectInactive', label: 'Project Inactive', group: 'Status', extract: (k) => k.statusCounts?.['Project Inactive'] || 0 },
-  { id: 'status.cancelled', label: 'Cancelled', group: 'Status', extract: (k) => k.statusCounts?.['Cancelled'] || 0 },
+  { id: 'status.newWorking', label: 'New Working', group: 'Status', statusKey: 'New Working', extract: (k) => k.statusCounts?.['New Working'] || 0 },
+  { id: 'status.submissionInProgress', label: 'In progress', group: 'Status', statusKey: 'Submission in progress', extract: (k) => k.statusCounts?.['Submission in progress'] || 0 },
+  { id: 'status.submitted', label: 'Submitted', group: 'Status', statusKey: 'Submitted', extract: (k) => k.statusCounts?.['Submitted'] || 0 },
+  { id: 'status.interviewed', label: 'Interviewed', group: 'Status', statusKey: 'Interviewed', extract: (k) => k.statusCounts?.['Interviewed'] || 0 },
+  { id: 'status.projectActive', label: 'Project Active', group: 'Status', statusKey: 'Project Active', extract: (k) => k.statusCounts?.['Project Active'] || 0, highlight: true },
+  { id: 'status.projectInactive', label: 'Project Inactive', group: 'Status', statusKey: 'Project Inactive', extract: (k) => k.statusCounts?.['Project Inactive'] || 0 },
+  { id: 'status.cancelled', label: 'Cancelled', group: 'Status', statusKey: 'Cancelled', extract: (k) => k.statusCounts?.['Cancelled'] || 0 },
   { id: 'activity.submissions', label: 'Submissions (window)', group: 'Activity', extract: (k) => k.submissions },
   { id: 'activity.interviewsConfirmed', label: 'Confirmed (window)', group: 'Activity', extract: (k) => k.interviewsConfirmed },
   { id: 'activity.interviewsCompleted', label: 'Completed (window)', group: 'Activity', extract: (k) => k.interviewsCompleted },
@@ -352,7 +360,7 @@ function urlPersistedParams(params: URLSearchParams): {
   const customTo = params.get('customTo') || moment().format('YYYY-MM-DD');
   const groupBy = (params.get('groupBy') as PulseGroupBy) || 'jobTitle';
   const bucket = (params.get('bucket') as PulseBucket) || 'week';
-  const metric = (params.get('metric') as PulseMetric) || 'submissions';
+  const metric = (params.get('metric') as PulseMetric) || 'positions';
   const filter: PulseReqFilter = {};
   // Only keys we intend to persist go through the picker; every other
   // query key is left alone (safe with react-router's URLSearchParams).
@@ -438,6 +446,9 @@ export default function EmployeePulse() {
     loadSelectedStats(),
   );
   const [statPickerOpen, setStatPickerOpen] = useState(false);
+  const [drilldownTarget, setDrilldownTarget] = useState<
+    { userId: string; statusKey: string; statusLabel: string } | null
+  >(null);
 
   // Employees list — fetched once.
   useEffect(() => {
@@ -679,6 +690,7 @@ export default function EmployeePulse() {
           bucket={bucket}
           selectedStats={selectedStats}
           onOpenStatPicker={() => setStatPickerOpen(true)}
+          onOpenDrilldown={setDrilldownTarget}
         />
       )}
 
@@ -726,6 +738,20 @@ export default function EmployeePulse() {
         onClose={() => setStatPickerOpen(false)}
         value={selectedStats}
         onChange={setSelectedStats}
+      />
+
+      {/* KPI status drilldown */}
+      <StatDrilldownDrawer
+        open={!!drilldownTarget}
+        onClose={() => setDrilldownTarget(null)}
+        target={drilldownTarget}
+        employeeName={
+          drilldownTarget
+            ? bundle?.users.find((u) => u.userId === drilldownTarget.userId)?.name
+            : undefined
+        }
+        range={range}
+        reqFilter={reqFilter}
       />
     </Box>
   );
@@ -852,12 +878,21 @@ function KpiRibbon({
   bucket,
   selectedStats,
   onOpenStatPicker,
+  onOpenDrilldown,
 }: {
   kpis: PulseKpi[];
   users: PulseBundle['users'];
   bucket: PulseBucket;
   selectedStats: string[];
   onOpenStatPicker: () => void;
+  /** Fires when the user clicks a Status-group stat number. `statusKey`
+   *  is the raw server-facing status name (e.g. "Submission in progress"),
+   *  `statusLabel` is the friendly display label. */
+  onOpenDrilldown: (input: {
+    userId: string;
+    statusKey: string;
+    statusLabel: string;
+  }) => void;
 }) {
   const userIndex = new Map(users.map((u, i) => [u.userId, i] as const));
   // Resolve the ids back to StatDef instances in the same order the
@@ -959,6 +994,16 @@ function KpiRibbon({
                       label={s.label}
                       value={s.extract(k)}
                       highlight={s.highlight}
+                      onClick={
+                        s.statusKey
+                          ? () =>
+                              onOpenDrilldown({
+                                userId: k.userId,
+                                statusKey: s.statusKey as string,
+                                statusLabel: s.label,
+                              })
+                          : undefined
+                      }
                     />
                   ))}
                 </Stack>
@@ -987,23 +1032,51 @@ function Stat({
   label,
   value,
   highlight,
+  onClick,
 }: {
   label: string;
   value: number;
   highlight?: boolean;
+  onClick?: () => void;
 }) {
+  const clickable = !!onClick && value > 0;
   return (
     <Box sx={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
       <Typography
+        component={clickable ? 'button' : 'div'}
+        onClick={clickable ? onClick : undefined}
         sx={{
           fontWeight: 800,
           fontSize: '1rem',
           color: highlight ? '#10B981' : 'text.primary',
+          border: 'none',
+          background: 'transparent',
+          padding: 0,
+          cursor: clickable ? 'pointer' : 'default',
+          textDecoration: clickable ? 'underline dotted' : 'none',
+          textUnderlineOffset: 3,
+          textDecorationColor: clickable
+            ? alpha(tokens.colors.pinkDark, 0.5)
+            : 'transparent',
+          '&:hover': clickable
+            ? {
+                color: tokens.colors.pinkDark,
+                textDecorationColor: tokens.colors.pinkDark,
+              }
+            : undefined,
         }}
       >
         {value}
       </Typography>
-      <Tooltip title={label} placement="top" enterDelay={400}>
+      <Tooltip
+        title={
+          clickable
+            ? `${label} · click to see the requirements`
+            : label
+        }
+        placement="top"
+        enterDelay={400}
+      >
         <Typography
           variant="caption"
           color="text.secondary"
@@ -1190,13 +1263,194 @@ function Sparkline({
 }
 
 
+// ─── Status drilldown drawer ─────────────────────────────────────
+// Opens when the user clicks a Status-group stat number on a KPI card.
+// Fetches `/employee-pulse/status-drilldown` on open with the same
+// window + reqFilter the card was computed against so counts + rows
+// always agree.
+
+function StatDrilldownDrawer({
+  open,
+  onClose,
+  target,
+  employeeName,
+  range,
+  reqFilter,
+}: {
+  open: boolean;
+  onClose: () => void;
+  target: { userId: string; statusKey: string; statusLabel: string } | null;
+  employeeName?: string;
+  range: { from: string; to: string };
+  reqFilter: PulseReqFilter;
+}) {
+  const [rows, setRows] = useState<PulseStatusDrilldownReq[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !target) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setRows([]);
+    getStatusDrilldown({
+      userId: target.userId,
+      statusKey: target.statusKey,
+      fromDate: range.from,
+      toDate: range.to,
+      reqFilter,
+    })
+      .then((res) => {
+        if (cancelled) return;
+        setRows(res.data?.data?.rows || []);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        const msg =
+          (e as { response?: { data?: { error?: string } } })?.response
+            ?.data?.error || 'Could not load requirements';
+        setError(msg);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, target, range.from, range.to, reqFilter]);
+
+  return (
+    <Drawer anchor="right" open={open} onClose={onClose}>
+      <Box sx={{ width: { xs: '100vw', sm: 520 }, p: 2 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 1.5 }}
+        >
+          <Box>
+            <Typography sx={{ fontWeight: 800 }}>
+              {target?.statusLabel || 'Status'} · {employeeName || '—'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {moment(range.from).format('DD MMM')} –{' '}
+              {moment(range.to).format('DD MMM YYYY')} · {rows.length}{' '}
+              {rows.length === 1 ? 'req' : 'reqs'}
+            </Typography>
+          </Box>
+          <IconButton size="small" onClick={onClose}>
+            <IconX size={16} />
+          </IconButton>
+        </Stack>
+
+        {loading && (
+          <Stack alignItems="center" sx={{ py: 4 }}>
+            <CircularProgress size={22} />
+          </Stack>
+        )}
+
+        {!loading && error && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        )}
+
+        {!loading && !error && rows.length === 0 && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', textAlign: 'center', py: 4 }}
+          >
+            No requirements hit this status for this employee in the selected
+            window.
+          </Typography>
+        )}
+
+        <Stack spacing={0.75}>
+          {rows.map((r) => (
+            <Paper
+              key={r.reqID}
+              variant="outlined"
+              sx={{
+                p: 1.25,
+                borderRadius: 2,
+                borderColor: alpha(tokens.colors.blue, 0.15),
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: 13,
+                        color: tokens.colors.pinkDark,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {r.reqID}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={r.reqStatus}
+                      sx={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        height: 20,
+                        bgcolor: alpha(tokens.colors.blue, 0.1),
+                        color: tokens.colors.blueDark,
+                      }}
+                    />
+                  </Stack>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 600 }} noWrap>
+                    {r.jobTitle}
+                    {r.primaryTech ? ` · ${r.primaryTech}` : ''}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap>
+                    {r.clientCompany || '—'}
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography
+                    sx={{ fontSize: 11, fontWeight: 700 }}
+                    color="text.secondary"
+                  >
+                    {r.relevantAt
+                      ? moment(r.relevantAt).format('DD MMM · HH:mm')
+                      : '—'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {r.relevantField.replace('_perf', '').replace('At', '')}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
+          ))}
+        </Stack>
+
+        {rows.length >= 200 && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', textAlign: 'center', mt: 1.5 }}
+          >
+            Showing the 200 most-recent · narrow the range or filters to see
+            others.
+          </Typography>
+        )}
+      </Box>
+    </Drawer>
+  );
+}
+
 // ─── Section 2: Proactivity board ────────────────────────────────
 // For each parent requirement entered in the window, rank marketers by
 // their first-action time. Two views: per-position (who acted #1/#2/#3
 // on each new position) and leaderboard (aggregate first-place counts +
-// median time-to-act). Actors come from child req assignments (primary
-// signal) or parent-comment authorship (secondary signal, name-matched
-// server-side).
+// median time-to-act). The winning "first action" is the first COMMENT
+// added on any child of that parent — a marketer who was assigned a
+// child but never commented does not count as an actor.
 
 const RANK_STYLE: Record<number, { bg: string; fg: string; label: string }> = {
   0: { bg: '#FEF3C7', fg: '#B45309', label: '🥇' },
@@ -1249,8 +1503,9 @@ function ProactivityBoard({
           <Box>
             <Typography sx={{ fontWeight: 800 }}>Proactivity board</Typography>
             <Typography variant="caption" color="text.secondary">
-              Ranks marketers by fastest first action (child assignment ·
-              comment) on positions entered in this window.
+              Ranks marketers by fastest first comment on a child requirement
+              of positions entered in this window. A marketer with no comment
+              is not counted.
             </Typography>
           </Box>
         </Stack>
@@ -1476,10 +1731,8 @@ function ProactivityPositionsTable({
                                   {actor.name}
                                 </Typography>
                                 <Typography variant="caption">
-                                  First action:{' '}
-                                  {actor.firstActionKind === 'child'
-                                    ? 'created a child req'
-                                    : 'added the first comment'}
+                                  First comment on{' '}
+                                  {actor.childReqID || 'a child req'}
                                 </Typography>
                                 <br />
                                 <Typography variant="caption">
@@ -1759,7 +2012,11 @@ const BUCKET_LABELS: Record<PulseBucket, string> = {
   month: 'Monthly',
 };
 
+// Order here drives the dropdown order. `positions` (count of reqs
+// created in the window) is first so it's the natural default and
+// answers the "what came in today" question.
 const METRIC_LABELS: Record<PulseMetric, string> = {
+  positions: 'Positions entered',
   submissions: 'Submissions',
   interviewsCompleted: 'Interviews completed',
   offers: 'Offers',

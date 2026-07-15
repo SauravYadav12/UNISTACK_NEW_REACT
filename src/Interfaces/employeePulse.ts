@@ -14,7 +14,12 @@ export type PulseGroupBy =
   | 'remote';
 
 export type PulseBucket = 'day' | 'week' | 'biweek' | 'month';
-export type PulseMetric = 'submissions' | 'interviewsCompleted' | 'offers' | 'score';
+export type PulseMetric =
+  | 'positions'
+  | 'submissions'
+  | 'interviewsCompleted'
+  | 'offers'
+  | 'score';
 
 export interface PulseUser {
   userId: string;
@@ -63,7 +68,11 @@ export interface PulseProactivityActor {
   userId: string;
   name: string;
   firstActionAt: string; // ISO
-  firstActionKind: 'child' | 'comment';
+  /** Always "comment" today — first comment on any child of the parent
+   *  is the winning action. Kept as a union for forward compatibility. */
+  firstActionKind: 'comment';
+  /** reqID of the child requirement the winning comment was placed on. */
+  childReqID?: string;
   msFromEntry: number;
 }
 
@@ -158,4 +167,28 @@ export interface PulseEmployeeRow {
   name: string;
   email: string;
   role: string[];
+}
+
+/**
+ * One row of the status drilldown drawer. Matches the shape returned by
+ * `GET /employee-pulse/status-drilldown`. `relevantField` names the
+ * timestamp that qualified this req into the requested status window so
+ * the drawer can display it alongside the row.
+ */
+export interface PulseStatusDrilldownReq {
+  reqID: string;
+  reqStatus: string;
+  jobTitle: string;
+  clientCompany: string;
+  primaryTech?: string;
+  createdAt: string;
+  updatedAt: string;
+  relevantAt: string;
+  relevantField:
+    | 'createdAt'
+    | 'updatedAt'
+    | '_perfSubmittedAt'
+    | '_perfInterviewedAt'
+    | '_perfProjectActiveAt'
+    | '_perfProjectInactiveAt';
 }
