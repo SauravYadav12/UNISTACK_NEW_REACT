@@ -58,6 +58,9 @@ const Projects = lazy(() => import('./pages/Marketing/Projects/Projects'));
 const PerformancePage = lazy(
   () => import('./pages/Performance/PerformancePage'),
 );
+const EmployeePulse = lazy(
+  () => import('./pages/EmployeePulse/EmployeePulse'),
+);
 const MyDocuments = lazy(() => import('./pages/Documents/MyDocuments'));
 const Profile = lazy(() => import('./pages/Marketing/Profile/Profile'));
 const MyAttendance = lazy(() => import('./pages/Attendance/MyAttendance'));
@@ -254,6 +257,19 @@ function AppContent() {
                   }}
                 >
                   <PerformancePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="employee-pulse"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Employee Pulse'],
+                  }}
+                >
+                  <EmployeePulse />
                 </ProtectedRoute>
               }
             />

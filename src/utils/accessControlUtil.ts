@@ -42,6 +42,7 @@ export enum SuperAdminModule {
   'Invoice Email Templates' = 'Invoice Email Templates',
   'Timesheet Approvals' = 'Timesheet Approvals',
   'Performance' = 'Performance',
+  'Employee Pulse' = 'Employee Pulse',
   'Employee Management' = 'Employee Management',
   'Onboarding' = 'Onboarding',
 }

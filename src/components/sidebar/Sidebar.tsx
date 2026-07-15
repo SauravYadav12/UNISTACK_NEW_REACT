@@ -41,6 +41,7 @@ import {
   IconWorldSearch,
   IconUserCheck,
   IconChessKnight,
+  IconActivity,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -223,6 +224,13 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       path: '/performance',
       group: ModuleGroup['Super Admin Modules'],
       module: SuperAdminModule['Performance'],
+    },
+    {
+      text: 'Employee Pulse',
+      icon: <IconActivity size={20} />,
+      path: '/employee-pulse',
+      group: ModuleGroup['Super Admin Modules'],
+      module: SuperAdminModule['Employee Pulse'],
     },
   ];
 
