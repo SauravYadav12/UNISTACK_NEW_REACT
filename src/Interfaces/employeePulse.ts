@@ -186,6 +186,7 @@ export interface PulseStatusDrilldownReq {
   relevantField:
     | 'createdAt'
     | 'updatedAt'
+    | '_perfInProgressAt'
     | '_perfSubmittedAt'
     | '_perfInterviewedAt'
     | '_perfProjectActiveAt'
