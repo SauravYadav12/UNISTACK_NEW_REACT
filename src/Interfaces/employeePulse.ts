@@ -59,7 +59,6 @@ export interface PulseTrend {
   series: PulseTrendSeries[];
   truncated: boolean;
   totalSeries: number;
-  perEmployeeOverlay?: Array<{ userId: string; name: string; data: number[] }>;
 }
 
 // ─── Proactivity Board ────────────────────────────────────────────

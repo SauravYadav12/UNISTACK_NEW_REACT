@@ -103,7 +103,52 @@ export default function Requirements() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [formTitle, setFormTitle] = useState('');
+  const [formTitle, setFormTitle] = useState<string | JSX.Element>('');
+
+  /**
+   * Builds the drawer title for a requirement row. Parent rows get a
+   * "copy shareable URL" icon next to the reqID (child rows don't —
+   * child links are less commonly shared).
+   *
+   * URL uses the current origin + pathname + `?openReqID=<reqID>` so
+   * it reuses the same deep-link mechanism the notification bell hits.
+   */
+  const buildReqDrawerTitle = (row: {
+    reqID?: string;
+    parentReqID?: string;
+  }): JSX.Element => {
+    const reqID = row.reqID || '';
+    const isParent = !row.parentReqID;
+    const shareUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}?openReqID=${encodeURIComponent(reqID)}`
+        : '';
+    const copyUrl = async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Requirement URL copied to clipboard');
+      } catch {
+        toast.error('Could not copy — clipboard blocked by the browser');
+      }
+    };
+    return (
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Box component="span">Requirement ID: {reqID}</Box>
+        {isParent && (
+          <Tooltip title="Copy shareable URL" arrow>
+            <IconButton
+              size="small"
+              onClick={copyUrl}
+              aria-label="Copy requirement URL"
+              sx={{ ml: 0.25 }}
+            >
+              <IconCopy size={16} />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Stack>
+    );
+  };
   const [viewData, setViewData] = useState<IRequirement>();
   const [reqToCopy, setReqToCopy] = useState<Partial<IRequirement>>();
   const [mode, setMode] = useState<FormMode>('view');
@@ -597,7 +642,7 @@ export default function Requirements() {
     // server so any field that drifted since the last fetch is updated.
     if (!row) return;
     setViewData(row);
-    setFormTitle(`Requirement ID: ${row.reqID}`);
+    setFormTitle(buildReqDrawerTitle(row));
     setMode('view');
     setDrawerOpen(true);
     if (!archive) {

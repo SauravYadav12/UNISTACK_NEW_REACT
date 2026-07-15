@@ -354,7 +354,7 @@ function urlPersistedParams(params: URLSearchParams): {
     .split(',')
     .filter(Boolean)
     .slice(0, MAX_USERS);
-  const preset = (params.get('preset') as Preset) || '7d';
+  const preset = (params.get('preset') as Preset) || 'today';
   const customFrom =
     params.get('customFrom') || moment().subtract(29, 'day').format('YYYY-MM-DD');
   const customTo = params.get('customTo') || moment().format('YYYY-MM-DD');
@@ -514,8 +514,13 @@ export default function EmployeePulse() {
     }
   }, [selectedUserIds, range.from, range.to, groupBy, bucket, metric, reqFilter]);
 
+  // Debounced state-driven fetch. Rapid filter tweaks + range toggles
+  // collapse into a single request instead of firing one per keystroke.
   useEffect(() => {
-    void load();
+    const t = setTimeout(() => {
+      void load();
+    }, 250);
+    return () => clearTimeout(t);
   }, [load]);
 
   const activeFilterCount = useMemo(() => {
@@ -2040,19 +2045,16 @@ function PositionTrendChart({
   metric: PulseMetric;
   setMetric: (m: PulseMetric) => void;
 }) {
-  const [showOverlay, setShowOverlay] = useState(true);
+  const series = trend.series.map((s) => ({
+    name: s.name,
+    data: s.data,
+    type: 'line' as const,
+  }));
 
-  const series = [
-    ...trend.series.map((s) => ({ name: s.name, data: s.data, type: 'line' as const })),
-    ...(showOverlay && trend.perEmployeeOverlay?.length
-      ? trend.perEmployeeOverlay.map((o, i) => ({
-          name: `${o.name} (overlay)`,
-          data: o.data,
-          type: 'area' as const,
-          color: alpha(EMPLOYEE_COLORS[i % EMPLOYEE_COLORS.length], 0.35),
-        }))
-      : []),
-  ];
+  // In-plain-English caption assembled from the three selectors so the
+  // user reads exactly what the chart is showing without having to
+  // decode the labels.
+  const caption = `${METRIC_LABELS[metric]} per ${BUCKET_LABELS[bucket].toLowerCase()} bucket, one line per ${GROUP_BY_LABELS[groupBy].toLowerCase()}. Similar titles (e.g. "Senior React Developer" + "React Engineer") are merged automatically. Org-wide — the employee picker above does not affect this chart.`;
 
   const options: ApexOptions = {
     chart: {
@@ -2061,12 +2063,19 @@ function PositionTrendChart({
       animations: { enabled: false },
     },
     stroke: { curve: 'smooth', width: 2 },
+    // Markers make single-day data points visible — without them a
+    // series with one non-zero value renders as an invisible dot.
+    markers: { size: 4, hover: { size: 6 } },
     dataLabels: { enabled: false },
     xaxis: {
       categories: trend.xAxis.map((d) => moment(d).format('DD MMM')),
       labels: { style: { fontSize: '11px' } },
     },
-    yaxis: { labels: { style: { fontSize: '11px' } } },
+    yaxis: {
+      labels: { style: { fontSize: '11px' } },
+      forceNiceScale: true,
+      min: 0,
+    },
     legend: { position: 'bottom', fontSize: '12px' },
     grid: { borderColor: alpha(tokens.colors.blue, 0.08) },
     tooltip: { shared: true, intersect: false },
@@ -2087,13 +2096,18 @@ function PositionTrendChart({
         spacing={1.5}
         alignItems={{ md: 'center' }}
         justifyContent="space-between"
-        sx={{ mb: 2 }}
+        sx={{ mb: 1.5 }}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
           <IconChartLine size={18} color={tokens.colors.blueDark} />
-          <Typography sx={{ fontWeight: 800 }}>
-            Position / Tech trend
-          </Typography>
+          <Box>
+            <Typography sx={{ fontWeight: 800 }}>
+              Position / Tech trend
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {caption}
+            </Typography>
+          </Box>
         </Stack>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -2138,16 +2152,6 @@ function PositionTrendChart({
               ))}
             </Select>
           </FormControl>
-          {trend.perEmployeeOverlay?.length ? (
-            <Button
-              size="small"
-              variant={showOverlay ? 'contained' : 'outlined'}
-              onClick={() => setShowOverlay(!showOverlay)}
-              sx={{ textTransform: 'none' }}
-            >
-              {showOverlay ? 'Hide overlay' : 'Show overlay'}
-            </Button>
-          ) : null}
         </Stack>
       </Stack>
       {trend.truncated && (
@@ -2157,8 +2161,13 @@ function PositionTrendChart({
         </Typography>
       )}
       {series.length === 0 ? (
-        <Typography variant="caption" color="text.secondary">
-          No data in this window.
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: 'block', textAlign: 'center', py: 4 }}
+        >
+          No {GROUP_BY_LABELS[groupBy].toLowerCase()}s
+          {' '}in the pipeline for this window. Try a wider range or clear the requirement filters.
         </Typography>
       ) : (
         <Chart options={options} series={series} type="line" height={320} />

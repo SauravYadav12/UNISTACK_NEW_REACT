@@ -1,6 +1,15 @@
 import { Sync } from '@mui/icons-material';
-import { Box, CircularProgress, Typography, IconButton } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  IconButton,
+  Stack,
+  Tooltip,
+} from '@mui/material';
+import { IconCopy } from '@tabler/icons-react';
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { useFetchData } from '../../hooks/fetchDataHook';
 import RequirementsForm from '../../pages/Marketing/Requirements/RequirementsForm';
 import { requirementsList } from '../../services/requirementApi';
@@ -162,11 +171,50 @@ const RequirementDrawer = ({
     );
   };
 
+  // Shareable URL that reopens this drawer for anyone with access —
+  // reuses the existing `?openReqID=` deep-link mechanism honoured by
+  // Requirements.tsx. `pathname` (not `href`) so we drop any pre-existing
+  // query params on the current URL.
+  const isParent = !viewData?.parentReqID;
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}?openReqID=${encodeURIComponent(reqID)}`
+      : '';
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Requirement URL copied to clipboard');
+    } catch {
+      toast.error('Could not copy — clipboard blocked by the browser');
+    }
+  };
+
+  const defaultTitle = (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Typography component="span" sx={{ fontWeight: 800 }}>
+        Requirement ID: {reqID}
+      </Typography>
+      {isParent && (
+        <Tooltip title="Copy shareable URL" arrow>
+          <IconButton
+            size="small"
+            onClick={handleCopyUrl}
+            sx={{ ml: 0.25 }}
+            aria-label="Copy requirement URL"
+          >
+            <IconCopy size={16} />
+          </IconButton>
+        </Tooltip>
+      )}
+    </Stack>
+  );
+
   return (
     <CustomDrawer
       open={open}
       onClose={onClose}
-      title={title || 'Requrement ID: ' + reqID}
+      title={title || defaultTitle}
       closeOnOutSideClick
       subTitle={
         subTitle || (
