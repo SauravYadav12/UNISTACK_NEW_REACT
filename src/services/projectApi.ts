@@ -45,6 +45,30 @@ export async function deleteProject(id: string) {
   );
 }
 
+export interface HardDeleteProjectSummary {
+  projectId: string;
+  projectIdStr: string;
+  counts: {
+    timesheets: number;
+    approvals: number;
+    invoices: number;
+    notifications: number;
+    s3Deleted: number;
+    s3Failed: number;
+  };
+}
+
+/**
+ * Super-admin only. Cascades: Timesheets + TimesheetApprovals + Invoices
+ * + Notifications (by link.projectId) + every S3 blob owned by the
+ * project or its dependents. Server returns per-collection counts.
+ */
+export async function hardDeleteProject(id: string) {
+  return axiosClient.delete<ApiQueryRes<HardDeleteProjectSummary>>(
+    `/projects/hard-delete/${id}`
+  );
+}
+
 // ── Additional details ──
 
 export async function addAdditionalDetail(

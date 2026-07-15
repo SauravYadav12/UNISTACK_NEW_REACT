@@ -1,8 +1,15 @@
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   alpha,
@@ -25,6 +32,8 @@ import {
   IconPointFilled,
   IconEye,
   IconSettings,
+  IconTrash,
+  IconAlertTriangle,
 } from '@tabler/icons-react';
 import moment from 'moment';
 
@@ -35,7 +44,12 @@ import {
   initialSearchModel,
   usePagination,
 } from '../../../hooks/paginationHook';
-import { getProject, projectsList } from '../../../services/projectApi';
+import {
+  getProject,
+  hardDeleteProject,
+  projectsList,
+  type HardDeleteProjectSummary,
+} from '../../../services/projectApi';
 import { organizationsList } from '../../../services/organizationApi';
 import { IProject, ProjectStatus } from '../../../Interfaces/project';
 import { IOrganization } from '../../../Interfaces/organization';
@@ -122,6 +136,15 @@ export default function Projects() {
     iUser?.role?.includes(UserRole['super-admin']) ||
     iUser?.role?.includes(UserRole.admin) ||
     false;
+  // Hard-delete is destructive + cascades to timesheets / invoices /
+  // storage — super-admin only. Matches the server route guard.
+  const isSuperAdmin = !!iUser?.role?.includes(UserRole['super-admin']);
+  const [deleteTarget, setDeleteTarget] = useState<IProject | undefined>();
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [lastDeleteSummary, setLastDeleteSummary] = useState<
+    HardDeleteProjectSummary | undefined
+  >();
 
   // Organization state
   const [orgs, setOrgs] = useState<IOrganization[]>([]);
@@ -505,6 +528,36 @@ export default function Projects() {
         </Typography>
       ),
     },
+    ...(isSuperAdmin
+      ? [
+          {
+            field: '_actions',
+            headerName: '',
+            width: 60,
+            sortable: false,
+            filterable: false,
+            renderCell: ({ row }: { row: IProject }) => (
+              <Tooltip title="Delete permanently (super-admin)" arrow>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteConfirmText('');
+                    setLastDeleteSummary(undefined);
+                    setDeleteTarget(row);
+                  }}
+                  sx={{
+                    color: '#DC2626',
+                    '&:hover': { bgcolor: alpha('#DC2626', 0.08) },
+                  }}
+                >
+                  <IconTrash size={16} />
+                </IconButton>
+              </Tooltip>
+            ),
+          } as GridColDef<IProject>,
+        ]
+      : []),
   ];
 
   const dataGridHeader = (
@@ -793,6 +846,132 @@ export default function Projects() {
         open={emailSettingsOpen}
         onClose={() => setEmailSettingsOpen(false)}
       />
+
+      {/* ── Super-admin: permanent delete confirmation ── */}
+      <Dialog
+        open={!!deleteTarget}
+        onClose={() => (deleting ? undefined : setDeleteTarget(undefined))}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            color: '#B91C1C',
+          }}
+        >
+          <IconAlertTriangle size={20} />
+          Delete project permanently
+        </DialogTitle>
+        <DialogContent>
+          {lastDeleteSummary ? (
+            <Alert severity="success" sx={{ mb: 1 }}>
+              Deleted. Removed{' '}
+              <strong>{lastDeleteSummary.counts.timesheets}</strong> timesheets,{' '}
+              <strong>{lastDeleteSummary.counts.approvals}</strong> approvals,{' '}
+              <strong>{lastDeleteSummary.counts.invoices}</strong> invoices,{' '}
+              <strong>{lastDeleteSummary.counts.notifications}</strong>{' '}
+              notifications, and{' '}
+              <strong>{lastDeleteSummary.counts.s3Deleted}</strong> stored files
+              {lastDeleteSummary.counts.s3Failed
+                ? ` (${lastDeleteSummary.counts.s3Failed} file deletion${lastDeleteSummary.counts.s3Failed === 1 ? '' : 's'} failed — object storage may have transient errors, DB is clean).`
+                : '.'}
+            </Alert>
+          ) : (
+            <>
+              <Alert severity="warning" icon={<IconAlertTriangle size={18} />} sx={{ mb: 2 }}>
+                This is irreversible. Every associated Timesheet, Timesheet
+                Approval, Invoice, notification, and every uploaded file
+                (contracts, documentation, timesheet screenshots, invoice PDFs)
+                will be permanently removed.
+              </Alert>
+              <Typography sx={{ fontSize: 14, mb: 1.5 }}>
+                To confirm, type the project ID{' '}
+                <Box component="span" sx={{ fontWeight: 800, color: '#B91C1C' }}>
+                  {deleteTarget?.projectId}
+                </Box>{' '}
+                below.
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                autoFocus
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={deleteTarget?.projectId}
+                disabled={deleting}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          {lastDeleteSummary ? (
+            <Button
+              variant="contained"
+              onClick={() => {
+                setDeleteTarget(undefined);
+                setLastDeleteSummary(undefined);
+              }}
+              sx={{ textTransform: 'none', fontWeight: 700 }}
+            >
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button
+                onClick={() => setDeleteTarget(undefined)}
+                disabled={deleting}
+                sx={{ textTransform: 'none' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                disabled={
+                  deleting ||
+                  !deleteTarget ||
+                  deleteConfirmText.trim() !== deleteTarget.projectId
+                }
+                startIcon={
+                  deleting ? (
+                    <CircularProgress size={14} color="inherit" />
+                  ) : (
+                    <IconTrash size={16} />
+                  )
+                }
+                onClick={async () => {
+                  if (!deleteTarget) return;
+                  setDeleting(true);
+                  try {
+                    const res = await hardDeleteProject(String(deleteTarget._id));
+                    const summary = res.data?.data;
+                    setLastDeleteSummary(summary);
+                    toast.success(`Deleted ${deleteTarget.projectId}`);
+                    // Close the drawer if it happened to be showing the
+                    // just-deleted project, and refresh the grid.
+                    if (selected?._id === deleteTarget._id) setSelected(undefined);
+                    reload();
+                  } catch (err) {
+                    const msg =
+                      (err as { response?: { data?: { error?: string } } })
+                        ?.response?.data?.error || 'Could not delete project';
+                    toast.error(msg);
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                sx={{ textTransform: 'none', fontWeight: 700 }}
+              >
+                Delete permanently
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
