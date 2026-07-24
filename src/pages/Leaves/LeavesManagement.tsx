@@ -863,6 +863,11 @@ function AllRequestsPanel() {
     !!me?.role?.includes(UserRole.hr);
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | 'all'>(LeaveStatus.Pending);
   const [pending, setPending] = useState<{ leave: iLeave; status: LeaveStatus } | null>(null);
+  // Free-text reason captured only when rejecting. Persisted to
+  // Leave.rejectionReason so the employee sees why + the audit trail
+  // survives.
+  const [rejectReason, setRejectReason] = useState('');
+  const [decisionSubmitting, setDecisionSubmitting] = useState(false);
   // Revoke dialog state — separate from the approve/reject flow because
   // it needs its own free-text reason input.
   const [revokeTarget, setRevokeTarget] = useState<iLeave | null>(null);
@@ -879,13 +884,31 @@ function AllRequestsPanel() {
 
   async function handleConfirm() {
     if (!pending) return;
+    // Reject flow: reason is required — the server has no schema
+    // constraint on it (Leave.rejectionReason is a free-text string),
+    // so we enforce it here. Trim to defeat whitespace-only input.
+    if (
+      pending.status === LeaveStatus.Rejected &&
+      !rejectReason.trim()
+    ) {
+      toast.error('Please add a rejection reason');
+      return;
+    }
+    setDecisionSubmitting(true);
     try {
-      await updateLeave(pending.leave._id, { status: pending.status });
+      const body: Partial<iLeave> = { status: pending.status };
+      if (pending.status === LeaveStatus.Rejected) {
+        body.rejectionReason = rejectReason.trim();
+      }
+      await updateLeave(pending.leave._id, body);
       toast.success(`Leave ${pending.status.toLowerCase()}`);
+      setPending(null);
+      setRejectReason('');
       loadData();
-    } catch (err) {
+    } catch {
       toast.error('Failed to update');
-      throw err; // ConfirmDialog keeps the modal open on thrown errors
+    } finally {
+      setDecisionSubmitting(false);
     }
   }
 
@@ -932,12 +955,24 @@ function AllRequestsPanel() {
           return (
             <Stack direction="row" spacing={0.5}>
               <Tooltip title="Approve">
-                <IconButton size="small" onClick={() => setPending({ leave: row, status: LeaveStatus.Approved })}>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setRejectReason('');
+                    setPending({ leave: row, status: LeaveStatus.Approved });
+                  }}
+                >
                   <IconCheck size={16} color={tokens.colors.success} />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Reject">
-                <IconButton size="small" onClick={() => setPending({ leave: row, status: LeaveStatus.Rejected })}>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setRejectReason('');
+                    setPending({ leave: row, status: LeaveStatus.Rejected });
+                  }}
+                >
                   <IconX size={16} color={tokens.colors.error} />
                 </IconButton>
               </Tooltip>
@@ -1003,50 +1038,178 @@ function AllRequestsPanel() {
         />
       </Box>
 
-      <ConfirmDialog
+      {/* Approve / reject decision dialog — richer than a plain confirm
+          so the admin can review the applicant's uploaded attachments
+          (e.g. medical certificates) before deciding, and so rejections
+          capture a mandatory reason that lands on Leave.rejectionReason
+          for audit + the applicant's email. */}
+      <Dialog
         open={!!pending}
-        onClose={() => setPending(null)}
-        onConfirm={handleConfirm}
-        tone={isApprove ? 'success' : 'danger'}
-        title={isApprove ? 'Approve this leave request?' : 'Reject this leave request?'}
-        confirmLabel={isApprove ? 'Yes, approve' : 'Yes, reject'}
-        cancelLabel="Keep reviewing"
-        icon={isApprove
-          ? <IconCheck size={28} stroke={2.5} />
-          : <IconX size={28} stroke={2.5} />}
-        description={pending ? (
-          <Stack spacing={0.75} sx={{ alignItems: 'center' }}>
-            <Typography variant="body2" sx={{ color: tokens.colors.lightText, fontWeight: 600 }}>
-              {pending.leave.name}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {moment(pending.leave.startDate).format('DD MMM')} — {moment(pending.leave.endDate).format('DD MMM YYYY')}
-              {pending.leave.isHalfDay && ` · ${pending.leave.halfDayType}`} · {daysLabel}
-            </Typography>
-            {pending.leave.reason && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  mt: 0.75,
-                  fontStyle: 'italic',
-                }}
-              >
-                “{pending.leave.reason}”
+        onClose={decisionSubmitting ? undefined : () => setPending(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            color: isApprove ? tokens.colors.success : tokens.colors.error,
+          }}
+        >
+          {isApprove
+            ? <IconCheck size={22} stroke={2.5} />
+            : <IconX size={22} stroke={2.5} />}
+          {isApprove ? 'Approve this leave request?' : 'Reject this leave request?'}
+        </DialogTitle>
+        <DialogContent dividers>
+          {pending && (
+            <Stack spacing={2}>
+              {/* Applicant + range + reason */}
+              <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                  {pending.leave.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {moment(pending.leave.startDate).format('DD MMM')} —{' '}
+                  {moment(pending.leave.endDate).format('DD MMM YYYY')}
+                  {pending.leave.isHalfDay && ` · ${pending.leave.halfDayType}`}
+                  {' '}· {daysLabel}
+                  {' '}·{' '}
+                  {pending.leave.type || pending.leave.leaveType || '—'}
+                </Typography>
+                {pending.leave.reason && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1, fontStyle: 'italic' }}
+                  >
+                    “{pending.leave.reason}”
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Attachments — one click each opens the file in a new
+                  tab so the admin can preview the medical certificate /
+                  supporting doc. Rendered even for empty arrays so the
+                  admin always knows whether one was attached. */}
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 800,
+                    color: tokens.colors.lightTextSecondary,
+                    letterSpacing: 0.5,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Attachments
+                </Typography>
+                {pending.leave.attachments && pending.leave.attachments.length > 0 ? (
+                  <Stack spacing={0.75} sx={{ mt: 0.75 }}>
+                    {pending.leave.attachments.map((url, i) => {
+                      const fileName =
+                        (() => {
+                          try {
+                            const u = new URL(url);
+                            const last = u.pathname.split('/').pop() || `File ${i + 1}`;
+                            return decodeURIComponent(last);
+                          } catch {
+                            return `File ${i + 1}`;
+                          }
+                        })();
+                      return (
+                        <Button
+                          key={url + i}
+                          component="a"
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                          startIcon={<IconPaperclip size={14} />}
+                          sx={{
+                            justifyContent: 'flex-start',
+                            textTransform: 'none',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: tokens.colors.primary,
+                            bgcolor: alpha(tokens.colors.primary, 0.06),
+                            '&:hover': {
+                              bgcolor: alpha(tokens.colors.primary, 0.12),
+                            },
+                            px: 1.25,
+                            py: 0.5,
+                          }}
+                        >
+                          {fileName}
+                        </Button>
+                      );
+                    })}
+                  </Stack>
+                ) : (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    No attachments uploaded.
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Reject-only reason input. Required — validation lives
+                  in handleConfirm; button also disables when empty. */}
+              {!isApprove && (
+                <TextField
+                  label="Rejection reason"
+                  placeholder="Explain why you're rejecting — the applicant will see this in the notification email."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  multiline
+                  minRows={3}
+                  required
+                  fullWidth
+                  autoFocus
+                  disabled={decisionSubmitting}
+                />
+              )}
+
+              <Typography variant="caption" color="text.secondary">
+                {isApprove
+                  ? 'The applicant will be emailed and their attendance auto-marked.'
+                  : 'The applicant will be notified by email with the reason above.'}
               </Typography>
-            )}
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-              {isApprove
-                ? 'The applicant will be emailed and their attendance auto-marked.'
-                : 'The applicant will be notified by email.'}
-            </Typography>
-          </Stack>
-        ) : undefined}
-      />
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setPending(null)}
+            disabled={decisionSubmitting}
+            sx={{ textTransform: 'none' }}
+          >
+            Keep reviewing
+          </Button>
+          <Button
+            variant="contained"
+            color={isApprove ? 'success' : 'error'}
+            onClick={handleConfirm}
+            disabled={
+              decisionSubmitting ||
+              (!isApprove && !rejectReason.trim())
+            }
+            startIcon={
+              decisionSubmitting ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : isApprove ? (
+                <IconCheck size={16} />
+              ) : (
+                <IconX size={16} />
+              )
+            }
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            {isApprove ? 'Yes, approve' : 'Yes, reject'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Revoke dialog — free-text reason input separate from the
           approve/reject ConfirmDialog above. The server refuses if any
