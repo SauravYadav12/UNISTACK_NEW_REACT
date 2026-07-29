@@ -235,24 +235,20 @@ function MyDashboard() {
             // default.
             const effectiveQuota =
               b.effectiveMonthlyQuota ?? b.monthlyQuota ?? type.monthlyQuota ?? null;
-            // Cap the cumulative `monthlyAvailable` (which the server
-            // computes as min(monthsElapsed × quota, allocated) - used)
-            // at the per-month quota so the employee card reflects
-            // STRICT monthly allowance — not the carry-forward stack.
-            // Example: quota=1, no usage by June → server returns 6,
-            // we display 1. Server-side overflow-to-UL logic still
-            // uses the cumulative number; this is a display rule only.
-            const cumulativeAvailable = b.monthlyAvailable;
+            // Prefer the server-computed `remainingThisMonth` (fresh
+            // monthly slice net of what was used THIS calendar month).
+            // Fall back to the old client-side clamp only for older
+            // servers that don't send the new field yet.
             const monthlyAvailable = (() => {
-              if (cumulativeAvailable == null) return cumulativeAvailable;
-              if (effectiveQuota == null) return cumulativeAvailable;
-              return Math.min(cumulativeAvailable, effectiveQuota);
+              if (b.remainingThisMonth != null) return b.remainingThisMonth;
+              if (b.monthlyAvailable == null) return b.monthlyAvailable;
+              if (effectiveQuota == null) return b.monthlyAvailable;
+              return Math.min(b.monthlyAvailable, effectiveQuota);
             })();
-            // Employee-facing view shows ONLY the monthly slice — the
-            // yearly allocation is admin context and would just confuse
-            // the employee at the apply-leave stage. Annual figures
-            // stay visible in the admin grid (LeaveBalancesPanel),
-            // where they're relevant.
+            const takenYtd = b.used ?? 0;
+            const yearlyLeft =
+              b.yearlyRemaining ??
+              Math.max((b.allocated ?? 0) - takenYtd, 0);
             const monthlyPct =
               effectiveQuota && monthlyAvailable != null
                 ? Math.min(
@@ -304,8 +300,28 @@ function MyDashboard() {
                       }}
                     />
                   )}
-                  <Typography sx={{ fontSize: 10, color: tokens.colors.lightTextSecondary, mt: 0.5 }}>
-                    {hasMonthlyCap ? 'Monthly accrual' : 'Available balance'} · {type.paid ? 'Paid' : 'Unpaid'}
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{ mt: 1.25, fontSize: 11, color: tokens.colors.lightTextSecondary }}
+                  >
+                    <Box>
+                      <Box sx={{ fontWeight: 700, fontSize: 13, color: tokens.colors.lightText }}>
+                        {takenYtd}
+                      </Box>
+                      <Box>Taken YTD</Box>
+                    </Box>
+                    <Box>
+                      <Box sx={{ fontWeight: 700, fontSize: 13, color: tokens.colors.lightText }}>
+                        {yearlyLeft}
+                      </Box>
+                      <Box>Yearly left</Box>
+                    </Box>
+                  </Stack>
+                  <Typography sx={{ fontSize: 10, color: tokens.colors.lightTextSecondary, mt: 0.75 }}>
+                    {hasMonthlyCap
+                      ? 'Anything above this month’s available goes to unpaid leaves.'
+                      : 'Available balance'} · {type.paid ? 'Paid' : 'Unpaid'}
                   </Typography>
                 </Box>
               </Grid>
@@ -1842,7 +1858,11 @@ function EmployeeBalancesPanel() {
                           isUnpaidBucket={!!t.isUnpaidBucket}
                           allocated={bal?.allocated ?? t.defaultAllocationPerYear ?? 0}
                           used={bal?.used ?? 0}
-                          monthlyAvailable={t.monthlyQuota != null && !t.isUnpaidBucket ? bal?.monthlyAvailable : undefined}
+                          monthlyAvailable={
+                            t.monthlyQuota != null && !t.isUnpaidBucket
+                              ? bal?.remainingThisMonth ?? bal?.monthlyAvailable
+                              : undefined
+                          }
                           monthlyQuota={t.monthlyQuota}
                           monthlyQuotaOverride={bal?.monthlyQuota}
                           leaveStartMonth={bal?.leaveStartMonth}
@@ -2173,7 +2193,7 @@ function AllocationCell({
       ? ` · Accrual starts ${startMonthLabel} 1 (probation period)`
       : '';
   const tooltipMonthly = hasRow && monthlyAvailable != null && perMonthRate != null
-    ? ` · Available this month: ${monthlyAvailable} (${perMonthRate}/mo + carry-forward)`
+    ? ` · Available this month: ${monthlyAvailable} of ${perMonthRate} (overflow lands in unpaid leaves)`
     : '';
   const tooltipEdit = hasRow ? ' · Click to edit allocation' : '';
 

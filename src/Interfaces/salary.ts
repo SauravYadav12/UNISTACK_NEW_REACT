@@ -50,6 +50,18 @@ export interface LeaveBalance {
   // responses from /leave-balances/my/:year and /leave-balances/user/:id/:year.
   monthlyAvailable?: number;
   /**
+   * Server-computed — fresh remaining accrual for the CURRENT calendar
+   * month only (effectiveQuota − usedThisMonth). This is the number the
+   * UI shows as "Available this month" — the older `monthlyAvailable`
+   * still exists but represents the cumulative paid pool used by the
+   * split logic.
+   */
+  remainingThisMonth?: number;
+  /** Days already burned this calendar month (paired with remainingThisMonth). */
+  usedThisMonth?: number;
+  /** Yearly allocation minus total used across the whole year. */
+  yearlyRemaining?: number;
+  /**
    * Server-computed effective per-month accrual rate. Resolves through:
    *   per-user override → type uncapped check → allocated/12 default.
    * `null` means uncapped (UL / ML without an override). Same response
