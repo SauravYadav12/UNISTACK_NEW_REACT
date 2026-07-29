@@ -84,6 +84,11 @@ export default function AssignRequirementDrawer({
     userRoles.includes(UserRole.admin) ||
     userRoles.includes(UserRole.support);
   const isMarketer = userRoles.includes(UserRole.marketing);
+  // Removing a child assignment == hard-deleting a child requirement
+  // row (server does `findByIdAndDelete`), which wipes attribution
+  // history. Gate the remove affordance to super-admin only — matches
+  // the server-side guard in `unassignMarketer` / `deleteRequirement`.
+  const canRemoveChild = userRoles.includes(UserRole['super-admin']);
 
   const [children, setChildren] = useState<IRequirement[]>([]);
   const [loading, setLoading] = useState(false);
@@ -361,8 +366,8 @@ export default function AssignRequirementDrawer({
                           {c.assignedTo || 'Unknown'}
                         </Typography>
                       </Box>
-                      {isParentEditor && (
-                        <Tooltip title="Remove assignment (blocked if interviews exist)">
+                      {canRemoveChild && (
+                        <Tooltip title="Remove assignment (super-admin only; blocked if interviews exist)">
                           <span>
                             <IconButton
                               size="small"
