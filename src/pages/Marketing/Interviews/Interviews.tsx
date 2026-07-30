@@ -59,6 +59,7 @@ import { tokens } from '../../../theme/theme';
 import { interviewTabs } from '../../../components/interview/InterviewTabs';
 import InterviewPipelineSnapshot from '../../../components/interview/InterviewPipelineSnapshot';
 import TodayTimeline from '../../../components/interview/TodayTimeline';
+import AdditionalReportDrawer from '../../../components/interview/AdditionalReportDrawer';
 import PersonPill, { getInitials } from '../../../components/ui/PersonPill';
 import {
   IconMicrophone,
@@ -70,6 +71,7 @@ import {
   IconX,
   IconBuilding,
   IconBriefcase,
+  IconChartBar,
 } from '@tabler/icons-react';
 
 const MotionBox = motion.create(Box);
@@ -177,6 +179,7 @@ export default function Interviews(props: Iprops) {
   const [formReady, setFormReady] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [snapshotRefreshKey, setSnapshotRefreshKey] = useState(0);
+  const [reportOpen, setReportOpen] = useState(false);
   const [archive, setArchive] = props.archiveState;
 
   // Deep-link support: when the user clicks an interview notification, the
@@ -1002,6 +1005,30 @@ export default function Interviews(props: Iprops) {
                 Add new
               </Button>
             )}
+            {!archive && (
+              <Button
+                variant="outlined"
+                startIcon={<IconChartBar size={16} />}
+                onClick={() => setReportOpen(true)}
+                size="medium"
+                sx={{
+                  borderColor: alpha('#fff', 0.35),
+                  color: '#fff',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: 2.5,
+                  px: 2.25,
+                  py: 0.85,
+                  bgcolor: alpha('#fff', 0.08),
+                  '&:hover': {
+                    borderColor: alpha('#fff', 0.6),
+                    bgcolor: alpha('#fff', 0.14),
+                  },
+                }}
+              >
+                Additional Report
+              </Button>
+            )}
             <Tooltip title="Refresh all">
               <IconButton
                 onClick={handleRefreshAll}
@@ -1170,6 +1197,15 @@ export default function Interviews(props: Iprops) {
           />
         )}
       </CustomDrawer>
+
+      <AdditionalReportDrawer
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onOpenInterview={(i) => {
+          setReportOpen(false);
+          handleOpenTimelineInterview(i);
+        }}
+      />
     </>
   );
 }
