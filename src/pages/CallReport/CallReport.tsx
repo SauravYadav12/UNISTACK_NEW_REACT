@@ -114,10 +114,47 @@ export default function CallReport() {
   const { from, to } = useMemo(() => rangeToDates(range), [range]);
   const phoneNumberId = selectedId === 'all' ? undefined : selectedId;
 
-  const filteredEvents = useMemo(
-    () => applyEventFilter(events, eventFilter),
-    [events, eventFilter],
-  );
+  // Client-side event filter + counterparty search. Search is a
+  // substring match against everything the user would think of as
+  // "the counterparty" — the E.164 (digits-only compare so "469 213"
+  // matches "+14692133863"), the message text on SMS conversations,
+  // and the voicemail from/transcript fields.
+  const filteredEvents = useMemo(() => {
+    const kindFiltered = applyEventFilter(events, eventFilter);
+    const q = search.trim().toLowerCase();
+    if (!q) return kindFiltered;
+    const digits = q.replace(/\D/g, '');
+    return kindFiltered.filter((e) => {
+      if (e.kind === 'call') {
+        // Any participant number matching the digits AND/OR any text
+        // in the call summary matching the query.
+        const digitsMatch =
+          digits.length > 0 &&
+          e.data.participants.some((p) => p.replace(/\D/g, '').includes(digits));
+        const textMatch =
+          !!e.data.summary && e.data.summary.toLowerCase().includes(q);
+        return digitsMatch || textMatch;
+      }
+      if (e.kind === 'voicemail') {
+        const digitsMatch =
+          digits.length > 0 && e.data.from.replace(/\D/g, '').includes(digits);
+        const textMatch =
+          !!e.data.transcript && e.data.transcript.toLowerCase().includes(q);
+        return digitsMatch || textMatch;
+      }
+      // Conversation rollup — participants live on `counterparties`
+      // / `counterpartiesTo`, latest text lives on `latestText`.
+      const allNums = [
+        ...e.data.counterparties,
+        ...e.data.counterpartiesTo.flat(),
+      ];
+      const digitsMatch =
+        digits.length > 0 &&
+        allNums.some((n) => n.replace(/\D/g, '').includes(digits));
+      const textMatch = e.data.latestText.toLowerCase().includes(q);
+      return digitsMatch || textMatch;
+    });
+  }, [events, eventFilter, search]);
 
   // Today activity counts per number (drives left-rail badges).
   const todayCounts = useMemo(() => {
@@ -160,14 +197,28 @@ export default function CallReport() {
         from,
         to,
         direction: directionFilter === 'all' ? undefined : directionFilter,
-        search: search || undefined,
+        // NOTE: search is applied client-side (see filteredEvents),
+        // not passed to the server. Keeps typing instant.
         page,
         limit: LIMIT,
       });
       setEvents(res.rows);
       setTotal(res.total);
     } catch (e) {
-      toast.error('Could not load activity.', { toastId: 'quo-activity-fail' });
+      // Surface the actual status + server message when we have one —
+      // makes it obvious whether the failure is a 500 (server bug),
+      // 401 (JWT expired), 403 (role changed) or a network issue.
+      const err = e as {
+        response?: { status?: number; data?: { error?: string } };
+        message?: string;
+      };
+      const detail =
+        err.response?.data?.error ||
+        (err.response?.status ? `HTTP ${err.response.status}` : err.message) ||
+        'unknown error';
+      toast.error(`Could not load activity — ${detail}`, {
+        toastId: 'quo-activity-fail',
+      });
     } finally {
       setEventsLoading(false);
     }
@@ -178,14 +229,21 @@ export default function CallReport() {
   }, []);
 
   useEffect(() => {
+    // Clear the previous number's events immediately so the timeline
+    // shows the loader instead of stale data during the fetch. Also
+    // fires when range/direction/page change — brief flash is fine
+    // and beats showing stale filtered data.
+    setEvents([]);
+    setTotal(0);
     loadEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phoneNumberId, from, to, directionFilter, search, page]);
+  }, [phoneNumberId, from, to, directionFilter, page]);
 
-  // Reset page when filters change.
+  // Reset page when filters change (search excluded — it's client-
+  // side so paging isn't invalidated by typing).
   useEffect(() => {
     setPage(1);
-  }, [phoneNumberId, range, directionFilter, search]);
+  }, [phoneNumberId, range, directionFilter]);
 
   // ── Actions ─────────────────────────────────────────────────
 
@@ -501,7 +559,13 @@ export default function CallReport() {
 
           {/* Timeline */}
           <Box sx={{ flex: 1, overflowY: 'auto', p: 2.5 }}>
-            {eventsLoading && events.length === 0 ? (
+            {eventsLoading ? (
+              // We clear events on filter/selection change, so this
+              // covers "switching numbers" AND "first load" AND the
+              // between-page transitions without flashing stale data.
+              // The 30s poll never sets eventsLoading (it merges in
+              // fresh rows silently) so the loader doesn't blink
+              // every half minute.
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                 <CircularProgress />
               </Box>
