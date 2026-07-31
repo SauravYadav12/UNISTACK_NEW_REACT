@@ -164,6 +164,32 @@ export async function unassignMarketer(childId: string) {
   return response;
 }
 
+/**
+ * Push a set of just-saved parent field changes onto some or all
+ * children of that parent. Server whitelists to parent-owned fields
+ * (defensive) and writes a single summary log entry on the parent.
+ *
+ * `childIds` accepts either an array of child `_id`s or the string
+ * "all" to hit every child in one shot.
+ */
+export async function propagateRequirementToChildren(
+  parentId: string,
+  body: {
+    childIds: string[] | 'all';
+    changes: Record<string, unknown>;
+  }
+) {
+  const response = await axiosClient.post<{
+    status: 'success' | 'failed';
+    data?: { updatedCount: number; updatedReqIDs: string[] };
+    error?: string;
+  }>(
+    `/requirements/${encodeURIComponent(parentId)}/propagate-to-children`,
+    body
+  );
+  return response;
+}
+
 export async function searchRequirement(reqID: string) {
   // Stored reqIDs are always upper-case. Normalize here so callers don't
   // have to, and the server receives the canonical form on the wire.

@@ -59,8 +59,10 @@ import {
   createRequirementLog,
   deleteRequirement,
   listChildAssignments,
+  propagateRequirementToChildren,
   updateRequirement,
 } from '../../../services/requirementApi';
+import PropagateToChildrenDialog from '../../../components/requirement/PropagateToChildrenDialog';
 import { uploadFile } from '../../../services/storageApi';
 
 import {
@@ -290,6 +292,15 @@ export default function RequirementsForm(props: Props) {
   const [createInterviewOpen, setCreateInterviewOpen] = useState(false);
   const [teamsForInterview, setTeamsForInterview] = useState<ITeam[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
+
+  // Propagate-to-children flow. After a parent update succeeds AND
+  // the parent has children AND the diff carried at least one
+  // parent-owned field, we open the two-step popup: confirm → select.
+  // See PropagateToChildrenDialog.
+  const [propagateOpen, setPropagateOpen] = useState(false);
+  const [propagateChanges, setPropagateChanges] = useState<
+    Record<string, unknown>
+  >({});
 
   const currentFile =
     file ||
@@ -521,12 +532,56 @@ export default function RequirementsForm(props: Props) {
         return [...next];
       });
       createLog(values._id, payload, 'update');
-      onDrawerClose?.();
+
+      // If this is a parent record with children AND the diff carried
+      // any parent-owned fields, prompt the user to propagate. The
+      // dialog handles its own close + calls onDrawerClose when done
+      // (skip / cancel / confirmed). Otherwise close immediately.
+      const propagatable: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (k === 'mComment' || k === '_id') continue;
+        if (PARENT_OWNED_FIELD_SET.has(k as never)) {
+          propagatable[k] = v;
+        }
+      }
+      if (isParentWithChildren && Object.keys(propagatable).length > 0) {
+        setPropagateChanges(propagatable);
+        setPropagateOpen(true);
+      } else {
+        onDrawerClose?.();
+      }
     } catch (error) {
       console.log('An error occurred while updating:', error);
       toast.error('Failed to update the requirement');
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  // Called by PropagateToChildrenDialog when the user picks
+  // "all children" or a specific set. `selection` is either the
+  // string 'all' or a list of child _ids.
+  async function handlePropagateConfirm(selection: 'all' | string[]) {
+    if (!values._id) return;
+    try {
+      const res = await propagateRequirementToChildren(values._id, {
+        childIds: selection,
+        changes: propagateChanges,
+      });
+      const count = res.data.data?.updatedCount ?? 0;
+      if (count > 0) {
+        toast.success(
+          `Propagated to ${count} child record${count === 1 ? '' : 's'}.`
+        );
+      } else {
+        toast.info('No children were updated.');
+      }
+    } catch (e) {
+      console.error('propagate-to-children failed', e);
+      toast.error('Could not propagate to children.');
+    } finally {
+      setPropagateOpen(false);
+      onDrawerClose?.();
     }
   }
 
@@ -2124,6 +2179,21 @@ export default function RequirementsForm(props: Props) {
           )}
         </CustomDrawer>
       )}
+
+      {/* Propagate parent updates to child records. Only ever open
+          when isParentWithChildren AND the just-saved diff carried
+          at least one parent-owned field. See handleEditSubmitForm. */}
+      <PropagateToChildrenDialog
+        open={propagateOpen}
+        parentReqID={viewData?.reqID || ''}
+        children={children}
+        changedFields={Object.keys(propagateChanges)}
+        onCancel={() => {
+          setPropagateOpen(false);
+          onDrawerClose?.();
+        }}
+        onConfirm={handlePropagateConfirm}
+      />
     </>
   );
 }
