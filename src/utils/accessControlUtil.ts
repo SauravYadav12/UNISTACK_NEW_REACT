@@ -45,6 +45,7 @@ export enum SuperAdminModule {
   'Employee Pulse' = 'Employee Pulse',
   'Employee Management' = 'Employee Management',
   'Onboarding' = 'Onboarding',
+  'Call Report' = 'Call Report',
 }
 
 export type iAccessControl = {

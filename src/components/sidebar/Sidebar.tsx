@@ -42,6 +42,7 @@ import {
   IconUserCheck,
   IconChessKnight,
   IconActivity,
+  IconPhone,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -260,6 +261,13 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       module: SuperAdminModule['Employee Management'],
       // Visibility is governed by the standard Access Control matrix
       // — super-admin grants the module per-role from /access-control.
+    },
+    {
+      text: 'Call Report',
+      icon: <IconPhone size={20} />,
+      path: '/call-report',
+      group: ModuleGroup['Super Admin Modules'],
+      module: SuperAdminModule['Call Report'],
     },
     {
       text: 'Access Control',

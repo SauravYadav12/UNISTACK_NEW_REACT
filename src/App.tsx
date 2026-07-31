@@ -95,6 +95,7 @@ const LeavesManagement = lazy(
 const EmployeeManagement = lazy(
   () => import('./pages/EmployeeManagement/EmployeeManagement'),
 );
+const CallReport = lazy(() => import('./pages/CallReport/CallReport'));
 
 // Global authenticated-only chrome — also lazy because it loads heavy
 // AI / command-palette logic that's not needed before login.
@@ -452,6 +453,19 @@ function AppContent() {
                   }}
                 >
                   <AccessControl />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="call-report"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup['Super Admin Modules'],
+                    module: SuperAdminModule['Call Report'],
+                  }}
+                >
+                  <CallReport />
                 </ProtectedRoute>
               }
             />
