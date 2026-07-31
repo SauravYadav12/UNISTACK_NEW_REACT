@@ -324,12 +324,15 @@ export default function CallReport() {
             }}
           >
             <Stack
-              direction={{ xs: 'column', md: 'row' }}
+              direction="row"
               spacing={2}
-              alignItems={{ md: 'center' }}
+              alignItems="center"
               justifyContent="space-between"
+              flexWrap="wrap"
+              useFlexGap
+              rowGap={1.5}
             >
-              <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ minWidth: 0, flex: '1 1 260px' }}>
                 {selectedNumber ? (
                   <>
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -388,7 +391,12 @@ export default function CallReport() {
                   </>
                 )}
               </Box>
-              <Stack direction="row" spacing={1}>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flexShrink: 0 }}
+              >
                 {selectedNumber && (
                   <Tooltip title="Refresh from Quo (fills any missed webhooks)">
                     <span>
@@ -404,6 +412,7 @@ export default function CallReport() {
                         }
                         disabled={reconcileBusyId === selectedNumber._id}
                         onClick={() => handleReconcile(selectedNumber._id)}
+                        sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
                         Refresh from Quo
                       </Button>
@@ -418,11 +427,15 @@ export default function CallReport() {
               </Stack>
             </Stack>
 
-            {/* Filter chip row */}
+            {/* Filter chip row — wraps to multiple rows on narrow screens
+                instead of pushing items off-screen. */}
             <Stack
-              direction={{ xs: 'column', md: 'row' }}
+              direction="row"
               spacing={1.5}
-              alignItems={{ md: 'center' }}
+              alignItems="center"
+              flexWrap="wrap"
+              useFlexGap
+              rowGap={1}
               sx={{ mt: 2 }}
             >
               <ToggleButtonGroup
@@ -474,7 +487,7 @@ export default function CallReport() {
                 placeholder="Search counterparty…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                sx={{ flex: 1, maxWidth: 320 }}
+                sx={{ width: { xs: '100%', sm: 240 }, flexShrink: 0 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
