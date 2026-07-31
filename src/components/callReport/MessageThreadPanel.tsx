@@ -8,6 +8,14 @@ import { tokens } from '../../theme/theme';
 interface Props {
   conversationId: string;
   ownedNumberE164?: string;
+  /**
+   * The local `_id` of the QuoPhoneNumber this thread belongs to.
+   * Sent to the server alongside conversationId so a thread is scoped
+   * to (ownedNumber × conversation) — Quo can hand the same
+   * conversationId to messages that landed on different owned numbers,
+   * and without this the drawer would merge them.
+   */
+  phoneNumberId?: string;
 }
 
 /**
@@ -19,6 +27,7 @@ interface Props {
 export default function MessageThreadPanel({
   conversationId,
   ownedNumberE164,
+  phoneNumberId,
 }: Props) {
   const [messages, setMessages] = useState<QuoMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +36,7 @@ export default function MessageThreadPanel({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listQuoMessages({ conversationId, limit: 200 })
+    listQuoMessages({ conversationId, phoneNumberId, limit: 200 })
       .then((res) => {
         if (!cancelled) setMessages(res.rows);
       })
@@ -37,7 +46,7 @@ export default function MessageThreadPanel({
     return () => {
       cancelled = true;
     };
-  }, [conversationId]);
+  }, [conversationId, phoneNumberId]);
 
   // Sort ascending client-side — makes render order independent of
   // whatever direction the server hands back.

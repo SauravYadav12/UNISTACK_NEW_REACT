@@ -512,6 +512,7 @@ function ConversationDetail({
           <MessageThreadPanel
             conversationId={conv._id}
             ownedNumberE164={ownedNumberE164}
+            phoneNumberId={conv.phoneNumberId}
           />
         </Box>
       </Box>
