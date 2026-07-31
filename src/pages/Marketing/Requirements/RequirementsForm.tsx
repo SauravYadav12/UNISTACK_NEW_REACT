@@ -69,11 +69,11 @@ import {
   duration,
   gotRequirementForm,
   PARENT_OWNED_FIELD_SET,
+  SHARED_EDITABLE_FIELD_SET,
   reqFields,
   reqStatusOptions,
   requirementFormInitialValues,
   requirementValidationMeta,
-  SHARED_EDITABLE_FIELD_SET,
   splitDirtyByOwnership,
   taxTypeOptions,
   techStack,
@@ -534,13 +534,25 @@ export default function RequirementsForm(props: Props) {
       createLog(values._id, payload, 'update');
 
       // If this is a parent record with children AND the diff carried
-      // any parent-owned fields, prompt the user to propagate. The
-      // dialog handles its own close + calls onDrawerClose when done
-      // (skip / cancel / confirmed). Otherwise close immediately.
+      // any propagatable fields, prompt the user to push them onto
+      // children. The dialog handles its own close + calls
+      // onDrawerClose when done (skip / cancel / confirmed).
+      //
+      // "Propagatable" = parent-owned fields (jobTitle, jobDescription,
+      // primaryTech, …) UNION shared-editable fields (clientCompany,
+      // clientPerson, vendor / prime-vendor contacts, rate, duration,
+      // remote, taxType, …). The server's propagation whitelist accepts
+      // both — see PARENT_OWNED_FIELDS in requirementController.ts.
+      // Child-only fields (reqStatus, marketer assignment, mComment,
+      // per-child star colour) are excluded so per-child overrides
+      // can never leak in.
       const propagatable: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(payload)) {
         if (k === 'mComment' || k === '_id') continue;
-        if (PARENT_OWNED_FIELD_SET.has(k as never)) {
+        if (
+          PARENT_OWNED_FIELD_SET.has(k as never) ||
+          SHARED_EDITABLE_FIELD_SET.has(k as never)
+        ) {
           propagatable[k] = v;
         }
       }
