@@ -11,6 +11,7 @@ import {
   Divider,
   Grid,
   IconButton,
+  InputAdornment,
   Stack,
   TextField,
   Tooltip,
@@ -1324,6 +1325,11 @@ export default function RequirementsForm(props: Props) {
                   fullWidth
                   size="small"
                   sx={textFieldSx}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">$</InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
