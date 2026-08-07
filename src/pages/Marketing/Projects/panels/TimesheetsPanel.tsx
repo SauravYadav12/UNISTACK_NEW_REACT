@@ -484,63 +484,114 @@ export default function TimesheetsPanel({
           </Stack>
         ) : (
           <>
+            {/* Calendar-style grid — 7 columns Mon–Sun so each row is a
+                real week and every date lines up under its correct
+                weekday header. Leading blank cells push day 1 into its
+                real column; trailing blanks pad the last row. This
+                replaces an earlier flat auto-fit grid that made every
+                month "look the same" and made it hard to tell which
+                weekday a given date fell on. */}
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                gridTemplateColumns: 'repeat(7, 1fr)',
+                gap: 1,
+                mb: 1,
+              }}
+            >
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name, idx) => (
+                <Typography
+                  key={name}
+                  variant="caption"
+                  sx={{
+                    textAlign: 'center',
+                    fontWeight: 800,
+                    color: idx >= 5 ? tokens.colors.pinkDark : tokens.colors.blueDark,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    fontSize: '0.68rem',
+                    py: 0.5,
+                  }}
+                >
+                  {name}
+                </Typography>
+              ))}
+            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(7, 1fr)',
                 gap: 1,
               }}
             >
-              {cells.map((c, i) => {
-                const d = moment(c.date);
-                const isWeekend = d.isoWeekday() > 5;
-                const unfilled = c.hours == null;
+              {(() => {
+                if (cells.length === 0) return null;
+                // ISO weekday: Mon = 1 … Sun = 7. Header is Mon-first so
+                // blanks before day 1 = (isoWeekday - 1).
+                const leadingBlanks = moment(cells[0].date).isoWeekday() - 1;
+                const trailingBlanks =
+                  (7 - ((leadingBlanks + cells.length) % 7)) % 7;
+                const blanks = (count: number, prefix: string) =>
+                  Array.from({ length: count }, (_, i) => (
+                    <Box key={`${prefix}-${i}`} sx={{ minHeight: 78 }} />
+                  ));
                 return (
-                  <Box
-                    key={c.date}
-                    sx={{
-                      p: 1.25,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: isWeekend
-                        ? alpha(tokens.colors.pink, 0.15)
-                        : alpha(tokens.colors.blue, 0.15),
-                      bgcolor: isWeekend
-                        ? alpha(tokens.colors.pink, 0.04)
-                        : unfilled
-                          ? alpha('#F59E0B', 0.04)
-                          : 'background.paper',
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 800,
-                        color: isWeekend ? tokens.colors.pinkDark : tokens.colors.blueDark,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        fontSize: '0.66rem',
-                      }}
-                    >
-                      {d.format('ddd')} · {d.format('D')}
-                    </Typography>
-                    <TextField
-                      type="number"
-                      size="small"
-                      placeholder={unfilled ? '—' : undefined}
-                      inputProps={{ min: 0, max: 24, step: 0.25 }}
-                      value={c.hours == null ? '' : String(c.hours)}
-                      disabled={lockedForViewer}
-                      onChange={(e) => setCell(i, e.target.value)}
-                      sx={{
-                        mt: 0.5,
-                        width: '100%',
-                        '& .MuiOutlinedInput-root': { borderRadius: 1.5 },
-                      }}
-                    />
-                  </Box>
+                  <>
+                    {blanks(leadingBlanks, 'lead')}
+                    {cells.map((c, i) => {
+                      const d = moment(c.date);
+                      const isWeekend = d.isoWeekday() > 5;
+                      const unfilled = c.hours == null;
+                      return (
+                        <Box
+                          key={c.date}
+                          sx={{
+                            p: 1.25,
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: isWeekend
+                              ? alpha(tokens.colors.pink, 0.15)
+                              : alpha(tokens.colors.blue, 0.15),
+                            bgcolor: isWeekend
+                              ? alpha(tokens.colors.pink, 0.04)
+                              : unfilled
+                                ? alpha('#F59E0B', 0.04)
+                                : 'background.paper',
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 800,
+                              color: isWeekend ? tokens.colors.pinkDark : tokens.colors.blueDark,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              fontSize: '0.66rem',
+                            }}
+                          >
+                            {d.format('ddd')} · {d.format('D')}
+                          </Typography>
+                          <TextField
+                            type="number"
+                            size="small"
+                            placeholder={unfilled ? '—' : undefined}
+                            inputProps={{ min: 0, max: 24, step: 0.25 }}
+                            value={c.hours == null ? '' : String(c.hours)}
+                            disabled={lockedForViewer}
+                            onChange={(e) => setCell(i, e.target.value)}
+                            sx={{
+                              mt: 0.5,
+                              width: '100%',
+                              '& .MuiOutlinedInput-root': { borderRadius: 1.5 },
+                            }}
+                          />
+                        </Box>
+                      );
+                    })}
+                    {blanks(trailingBlanks, 'trail')}
+                  </>
                 );
-              })}
+              })()}
             </Box>
 
             <Stack

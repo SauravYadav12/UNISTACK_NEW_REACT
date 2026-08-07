@@ -13,7 +13,7 @@ import moment from 'moment';
 import {
   IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconRefresh,
   IconPlaneDeparture, IconCalendar, IconChecks, IconPencil, IconArrowBackUp,
-  IconFlag, IconSettings, IconPaperclip, IconUpload, IconFileText,
+  IconFlag, IconSettings, IconPaperclip, IconUpload, IconFileText, IconEye,
 } from '@tabler/icons-react';
 import { uploadFile } from '../../services/storageApi';
 import EditLeaveDialog from '../../components/leave/EditLeaveDialog';
@@ -889,6 +889,11 @@ function AllRequestsPanel() {
   const [revokeTarget, setRevokeTarget] = useState<iLeave | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
   const [revoking, setRevoking] = useState(false);
+  // Read-only "view details" dialog. Kept separate from `pending` so an
+  // admin can preview reason + attachments WITHOUT the approve/reject
+  // buttons being present — you can only see, not act. Common ask from
+  // super-admins who want to review before deciding.
+  const [viewing, setViewing] = useState<iLeave | null>(null);
 
   const { data, loading, loadData } = useFetchData<iLeave[]>(async () => {
     const q = new URLSearchParams({ limit: '500' });
@@ -965,58 +970,71 @@ function AllRequestsPanel() {
       renderCell: ({ value }) => <StatusChip status={value as LeaveStatus} />,
     },
     {
-      field: 'actions', headerName: '', width: 160, sortable: false, filterable: false,
+      field: 'actions', headerName: '', width: 200, sortable: false, filterable: false,
       renderCell: ({ row }) => {
-        if (row.status === LeaveStatus.Pending) {
-          return (
-            <Stack direction="row" spacing={0.5}>
-              <Tooltip title="Approve">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setRejectReason('');
-                    setPending({ leave: row, status: LeaveStatus.Approved });
-                  }}
-                >
-                  <IconCheck size={16} color={tokens.colors.success} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Reject">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setRejectReason('');
-                    setPending({ leave: row, status: LeaveStatus.Rejected });
-                  }}
-                >
-                  <IconX size={16} color={tokens.colors.error} />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          );
-        }
-        // Approved → offer Revoke (HR/Admin/SuperAdmin only). Restores
-        // the balance + unmarks the attendance stamps + flips status to
-        // Revoked so the employee can apply for a fresh date.
-        if (row.status === LeaveStatus.Approved && canRevoke) {
-          return (
-            <Tooltip title="Revoke leave (restore balance)">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  setRevokeTarget(row);
-                  setRevokeReason('');
-                }}
-              >
-                <IconArrowBackUp size={16} color="#475569" />
+        // Guardrail: an admin can never approve or reject THEIR OWN leave.
+        // A user acting on their own record could accidentally flip its
+        // status ("why is there a Rejected notification if I didn't
+        // confirm?"). Server enforces the same rule too — see updateLeave.
+        const isOwnLeave = String(row.userRef) === String(me?._id || '');
+        const showDecision = row.status === LeaveStatus.Pending && !isOwnLeave;
+        const showRevoke = row.status === LeaveStatus.Approved && canRevoke;
+        return (
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Tooltip title="View details">
+              <IconButton size="small" onClick={() => setViewing(row)}>
+                <IconEye size={16} color={tokens.colors.blue} />
               </IconButton>
             </Tooltip>
-          );
-        }
-        return null;
+            {showDecision && (
+              <>
+                <Tooltip title="Approve">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setRejectReason('');
+                      setPending({ leave: row, status: LeaveStatus.Approved });
+                    }}
+                  >
+                    <IconCheck size={16} color={tokens.colors.success} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Reject">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setRejectReason('');
+                      setPending({ leave: row, status: LeaveStatus.Rejected });
+                    }}
+                  >
+                    <IconX size={16} color={tokens.colors.error} />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+            {row.status === LeaveStatus.Pending && isOwnLeave && (
+              <Typography variant="caption" color="text.secondary" sx={{ pl: 0.5 }}>
+                self
+              </Typography>
+            )}
+            {showRevoke && (
+              <Tooltip title="Revoke leave (restore balance)">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setRevokeTarget(row);
+                    setRevokeReason('');
+                  }}
+                >
+                  <IconArrowBackUp size={16} color="#475569" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Stack>
+        );
       },
     },
-  ], [canRevoke]);
+  ], [canRevoke, me?._id]);
 
   const isApprove = pending?.status === LeaveStatus.Approved;
   const daysLabel = pending
@@ -1224,6 +1242,128 @@ function AllRequestsPanel() {
           >
             {isApprove ? 'Yes, approve' : 'Yes, reject'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Read-only "View details" dialog. Opened from the eye icon on
+          every row so an admin (esp. super-admin) can review reason +
+          attachments BEFORE deciding. Deliberately has no approve /
+          reject buttons — decisions still go through the confirm
+          dialog above, which requires an explicit intent click. */}
+      <Dialog
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconEye size={20} />
+          Leave details
+        </DialogTitle>
+        <DialogContent dividers>
+          {viewing && (
+            <Stack spacing={2}>
+              <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                  {viewing.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {moment(viewing.startDate).format('DD MMM')} —{' '}
+                  {moment(viewing.endDate).format('DD MMM YYYY')}
+                  {viewing.isHalfDay && ` · ${viewing.halfDayType}`}
+                  {' '}·{' '}
+                  {(() => {
+                    const d = moment(viewing.endDate).diff(moment(viewing.startDate), 'days') + 1
+                      - (viewing.isHalfDay ? 0.5 : 0);
+                    return `${d} ${d === 1 ? 'day' : 'days'}`;
+                  })()}
+                  {' '}·{' '}
+                  {viewing.type || viewing.leaveType || '—'}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: tokens.colors.lightTextSecondary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  Status
+                </Typography>
+                <Box sx={{ mt: 0.5 }}>
+                  <StatusChip status={viewing.status as LeaveStatus} />
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: tokens.colors.lightTextSecondary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  Reason
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                  {viewing.reason?.trim() || <em style={{ color: '#94a3b8' }}>No reason provided.</em>}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: tokens.colors.lightTextSecondary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  Attachments
+                </Typography>
+                {viewing.attachments && viewing.attachments.length > 0 ? (
+                  <Stack spacing={0.75} sx={{ mt: 0.75 }}>
+                    {viewing.attachments.map((url, i) => {
+                      const fileName = (() => {
+                        try {
+                          const u = new URL(url);
+                          const last = u.pathname.split('/').pop() || `File ${i + 1}`;
+                          return decodeURIComponent(last);
+                        } catch {
+                          return `File ${i + 1}`;
+                        }
+                      })();
+                      return (
+                        <Button
+                          key={url + i}
+                          component="a"
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                          startIcon={<IconPaperclip size={14} />}
+                          sx={{
+                            justifyContent: 'flex-start',
+                            textTransform: 'none',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: tokens.colors.primary,
+                            bgcolor: alpha(tokens.colors.primary, 0.06),
+                            '&:hover': { bgcolor: alpha(tokens.colors.primary, 0.12) },
+                            px: 1.25,
+                            py: 0.5,
+                          }}
+                        >
+                          {fileName}
+                        </Button>
+                      );
+                    })}
+                  </Stack>
+                ) : (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    No attachments uploaded.
+                  </Typography>
+                )}
+              </Box>
+
+              {viewing.status === LeaveStatus.Rejected && viewing.rejectionReason && (
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: tokens.colors.error, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                    Rejection reason
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                    {viewing.rejectionReason}
+                  </Typography>
+                </Box>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setViewing(null)} sx={{ textTransform: 'none' }}>Close</Button>
         </DialogActions>
       </Dialog>
 
