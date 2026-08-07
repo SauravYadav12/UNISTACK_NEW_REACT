@@ -178,19 +178,36 @@ export default function TimesheetsPanel({
       setCells(hydrateMonth(periodMonth, stored));
       setApproval(apRes.data?.data || null);
       setDirty(false);
+    } catch (err) {
+      // If the fetch fails for this month (e.g. no approval record yet
+      // and the endpoint errors), we must NOT leave the grid frozen on
+      // the previously-loaded month. Fall back to a fresh blank
+      // skeleton for the CURRENT periodMonth so the calendar always
+      // matches the selected month, then surface the error.
+      console.warn('Failed to load timesheet month', periodMonth, err);
+      setDoc(null);
+      setCells(buildBlankMonth(periodMonth));
+      setApproval(null);
+      setDirty(false);
     } finally {
       setLoading(false);
     }
   }, [project._id, periodMonth]);
 
+  // Rebuild the blank skeleton SYNCHRONOUSLY whenever the month changes.
+  // The skeleton is a pure function of periodMonth (correct day count +
+  // correct weekday for day 1), so it must never depend on the network
+  // fetch — loadMonth hydrates saved hours on top once it resolves.
+  // Without this, a failed/slow fetch left every month rendering the
+  // initial month's grid (August's 31-day, Saturday-start layout).
+  useEffect(() => {
+    setCells(buildBlankMonth(periodMonth));
+    setOverride(false);
+  }, [periodMonth]);
+
   useEffect(() => {
     loadMonth();
   }, [loadMonth]);
-
-  // Reset override + switch the cells skeleton when the month changes.
-  useEffect(() => {
-    setOverride(false);
-  }, [periodMonth]);
 
   const setCell = (idx: number, raw: string) => {
     if (raw === '') {
