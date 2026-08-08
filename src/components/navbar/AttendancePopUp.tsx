@@ -35,9 +35,15 @@ const AttendancePopUp = () => {
   const me = iUser;
   const [open, setOpen] = React.useState(false);
 
+  // Sat/Sun are non-working days — no check-in prompt (resolved in the
+  // user's shift timezone).
+  const dow = me?.shift ? dateByUserShift(me.shift).day() : new Date().getDay();
+  const isWeekend = dow === 0 || dow === 6;
+
   const allowed =
     !!me &&
     !me.role?.includes(UserRole['super-admin']) &&
+    !isWeekend &&
     isModuleAllowed(
       moduleKey(ModuleGroup['Presence & Leave'], EmployeeModule.Attendance)
     );

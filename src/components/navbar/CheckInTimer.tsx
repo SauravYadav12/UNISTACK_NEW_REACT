@@ -8,6 +8,7 @@ import {
   moduleKey,
 } from '../../utils/accessControlUtil';
 import { tokens } from '../../theme/theme';
+import { dateByUserShift } from '../../utils/dateUtil';
 import { useCheckIn } from '../../contextProviders/CheckInProvider';
 
 // HH:MM:SS from a millisecond duration.
@@ -44,6 +45,12 @@ export default function CheckInTimer() {
   ) {
     return null;
   }
+
+  // Sat/Sun are non-working days — no check-in. Resolved in the user's
+  // own shift timezone. Checkout is still allowed (a Friday session may
+  // still be open).
+  const dow = iUser.shift ? dateByUserShift(iUser.shift).day() : new Date().getDay();
+  const isWeekend = dow === 0 || dow === 6;
 
   const brandButtonSx = {
     textTransform: 'none' as const,
@@ -101,22 +108,29 @@ export default function CheckInTimer() {
           Check Out
         </Button>
       ) : (
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={
-            actionPending ? (
-              <CircularProgress size={13} sx={{ color: '#fff' }} />
-            ) : (
-              <IconLogin2 size={16} />
-            )
-          }
-          sx={brandButtonSx}
-          disabled={actionPending}
-          onClick={() => doCheckIn()}
+        <Tooltip
+          title={isWeekend ? 'Check-in is not available on weekends.' : ''}
+          arrow
         >
-          Check In
-        </Button>
+          <Box component="span">
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={
+                actionPending ? (
+                  <CircularProgress size={13} sx={{ color: '#fff' }} />
+                ) : (
+                  <IconLogin2 size={16} />
+                )
+              }
+              sx={brandButtonSx}
+              disabled={actionPending || isWeekend}
+              onClick={() => doCheckIn()}
+            >
+              Check In
+            </Button>
+          </Box>
+        </Tooltip>
       )}
     </Box>
   );

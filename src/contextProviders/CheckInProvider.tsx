@@ -7,9 +7,11 @@ import {
   useState,
 } from 'react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthGaurd/AuthContextProvider';
 import { UserRole } from '../Interfaces/iUser';
 import { ICheckInSession } from '../Interfaces/checkin';
+import { logout } from '../services/authApi';
 import {
   getCurrentSession,
   checkIn as apiCheckIn,
@@ -49,7 +51,8 @@ const CheckInContext = createContext<CheckInContextValue>({
 });
 
 export function CheckInProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, iUser, myAttendanceState } = useAuth();
+  const { isAuthenticated, iUser, myAttendanceState, validateLogout } = useAuth();
+  const navigate = useNavigate();
 
   // The timer is an employee affordance. Super-admins administer the
   // system; they never check in, and the existing navbar attendance
@@ -164,16 +167,30 @@ export function CheckInProvider({ children }: { children: React.ReactNode }) {
       setActionPending(true);
       try {
         await apiCheckOut(source);
+        if (source === 'manual') {
+          // Restored behavior: a manual Check Out also logs the user out
+          // (mirrors the old MarkCheckoutTimeModal). Clicking the logout
+          // menu instead uses source 'logout' — the Navbar owns that flow,
+          // so here we only close the session and let it proceed.
+          toast.success('Checked out.');
+          try {
+            logout();
+          } catch {
+            // non-fatal
+          }
+          validateLogout();
+          navigate('/login');
+          return;
+        }
         await refresh();
         refreshLegacyAttendance();
-        if (source === 'manual') toast.success('Checked out.');
       } catch {
         if (source === 'manual') toast.error('Could not check out.');
       } finally {
         setActionPending(false);
       }
     },
-    [actionPending, refresh, refreshLegacyAttendance]
+    [actionPending, refresh, refreshLegacyAttendance, validateLogout, navigate]
   );
 
   return (
