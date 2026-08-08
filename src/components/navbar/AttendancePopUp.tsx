@@ -1,66 +1,69 @@
 import React, { useEffect } from 'react';
+import moment from 'moment';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
-import { AttendanceStatus, iAttendance, UserRole } from '../../Interfaces/iUser';
+import { UserRole } from '../../Interfaces/iUser';
 import { dateByUserShift } from '../../utils/dateUtil';
-import CheckInCheckOut from '../attendance/CheckInCheckOut';
+import MarkAttendanceModal from '../dashboard/MarkAttendanceModal';
 import {
   EmployeeModule,
   ModuleGroup,
   moduleKey,
 } from '../../utils/accessControlUtil';
-import { Box } from '@mui/material';
-import { Moment } from 'moment';
+import { dateFormate } from '../constants';
 import { useCheckIn } from '../../contextProviders/CheckInProvider';
 
-// Legacy 9AM auto-popup attendance modal. Kept as the primary check-in
-// prompt for everyone. It no longer renders navbar buttons (the navbar's
-// CheckInTimer owns those) — it only hosts the auto-popping
-// MarkAttendanceModal. When the user checks in through it, we bridge into
-// the CheckInSession system so the navbar flips to Check Out and the
-// session lands in the super-admin log.
+// Auto-pop guard — once per calendar day. If the user closes the modal
+// without checking in, they use the navbar Check In button instead of
+// being re-nagged.
+function popGuardKey(): string {
+  return `checkin:autoPopped:${moment().format('YYYY-MM-DD')}`;
+}
+
+/**
+ * The login-time check-in prompt. Pops the (legacy) MarkAttendanceModal
+ * after login whenever the user has NO open working-hours session — any
+ * day, any time, any shift (super-admins excluded). Confirming drives the
+ * session check-in, so the navbar timer starts, the day is marked Present
+ * (weekdays), and the session lands in the super-admin log.
+ *
+ * The navbar CheckInTimer button remains the always-visible fallback for
+ * anyone who dismisses this modal.
+ */
 const AttendancePopUp = () => {
-  const dateState = React.useState<Moment>();
-  const { myAttendanceState, iUser, isModuleAllowed } = useAuth();
-  const { syncCheckIn } = useCheckIn();
+  const { iUser, isModuleAllowed } = useAuth();
+  const { isCheckedIn, loading, doCheckIn } = useCheckIn();
   const me = iUser;
+  const [open, setOpen] = React.useState(false);
 
-  const { loading, error, attendance, setResults } = myAttendanceState;
-
-  function handleChange(att: iAttendance) {
-    setResults((pre) => [...pre.filter((i) => i._id !== att._id), att]);
-    // Bridge: a fresh check-in (checkIn set, not yet checked out, not
-    // Absent) should create/refresh the working-hours session so the
-    // navbar timer starts and the log captures it.
-    if (att.checkIn && !att.checkOut && att.status !== AttendanceStatus.Absent) {
-      syncCheckIn();
-    }
-  }
+  const allowed =
+    !!me &&
+    !me.role?.includes(UserRole['super-admin']) &&
+    isModuleAllowed(
+      moduleKey(ModuleGroup['Presence & Leave'], EmployeeModule.Attendance)
+    );
 
   useEffect(() => {
-    me?.shift && dateState[1](dateByUserShift(me.shift));
-  }, [me?.shift]);
+    if (!allowed) return;
+    if (loading) return; // wait until the session state resolves
+    if (isCheckedIn) return; // already checked in → no prompt
+    if (localStorage.getItem(popGuardKey())) return; // popped already today
+    setOpen(true);
+    localStorage.setItem(popGuardKey(), '1');
+  }, [allowed, loading, isCheckedIn]);
 
-  if (
-    !isModuleAllowed(
-      moduleKey(ModuleGroup['Presence & Leave'], EmployeeModule.Attendance)
-    ) ||
-    me?.role.includes( UserRole['super-admin'])
-  ) {
-    return null;
-  }
-
-  if (loading || error || !me || !dateState[0]) return null;
+  if (!allowed || !me) return null;
 
   return (
-    // No wrapper spacing / buttons — this only hosts the auto-popup modal.
-    <CheckInCheckOut
-      buttonSize="small"
-      allowAutomaticPopUp
-      renderButtons={false}
+    <MarkAttendanceModal
       user={me}
-      date={dateState[0]}
-      onChange={handleChange}
-      attendance={attendance[0]}
+      date={
+        me.shift
+          ? dateByUserShift(me.shift).format(dateFormate)
+          : moment().format(dateFormate)
+      }
+      state={[open, setOpen]}
+      forAdmin={false}
+      sessionCheckIn={doCheckIn}
     />
   );
 };

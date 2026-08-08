@@ -23,11 +23,25 @@ const MarkAttendanceModal = ({
   forAdmin = false,
   onCancel,
   onMark,
+  sessionCheckIn,
 }: MarkAttendanceModalProps) => {
   const { iUser } = useAuth();
   const [open, setOpen] = state;
   const isUserHasSession = user._id === iUser?._id;
   async function onMarkAttendance() {
+    // Navbar auto-popup / self path: drive the working-hours session
+    // check-in instead of the time-gated attendance mark. This works any
+    // day and any time (the session also marks Present on weekdays
+    // server-side), which the legacy office-hours gate did not.
+    if (sessionCheckIn && isUserHasSession && !forAdmin) {
+      try {
+        await sessionCheckIn();
+        closeModal(false);
+      } catch (error) {
+        console.log(error);
+      }
+      return;
+    }
     let status = getAttendanceStatus(user);
     if (forAdmin && !status) {
       status = AttendanceStatus.Present;
@@ -99,4 +113,7 @@ interface MarkAttendanceModalProps {
   forAdmin?: boolean;
   onMark?: (a: iAttendance) => void;
   onCancel?: () => void;
+  // When provided (navbar auto-popup, self only), the confirm button
+  // starts the working-hours session instead of the legacy attendance mark.
+  sessionCheckIn?: () => Promise<void>;
 }
