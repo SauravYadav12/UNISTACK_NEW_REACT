@@ -19,6 +19,7 @@ import {
   SuperAdminModule,
 } from './utils/accessControlUtil';
 import { HolidayContextProvider } from './contextProviders/HolidayContextProvider';
+import { CheckInProvider } from './contextProviders/CheckInProvider';
 import { AiProvider } from './context/AiContext';
 import { RequirementAiChatProvider } from './context/RequirementAiChatContext';
 import { JobBoardSearchProvider } from './context/JobBoardSearchContext';
@@ -135,7 +136,9 @@ function App() {
       <Router>
         <AiProvider>
           <RequirementAiChatProvider>
-            <AppContent />
+            <CheckInProvider>
+              <AppContent />
+            </CheckInProvider>
           </RequirementAiChatProvider>
         </AiProvider>
       </Router>

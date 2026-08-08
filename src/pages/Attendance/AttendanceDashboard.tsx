@@ -20,6 +20,7 @@ import { usersList } from '../../services/authApi';
 import WeeklyAttendanceTable from '../../components/attendance/WeeklyAttendence';
 import MonthlyAttendanceTable from '../../components/attendance/MonthlyAttendanceTable';
 import DailyAttendanceTable from '../../components/attendance/DailyAttendanceTable';
+import CheckInLogPanel from '../../components/attendance/CheckInLogPanel';
 import ChartCardWrapper from '../../components/dashboard/ChartCardWrapper';
 import CheckInCheckOut from '../../components/attendance/CheckInCheckOut';
 import { iUseAttendance, useAttendance } from '../../hooks/attendanceHook';
@@ -99,6 +100,7 @@ interface AdminDashboardContentProps {
 
 function AdminDashboardContent({ users, onReload }: AdminDashboardContentProps) {
   const { myAttendanceState, iUser } = useAuth();
+  const isSuperAdmin = !!iUser?.role?.includes(UserRole['super-admin']);
   const [currentUser, setCurrentUser] = useState<iUser>(users[0]);
   const [exportModal, setExportModal] = useState(false);
 
@@ -317,6 +319,9 @@ function AdminDashboardContent({ users, onReload }: AdminDashboardContentProps) 
           </Stack>
         </Stack>
       </MotionBox>
+
+      {/* ── Super-admin only: check-in / check-out log (day/week/month) ── */}
+      {isSuperAdmin && <CheckInLogPanel />}
 
       {/* ── Team stats cards ── */}
       <MotionBox variants={staggerContainer} initial="initial" animate="animate" sx={{ mb: 3 }}>

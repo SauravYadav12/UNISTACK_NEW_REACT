@@ -29,11 +29,13 @@ import {
 } from '../../utils/accessControlUtil';
 import { tokens } from '../../theme/theme';
 import Breadcrumbs from './Breadcrumbs';
+import CheckInTimer from './CheckInTimer';
 import AttendancePopUp from './AttendancePopUp';
 import NotificationBell from './NotificationBell';
 import DesktopDownloadButton from '../desktop/DesktopDownloadButton';
 import DesktopViewControls from '../desktop/DesktopViewControls';
 import { isRunningInDesktop } from '../../utils/desktopBridge';
+import { useCheckIn } from '../../contextProviders/CheckInProvider';
 
 interface NavbarProps {
   collapsed: boolean;
@@ -45,6 +47,7 @@ function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const { myProfileState, validateLogout, isModuleAllowed, iUser } = useAuth();
+  const { isCheckedIn, doCheckOut } = useCheckIn();
   const isDark = theme.palette.mode === 'dark';
   const sidebarWidth = collapsed ? smallDrawerWidth : drawerWidth;
 
@@ -56,6 +59,14 @@ function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
   const handleCloseMenu = () => setAnchorEl(null);
 
   const handleLogOut = async () => {
+    // Logout implies checkout — stop the working-hours timer and record
+    // the session as logout-closed before the token is cleared. Best-effort:
+    // never block logout on it.
+    if (isCheckedIn) {
+      try {
+        await doCheckOut('logout');
+      } catch {}
+    }
     try {
       logout();
     } catch {}
@@ -104,7 +115,11 @@ function Navbar({ collapsed, unreadCount, onOpenNotifications }: NavbarProps) {
 
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Attendance popup */}
+        {/* Working-hours check-in timer + button (employees only) */}
+        <CheckInTimer />
+
+        {/* Legacy 9AM auto-popup check-in modal host (renders no buttons of
+            its own; a modal check-in bridges into the timer/session). */}
         <AttendancePopUp />
 
         {/* Always-on "Download app" button for web users — self-hides

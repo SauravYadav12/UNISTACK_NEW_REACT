@@ -79,6 +79,7 @@ const CheckInCheckOut = ({
   allowAutomaticPopUp,
   buttonSize = 'medium',
   forAdmin = false,
+  renderButtons = true,
   onChange,
 }: iProps) => {
   const { iUser } = useAuth();
@@ -214,7 +215,7 @@ const CheckInCheckOut = ({
 
   return (
     <>
-      {isWeekend && !todaysAttendance && (
+      {renderButtons && isWeekend && !todaysAttendance && (
         <Chip
           label="Non-working day"
           size="small"
@@ -229,28 +230,34 @@ const CheckInCheckOut = ({
       )}
       {showMarkAttendance && (
         <>
-          <Tooltip
-            title={
-              disableMarkAttendance && `You can mark between ${timeTitle()}.`
-            }
-            arrow
-            placement="top"
-          >
-            <Box>
-              <Button
-                variant="contained"
-                size={buttonSize}
-                startIcon={<IconLogin2 size={16} />}
-                sx={{ ...brandButtonSx, minWidth: 'max-content' }}
-                onClick={() =>
-                  !disableMarkAttendance && setOpenMarkAttendanceModal(true)
-                }
-                disabled={disableMarkAttendance}
-              >
-                Check In
-              </Button>
-            </Box>
-          </Tooltip>
+          {/* The inline Check In button is optional — when this component is
+              used purely as the auto-popup host (navbar), renderButtons is
+              false and only the modal below is mounted. The navbar's own
+              CheckInTimer provides the button in that case. */}
+          {renderButtons && (
+            <Tooltip
+              title={
+                disableMarkAttendance && `You can mark between ${timeTitle()}.`
+              }
+              arrow
+              placement="top"
+            >
+              <Box>
+                <Button
+                  variant="contained"
+                  size={buttonSize}
+                  startIcon={<IconLogin2 size={16} />}
+                  sx={{ ...brandButtonSx, minWidth: 'max-content' }}
+                  onClick={() =>
+                    !disableMarkAttendance && setOpenMarkAttendanceModal(true)
+                  }
+                  disabled={disableMarkAttendance}
+                >
+                  Check In
+                </Button>
+              </Box>
+            </Tooltip>
+          )}
 
           <MarkAttendanceModal
             forAdmin={forAdmin}
@@ -263,7 +270,7 @@ const CheckInCheckOut = ({
         </>
       )}
 
-      {showCheckout && (
+      {renderButtons && showCheckout && (
         <>
           <Button
             variant="contained"
@@ -294,5 +301,9 @@ interface iProps {
   allowAutomaticPopUp?: boolean;
   buttonSize?: 'small' | 'medium';
   forAdmin?: boolean;
+  // When false, only the auto-popup modal is mounted (no inline navbar
+  // buttons). Used by AttendancePopUp so the navbar's CheckInTimer owns
+  // the Check In / Check Out buttons while this keeps the 9AM auto-popup.
+  renderButtons?: boolean;
   onChange?: (a: iAttendance) => void;
 }

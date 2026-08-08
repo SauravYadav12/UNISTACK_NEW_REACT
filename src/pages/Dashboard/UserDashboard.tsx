@@ -44,6 +44,7 @@ import { iLeave, LeaveStatus } from '../../Interfaces/leaves';
 import { Holiday } from '../../Interfaces/holiday';
 import ApplyLeave from '../../components/leave/ApplyLeave';
 import DownloadBanner from '../../components/desktop/DownloadBanner';
+import CheckInStatusCard from '../../components/dashboard/CheckInStatusCard';
 
 const MotionBox = motion.create(Box);
 
@@ -362,6 +363,10 @@ export default function UserDashboard() {
           />
         </Grid>
       </Grid>
+
+      {/* Check-in status — when the employee checked in + don't-forget-to-
+          check-out nudge. Mirrors the navbar timer via CheckInProvider. */}
+      <CheckInStatusCard />
 
       {/* Probation notice — shown while the user is in_progress.
           Two visual states:

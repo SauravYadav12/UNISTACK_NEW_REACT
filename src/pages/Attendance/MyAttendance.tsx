@@ -38,6 +38,7 @@ import {
   IconFlame,
   IconPointFilled,
 } from '@tabler/icons-react';
+import CheckInLogPanel from '../../components/attendance/CheckInLogPanel';
 
 const MotionBox = motion.create(Box);
 
@@ -131,6 +132,11 @@ const MyAttendance = () => {
           </Box>
         </Grid>
       </Grid>
+
+      {/* ── My check-in / check-out sessions (day/week/month) ── */}
+      <Box sx={{ mt: 3 }}>
+        <CheckInLogPanel selfView />
+      </Box>
 
       {/* ── History ── */}
       <MyAttendanceHistory users={[me]} />
