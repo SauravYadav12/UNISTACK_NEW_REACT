@@ -29,7 +29,13 @@ export default function RequirementTrendChart() {
       const dates: string[] = [];
       const cursor = startDate.clone();
       while (cursor.isSameOrBefore(endDate, 'day')) {
-        dates.push(cursor.format('YYYY-MM-DD'));
+        // Skip weekends (Sun=0, Sat=6). No requirements come in on
+        // non-working days, so plotting them just drags the line to 0.
+        // Dropping the points entirely makes the line run Fri → Mon.
+        const dow = cursor.day();
+        if (dow !== 0 && dow !== 6) {
+          dates.push(cursor.format('YYYY-MM-DD'));
+        }
         cursor.add(1, 'day');
       }
       const response = await requirementCounts(dates, '', false);
@@ -173,7 +179,7 @@ export default function RequirementTrendChart() {
             Requirement trend
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Daily intake · last {RANGE_DAYS[range]} days
+            Daily intake · weekdays, last {RANGE_DAYS[range]} days
           </Typography>
         </Box>
         <ToggleButtonGroup
