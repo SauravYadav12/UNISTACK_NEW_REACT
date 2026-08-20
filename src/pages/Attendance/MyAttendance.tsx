@@ -172,8 +172,12 @@ function HeroStatusCard({
 
   const elapsed = useMemo(() => {
     if (!todayAttendance?.checkIn) return null;
-    const ci = moment(todayAttendance.checkIn, timeFormate);
-    const end = checkedOut && todayAttendance.checkOut ? moment(todayAttendance.checkOut, timeFormate) : now;
+    // checkIn/checkOut are full ISO/Date values — parse them as absolute
+    // instants (NOT with the time-only `timeFormate` mask, which mis-parses
+    // an ISO string and produced a garbage elapsed that didn't match the
+    // displayed check-in time). `diff` against `now` is timezone-independent.
+    const ci = moment(todayAttendance.checkIn);
+    const end = checkedOut && todayAttendance.checkOut ? moment(todayAttendance.checkOut) : now;
     const mins = end.diff(ci, 'minutes');
     if (mins < 0) return null;
     const h = Math.floor(mins / 60);
@@ -388,8 +392,11 @@ function QuickStats({ me }: { me: iUser }) {
 
     const totalHours = present.reduce((acc, a) => {
       if (!a.checkIn || !a.checkOut) return acc;
-      const ci = moment(a.checkIn, timeFormate);
-      const co = moment(a.checkOut, timeFormate);
+      // Absolute-instant parse — same fix as the hero elapsed. The old
+      // time-only `timeFormate` mask mis-parsed the ISO values and made
+      // "Avg Hours/Day" nonsensical (e.g. 0.2h).
+      const ci = moment(a.checkIn);
+      const co = moment(a.checkOut);
       const mins = co.diff(ci, 'minutes');
       return acc + (mins > 0 ? mins / 60 : 0);
     }, 0);

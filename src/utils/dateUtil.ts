@@ -193,39 +193,19 @@ export function timeZoneKeyByUserShift(shift: UserShift) {
 export function getWorkingDuration(
   checkIn: string,
   checkOut: string,
-  shift: UserShift
+  // Kept for call-site compatibility; the duration between two absolute
+  // instants is timezone-independent so the shift is no longer needed.
+  _shift?: UserShift
 ) {
-  const checkinTime = timeByUserShift(shift, moment(checkIn));
-  const checkoutTime = timeByUserShift(shift, moment(checkOut));
-
-  // Extract time components (hours and minutes)
-  const checkinHours = checkinTime.hours();
-  const checkinMinutes = checkinTime.minutes();
-  const checkoutHours = checkoutTime.hours();
-  const checkoutMinutes = checkoutTime.minutes();
-
-  // Create Moment objects for the same day to calculate the difference
-  const startOfDay = moment().startOf('day'); // Represents the beginning of the current day
-  const startCheckin = startOfDay
-    .clone()
-    .hours(checkinHours)
-    .minutes(checkinMinutes)
-    .seconds(0)
-    .milliseconds(0);
-  const startCheckout = startOfDay
-    .clone()
-    .hours(checkoutHours)
-    .minutes(checkoutMinutes)
-    .seconds(0)
-    .milliseconds(0);
-
-  // Calculate the difference in milliseconds
-  const differenceInMilliseconds = startCheckout.diff(startCheckin);
-  const duration = moment.duration(differenceInMilliseconds);
-
+  // Absolute-instant diff. The previous implementation extracted the wall-
+  // clock hours/minutes and re-pinned both onto today's start-of-day before
+  // subtracting — which produced wrong/negative durations for any session
+  // that crossed midnight (e.g. 1:27 PM → 3:27 AM = 14h computed as −10h).
+  const ms = moment(checkOut).diff(moment(checkIn));
+  if (!(ms > 0)) return '0h 0m';
+  const duration = moment.duration(ms);
   const hours = Math.floor(duration.asHours());
   const minutes = Math.floor(duration.asMinutes()) % 60;
-
   return `${hours}h ${minutes}m`;
 }
 
