@@ -168,30 +168,40 @@ export default function TimesheetsPanel({
 
   const loadMonth = useCallback(async () => {
     setLoading(true);
-    try {
-      const [tsRes, apRes] = await Promise.all([
-        getTimesheetByMonth(project._id, periodMonth),
-        getApproval(project._id, periodMonth),
-      ]);
-      const stored = tsRes.data?.data || null;
+    // The timesheet hours and the approval status are INDEPENDENT reads.
+    // They must be settled separately: a failure of the approval fetch must
+    // never blank out the saved hours (and vice-versa). Coupling them in a
+    // single Promise.all previously meant a transient error on the approval
+    // endpoint wiped a fully-saved month to blank on refresh.
+    const [tsRes, apRes] = await Promise.allSettled([
+      getTimesheetByMonth(project._id, periodMonth),
+      getApproval(project._id, periodMonth),
+    ]);
+
+    if (tsRes.status === 'fulfilled') {
+      const stored = tsRes.value.data?.data || null;
       setDoc(stored);
       setCells(hydrateMonth(periodMonth, stored));
-      setApproval(apRes.data?.data || null);
       setDirty(false);
-    } catch (err) {
-      // If the fetch fails for this month (e.g. no approval record yet
-      // and the endpoint errors), we must NOT leave the grid frozen on
-      // the previously-loaded month. Fall back to a fresh blank
-      // skeleton for the CURRENT periodMonth so the calendar always
-      // matches the selected month, then surface the error.
-      console.warn('Failed to load timesheet month', periodMonth, err);
+    } else {
+      // Only a failure of the TIMESHEET fetch itself should reset the grid.
+      // Fall back to a fresh blank skeleton for the current periodMonth so
+      // the calendar still matches the selected month.
+      console.warn('Failed to load timesheet month', periodMonth, tsRes.reason);
       setDoc(null);
       setCells(buildBlankMonth(periodMonth));
-      setApproval(null);
       setDirty(false);
-    } finally {
-      setLoading(false);
     }
+
+    // Approval is best-effort — its failure leaves the hours untouched.
+    if (apRes.status === 'fulfilled') {
+      setApproval(apRes.value.data?.data || null);
+    } else {
+      console.warn('Failed to load timesheet approval', periodMonth, apRes.reason);
+      setApproval(null);
+    }
+
+    setLoading(false);
   }, [project._id, periodMonth]);
 
   // Rebuild the blank skeleton SYNCHRONOUSLY whenever the month changes.
