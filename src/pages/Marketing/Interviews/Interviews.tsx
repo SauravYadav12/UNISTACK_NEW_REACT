@@ -34,6 +34,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '../../../AuthGaurd/AuthContextProvider';
 import {
   ArchiveModule,
+  MarketingModule,
   ModuleGroup,
   moduleKey,
 } from '../../../utils/accessControlUtil';
@@ -230,6 +231,13 @@ export default function Interviews(props: Iprops) {
 
   const isArchiveInterviewModuleAllowed = isModuleAllowed(
     moduleKey(ModuleGroup.Archive, ArchiveModule.Interviews)
+  );
+
+  // Access-control gate for the internal interviewee (team/developer)
+  // column — same "Interviewee Details" toggle that gates the drawer
+  // section. Super-admin is auto-allowed by isModuleAllowed.
+  const canSeeIntervieweeColumn = isModuleAllowed(
+    moduleKey(ModuleGroup.Marketing, MarketingModule['Interviewee Details'])
   );
 
   const {
@@ -631,16 +639,23 @@ export default function Interviews(props: Iprops) {
         return params ?? '';
       },
     },
-    {
-      field: 'candidateName',
-      headerName: 'Interviewee',
-      width: 180,
-      renderCell: ({ row }) => {
-        if ((row as unknown as { dateSeparator?: boolean }).dateSeparator)
-          return null;
-        return <PersonPill name={row.candidateName} />;
-      },
-    },
+    // "Interviewee" column — gated by the "Interviewee Details" access-
+    // control toggle (same gate as the drawer section). Omitted entirely
+    // for roles that aren't granted it.
+    ...(canSeeIntervieweeColumn
+      ? [
+          {
+            field: 'candidateName',
+            headerName: 'Interviewee',
+            width: 180,
+            renderCell: ({ row }) => {
+              if ((row as unknown as { dateSeparator?: boolean }).dateSeparator)
+                return null;
+              return <PersonPill name={row.candidateName} />;
+            },
+          } as GridColDef<IInterview>,
+        ]
+      : []),
     {
       field: 'marketingPerson',
       headerName: 'Created By',
