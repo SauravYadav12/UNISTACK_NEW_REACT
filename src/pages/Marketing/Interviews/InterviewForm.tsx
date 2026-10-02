@@ -51,6 +51,11 @@ import { isFieldValid, validateAllFields } from '../../../utils/validators';
 import { convertValuesToEmptyString } from '../../../utils/utils';
 import useHardKeySubmit from '../../../hooks/hardKeySubmitHook';
 import { UserRole } from '../../../Interfaces/iUser';
+import {
+  ModuleGroup,
+  MarketingModule,
+  moduleKey,
+} from '../../../utils/accessControlUtil';
 import RequirementDrawer from '../../../components/requirement/RequirementDrawer';
 import { SetResults } from '../../../hooks/paginationHook';
 import { FormMode } from '../Requirements/Requirements';
@@ -113,7 +118,13 @@ export default function InterviewForm(props: iProps) {
   const [openAlert, setOpenAlert] = useState(false);
   const [scriptModal, setScriptModal] = useState(false);
   const [reqDrawer, setReqDrawer] = useState<string>();
-  const user = useAuth().iUser;
+  const { iUser: user, isModuleAllowed } = useAuth();
+  // Access-control gate for the internal interviewee/staffing info.
+  // Super-admin is auto-allowed by isModuleAllowed; other roles only when
+  // granted the "Interviewee Details" toggle (Marketing group).
+  const canSeeIntervieweeDetails = isModuleAllowed(
+    moduleKey(ModuleGroup.Marketing, MarketingModule['Interviewee Details']),
+  );
 
   useHardKeySubmit(
     { onSubmit: (e) => { mode === 'add' && handleSubmitForm(e); mode === 'edit' && handleEditSubmitForm(e); } },
@@ -481,8 +492,10 @@ export default function InterviewForm(props: iProps) {
             <CustomTextField label="Duration" fullWidth disabled selectedValue={values.duration?.toString() || ''} onChange={(e) => addValue('duration', e.target.value)} />
           </SectionCard>
 
-          {/* ── Section 4: Interviewee Candidate Details ── */}
-          {user && user.role.some(role => [UserRole.admin, UserRole['super-admin'], UserRole.hr].includes(role)) && (
+          {/* ── Section 4: Interviewee Candidate Details ──
+              Gated via Access Control ("Interviewee Details" toggle,
+              Marketing group) instead of a hardcoded role check. */}
+          {canSeeIntervieweeDetails && (
             <SectionCard number={4} title="Interviewee Candidate Details">
               {isEditing ? (
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
