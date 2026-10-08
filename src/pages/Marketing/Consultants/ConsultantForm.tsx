@@ -86,7 +86,10 @@ function SectionCard({ number, title, action, children }: { number: number; titl
 }
 
 export default function ConsultantForm(props: iProps) {
-  const dobFormate = 'MMM DD';
+  // Includes the year so the DOB actually captures it (the old 'MMM DD'
+  // dropped the year entirely — which is why the year wasn't selectable
+  // and downstream consumers like ScriptModal rendered "Invalid Date").
+  const dobFormate = 'DD MMM YYYY';
   const [values, setValues] = useState<Partial<IConsultant>>(initialValues);
   const [openAlert, setOpenAlert] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -248,8 +251,8 @@ export default function ConsultantForm(props: iProps) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker views={['month', 'day']} format={dobFormate} disabled={!isEditing} label="Date of Birth"
-                value={values.dob ? dayjs(values.dob) : null}
+              <DatePicker views={['year', 'month', 'day']} openTo="year" disableFuture format={dobFormate} disabled={!isEditing} label="Date of Birth"
+                value={values.dob && dayjs(values.dob).isValid() ? dayjs(values.dob) : null}
                 onChange={(v) => addValue('dob', v?.format(dobFormate) || '')}
                 slotProps={{ textField: { onBlur: () => onBlur('dob'), size: 'small', fullWidth: true, error: !!errors.dob, helperText: errors.dob, disabled: !isEditing, sx: pickerSx } }} />
             </LocalizationProvider>
