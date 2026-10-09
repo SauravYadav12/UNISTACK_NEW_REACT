@@ -22,6 +22,9 @@ export enum MarketingModule {
   // see it; other roles only when granted here. Toggle lives under the
   // Marketing group in the Access Control tab.
   'Interviewee Details' = 'Interviewee Details',
+  // The IT Job Search review queue — jobs pulled from the dedicated inbox
+  // (and later JSearch/feeds), reviewed, and approved into Requirements.
+  'IT Job Search' = 'IT Job Search',
 }
 export enum HomeModule {
   'Dashboard' = 'Dashboard',
