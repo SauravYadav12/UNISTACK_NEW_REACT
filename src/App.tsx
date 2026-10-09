@@ -72,6 +72,7 @@ const InterviewTabs = lazy(
   () => import('./components/interview/InterviewTabs'),
 );
 const JobBoards = lazy(() => import('./pages/JobBoards/JobBoards'));
+const ITJobSearch = lazy(() => import('./pages/ITJobSearch/ITJobSearch'));
 const Consultants = lazy(
   () => import('./pages/Marketing/Consultants/Consultants'),
 );
@@ -378,6 +379,19 @@ function AppContent() {
                   <JobBoardSearchProvider>
                     <JobBoards />
                   </JobBoardSearchProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="it-job-search"
+              element={
+                <ProtectedRoute
+                  meta={{
+                    group: ModuleGroup.Marketing,
+                    module: MarketingModule['IT Job Search'],
+                  }}
+                >
+                  <ITJobSearch />
                 </ProtectedRoute>
               }
             />

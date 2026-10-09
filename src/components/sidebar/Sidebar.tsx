@@ -39,6 +39,7 @@ import {
   IconMailCog,
   IconClipboardCheck,
   IconWorldSearch,
+  IconMailDown,
   IconUserCheck,
   IconChessKnight,
   IconActivity,
@@ -166,6 +167,13 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       path: '/job-boards',
       group: ModuleGroup.Marketing,
       module: MarketingModule['Job Boards'],
+    },
+    {
+      text: 'IT Job Search',
+      icon: <IconMailDown size={20} />,
+      path: '/it-job-search',
+      group: ModuleGroup.Marketing,
+      module: MarketingModule['IT Job Search'],
     },
     {
       text: 'Chess Leads',
