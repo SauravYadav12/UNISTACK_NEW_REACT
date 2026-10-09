@@ -15,6 +15,7 @@ import {
   Tooltip,
   alpha,
   Link,
+  MenuItem,
 } from '@mui/material';
 import {
   IconBriefcase,
@@ -24,25 +25,32 @@ import {
   IconUser,
   IconPhone,
   IconMail,
+  IconWorldSearch,
 } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import { tokens } from '../../theme/theme';
 import { SourcedJob, SourcedJobStatus } from '../../Interfaces/sourcedJob';
-import { listSourcedJobs, runEmailIngest } from '../../services/itJobSearchApi';
+import {
+  listSourcedJobs,
+  runEmailIngest,
+  runJsearchIngest,
+} from '../../services/itJobSearchApi';
 import ReviewJobDrawer from './ReviewJobDrawer';
 
 const MotionBox = motion.create(Box);
 
 export default function ITJobSearch() {
   const [status, setStatus] = useState<SourcedJobStatus | 'all'>('pending');
+  const [source, setSource] = useState<'all' | 'email' | 'jsearch'>('all');
   const [onlyContact, setOnlyContact] = useState(false);
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<SourcedJob[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
+  const [boarding, setBoarding] = useState(false);
   const [selected, setSelected] = useState<SourcedJob | null>(null);
 
   const load = useCallback(async () => {
@@ -50,6 +58,7 @@ export default function ITJobSearch() {
     try {
       const res = await listSourcedJobs({
         status,
+        source: source === 'all' ? undefined : source,
         hasVendorContact: onlyContact || undefined,
         q: q.trim() || undefined,
         limit: 100,
@@ -61,7 +70,7 @@ export default function ITJobSearch() {
     } finally {
       setLoading(false);
     }
-  }, [status, onlyContact, q]);
+  }, [status, source, onlyContact, q]);
 
   useEffect(() => {
     const t = setTimeout(load, q ? 350 : 0); // debounce search
@@ -85,6 +94,30 @@ export default function ITJobSearch() {
       toast.error('Could not scan the inbox.');
     } finally {
       setIngesting(false);
+    }
+  }
+
+  async function handleBoardSearch() {
+    setBoarding(true);
+    try {
+      const res = await runJsearchIngest();
+      const d = res.data.data as Record<string, number | boolean>;
+      if (d.enabled === false) {
+        toast.info('Job-board search is not configured (JSEARCH_RAPIDAPI_KEY).');
+      } else if (d.quotaExceeded) {
+        toast.warning(
+          `Hit the job-board API quota — ${d.created || 0} added before stopping.`
+        );
+      } else {
+        toast.success(
+          `Job boards scanned — ${d.created || 0} new, ${d.duplicates || 0} dup, ${d.prefiltered || 0} filtered out.`
+        );
+      }
+      load();
+    } catch {
+      toast.error('Could not search the job boards.');
+    } finally {
+      setBoarding(false);
     }
   }
 
@@ -127,15 +160,26 @@ export default function ITJobSearch() {
               </Typography>
             </Box>
           </Stack>
-          <Button
-            variant="contained"
-            onClick={handleIngest}
-            disabled={ingesting}
-            startIcon={ingesting ? <CircularProgress size={16} color="inherit" /> : <IconMailDown size={18} />}
-            sx={{ textTransform: 'none', fontWeight: 700, background: tokens.gradients.pinkBlue, boxShadow: 'none', '&:hover': { background: tokens.gradients.pinkBlue, filter: 'brightness(1.08)' } }}
-          >
-            {ingesting ? 'Scanning inbox…' : 'Refresh from inbox'}
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={handleBoardSearch}
+              disabled={boarding || ingesting}
+              startIcon={boarding ? <CircularProgress size={16} color="inherit" /> : <IconWorldSearch size={18} />}
+              sx={{ textTransform: 'none', fontWeight: 700, color: '#fff', borderColor: alpha('#fff', 0.4), '&:hover': { borderColor: '#fff', background: alpha('#fff', 0.08) } }}
+            >
+              {boarding ? 'Searching boards…' : 'Search job boards'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleIngest}
+              disabled={ingesting || boarding}
+              startIcon={ingesting ? <CircularProgress size={16} color="inherit" /> : <IconMailDown size={18} />}
+              sx={{ textTransform: 'none', fontWeight: 700, background: tokens.gradients.pinkBlue, boxShadow: 'none', '&:hover': { background: tokens.gradients.pinkBlue, filter: 'brightness(1.08)' } }}
+            >
+              {ingesting ? 'Scanning inbox…' : 'Refresh from inbox'}
+            </Button>
+          </Stack>
         </Stack>
       </MotionBox>
 
@@ -154,6 +198,17 @@ export default function ITJobSearch() {
         </ToggleButtonGroup>
 
         <Stack direction="row" spacing={1.5} alignItems="center">
+          <TextField
+            select
+            size="small"
+            value={source}
+            onChange={(e) => setSource(e.target.value as 'all' | 'email' | 'jsearch')}
+            sx={{ minWidth: 140 }}
+          >
+            <MenuItem value="all">All sources</MenuItem>
+            <MenuItem value="email">Email</MenuItem>
+            <MenuItem value="jsearch">Job boards</MenuItem>
+          </TextField>
           <FormControlLabel
             control={<Switch size="small" checked={onlyContact} onChange={(e) => setOnlyContact(e.target.checked)} />}
             label={<Typography variant="body2">Has vendor contact</Typography>}

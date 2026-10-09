@@ -51,3 +51,9 @@ export async function runEmailIngest() {
     `/it-job-search/ingest/run`
   );
 }
+
+export async function runJsearchIngest() {
+  return axiosClient.post<Res<Record<string, number | boolean>>>(
+    `/it-job-search/ingest/jsearch`
+  );
+}
