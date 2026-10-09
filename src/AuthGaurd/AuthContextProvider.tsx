@@ -11,6 +11,7 @@ import {
   ModuleGroup,
   moduleKey,
   SuperAdminModule,
+  MarketingModule,
 } from '../utils/accessControlUtil';
 import { iUser, UserRole } from '../Interfaces/iUser';
 import { toast } from 'react-toastify';
@@ -110,6 +111,23 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       const { data } = accessControlState;
       if (!data || !me?.role.length || isTokenExpired()) return false;
       if (me.role.includes(UserRole['super-admin'])) return true;
+
+      // IT Job Search is an internal sourcing tool. By default only admins
+      // and super-admins get it; every other role stays OFF until a
+      // super-admin grants it in the Access Control tab (Marketing → IT Job
+      // Search), which flows through the normal allow-list check below.
+      // Admin is a code-level default here (like super-admin above) so it
+      // survives regardless of the stored AccessControl document. NOTE:
+      // like the Performance carve-out, the admin toggle for this key shows
+      // OFF in the Access Control tab even though admins have access —
+      // the default lives in code, not in the stored allow-list.
+      const itJobSearchKey = moduleKey(
+        ModuleGroup.Marketing,
+        MarketingModule['IT Job Search'],
+      );
+      if (key === itJobSearchKey && me.role.includes(UserRole.admin)) {
+        return true;
+      }
 
       // Performance page is intentionally visible to every Marketing + Support
       // user — they're the people whose scores it shows, so transparency is
