@@ -3,6 +3,8 @@ import {
   Box,
   Stack,
   Typography,
+  Tabs,
+  Tab,
   ToggleButton,
   ToggleButtonGroup,
   TextField,
@@ -13,14 +15,14 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  Pagination,
   alpha,
   Link,
-  MenuItem,
 } from '@mui/material';
 import {
   IconBriefcase,
   IconRefresh,
-  IconMailDown,
+  IconInbox,
   IconExternalLink,
   IconUser,
   IconPhone,
@@ -35,94 +37,99 @@ import { tokens } from '../../theme/theme';
 import { SourcedJob, SourcedJobStatus } from '../../Interfaces/sourcedJob';
 import {
   listSourcedJobs,
-  runEmailIngest,
   runJsearchIngest,
   runFeedIngest,
 } from '../../services/itJobSearchApi';
 import ReviewJobDrawer from './ReviewJobDrawer';
 
 const MotionBox = motion.create(Box);
+const LIMIT = 50; // records per page
+const AUTO_REFRESH_MS = 15000; // silent poll so new positions appear on their own
+
+type SourceKey = 'email' | 'jsearch' | 'feed';
+const TABS: { key: SourceKey; label: string; icon: JSX.Element }[] = [
+  { key: 'email', label: 'Inbox', icon: <IconInbox size={18} /> },
+  { key: 'jsearch', label: 'Job Boards', icon: <IconWorldSearch size={18} /> },
+  { key: 'feed', label: 'Remote Feeds', icon: <IconRss size={18} /> },
+];
 
 export default function ITJobSearch() {
+  const [tab, setTab] = useState<SourceKey>('email');
   const [status, setStatus] = useState<SourcedJobStatus | 'all'>('pending');
-  const [source, setSource] = useState<'all' | 'email' | 'jsearch' | 'feed'>('all');
   const [onlyContact, setOnlyContact] = useState(false);
   const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
   const [rows, setRows] = useState<SourcedJob[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [ingesting, setIngesting] = useState(false);
   const [boarding, setBoarding] = useState(false);
   const [feeding, setFeeding] = useState(false);
   const [selected, setSelected] = useState<SourcedJob | null>(null);
 
-  const busyExternal = ingesting || boarding || feeding;
+  const load = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const res = await listSourcedJobs({
+          status,
+          source: tab,
+          hasVendorContact: onlyContact || undefined,
+          q: q.trim() || undefined,
+          page,
+          limit: LIMIT,
+        });
+        setRows(res.data.data.results || []);
+        setTotal(res.data.data.total || 0);
+      } catch {
+        if (!silent) setRows([]);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [tab, status, onlyContact, q, page]
+  );
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await listSourcedJobs({
-        status,
-        source: source === 'all' ? undefined : source,
-        hasVendorContact: onlyContact || undefined,
-        q: q.trim() || undefined,
-        limit: 100,
-      });
-      setRows(res.data.data.results || []);
-      setTotal(res.data.data.total || 0);
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [status, source, onlyContact, q]);
-
+  // Load on any filter change (debounced while typing a search).
   useEffect(() => {
-    const t = setTimeout(load, q ? 350 : 0); // debounce search
+    const t = setTimeout(() => load(false), q ? 350 : 0);
     return () => clearTimeout(t);
   }, [load, q]);
 
-  async function handleIngest() {
-    setIngesting(true);
-    try {
-      const res = await runEmailIngest();
-      const d = res.data.data as Record<string, number | boolean>;
-      if (d.enabled === false) {
-        toast.info('Email ingestion is not configured (GMAIL_USER / APP_PASSWORD).');
-      } else {
-        toast.success(
-          `Inbox scan done — ${d.created || 0} new, ${d.duplicates || 0} dup, ${d.failed || 0} failed.`
-        );
-      }
-      load();
-    } catch {
-      toast.error('Could not scan the inbox.');
-    } finally {
-      setIngesting(false);
-    }
-  }
+  // Auto-refresh: silently re-pull the current view so freshly-ingested
+  // positions (inbox IDLE, background board/feed runs) appear on their own.
+  useEffect(() => {
+    const id = setInterval(() => load(true), AUTO_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [load]);
+
+  // Any change of tab / status / filters returns to the first page.
+  const resetTo = (fn: () => void) => {
+    fn();
+    setPage(1);
+  };
+
+  // A background run streams results in — nudge a few silent refreshes.
+  const burstRefresh = () => {
+    [4000, 10000, 20000, 35000].forEach((ms) => setTimeout(() => load(true), ms));
+  };
 
   async function handleBoardSearch() {
     setBoarding(true);
     try {
       const res = await runJsearchIngest();
-      const d = res.data.data as Record<string, number | boolean>;
-      if (d.enabled === false) {
-        toast.info('Job-board search is not configured (JSEARCH_RAPIDAPI_KEY).');
-      } else if (d.quotaExceeded) {
-        toast.warning(
-          `Hit the job-board API quota — ${d.created || 0} added before stopping.`
-        );
-      } else {
-        toast.success(
-          `Job boards scanned — ${d.created || 0} new, ${d.duplicates || 0} dup, ${d.prefiltered || 0} filtered out.`
-        );
-      }
-      load();
+      const d = res.data.data as unknown as { alreadyRunning?: boolean };
+      toast.info(
+        d.alreadyRunning
+          ? 'A job-board search is already running — results will appear here.'
+          : 'Searching job boards… new roles will appear here as they are found.'
+      );
+      burstRefresh();
     } catch {
-      toast.error('Could not search the job boards.');
+      toast.error('Could not start the job-board search.');
     } finally {
-      setBoarding(false);
+      // Keep the button disabled briefly so it isn't spammed (the server
+      // also guards against overlapping runs).
+      setTimeout(() => setBoarding(false), 20000);
     }
   }
 
@@ -130,24 +137,24 @@ export default function ITJobSearch() {
     setFeeding(true);
     try {
       const res = await runFeedIngest();
-      const d = res.data.data as Record<string, number | boolean>;
-      if (d.enabled === false) {
-        toast.info('No remote feeds are configured.');
-      } else {
-        toast.success(
-          `Remote feeds pulled — ${d.created || 0} new, ${d.duplicates || 0} dup, ${d.prefiltered || 0} filtered out.`
-        );
-      }
-      load();
+      const d = res.data.data as unknown as { alreadyRunning?: boolean };
+      toast.info(
+        d.alreadyRunning
+          ? 'A feed pull is already running — results will appear here.'
+          : 'Pulling remote feeds… new roles will appear here as they are found.'
+      );
+      burstRefresh();
     } catch {
-      toast.error('Could not pull the remote feeds.');
+      toast.error('Could not start the feed pull.');
     } finally {
-      setFeeding(false);
+      setTimeout(() => setFeeding(false), 20000);
     }
   }
 
   const removeFromList = (id: string) =>
     setRows((prev) => prev.filter((r) => r._id !== id));
+
+  const pageCount = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
     <Box>
@@ -181,41 +188,55 @@ export default function ITJobSearch() {
             <Box>
               <Typography variant="h4" fontWeight={700}>IT Job Search</Typography>
               <Typography variant="caption" sx={{ color: alpha('#fff', 0.65) }}>
-                {total} {status === 'pending' ? 'to review' : status} · remote US IT roles from inbox, job boards &amp; feeds
+                {total} {status === 'pending' ? 'to review' : status} · {TABS.find((t) => t.key === tab)?.label}
               </Typography>
             </Box>
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-            <Button
-              variant="outlined"
-              onClick={handleFeedPull}
-              disabled={busyExternal}
-              startIcon={feeding ? <CircularProgress size={16} color="inherit" /> : <IconRss size={18} />}
-              sx={{ textTransform: 'none', fontWeight: 700, color: '#fff', borderColor: alpha('#fff', 0.4), '&:hover': { borderColor: '#fff', background: alpha('#fff', 0.08) } }}
-            >
-              {feeding ? 'Pulling feeds…' : 'Pull remote feeds'}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleBoardSearch}
-              disabled={busyExternal}
-              startIcon={boarding ? <CircularProgress size={16} color="inherit" /> : <IconWorldSearch size={18} />}
-              sx={{ textTransform: 'none', fontWeight: 700, color: '#fff', borderColor: alpha('#fff', 0.4), '&:hover': { borderColor: '#fff', background: alpha('#fff', 0.08) } }}
-            >
-              {boarding ? 'Searching boards…' : 'Search job boards'}
-            </Button>
+
+          {/* Contextual action per source */}
+          {tab === 'email' && (
+            <Chip
+              size="small"
+              icon={<Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: tokens.colors.success, ml: 1 }} />}
+              label="Auto-updating · real-time"
+              sx={{ color: '#fff', bgcolor: alpha('#fff', 0.12), fontWeight: 600 }}
+            />
+          )}
+          {tab === 'jsearch' && (
             <Button
               variant="contained"
-              onClick={handleIngest}
-              disabled={busyExternal}
-              startIcon={ingesting ? <CircularProgress size={16} color="inherit" /> : <IconMailDown size={18} />}
+              onClick={handleBoardSearch}
+              disabled={boarding}
+              startIcon={boarding ? <CircularProgress size={16} color="inherit" /> : <IconWorldSearch size={18} />}
               sx={{ textTransform: 'none', fontWeight: 700, background: tokens.gradients.pinkBlue, boxShadow: 'none', '&:hover': { background: tokens.gradients.pinkBlue, filter: 'brightness(1.08)' } }}
             >
-              {ingesting ? 'Scanning inbox…' : 'Refresh from inbox'}
+              {boarding ? 'Searching…' : 'Search job boards'}
             </Button>
-          </Stack>
+          )}
+          {tab === 'feed' && (
+            <Button
+              variant="contained"
+              onClick={handleFeedPull}
+              disabled={feeding}
+              startIcon={feeding ? <CircularProgress size={16} color="inherit" /> : <IconRss size={18} />}
+              sx={{ textTransform: 'none', fontWeight: 700, background: tokens.gradients.pinkBlue, boxShadow: 'none', '&:hover': { background: tokens.gradients.pinkBlue, filter: 'brightness(1.08)' } }}
+            >
+              {feeding ? 'Pulling…' : 'Pull remote feeds'}
+            </Button>
+          )}
         </Stack>
       </MotionBox>
+
+      {/* Source tabs */}
+      <Tabs
+        value={tab}
+        onChange={(_, v) => resetTo(() => setTab(v))}
+        sx={{ mb: 2, borderBottom: '1px solid', borderColor: 'divider', '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minHeight: 48 } }}
+      >
+        {TABS.map((t) => (
+          <Tab key={t.key} value={t.key} icon={t.icon} iconPosition="start" label={t.label} />
+        ))}
+      </Tabs>
 
       {/* Filters */}
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }} justifyContent="space-between" sx={{ mb: 2 }}>
@@ -223,7 +244,7 @@ export default function ITJobSearch() {
           size="small"
           exclusive
           value={status}
-          onChange={(_, v) => v && setStatus(v)}
+          onChange={(_, v) => v && resetTo(() => setStatus(v))}
         >
           <ToggleButton value="pending" sx={{ textTransform: 'none', fontWeight: 700 }}>Pending</ToggleButton>
           <ToggleButton value="approved" sx={{ textTransform: 'none', fontWeight: 700 }}>Approved</ToggleButton>
@@ -232,25 +253,13 @@ export default function ITJobSearch() {
         </ToggleButtonGroup>
 
         <Stack direction="row" spacing={1.5} alignItems="center">
-          <TextField
-            select
-            size="small"
-            value={source}
-            onChange={(e) => setSource(e.target.value as 'all' | 'email' | 'jsearch' | 'feed')}
-            sx={{ minWidth: 140 }}
-          >
-            <MenuItem value="all">All sources</MenuItem>
-            <MenuItem value="email">Email</MenuItem>
-            <MenuItem value="jsearch">Job boards</MenuItem>
-            <MenuItem value="feed">Remote feeds</MenuItem>
-          </TextField>
           <FormControlLabel
-            control={<Switch size="small" checked={onlyContact} onChange={(e) => setOnlyContact(e.target.checked)} />}
+            control={<Switch size="small" checked={onlyContact} onChange={(e) => resetTo(() => setOnlyContact(e.target.checked))} />}
             label={<Typography variant="body2">Has vendor contact</Typography>}
           />
-          <TextField size="small" placeholder="Search title / company / tech" value={q} onChange={(e) => setQ(e.target.value)} sx={{ minWidth: 240 }} />
-          <Tooltip title="Reload">
-            <IconButton size="small" onClick={load} disabled={loading}>
+          <TextField size="small" placeholder="Search title / company / tech" value={q} onChange={(e) => resetTo(() => setQ(e.target.value))} sx={{ minWidth: 240 }} />
+          <Tooltip title="Reload now">
+            <IconButton size="small" onClick={() => load(false)} disabled={loading}>
               <IconRefresh size={18} className={loading ? 'sync-icon-loading' : ''} />
             </IconButton>
           </Tooltip>
@@ -262,13 +271,36 @@ export default function ITJobSearch() {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress size={28} /></Box>
       ) : rows.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
-          <Typography>No {status === 'all' ? '' : status} jobs. Try "Refresh from inbox".</Typography>
+          <Typography>
+            {tab === 'email'
+              ? 'No positions yet — new inbox jobs appear here automatically.'
+              : tab === 'jsearch'
+                ? 'No job-board results yet. Try "Search job boards".'
+                : 'No feed results yet. Try "Pull remote feeds".'}
+          </Typography>
         </Box>
       ) : (
         <Stack spacing={1.25}>
           {rows.map((j) => (
             <JobCard key={j._id} job={j} onClick={() => setSelected(j)} />
           ))}
+        </Stack>
+      )}
+
+      {/* Pagination */}
+      {total > LIMIT && (
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
+          </Typography>
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={(_, p) => setPage(p)}
+            color="primary"
+            shape="rounded"
+            siblingCount={1}
+          />
         </Stack>
       )}
 
@@ -310,7 +342,6 @@ function JobCard({ job, onClick }: { job: SourcedJob; onClick: () => void }) {
             {company}{job.primaryTech ? ` · ${job.primaryTech}` : ''}
           </Typography>
 
-          {/* vendor contact preview — the hot info */}
           {job.hasVendorContact && (
             <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
               {contactName && <Mini icon={<IconUser size={13} />} text={contactName} />}
