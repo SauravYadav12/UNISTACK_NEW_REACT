@@ -26,6 +26,7 @@ import {
   IconPhone,
   IconMail,
   IconWorldSearch,
+  IconRss,
 } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -36,6 +37,7 @@ import {
   listSourcedJobs,
   runEmailIngest,
   runJsearchIngest,
+  runFeedIngest,
 } from '../../services/itJobSearchApi';
 import ReviewJobDrawer from './ReviewJobDrawer';
 
@@ -43,7 +45,7 @@ const MotionBox = motion.create(Box);
 
 export default function ITJobSearch() {
   const [status, setStatus] = useState<SourcedJobStatus | 'all'>('pending');
-  const [source, setSource] = useState<'all' | 'email' | 'jsearch'>('all');
+  const [source, setSource] = useState<'all' | 'email' | 'jsearch' | 'feed'>('all');
   const [onlyContact, setOnlyContact] = useState(false);
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<SourcedJob[]>([]);
@@ -51,7 +53,10 @@ export default function ITJobSearch() {
   const [loading, setLoading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [boarding, setBoarding] = useState(false);
+  const [feeding, setFeeding] = useState(false);
   const [selected, setSelected] = useState<SourcedJob | null>(null);
+
+  const busyExternal = ingesting || boarding || feeding;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -121,6 +126,26 @@ export default function ITJobSearch() {
     }
   }
 
+  async function handleFeedPull() {
+    setFeeding(true);
+    try {
+      const res = await runFeedIngest();
+      const d = res.data.data as Record<string, number | boolean>;
+      if (d.enabled === false) {
+        toast.info('No remote feeds are configured.');
+      } else {
+        toast.success(
+          `Remote feeds pulled — ${d.created || 0} new, ${d.duplicates || 0} dup, ${d.prefiltered || 0} filtered out.`
+        );
+      }
+      load();
+    } catch {
+      toast.error('Could not pull the remote feeds.');
+    } finally {
+      setFeeding(false);
+    }
+  }
+
   const removeFromList = (id: string) =>
     setRows((prev) => prev.filter((r) => r._id !== id));
 
@@ -156,15 +181,24 @@ export default function ITJobSearch() {
             <Box>
               <Typography variant="h4" fontWeight={700}>IT Job Search</Typography>
               <Typography variant="caption" sx={{ color: alpha('#fff', 0.65) }}>
-                {total} {status === 'pending' ? 'to review' : status} · remote US IT roles from the inbox
+                {total} {status === 'pending' ? 'to review' : status} · remote US IT roles from inbox, job boards &amp; feeds
               </Typography>
             </Box>
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button
               variant="outlined"
+              onClick={handleFeedPull}
+              disabled={busyExternal}
+              startIcon={feeding ? <CircularProgress size={16} color="inherit" /> : <IconRss size={18} />}
+              sx={{ textTransform: 'none', fontWeight: 700, color: '#fff', borderColor: alpha('#fff', 0.4), '&:hover': { borderColor: '#fff', background: alpha('#fff', 0.08) } }}
+            >
+              {feeding ? 'Pulling feeds…' : 'Pull remote feeds'}
+            </Button>
+            <Button
+              variant="outlined"
               onClick={handleBoardSearch}
-              disabled={boarding || ingesting}
+              disabled={busyExternal}
               startIcon={boarding ? <CircularProgress size={16} color="inherit" /> : <IconWorldSearch size={18} />}
               sx={{ textTransform: 'none', fontWeight: 700, color: '#fff', borderColor: alpha('#fff', 0.4), '&:hover': { borderColor: '#fff', background: alpha('#fff', 0.08) } }}
             >
@@ -173,7 +207,7 @@ export default function ITJobSearch() {
             <Button
               variant="contained"
               onClick={handleIngest}
-              disabled={ingesting || boarding}
+              disabled={busyExternal}
               startIcon={ingesting ? <CircularProgress size={16} color="inherit" /> : <IconMailDown size={18} />}
               sx={{ textTransform: 'none', fontWeight: 700, background: tokens.gradients.pinkBlue, boxShadow: 'none', '&:hover': { background: tokens.gradients.pinkBlue, filter: 'brightness(1.08)' } }}
             >
@@ -202,12 +236,13 @@ export default function ITJobSearch() {
             select
             size="small"
             value={source}
-            onChange={(e) => setSource(e.target.value as 'all' | 'email' | 'jsearch')}
+            onChange={(e) => setSource(e.target.value as 'all' | 'email' | 'jsearch' | 'feed')}
             sx={{ minWidth: 140 }}
           >
             <MenuItem value="all">All sources</MenuItem>
             <MenuItem value="email">Email</MenuItem>
             <MenuItem value="jsearch">Job boards</MenuItem>
+            <MenuItem value="feed">Remote feeds</MenuItem>
           </TextField>
           <FormControlLabel
             control={<Switch size="small" checked={onlyContact} onChange={(e) => setOnlyContact(e.target.checked)} />}
