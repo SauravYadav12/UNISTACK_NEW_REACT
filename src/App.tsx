@@ -72,7 +72,8 @@ const InterviewTabs = lazy(
   () => import('./components/interview/InterviewTabs'),
 );
 const JobBoards = lazy(() => import('./pages/JobBoards/JobBoards'));
-const ITJobSearch = lazy(() => import('./pages/ITJobSearch/ITJobSearch'));
+// IT Job Search disabled — lazy import commented so the page bundle is not loaded.
+// const ITJobSearch = lazy(() => import('./pages/ITJobSearch/ITJobSearch'));
 const Consultants = lazy(
   () => import('./pages/Marketing/Consultants/Consultants'),
 );
@@ -382,7 +383,9 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
-            <Route
+            {/* IT Job Search disabled — route removed so the page can't be
+                reached and nothing calls the backend ingest/Claude. */}
+            {/* <Route
               path="it-job-search"
               element={
                 <ProtectedRoute
@@ -394,7 +397,7 @@ function AppContent() {
                   <ITJobSearch />
                 </ProtectedRoute>
               }
-            />
+            /> */}
             <Route
               path="consultants"
               element={

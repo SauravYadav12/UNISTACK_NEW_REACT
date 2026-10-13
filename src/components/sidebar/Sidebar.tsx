@@ -39,7 +39,7 @@ import {
   IconMailCog,
   IconClipboardCheck,
   IconWorldSearch,
-  IconMailDown,
+  // IconMailDown, // IT Job Search disabled
   IconUserCheck,
   IconChessKnight,
   IconActivity,
@@ -168,13 +168,14 @@ function Sidebar({ collapsed, onToggle }: SidebarProps) {
       group: ModuleGroup.Marketing,
       module: MarketingModule['Job Boards'],
     },
-    {
-      text: 'IT Job Search',
-      icon: <IconMailDown size={20} />,
-      path: '/it-job-search',
-      group: ModuleGroup.Marketing,
-      module: MarketingModule['IT Job Search'],
-    },
+    // IT Job Search disabled — sidebar entry hidden.
+    // {
+    //   text: 'IT Job Search',
+    //   icon: <IconMailDown size={20} />,
+    //   path: '/it-job-search',
+    //   group: ModuleGroup.Marketing,
+    //   module: MarketingModule['IT Job Search'],
+    // },
     {
       text: 'Chess Leads',
       icon: <IconChessKnight size={20} />,
