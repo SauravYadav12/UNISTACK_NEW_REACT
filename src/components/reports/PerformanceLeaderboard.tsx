@@ -33,8 +33,10 @@ export interface BreakdownSegment {
   color: string;
   /** Numeric value for this segment */
   value: number;
-  /** Optional link for drill-down (e.g. /requirements?...) */
+  /** Optional link for drill-down (e.g. /requirements?...) — opens a new tab */
   href?: string;
+  /** Optional in-app click handler; takes precedence over `href` (no new tab) */
+  onClick?: () => void;
 }
 
 export interface PerformanceRow {
@@ -45,8 +47,10 @@ export interface PerformanceRow {
   total: number;
   /** Breakdown segments shown as stacked bar + pills underneath */
   breakdown: BreakdownSegment[];
-  /** Optional deep-link for the full breakdown */
+  /** Optional deep-link for the full breakdown — opens a new tab */
   totalHref?: string;
+  /** Optional in-app click handler for the total; takes precedence over `totalHref` */
+  onTotalClick?: () => void;
 }
 
 export interface AwardWinner {
@@ -601,15 +605,24 @@ export default function PerformanceLeaderboard({
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                    {row.totalHref ? (
+                    {row.onTotalClick || row.totalHref ? (
                       <Link
-                        href={row.totalHref}
-                        target="_blank"
+                        href={row.onTotalClick ? '#' : row.totalHref}
+                        target={row.onTotalClick ? undefined : '_blank'}
                         underline="none"
+                        onClick={
+                          row.onTotalClick
+                            ? (e) => {
+                                e.preventDefault();
+                                row.onTotalClick?.();
+                              }
+                            : undefined
+                        }
                         sx={{
                           display: 'inline-flex',
                           alignItems: 'baseline',
                           gap: 0.5,
+                          cursor: 'pointer',
                           color: 'text.primary',
                           '&:hover': { color: accentColor },
                         }}
@@ -644,12 +657,22 @@ export default function PerformanceLeaderboard({
                   {row.breakdown.map((seg) => (
                     <Link
                       key={seg.key}
-                      href={seg.href || '#'}
-                      target={seg.href ? '_blank' : undefined}
+                      href={seg.onClick ? '#' : seg.href || '#'}
+                      target={seg.href && !seg.onClick ? '_blank' : undefined}
                       underline="none"
-                      onClick={(e) => !seg.href && e.preventDefault()}
+                      onClick={(e) => {
+                        if (seg.onClick) {
+                          e.preventDefault();
+                          if (seg.value > 0) seg.onClick();
+                        } else if (!seg.href) {
+                          e.preventDefault();
+                        }
+                      }}
                       sx={{
-                        cursor: seg.href && seg.value > 0 ? 'pointer' : 'default',
+                        cursor:
+                          (seg.onClick || seg.href) && seg.value > 0
+                            ? 'pointer'
+                            : 'default',
                         pointerEvents: seg.value > 0 ? 'auto' : 'none',
                         opacity: seg.value > 0 ? 1 : 0.45,
                       }}
