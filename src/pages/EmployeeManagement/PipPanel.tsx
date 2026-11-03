@@ -18,7 +18,7 @@ import PipCard from '../../components/pip/PipCard';
 import CreatePipWizardDialog from '../../components/pip/CreatePipWizardDialog';
 import PipDetailDialog from '../../components/pip/PipDetailDialog';
 
-type StatusTab = 'active' | 'successful' | 'failed';
+type StatusTab = 'active' | 'successful' | 'failed' | 'removed';
 
 export default function PipPanel() {
   const [statusTab, setStatusTab] = useState<StatusTab>('active');
@@ -48,7 +48,8 @@ export default function PipPanel() {
     const active = pips.filter((p) => p.status === 'draft' || p.status === 'active');
     const successful = pips.filter((p) => p.status === 'successful');
     const failed = pips.filter((p) => p.status === 'failed');
-    return { active, successful, failed };
+    const removed = pips.filter((p) => p.status === 'removed');
+    return { active, successful, failed, removed };
   }, [pips]);
 
   const current = buckets[statusTab];
@@ -70,6 +71,7 @@ export default function PipPanel() {
           <Tab value="active" label={`Active (${buckets.active.length})`} />
           <Tab value="successful" label={`Successful (${buckets.successful.length})`} />
           <Tab value="failed" label={`Failed (${buckets.failed.length})`} />
+          <Tab value="removed" label={`Removed (${buckets.removed.length})`} />
         </Tabs>
         <Button
           variant="contained"
