@@ -65,6 +65,18 @@ export async function resolvePip(
   return res.data.data;
 }
 
+/** Super-admin only — re-send the same email; PIP dates/status unchanged. */
+export async function resendPip(id: string): Promise<Pip> {
+  const res = await axiosClient.post<Data<Pip>>(`/pip/${id}/resend`);
+  return res.data.data;
+}
+
+/** Super-admin only — take the employee off the PIP (account stays active). */
+export async function removePip(id: string, note?: string): Promise<Pip> {
+  const res = await axiosClient.post<Data<Pip>>(`/pip/${id}/remove`, { note });
+  return res.data.data;
+}
+
 export async function deletePip(id: string): Promise<void> {
   await axiosClient.delete(`/pip/${id}`);
 }

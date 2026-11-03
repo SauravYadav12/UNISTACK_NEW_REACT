@@ -10,6 +10,7 @@ export const PIP_STATUS_META: Record<
   active: { label: 'Active', color: tokens.colors.pink },
   successful: { label: 'Successful', color: tokens.colors.success },
   failed: { label: 'Failed', color: tokens.colors.error },
+  removed: { label: 'Removed', color: tokens.colors.lightTextSecondary },
 };
 
 /** Extract a human-readable message from an axios error. */

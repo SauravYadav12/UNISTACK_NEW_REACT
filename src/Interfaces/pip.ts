@@ -1,4 +1,9 @@
-export type PipStatus = 'draft' | 'active' | 'successful' | 'failed';
+export type PipStatus =
+  | 'draft'
+  | 'active'
+  | 'successful'
+  | 'failed'
+  | 'removed';
 
 export type PipReason =
   | 'performance'
@@ -28,6 +33,7 @@ export const PIP_STATUS_LABELS: Record<PipStatus, string> = {
   active: 'Active',
   successful: 'Successful',
   failed: 'Failed',
+  removed: 'Removed',
 };
 
 export interface PipExtension {
@@ -53,6 +59,8 @@ export interface Pip {
   extensionDays: number;
   extensions: PipExtension[];
   sentAt?: string;
+  resendCount?: number;
+  lastResentAt?: string;
   completionNotifiedAt?: string;
   resolutionNote?: string;
   resolvedAt?: string;

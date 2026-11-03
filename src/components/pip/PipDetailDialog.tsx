@@ -25,6 +25,8 @@ import {
   IconBan,
   IconCalendarPlus,
   IconAlertTriangleFilled,
+  IconMailForward,
+  IconUserMinus,
 } from '@tabler/icons-react';
 import { toast } from 'react-toastify';
 import moment from 'moment';
@@ -34,10 +36,14 @@ import {
   sendPip,
   extendPip,
   resolvePip,
+  resendPip,
+  removePip,
   deletePip,
 } from '../../services/pipApi';
 import { PIP_STATUS_META, errMsg } from './pipStatus';
 import { tokens } from '../../theme/theme';
+import { useAuth } from '../../AuthGaurd/AuthContextProvider';
+import { UserRole } from '../../Interfaces/iUser';
 
 interface Props {
   pip: Pip | null;
@@ -52,7 +58,11 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
   const [extendDays, setExtendDays] = useState(15);
   const [note, setNote] = useState('');
   const [confirmFail, setConfirmFail] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+
+  const { iUser } = useAuth();
+  const isSuperAdmin = Boolean(iUser?.role?.includes(UserRole['super-admin']));
 
   useEffect(() => {
     if (!pip) return;
@@ -61,6 +71,7 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
     setExtendDays(15);
     setNote('');
     setConfirmFail(false);
+    setConfirmRemove(false);
     setBusy(null);
   }, [pip]);
 
@@ -68,7 +79,13 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
   const meta = PIP_STATUS_META[pip.status];
   const isDraft = pip.status === 'draft';
   const isActive = pip.status === 'active';
-  const resolved = pip.status === 'successful' || pip.status === 'failed';
+  const resolved =
+    pip.status === 'successful' ||
+    pip.status === 'failed' ||
+    pip.status === 'removed';
+  // Super-admin extras are only offered on a live PIP, and hidden while a
+  // confirm panel is open so the footer shows just Cancel / Confirm.
+  const showActiveActions = isActive && !confirmFail && !confirmRemove;
 
   async function run(key: string, fn: () => Promise<unknown>, okMsg: string) {
     setBusy(key);
@@ -141,6 +158,14 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
                 {' · '}ends <strong>{moment(pip.endDate).format('MMM D, YYYY')}</strong>
                 {pip.extensionDays > 0 && ` · extended by ${pip.extensionDays} day(s)`}
               </Typography>
+              {!!pip.resendCount && pip.resendCount > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  Email resent {pip.resendCount} time(s)
+                  {pip.lastResentAt
+                    ? ` · last on ${moment(pip.lastResentAt).format('MMM D, YYYY')}`
+                    : ''}
+                </Typography>
+              )}
               {resolved && pip.resolvedAt && (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                   {meta.label} on {moment(pip.resolvedAt).format('MMM D, YYYY')}
@@ -193,7 +218,7 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
           </Box>
 
           {/* Active: extend + resolution note */}
-          {isActive && !confirmFail && (
+          {showActiveActions && (
             <Box>
               <Label>Review actions</Label>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75 }}>
@@ -244,6 +269,32 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
               </Stack>
             </Box>
           )}
+
+          {/* Remove-from-PIP confirmation (super-admin) */}
+          {confirmRemove && (
+            <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: alpha(tokens.colors.blue, 0.08), border: `1px solid ${alpha(tokens.colors.blue, 0.4)}` }}>
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <IconUserMinus size={18} color={tokens.colors.blueDark} />
+                <Box sx={{ width: '100%' }}>
+                  <Typography variant="subtitle2" sx={{ color: tokens.colors.blueDark, fontWeight: 700 }}>
+                    Remove {pip.employeeName} from this PIP?
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    This closes the plan and emails the employee that they have been removed. The
+                    account <strong>stays active</strong> — this is not a termination.
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Reason (optional)"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    sx={{ mt: 1.5 }}
+                  />
+                </Box>
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </DialogContent>
 
@@ -259,6 +310,15 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
               onClick={() => run('delete', () => deletePip(id), 'Draft deleted.')}
             >
               Delete
+            </Button>
+          )}
+          {showActiveActions && isSuperAdmin && (
+            <Button
+              startIcon={busy === 'resend' ? <CircularProgress size={14} /> : <IconMailForward size={16} />}
+              disabled={Boolean(busy)}
+              onClick={() => run('resend', () => resendPip(id), `PIP email resent to ${pip.employeeName}.`)}
+            >
+              Resend email
             </Button>
           )}
         </Box>
@@ -301,8 +361,19 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
             </>
           )}
 
-          {isActive && !confirmFail && (
+          {showActiveActions && (
             <>
+              {isSuperAdmin && (
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<IconUserMinus size={16} />}
+                  disabled={Boolean(busy)}
+                  onClick={() => setConfirmRemove(true)}
+                >
+                  Remove from PIP
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 color="success"
@@ -337,6 +408,23 @@ export default function PipDetailDialog({ pip, open, onClose, onChanged }: Props
                 onClick={() => run('fail', () => resolvePip(id, 'failed', note.trim() || undefined), `${pip.employeeName}'s PIP marked failed; employee deactivated.`)}
               >
                 Confirm — deactivate
+              </Button>
+            </>
+          )}
+
+          {confirmRemove && (
+            <>
+              <Button onClick={() => setConfirmRemove(false)} disabled={Boolean(busy)}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={busy === 'remove' ? <CircularProgress size={14} color="inherit" /> : <IconUserMinus size={16} />}
+                disabled={Boolean(busy)}
+                onClick={() => run('remove', () => removePip(id, note.trim() || undefined), `${pip.employeeName} removed from the PIP.`)}
+                sx={{ bgcolor: tokens.colors.blueDark, '&:hover': { bgcolor: tokens.colors.blueDark } }}
+              >
+                Confirm — remove
               </Button>
             </>
           )}
