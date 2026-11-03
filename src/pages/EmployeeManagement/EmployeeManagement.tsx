@@ -3,12 +3,14 @@ import { Box, Stack, Tab, Tabs, Typography } from '@mui/material';
 import {
   IconHistory,
   IconShieldCheck,
+  IconTarget,
   IconUserPlus,
 } from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ProbationApprovals from './ProbationApprovals';
 import OnboardingPanel from './OnboardingPanel';
 import BackdatedOnboardingPanel from './BackdatedOnboardingPanel';
+import PipPanel from './PipPanel';
 import { useAuth } from '../../AuthGaurd/AuthContextProvider';
 import { UserRole } from '../../Interfaces/iUser';
 
@@ -23,7 +25,7 @@ import { UserRole } from '../../Interfaces/iUser';
  * deep link or browser-back/refresh lands on the right tab.
  */
 
-type TabKey = 'probation' | 'onboarding' | 'backdated';
+type TabKey = 'probation' | 'onboarding' | 'backdated' | 'pip';
 
 interface TabDef {
   key: TabKey;
@@ -52,6 +54,11 @@ const TAB_DEFS: TabDef[] = [
     label: 'Backdated Onboarding',
     icon: <IconHistory size={16} />,
     superAdminOnly: true,
+  },
+  {
+    key: 'pip',
+    label: 'PIP',
+    icon: <IconTarget size={16} />,
   },
 ];
 
@@ -121,6 +128,7 @@ export default function EmployeeManagement() {
         {activeTab === 'probation' && <ProbationApprovals />}
         {activeTab === 'onboarding' && <OnboardingPanel />}
         {activeTab === 'backdated' && isSuperAdmin && <BackdatedOnboardingPanel />}
+        {activeTab === 'pip' && <PipPanel />}
         {/* Future tabs render here. Keep each as a self-contained
             sub-component fetching its own data so this shell stays
             zero-state-y and instant to render. */}
