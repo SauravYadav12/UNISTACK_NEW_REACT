@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
-  Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Select,
-  Stack, Tooltip, Typography, alpha,
+  Box, Button, Checkbox, Chip, FormControl, FormControlLabel, IconButton,
+  InputLabel, MenuItem, Select, Stack, Tooltip, Typography, alpha,
 } from '@mui/material';
 import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
@@ -70,6 +70,9 @@ const HolidayList = ({
   const [editing, setEditing] = useState<Holiday | undefined>();
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Holiday | undefined>();
+  // Whether removing the holiday also emails all staff that it's cancelled.
+  // Reset to on each time the remove dialog opens (see the trash button).
+  const [notifyStaff, setNotifyStaff] = useState(true);
 
   // When year is locked, keep state in sync with the actual current year so
   // the list doesn't drift if the component stays mounted past midnight 1 Jan.
@@ -95,9 +98,11 @@ const HolidayList = ({
   async function confirmDelete() {
     if (!deleting) return;
     try {
-      await deleteHoliday(deleting._id);
+      await deleteHoliday(deleting._id, notifyStaff);
       removeHoliday(deleting._id);
-      toast.success('Holiday removed');
+      toast.success(
+        notifyStaff ? 'Holiday removed · notifying all staff' : 'Holiday removed'
+      );
     } catch (e) {
       toast.error(parseError(e));
       throw e; // keep ConfirmDialog open on failure
@@ -204,7 +209,7 @@ const HolidayList = ({
               </IconButton>
             </Tooltip>
             <Tooltip title="Remove holiday">
-              <IconButton size="small" onClick={() => setDeleting(row)}>
+              <IconButton size="small" onClick={() => { setNotifyStaff(true); setDeleting(row); }}>
                 <IconTrash size={16} color={tokens.colors.error} />
               </IconButton>
             </Tooltip>
@@ -360,6 +365,35 @@ const HolidayList = ({
                   <Typography variant="caption" color="text.secondary">
                     Salary calculations going forward will treat this date as a working day. Existing slips already generated for this month are unaffected unless regenerated.
                   </Typography>
+                  <Box
+                    sx={{
+                      mt: 1.5, p: 1, borderRadius: 1.5, textAlign: 'left',
+                      bgcolor: alpha(tokens.colors.blue, 0.05),
+                      border: `1px solid ${alpha(tokens.colors.blue, 0.2)}`,
+                    }}
+                  >
+                    <FormControlLabel
+                      sx={{ m: 0, alignItems: 'flex-start' }}
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={notifyStaff}
+                          onChange={(e) => setNotifyStaff(e.target.checked)}
+                          sx={{
+                            py: 0, pr: 1,
+                            color: tokens.colors.blue,
+                            '&.Mui-checked': { color: tokens.colors.blue },
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography sx={{ fontSize: 12.5, color: tokens.colors.lightText, lineHeight: 1.4 }}>
+                          Email all staff that this holiday is cancelled and the
+                          office will be open as per its usual timing
+                        </Typography>
+                      }
+                    />
+                  </Box>
                 </>
               ) : undefined
             }

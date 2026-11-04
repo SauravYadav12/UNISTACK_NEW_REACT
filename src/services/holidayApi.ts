@@ -27,7 +27,9 @@ export async function updateHoliday(
   );
   return response;
 }
-export async function deleteHoliday(id: string) {
-  const response = await axiosClient.delete(`/holidays/${id}`);
+export async function deleteHoliday(id: string, notify = false) {
+  // `notify=true` tells the server to email all staff that the holiday is
+  // cancelled and the office will be open as usual (super-admin opt-in).
+  const response = await axiosClient.delete(`/holidays/${id}?notify=${notify}`);
   return response;
 }
